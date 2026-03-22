@@ -125,7 +125,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 18 | 8 core (architecture, code-style, testing, git-workflow, self-improvement, conflict-resolution, error-handling, self-verification) + 8 domain guards + critical-thinking + strategic-thinking |
+| **Rules** | 19 | 8 core (architecture, code-style, testing, git-workflow, self-improvement, conflict-resolution, error-handling, self-verification) + 8 domain guards + critical-thinking + strategic-thinking + analysis-first |
 | **Hooks** | 7 hook scripts | 7 hook scripts across 5 event types (PostToolUse, PreToolUse, Stop, SessionStart, PreCompact) |
 | **Skills** | 22 | 15 core (setup-project, add-feature, debug, security-audit, daily-brief, self-update, api-contract, sprint, setup-integrations, coverage, health-check, migrate, modify-api, setup-telegram, update-deps) + 6 domain review + strategic-review |
 | **Agents** | 9 | reviewer, simplifier, researcher, implementer, test-engineer, security-auditor, devops |
