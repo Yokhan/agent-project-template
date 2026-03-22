@@ -40,6 +40,7 @@ Silently skipping a true item = SYSTEM FAILURE. The user seeing "I noticed X but
 - Am I defaulting to complexity when simplicity would work? → Implement simple first, prove it's insufficient
 - Am I presenting speculation as fact? → Mark uncertain claims with [UNCERTAIN]
 - Did I consider at least one alternative? → If no: you're at 70% confidence MAX, say so
+- Am I copying structure from an example instead of applying its principles? → Extract WHY first (analysis-first.md)
 
 SYCOPHANCY CIRCUIT BREAKER:
 If the user points out a flaw and your reaction is "you're right!" — log to tasks/lessons.md:

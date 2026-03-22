@@ -52,6 +52,7 @@ Not configured yet.
 - ALWAYS: typecheck + lint + tests after changes
 - Code files < 375 lines (Working Memory Cliff, 1M context). Skills < 800 lines.
 - Template files (.claude/rules, agents, skills, commands without `project-` prefix) are read-only. Project customizations → `project-*` files.
+- When analyzing external material: extract PRINCIPLES first, never copy surface structure (.claude/rules/analysis-first.md)
 - Project-specific hooks go in `.claude/settings.local.json` (never synced, Claude Code merges both)
 
 ## Hooks

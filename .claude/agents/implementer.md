@@ -70,6 +70,7 @@ STOP before wiring and integration. Ask yourself:
 - Re-read the original request (user's ACTUAL words, not your interpretation)
 - Compare what you've built vs what was asked
 - "Am I still solving THEIR problem, or did I drift to solving MY interpretation?"
+- Am I copying structure from a reference, or applying principles from it?
 - If you drifted: fixing NOW costs 5 minutes. Fixing AFTER integration costs 30.
 
 ## Batch Write Protocol
@@ -90,7 +91,7 @@ STOP before wiring and integration. Ask yourself:
 Before creating a new module:
 1. Check `templates/` for relevant scaffolding template
 2. Check `_reference/` for canonical example
-3. Follow the pattern exactly — structure, naming, style
+3. Apply the PRINCIPLES from the reference, adapted to current context (see .claude/rules/analysis-first.md)
 
 **Before creating any utility or helper**: Search shared/ and features/ for existing implementations using Grep. If 80%+ similar exists, extend it instead of duplicating.
 

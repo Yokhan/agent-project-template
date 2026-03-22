@@ -15,7 +15,7 @@ Before anything else, verify the feature name is available:
 
 ## Step 1: Explore Existing Patterns
 1. Read `_reference/README.md` — find canonical implementation
-2. Read the referenced feature to understand conventions
+2. Read the referenced feature to understand conventions. For each pattern found, note WHY it's structured this way, not just HOW
 3. Check `templates/` for applicable scaffolding
 4. Read `tasks/lessons.md` — avoid known pitfalls for this type
 
@@ -41,7 +41,7 @@ src/features/[name]/
 └── [name].adapter.*  # IO layer if needed (DB, API calls)
 ```
 
-Use template from `templates/` if available. Follow reference implementation exactly.
+Use template from `templates/` if available. Extract principles from reference implementation. Apply those principles adapted to this feature's specific context and needs.
 
 ## Step 5: Implement in Batches
 **CRITICAL: Write 3-4 files max per batch, then typecheck.**

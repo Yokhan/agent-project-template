@@ -118,6 +118,7 @@ Every action feeds a new cycle. Strategy is ALIVE, not a fixed plan.
 - **Rigid plan execution** — Following a plan that reality has already invalidated
 - **Ignoring the constraint** — Improving everything EXCEPT what actually limits throughput
 - **One-shot mentality** — No fallback, no adaptation, no plan B
+- **Surface imitation** — Copying structure/format/naming from examples without extracting the principles that produced them. The map is not the territory. The artifact is not the logic. Always ask WHY before copying WHAT.
 
 ## Goal Selection (Before Starting)
 1. What is Commander's Intent? (the REAL purpose, two levels up)
