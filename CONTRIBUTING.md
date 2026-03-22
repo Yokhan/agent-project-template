@@ -13,7 +13,7 @@
 See `.claude/rules/code-style.md`. Key rules:
 - No `any` type — use `unknown` + type guards
 - Immutability — return new objects, don't mutate
-- Files < 250 lines — split by responsibility
+- Files < 375 lines — split by responsibility
 - Functions < 30 lines — single responsibility
 
 ## Testing
