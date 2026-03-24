@@ -166,9 +166,60 @@ For each selected integration, read the corresponding README in `integrations/` 
 - **CodeGraphContext**: Read `integrations/codegraph/README.md`, install and index
 - **Telegram**: Read `integrations/telegram/README.md`, guide user through bot creation
 
-## Phase 10: Verify
+## Phase 10: Agent Specialization (v2.5)
 
-Run the full verification chain:
+Based on detected stack from Phase 1, generate project-specific agent overlays:
+
+**If TypeScript + React/Vue/Svelte detected:**
+→ Create `.claude/agents/project-frontend-implementer.md` with:
+  - React/Vue/Svelte component conventions, hooks/composables patterns
+  - State management approach (Zustand/Pinia/Redux detected from package.json)
+  - CSS approach (Tailwind/CSS modules/styled-components detected from config)
+
+**If TypeScript + Express/Fastify/Nest detected:**
+→ Create `.claude/agents/project-backend-implementer.md` with:
+  - API route patterns, middleware conventions
+  - ORM/DB patterns (Prisma/TypeORM/Drizzle detected from package.json)
+  - Error handling and validation approach
+
+**If Python + FastAPI/Django/Flask detected:**
+→ Create `.claude/agents/project-python-implementer.md` with:
+  - Framework-specific patterns (dependency injection, middleware, etc.)
+  - ORM patterns (SQLAlchemy/Django ORM/Tortoise)
+
+**If Godot/GDScript detected (project.godot exists):**
+→ Create `.claude/agents/project-godot-implementer.md` with:
+  - Signal-based communication, scene composition
+  - Resource preloading, node lifecycle
+
+**If Supabase detected (.env contains SUPABASE or package.json has @supabase):**
+→ Create `.claude/agents/project-supabase-implementer.md` with:
+  - RLS policy patterns, service role usage
+  - Migration conventions, realtime subscriptions
+
+**Template for generated overlay:**
+```markdown
+---
+name: project-{stack}-implementer
+extends: implementer
+model: sonnet
+description: "Implementer specialized for {detected stack}"
+---
+# {Stack} Implementer
+Extends base implementer. Stack: {versions detected}.
+## Conventions
+- {extracted from _reference/ or package.json}
+## Key Files
+- {entry points, configs, env vars}
+## Patterns
+- {from detected frameworks}
+```
+
+These overlays evolve via `/weekly` — if lessons.md contains 3+ errors about a technology, the overlay gets enriched with prevention rules.
+
+## Phase 11: Verify
+
+Run the full verification chain (was Phase 10 in v2.4):
 1. Typecheck passes
 2. Linter passes
 3. Tests pass (at least the health check reference impl)

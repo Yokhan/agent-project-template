@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 2.4.0 -->
+<!-- Template Version: 2.5.0 -->
 
 AI-agent optimized project with persistent memory, autonomous hooks, and self-improving context infrastructure.
 
@@ -37,6 +37,9 @@ Not configured yet.
 - `/rollback` — Safe git revert workflow
 - `/onboard` — New developer onboarding
 - `/update-template` — Sync project with newer template version
+- `/hotfix` — Fast-track production fix (skip ceremony, require post-mortem)
+- `/retrospective` — Deep weekly analysis (agent performance, rule effectiveness, learning velocity)
+- `/sync-all` — Sync template to all projects with .template-manifest.json
 
 ## Build & Test
 
@@ -63,7 +66,7 @@ Claude Code hooks live in `.claude/hooks/`. Each hook is a bash script called by
 |------|---------|-------------|
 | session-start.sh | Session begins | Creates session log, shows reminders |
 | session-stop.sh | Session ends | Logs end time and commit stats |
-| pre-compact.sh | Before context compression | Saves changed files list |
+| pre-compact.sh | Before context compression | Saves full compaction snapshot to tasks/.compaction-snapshot.md |
 | format.sh | After Edit/Write | Runs appropriate formatter |
 | post-edit.sh | After Edit/Write | Checks file size, validates syntax |
 | pre-edit-safety.sh | Before Edit/Write | Blocks main branch, detects secrets |
@@ -99,9 +102,22 @@ Rule: Never present blog/SEO-level evidence as best practice. Check evidence hie
 - `/brain-sync` for manual sync
 - Optional: install memory MCP (see `integrations/memory-mcp/README.md`)
 
+## Skills (new in v2.5)
+
+- `agent-router` — Auto-select agent based on task keywords and file context
+- `memory-router` — Unified memory layer: routes saves/searches to Engram, files, or brain vault
+- `decompose` — Break XL tasks into M-sized sub-tasks with dependency graph
+- `task-queue` — Protocol for external systems to queue tasks via tasks/queue.md
+- `agent-metrics` — Log agent performance for tracking improvement over time
+
 ## Self-Improvement
 
-After each mistake: add to `tasks/lessons.md`. Read it at session start. When >50 entries — promote best rules to `.claude/rules/` via `/weekly`.
+After each mistake: classify correction (BUG/KNOWLEDGE_GAP/STYLE/DESIGN/MISUNDERSTANDING), log BUG and KNOWLEDGE_GAP to `tasks/lessons.md`. Read it at session start. When >50 entries — promote best rules to `.claude/rules/` via `/weekly`.
+
+## Task Size Classification (v2.5)
+
+XS (≤1 file, ≤5 lines) → no gates. S (≤2 files, ≤30 lines) → 1 gate. M (3-7 files) → 2 gates. L (8-15 files) → 4 gates. XL (>15 files) → decompose first.
+Risk override: auth/security/health → always 4 gates.
 
 ## DON'T
 
@@ -116,8 +132,9 @@ After each mistake: add to `tasks/lessons.md`. Read it at session start. When >5
 - No confidence claims without having considered and rejected at least one alternative
 
 ## Template Version
-2.4.0 — Run `bash scripts/check-drift.sh` to verify template health.
+2.5.0 — Run `bash scripts/check-drift.sh` to verify template health.
 
 ## Compaction
 
 Preserve: current task, modified files, test results, discovered issues, lessons context.
+After compaction: read `tasks/.compaction-snapshot.md` to restore full context (auto-saved by pre-compact hook).

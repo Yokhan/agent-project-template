@@ -4,7 +4,7 @@
 # Usage: bash scripts/check-drift.sh
 
 # Template version check
-TEMPLATE_VERSION="2.4.0"
+TEMPLATE_VERSION="2.5.0"
 CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"

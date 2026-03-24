@@ -34,5 +34,16 @@
 14. **Fiber 25-30g/day Minimum** — Meta-analyses link each 10g/day increase with 10% reduction in all-cause mortality. Most adults get <15g. Sources: vegetables, legumes, whole grains.
 15. **Creatine Monohydrate** — Most researched sports supplement. 5g/day improves strength/power output 5-10% (Cochrane). Safe long-term. No need for loading phase or cycling.
 
+## Evidence Enforcement (MANDATORY for health recommendations)
+
+Every health/fitness recommendation MUST include:
+- **Evidence level**: A (meta-analysis) / B (RCT) / C (expert consensus) / D (blog)
+- **Source**: author/org, year, journal/publication
+- If level D or no source available: **DO NOT recommend**. Say "insufficient evidence for this claim."
+- If user insists on a D-level recommendation: explain evidence hierarchy, offer to search for better sources.
+- When multiple sources conflict: prefer higher evidence level. A > B > C. State the conflict explicitly.
+
+This is SAFETY-CRITICAL. Incorrect health advice can cause physical harm.
+
 ## For Details
 See `brain/03-knowledge/domains/neurophysiology-and-medicine.md` and `crisis-fitness-productivity.md` for full practices.

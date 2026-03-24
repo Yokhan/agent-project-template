@@ -2,20 +2,27 @@
 
 This protocol is NOT optional. Skipping it is a system failure.
 
-## When This Triggers
+## Graduated Verification (scales with task size)
 
-ANY response that includes ONE OR MORE of:
-- Architectural decision (new module, dependency, data model)
-- Modification of 3+ files in shared/, core/, or across module boundaries (routine same-module changes exempt)
-- Choosing between alternative approaches
-- Rejecting a simpler approach in favor of a complex one
+Gates are NOT one-size-fits-all. Match verification intensity to task risk:
+
+| Task Size | Gates Required | Details |
+|-----------|---------------|---------|
+| **XS** | Gate 0 only | Typecheck/lint pass. No manual gates. |
+| **S** | Gate 1 | Intent check: "Does this match the request?" |
+| **M** | Gate 1 + Gate 2 | Intent check + Red-team own code. Confidence declaration. |
+| **L** | All 4 gates | Full Doubt Protocol. User checkpoint at mid-build. |
+| **XL** | All 4 gates + pre-mortem | Plus: reviewer agent mandatory. User approval at 3 checkpoints. |
+
+**Risk overrides** (always full 4 gates regardless of size):
+- auth/security/payments/health content changes
 - Changes to shared/ or core/ (high blast radius)
 - Any irreversible change (DB migration, API contract, data deletion)
 - Recommending a tool, library, or pattern
 
-Does NOT trigger for:
+**Does NOT trigger** (no gates needed):
 - Answering questions without code changes
-- Single-file typo/formatting fixes
+- Single-file typo/formatting fixes (XS with no risk override)
 - Adding tests without changing production code
 - Documentation-only changes
 

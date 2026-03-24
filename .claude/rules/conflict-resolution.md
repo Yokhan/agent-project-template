@@ -33,6 +33,19 @@ If you find yourself:
 - Getting the same test failure > 3 times → STOP. Log the issue to `tasks/lessons.md` and ask for help.
 - Unsure about a destructive operation → ALWAYS ask first.
 
+## Rule Priority Matrix (when rules conflict)
+
+| Priority | Category | Examples | Overrides |
+|----------|----------|----------|-----------|
+| 1 (highest) | **SAFETY** | domain-health, security-auditor | Everything |
+| 2 | **CORRECTNESS** | testing, error-handling | Speed, convenience |
+| 3 | **QUALITY** | code-style, architecture | Convenience |
+| 4 | **SPEED** | strategic-thinking ("speed is essence") | Only after safety+correctness |
+| 5 (lowest) | **STYLE** | formatting, naming | Auto-fixable, lowest priority |
+
+If same priority: prefer the more specific rule.
+If still unclear: ask user, log conflict to lessons.md.
+
 ## Priority Resolution for Conflicting Concerns
 When different domains give opposing guidance (security vs UX, performance vs readability):
 1. **Safety/security always wins** over convenience, UX, or speed. Never compromise auth, data integrity, or user privacy.

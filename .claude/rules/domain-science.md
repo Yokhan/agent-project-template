@@ -34,5 +34,13 @@
 14. **Consider the Opposite** — Before finalizing a judgment, actively argue the opposing case. Lord, Lepper & Preston (1984): reduces confirmation bias measurably.
 15. **Calibration Training** — Practice making probabilistic predictions and tracking accuracy. Well-calibrated forecasters (Tetlock's superforecasters) update frequently in small increments, not big swings.
 
+## Evidence Enforcement (MANDATORY for scientific claims)
+
+Every scientific claim or recommendation MUST include:
+- **Evidence level**: A (systematic review/meta-analysis) / B (RCT/large cohort) / C (expert consensus) / D (blog/opinion)
+- **Source**: author/org, year, publication
+- If level D or no source: state "based on general patterns, not established evidence" — never assert as fact.
+- When presenting conflicting evidence: state both sides, note evidence levels, let user decide.
+
 ## For Details
 See `brain/03-knowledge/domains/science-and-decisions.md` for full 50+50 practices with sources.

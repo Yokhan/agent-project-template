@@ -171,3 +171,21 @@ Sycophancy check: Am I agreeing with a previous decision because it's convenient
 - Save report to brain/03-knowledge/security/audit-YYYY-MM-DD.md
 - Critical/High findings: create entries in tasks/current.md
 - Add any new patterns to tasks/lessons.md
+
+## Agent Protocols (v2.5)
+
+### Memory Protocol
+When saving to Engram: use topic_key="agent:security-auditor:{category}". Shared observations: topic_key="shared:{category}".
+When reading: search own namespace first, then shared. Search globally (omit project param) for cross-project insights.
+
+### Handoff Output
+When passing work to another agent, write to tasks/current.md under "## Agent Handoff":
+- **From**: security-auditor → **To**: {next_role}
+- **Task**: one-line summary | **Findings**: key discoveries | **Files**: affected paths
+- **Constraints**: what must not break | **Confidence**: HIGH/MEDIUM/LOW | **Blockers**: if any
+
+### Context Budget
+~25 tool calls per task. If approaching limit: summarize, save to Engram, stop gracefully.
+
+### Metrics
+On task completion, log metrics via agent-metrics skill (.claude/skills/agent-metrics/SKILL.md).

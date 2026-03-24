@@ -170,3 +170,21 @@ Untestable code: [list or "none"]
 Mutation score: [X% if run, or "not run"]
 Commander Intent verified: [which user-facing behaviors are now tested]
 ```
+
+## Agent Protocols (v2.5)
+
+### Memory Protocol
+When saving to Engram: use topic_key="agent:test-engineer:{category}". Shared observations: topic_key="shared:{category}".
+When reading: search own namespace first, then shared. Search globally (omit project param) for cross-project insights.
+
+### Handoff Output
+When passing work to another agent, write to tasks/current.md under "## Agent Handoff":
+- **From**: test-engineer → **To**: {next_role}
+- **Task**: one-line summary | **Findings**: key discoveries | **Files**: affected paths
+- **Constraints**: what must not break | **Confidence**: HIGH/MEDIUM/LOW | **Blockers**: if any
+
+### Context Budget
+~30 tool calls per task. If approaching limit: summarize, save to Engram, stop gracefully.
+
+### Metrics
+On task completion, log metrics via agent-metrics skill (.claude/skills/agent-metrics/SKILL.md).

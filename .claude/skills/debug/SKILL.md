@@ -13,6 +13,7 @@ description: "Systematic debugging approach: reproduce, isolate, fix, verify, do
 - Find the minimal reproduction case
 
 ### 2. Isolate
+- **Search memory globally**: `mem_search("{module_name} bug")` without project filter — similar bugs may have been solved in other projects
 - Trace the execution path from input to error
 - Use CodeGraphContext (if available) to find callers/callees
 - Narrow down to the specific module/function

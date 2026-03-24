@@ -64,4 +64,25 @@ if git remote get-url template >/dev/null 2>&1; then
   fi
 fi
 
+# Task queue check
+if [ -f tasks/queue.md ] && [ -s tasks/queue.md ]; then
+  QUEUED=$(grep -c "^## Queued:" tasks/queue.md 2>/dev/null || echo 0)
+  if [ "$QUEUED" -gt 0 ]; then
+    echo "QUEUE: $QUEUED queued task(s) in tasks/queue.md — review before starting"
+  fi
+fi
+
+# Compaction snapshot recovery hint
+if [ -f tasks/.compaction-snapshot.md ]; then
+  echo "RECOVERY: Compaction snapshot found. Read tasks/.compaction-snapshot.md if context was lost."
+fi
+
+# Lessons count (learning velocity indicator)
+if [ -f tasks/lessons.md ]; then
+  LESSON_COUNT=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
+  if [ "$LESSON_COUNT" -gt 40 ]; then
+    echo "INFO: $LESSON_COUNT lessons in lessons.md — consider running /weekly to promote patterns to rules"
+  fi
+fi
+
 exit 0

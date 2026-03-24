@@ -57,14 +57,52 @@ This phase exists because the agent CAN find its own errors (proven by finding t
 
 ## Circuit Breaker (CRITICAL SAFETY)
 
-| Condition | Action |
-|-----------|--------|
-| 3 consecutive no-progress loops | STOP. Log to lessons.md |
-| 5 same-error loops | STOP. Log error pattern |
-| Rate limit: 100 tool calls this sprint | STOP. Save state |
-| Test failures > 3 for same test | STOP. Need human input |
-| File edited > 5 times same sprint | WARNING. > 10 = STOP |
-| Wall-clock time > 60 minutes | STOP. Save state, report progress (configurable via SPRINT_TIMEOUT env var) |
+### Adaptive Limits (scale with task size)
+
+|                | XS  | S   | M    | L    | XL   |
+|----------------|-----|-----|------|------|------|
+| tool_calls     | 20  | 50  | 100  | 200  | 300  |
+| wall_clock     | 5m  | 15m | 60m  | 120m | 180m |
+| no_progress    | 2   | 2   | 3    | 4    | 5    |
+| same_error     | 2   | 3   | 5    | 5    | 7    |
+| file_edits     | 3   | 5   | 10   | 15   | 20   |
+
+Determine task size at sprint start (see implementer.md Task Size Classification).
+
+### Escalation Chain (instead of immediate STOP)
+
+When a circuit breaker condition triggers, do NOT stop immediately. Escalate:
+
+**Level 1: Self-Diagnose (2 min max)**
+- Read last 3 error messages
+- Identify pattern: same error? different errors? no progress?
+- If diagnosis reveals a simple fix → apply and continue
+
+**Level 2: Escalate to Another Agent**
+- Same error 3x → invoke **simplifier** (decompose the problem into smaller parts)
+- No progress → invoke **researcher** (find alternative approach, search memory globally)
+- If the other agent provides a solution → return to implementer with new context
+
+**Level 3: STOP with Post-Mortem**
+- If Level 2 also fails → STOP
+- Generate mandatory post-mortem (see below)
+- Present to user with clear next step
+
+### Post-Mortem (MANDATORY on any STOP)
+
+Write to `tasks/current.md`:
+```markdown
+## Circuit Breaker Post-Mortem — [date]
+- **Trigger**: [what condition caused STOP]
+- **Task**: [what was being worked on]
+- **Timeline**: [what was tried, in order]
+- **Root cause**: [best guess at why it failed]
+- **What would help**: [specific next step for user or next session]
+- **Prevention**: [candidate rule for lessons.md]
+```
+
+Also save to Engram: `mem_save(topic_key="post-mortem:{task_slug}", ...)`
+Also write lesson to `tasks/lessons.md` with Error → Root Cause → Rule format.
 
 ## Sprint Resume
 If sprint is interrupted, save state to `tasks/sprint-state.md`:

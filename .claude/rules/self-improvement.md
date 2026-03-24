@@ -15,6 +15,29 @@ After EVERY user correction or discovered mistake:
    ```
 3. Never skip this step. This is how the system learns.
 
+## Correction Classifier (BEFORE logging)
+
+When user corrects you, classify the correction type first:
+
+| Type | Signal | Action |
+|------|--------|--------|
+| **STYLE** | "Use camelCase" / "shorter names" / "no comments" | Save to brain/02-projects/ as user preference. Do NOT log to lessons.md. |
+| **BUG** | "This breaks X" / "regression" / "data loss" | Log to lessons.md + Engram. Immediate fix + prevention rule. |
+| **KNOWLEDGE_GAP** | "That API works differently" / "wrong syntax" | Log to lessons.md + Engram. Update domain knowledge. |
+| **DESIGN_DISAGREEMENT** | "I think we should use X instead" | Present trade-offs. User decides. Save to brain/04-decisions/. |
+| **MISUNDERSTANDING** | "No, I meant the OTHER file" | Clarify and retry. No logging needed. |
+
+Only BUG and KNOWLEDGE_GAP go to lessons.md. This keeps signal-to-noise ratio high.
+
+## Dual-Write Protocol
+
+After writing to lessons.md, ALSO save to Engram (if available):
+```
+mem_save(topic_key="lesson:{brief_slug}", category="learning",
+  content="Error: ... Root cause: ... Rule: ...")
+```
+This makes lessons searchable via `mem_search` across sessions and projects.
+
 ## At Session Start
 
 1. Read `tasks/lessons.md` — avoid repeating past mistakes
