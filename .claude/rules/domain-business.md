@@ -11,6 +11,11 @@
 8. **Whole Life Insurance as Investment** — Fees eat 50-70% of first-year premium. Instead: term life + invest the difference in index funds.
 9. **Active Fund Management** — 90% underperform S&P 500 over 15 years (SPIVA). Instead: low-cost index funds (Vanguard, Fidelity).
 10. **Building Before Selling** — 43% of startup failures = no market need. Instead: validate demand with landing pages/pre-sales first.
+11. **Ignoring Cash Flow Timing** — 82% of small businesses fail due to cash flow problems (U.S. Bank). Profitable on paper ≠ cash in bank. Instead: monitor weekly cash position, negotiate payment terms aggressively.
+12. **Partnership Deals Without Clear Terms** — 60-70% of business alliances fail (HBR). Instead: define KPIs, revenue sharing, IP ownership, exit clauses, and 90-day milestone before signing.
+13. **Pricing Too Low for Market Share** — Low prices attract price-sensitive customers who churn fastest and resist increases. Instead: price on value, test elasticity with cohorts.
+14. **Consensus-Driven Decisions** — Full agreement defaults to lowest common denominator. Instead: "disagree and commit" (Bezos model) — debate vigorously, decide fast, execute fully.
+15. **Revenue = Profit Confusion** — WeWork showed massive revenue while losing billions. Instead: track gross margin, net margin, and free cash flow alongside revenue.
 
 ## ALWAYS Apply (Evidence-Based Principles)
 1. **Validate Before Building** — Landing pages, pre-sales, concierge MVPs. Catch "no market need" at near-zero cost.
@@ -23,6 +28,11 @@
 8. **18+ Months Cash Runway** — Median time last-raise-to-death is 22 months (CB Insights). Cash = options.
 9. **Fire Fast, Hire Slow** — One toxic employee reduces team performance 30-40% (Harvard). Structured interviews, 30/60/90 reviews.
 10. **Diversify Across Asset Classes** — Markowitz: portfolio diversification is the only free lunch in finance. Stocks + bonds + real estate.
+11. **Manage Cash Flow Weekly** — Track gross and net burn rate separately; 65% of startups underestimate spending by 20%+ (Brex). Know exact months of runway at all times.
+12. **Pricing Psychology: Anchor High** — Present premium option first; middle tier becomes the "reasonable" choice. 3 tiers max to avoid choice paralysis.
+13. **Partnership Criteria: 90-Day Milestones** — Every partnership must have measurable deliverables within 90 days. Kill partnerships that miss milestones. Only 33% of companies have formal partnering strategies despite 85% calling them "essential."
+14. **Pre-Mortem Before Major Initiatives** — Ask "assume this failed — why?" before committing resources. Klein's research: increases ability to identify failure reasons by 30%.
+15. **Win/Loss Analysis on Every Significant Deal** — Interview won AND lost customers post-deal. Reveals real competitive positioning that sales intuition misses.
 
 ## For Details
 See `brain/03-knowledge/domains/business-startups-investments.md` and `financial-planning.md` for full practices.
