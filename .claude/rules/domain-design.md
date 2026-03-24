@@ -11,6 +11,11 @@
 8. **Ignoring Cognitive Load** — Miller's Law: 7+/-2 chunks. Hick's Law: more options = slower decisions. Instead: chunk info, progressive disclosure.
 9. **Using 4+ Fonts** — Creates visual chaos, resets cognitive processing ~20%. Instead: max 2-3 typefaces.
 10. **Pixel-Perfect Obsession** — Chasing pixel alignment kills shipping speed. Instead: define visual tolerance, focus polish on high-impact points.
+11. **Insufficient Color Contrast** — 96.3% of top 1M pages fail WCAG (WebAIM). DETECT: contrast ratio <4.5:1 for normal text. Instead: WCAG AA minimum, test with contrast checker.
+12. **Ignoring Fitts's Law** — Tiny touch targets and distant sequential actions increase errors. Apple HIG minimum: 44x44px. Instead: size targets proportional to importance.
+13. **Anti-Fun Exceeding Fun** — Game mechanics where negative experience for opponent > positive for user (hard CC, stunlocks). Instead: ensure fun-for-user outweighs anti-fun-for-opponent (Zileas).
+14. **Balance by Spreadsheet Only** — Math alone cannot predict player behavior; players find exploits designers never anticipated. Instead: spreadsheets for foundation + playtesting for truth.
+15. **Mandatory Account Before Value** — Requiring signup before users experience product value. Each friction point loses 3-8%. Instead: let users try core value first, sign up after.
 
 ## ALWAYS Apply (Principles)
 1. **Continuous Discovery** — Weekly customer interviews + assumption testing keeps decisions evidence-based.
@@ -23,6 +28,11 @@
 8. **Error-State-First Design** — Design error states and empty states before the happy path.
 9. **Visual Hierarchy via Contrast/Space** — Whitespace increases comprehension 20%. Use size, weight, color to guide attention.
 10. **Subtractive Design** — Remove until only essential remains. A game/product is done when nothing can be taken away.
+11. **Keyboard-First Interactive Design** — All interactive elements must work with keyboard before adding mouse/touch. Serves power users + screen readers + motor-impaired (WCAG 2.1 SC 2.1.1).
+12. **Respect prefers-reduced-motion** — ~35% of adults over 40 have vestibular disorders. Check the media query; provide static alternatives for all animations.
+13. **Negative Feedback Loops in Games** — Catch-up mechanics prevent snowball effects that drive losing players to quit. Mario Kart's item distribution is the gold standard.
+14. **Cognitive Load Budget: 4 chunks max per decision** — Cowan's updated limit (2001) is 4+/-1, not Miller's 7. Design screens around 3-5 actionable items, not 7-9.
+15. **Game Juice = Layered Feedback** — Visual + audio + haptic on every meaningful action. Audio alone is the cheapest high-impact improvement. Always include "reduce motion" option.
 
 ## For Details
 See `brain/03-knowledge/domains/product-design-ux.md`, `graphic-design-and-writing.md`, `game-design.md` for full practices.
