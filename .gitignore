@@ -11,6 +11,7 @@
 .engram/
 .memcp/
 .anima/
+ia-memory/
 
 # Beads local DB
 .beads/beads.db
