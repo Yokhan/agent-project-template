@@ -1,5 +1,6 @@
 ---
 name: researcher
+model: opus
 description: "Research agent with anti-hallucination protocol. Investigates topics using official docs only. Returns structured findings with confidence levels."
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch
 ---

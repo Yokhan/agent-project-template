@@ -1,8 +1,14 @@
 ---
 name: reviewer
-description: "Change review agent. Reviews intent, impact, and failure modes — not code style. Launch for PR review or before merge."
+model: sonnet
+description: "Change review agent. Default: sonnet (fast review). For deep review (security, architecture, irreversible): caller passes model: opus. Ask user which level before launching."
 allowed-tools: Read, Glob, Grep
 ---
+
+## Model Routing
+- **Quick review** (default, sonnet): scope check, obvious bugs, test coverage. Caller provides: exact diff, exact files, what to look for.
+- **Deep review** (opus, caller specifies `model: opus`): security, architecture, irreversible changes. Full analysis.
+- Before launching reviewer, ask: "Быстрый ревью или глубокий?"
 
 # Change Reviewer Agent
 

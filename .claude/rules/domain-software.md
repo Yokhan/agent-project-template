@@ -11,11 +11,6 @@
 8. **No Tests Before Refactoring** — Refactoring without test coverage introduces silent regressions. Instead: write characterization tests first.
 9. **Reinventing Crypto/Auth** — Custom security code has near-100% vulnerability rate. Instead: use battle-tested libraries (bcrypt, OAuth).
 10. **Monolithic Deployments at Scale** — Single deployable with 50+ devs creates merge hell and 2-week release cycles. Instead: modular architecture with independent deployment.
-11. **Testing Implementation, Not Behavior** — Tests coupled to internal structure break on every refactor. DETECT: test mocks >3 internal methods. Instead: test public API inputs/outputs only.
-12. **Hardcoded Secrets in Source** — API keys, passwords in code leak via git history. DETECT: grep for "password=", "secret=", base64 blobs. Instead: env vars, vault, .env in .gitignore.
-13. **N+1 Query Problem** — Fetching related records in a loop; 100 items = 101 DB calls. DETECT: ORM logs showing repeated SELECT per row. Instead: eager loading, batch queries, DataLoader pattern.
-14. **Unbounded Queries** — SELECT * without LIMIT on user-facing paths; one large table = OOM or timeout. Instead: always paginate, set max page size, use cursor-based pagination.
-15. **Snapshot Test Overuse** — Snapshots of large objects become "approve all" rubber stamps hiding real regressions. Instead: assert on specific fields that matter; snapshots only for serialized outputs.
 
 ## ALWAYS Apply (Principles)
 1. **YAGNI** — Don't build it until you need it. Unused code is maintenance debt.
@@ -28,11 +23,6 @@
 8. **Observability Triad** — Logs + metrics + traces from day one. You cannot fix what you cannot see.
 9. **Database Migrations as Code** — Schema changes versioned and reversible. Never manual DDL in production.
 10. **Property-Based Testing** — For pure functions with wide input space, generate random inputs. Catches edge cases unit tests miss.
-11. **Input Validation at Boundaries** — Sanitize and validate all external input (user, API, file) at the system edge. Interior code trusts boundary-validated data.
-12. **Feature Flags for All Releases** — Ship behind flags; enables gradual rollout, instant rollback, and A/B testing without redeployment.
-13. **Dependency Pinning + Audit** — Pin exact versions in lock files. Run npm audit / pip audit / cargo audit in CI. Never use * or latest.
-14. **Connection Pooling + Timeouts** — Every external call (DB, HTTP, queue) must have a connection pool, timeout, and retry-with-backoff. Unbounded connections = cascading failure.
-15. **Test Pyramid** — Many unit tests (fast, isolated), fewer integration tests (real dependencies), minimal E2E tests (full stack). Inverted pyramids are slow and brittle.
 
 ## For Details
 See `brain/03-knowledge/domains/programming-and-architecture.md` for full 50+50 practices with sources.

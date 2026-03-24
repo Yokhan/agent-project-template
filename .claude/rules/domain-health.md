@@ -11,11 +11,6 @@
 8. **Antidepressants Work Like "Happy Pills"** — Takes 4-8 weeks; ~50% respond to first trial. Serotonin hypothesis oversimplified (Moncrieff 2022). Instead: SSRIs + therapy combined is most effective.
 9. **Stretching Prevents Injury** — Cochrane: static stretching before exercise does NOT reduce injury risk. Instead: dynamic warm-up, progressive loading.
 10. **Cardio-Only for Fat Loss** — Resistance training increases RMR, preserves muscle during deficit. Instead: combined resistance + cardio + nutrition.
-11. **Elimination Diets Without Medical Reason** — Removing gluten, dairy, etc. without diagnosed intolerance has no evidence of benefit and risks nutritional deficiency. Instead: consult dietitian, test for actual allergies/intolerances.
-12. **"Mental Illness Is Just Chemical Imbalance"** — Biopsychosocial model: genetics + environment + psychology + social factors all contribute. Oversimplifying to chemistry alone stigmatizes and limits treatment options.
-13. **NSAIDs for All Pain** — Chronic NSAID use increases GI bleeding risk 3-5x and cardiovascular events. Instead: targeted use, minimum effective dose, consider acetaminophen or physical therapy first.
-14. **Ignoring Sleep Debt Accumulation** — Sleep debt is cumulative; 6h/night for 10 days = cognitive impairment of 24h total sleep deprivation (Van Dongen 2003). Cannot be fully repaid by weekend catch-up.
-15. **Ice (Cryotherapy) for All Injuries** — RICE protocol creator (Dr. Mirkin) retracted his recommendation. Ice delays inflammatory healing process. Instead: active recovery, gentle movement, compression for swelling.
 
 ## ALWAYS Apply (Evidence-Based Principles)
 1. **Sleep 7-9 Hours** — <6h doubles cardiovascular risk, impairs cognition equivalent to legal intoxication. Non-negotiable foundation.
@@ -28,11 +23,6 @@
 8. **Evidence Hierarchy** — Cochrane reviews > RCTs > cohort studies > case reports > expert opinion. ALWAYS check evidence quality.
 9. **Dose-Response for Exercise** — Some is better than none. Benefits plateau around 300min/week moderate activity. Diminishing returns, not zero returns.
 10. **Consult Professionals for Medical Decisions** — AI should NEVER replace medical diagnosis or treatment. Always recommend consulting qualified healthcare providers.
-11. **Mediterranean Diet Pattern** — Strongest evidence for cardiovascular protection and all-cause mortality reduction (PREDIMED trial, multiple meta-analyses). Emphasize vegetables, fruits, whole grains, olive oil, fish.
-12. **Mental Health: Therapy + Medication > Either Alone** — Combined CBT + pharmacotherapy outperforms monotherapy for depression and anxiety across multiple meta-analyses. First-line: CBT, not medication alone.
-13. **48-72h Recovery Between Same Muscle Groups** — Muscle protein synthesis peaks at 24-48h post-training. Training same group daily impairs recovery and adaptation. Instead: split routines or full-body with 48h gaps.
-14. **Fiber 25-30g/day Minimum** — Meta-analyses link each 10g/day increase with 10% reduction in all-cause mortality. Most adults get <15g. Sources: vegetables, legumes, whole grains.
-15. **Creatine Monohydrate** — Most researched sports supplement. 5g/day improves strength/power output 5-10% (Cochrane). Safe long-term. No need for loading phase or cycling.
 
 ## For Details
 See `brain/03-knowledge/domains/neurophysiology-and-medicine.md` and `crisis-fitness-productivity.md` for full practices.

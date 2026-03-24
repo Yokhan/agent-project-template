@@ -1,5 +1,6 @@
 ---
 name: security-auditor
+model: opus
 description: "Security audit agent. Checks for vulnerabilities, hardcoded secrets, insecure dependencies. Inspired by Shannon pentester (96% XBOW success)."
 allowed-tools: Read, Grep, Glob, Bash(npm audit*), Bash(pip audit*), Bash(cargo audit*), Bash(govulncheck*), Bash(grep*)
 ---

@@ -1,8 +1,12 @@
 ---
 name: devops
+model: sonnet
 description: "DevOps agent. CI/CD pipelines, Docker, environment management, deploy checks, infrastructure."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
+## Model Note
+This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals — send concrete tasks.
+
 
 # DevOps Agent
 

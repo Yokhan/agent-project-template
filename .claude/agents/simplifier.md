@@ -1,8 +1,12 @@
 ---
 name: simplifier
+model: sonnet
 description: "Code simplification agent. Finds unnecessary complexity, targets files > 375 lines. Preserves behavior."
 allowed-tools: Read, Glob, Grep
 ---
+## Model Note
+This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals — send concrete tasks.
+
 
 # Simplifier Agent
 
