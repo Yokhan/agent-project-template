@@ -45,7 +45,7 @@ This makes lessons searchable via `mem_search` across sessions and projects.
 3. Check `brain/01-daily/` for recent session logs if context needed
 4. Initialize MCP memory if available:
    - Call `mcp__engram__mem_session_start` with project name and date
-   - Call `mcp__memcp__init` with project path (only if `ia-memory/` doesn't exist yet)
+   - If Engram unavailable: memory operations degrade to file-only (tasks/lessons.md, brain/). See memory-router fallback.
 
 ## Promotion Cycle
 

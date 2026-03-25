@@ -73,11 +73,27 @@ Examples:
 - `rule:activation:domain-health` — rule effectiveness tracking
 - `benchmark:v2.4.0` — benchmark results for template version
 
+## Fallback: Engram Unavailable
+
+If Engram MCP is not connected or not responding, degrade gracefully:
+
+| Normal (Engram) | Fallback (file-only) |
+|-----------------|---------------------|
+| `mem_save(topic_key, content)` | Append to `tasks/.memory-fallback.md` with same format |
+| `mem_search(query)` | Grep `tasks/lessons.md` + `brain/03-knowledge/` |
+| `mem_session_start` | Skip (session-start.sh handles log) |
+| `mem_update(id, content)` | Find and edit entry in `.memory-fallback.md` |
+| `mem_delete(id)` | Remove entry from `.memory-fallback.md` |
+
+Detection: if first `mem_save` call errors with MCP connection failure → switch to fallback for rest of session. Do NOT retry MCP calls after first failure.
+
+When Engram becomes available again: import `.memory-fallback.md` entries into Engram, then clear the file.
+
 ## Contextual Memory Preload
 
 Before editing any file, agents should:
 1. Extract module name from path (e.g., `src/features/auth/` → "auth")
-2. `mem_search("{module_name}")` — find related bugs, decisions, patterns
+2. `mem_search("{module_name}")` — find related bugs, decisions, patterns (or grep fallback files)
 3. Read results before writing code
 
 This prevents repeating past mistakes in the same area.

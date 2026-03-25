@@ -193,16 +193,17 @@ brain/
 
 ## Optional Integrations
 
-| Integration | What | No GPU/Docker needed |
-|-------------|------|---------------------|
-| **Engram** | Zero-dep Go binary memory (SQLite+FTS5) | ✅ |
-| **claude-memory-mcp** | Hybrid search memory | ✅ |
-| **MemCP** | 5-tier search, 20x token savings | ✅ |
-| **Telegram** | Remote control from phone | ✅ |
-| **Beads** | Git-native task tracker | ✅ |
-| **Obsidian MCP** | Direct vault access via MCP | ✅ |
+| Integration | What | Required? |
+|-------------|------|-----------|
+| **Engram** | Persistent memory (SQLite+FTS5, zero-dep Go binary) | **Yes** |
+| **Telegram** | Remote control from phone | No |
+| **Beads** | Git-native task tracker | No |
+| **Obsidian MCP** | Direct vault access via MCP | No |
+| **CodeGraphContext** | Code dependency graph | No |
 
-See `integrations/*/README.md` for setup instructions.
+Auto-setup: `bash scripts/bootstrap-mcp.sh --install`
+For Zed AI chat: `bash scripts/bootstrap-mcp.sh --install --zed`
+See `integrations/*/README.md` for details.
 
 ## Sources
 

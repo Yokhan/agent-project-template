@@ -10,11 +10,14 @@ Deep analysis across all systems. Run weekly or after significant milestones.
 ## Data Sources
 
 1. `tasks/lessons.md` — error patterns, correction categories
-2. Engram `mem_search(topic_key="metrics:")` — agent performance (#8)
-3. Engram `mem_search(topic_key="rule:activation:")` — rule effectiveness (#23)
+2. Engram `mem_search(topic_key="metrics:")` — agent performance
+3. Engram `mem_search(topic_key="rule:activation:")` — rule effectiveness
 4. Engram `mem_search(topic_key="lesson:")` — learning patterns
 5. `brain/01-daily/` — session logs for the period
 6. `git log` — commits, branches, activity
+7. `tasks/.memory-fallback.md` — fallback entries if Engram was unavailable
+
+If Engram is not connected: use sources 1, 5, 6, 7 only. Data will be less complete but retrospective still works.
 
 ## Output Sections
 

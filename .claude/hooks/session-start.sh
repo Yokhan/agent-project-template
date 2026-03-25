@@ -85,4 +85,26 @@ if [ -f tasks/lessons.md ]; then
   fi
 fi
 
+# MCP health check: verify Engram is reachable
+if [ -f ".mcp.json" ]; then
+  HAS_ENGRAM=$(python3 -c "import json; d=json.load(open('.mcp.json')); print('yes' if 'engram' in d.get('mcpServers',{}) and not d['mcpServers']['engram'].get('disabled') else 'no')" 2>/dev/null || echo "no")
+  if [ "$HAS_ENGRAM" = "yes" ]; then
+    ENGRAM_CMD=$(python3 -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['engram']['command'])" 2>/dev/null || echo "")
+    if [ -n "$ENGRAM_CMD" ] && ! command -v "$ENGRAM_CMD" &>/dev/null 2>&1; then
+      echo "WARNING: Engram configured but binary not found ($ENGRAM_CMD). Memory will use file fallback."
+      echo "  Fix: bash scripts/bootstrap-mcp.sh --install"
+    fi
+  fi
+else
+  echo "INFO: No .mcp.json found. Run: bash scripts/bootstrap-mcp.sh --install"
+fi
+
+# Memory fallback file — import reminder
+if [ -f tasks/.memory-fallback.md ] && [ -s tasks/.memory-fallback.md ]; then
+  FALLBACK_COUNT=$(grep -c "^## " tasks/.memory-fallback.md 2>/dev/null || echo 0)
+  if [ "$FALLBACK_COUNT" -gt 0 ]; then
+    echo "RECOVERY: $FALLBACK_COUNT entries in tasks/.memory-fallback.md — import to Engram when available"
+  fi
+fi
+
 exit 0

@@ -13,7 +13,7 @@ After completing any task (XS through XL), the agent should save metrics.
 
 ## Metrics Format
 
-Save to Engram:
+Save to Engram (or `tasks/.memory-fallback.md` if Engram unavailable — see memory-router fallback):
 ```
 mem_save(topic_key="metrics:{agent_name}", content="""
 Task: {task description or issue ID}
@@ -46,6 +46,7 @@ TTL: {date + 3 months}
 ## Aggregation (for /weekly and /retrospective)
 
 Search: `mem_search(topic_key="metrics:")` — returns all agent metrics.
+Fallback: grep `tasks/.memory-fallback.md` for `metrics:` entries.
 
 Aggregate by:
 - **Agent**: which agent is most/least accurate?

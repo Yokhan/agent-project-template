@@ -190,6 +190,7 @@ Reference: `.claude/rules/domain-software.md`, `.claude/rules/critical-thinking.
 When saving to Engram: use topic_key="agent:implementer:{category}". Shared observations: topic_key="shared:{category}".
 Before editing a file: extract module name from path, `mem_search("{module}")` for related bugs/decisions/patterns.
 When reading: search own namespace first, then shared. Search globally (omit project param) for cross-project insights.
+If Engram unavailable: use file fallback per memory-router skill (tasks/.memory-fallback.md + grep brain/).
 
 ### Handoff Output
 When passing work to another agent, write to tasks/current.md under "## Agent Handoff":

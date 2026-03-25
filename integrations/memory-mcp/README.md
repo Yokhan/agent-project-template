@@ -1,103 +1,92 @@
 # Memory MCP Integration
 
-Persistent memory across Claude Code sessions. All options work WITHOUT Ollama, Docker, or GPU.
+Persistent memory across Claude Code sessions. Required for full template functionality.
 
-## Option 1: Engram (Recommended — Simplest)
+## Engram (REQUIRED — Default Memory Backend)
 
-Zero-dependency Go binary. Single file, SQLite + FTS5.
+Zero-dependency Go binary. Single file, SQLite + FTS5. All template features depend on this.
 
-### Install
+### Auto-Install (recommended)
+
+```bash
+bash scripts/bootstrap-mcp.sh --install
+```
+
+This detects your OS/architecture, downloads the binary, and configures `.mcp.json`.
+
+### Manual Install
+
 1. Download binary from [GitHub Releases](https://github.com/Gentleman-Programming/engram/releases)
-2. Place in PATH or project root
+2. Place in PATH (`~/.local/bin/` or project root)
 3. Add to Claude Code:
    ```
    claude mcp add engram -- engram mcp
    ```
 
+### For Zed AI Chat Panel
+
+Zed uses `context_servers` in its own settings.json, NOT `.mcp.json`.
+
+```bash
+bash scripts/bootstrap-mcp.sh --install --zed
+```
+
+Or manually add to Zed settings.json (`~/.config/zed/settings.json` on Linux/Mac, `%APPDATA%/Zed/settings.json` on Windows):
+
+```json
+{
+  "context_servers": {
+    "engram": {
+      "command": {
+        "path": "engram",
+        "args": ["mcp"]
+      }
+    }
+  }
+}
+```
+
 ### Tools Available
-- `mem_save(title, type, what, why, where, learned)` — save structured memory
+- `mem_save(topic_key, content)` — save structured memory
 - `mem_search(query)` — full-text search
+- `mem_session_start/end` — session lifecycle
+- `mem_update/delete` — manage observations
 
 ### Storage
 - `~/.engram/engram.db` (SQLite)
 - Git sync: `engram sync` for cross-machine transfer
 
----
+### Verify
 
-## Option 2: claude-memory-mcp (Recommended — Powerful)
-
-TypeScript + better-sqlite3. Hybrid search with auto-summarization.
-
-### Install
 ```bash
-npm install -g claude-memory-mcp
-claude mcp add memory -- claude-memory-mcp
+bash scripts/bootstrap-mcp.sh --check
 ```
 
-### Features
-- Hybrid scoring: recency + importance + frequency
-- Auto-summarization + entity extraction
-- Token-aware loading (respects context window)
-- 90-day TTL with soft-delete + audit trail
+### Fallback (when Engram is unavailable)
 
-### Storage
-- `~/.memory-mcp/memory.db`
+Template degrades gracefully: memory operations write to `tasks/.memory-fallback.md` instead. When Engram becomes available, entries are imported. See `.claude/skills/memory-router/SKILL.md`.
 
 ---
 
-## Option 3: MemCP (Most Powerful)
+## Deprecated Options
 
-5-tier search: BM25 → fuzzy → semantic → hybrid RRF fusion. 20x token savings.
+The following were previously supported but are now deprecated. The bootstrap script auto-disables them if found.
 
-### Install
-```bash
-npm install -g memcp
-claude mcp add memcp -- memcp serve
-```
+| Server | Status | Reason |
+|--------|--------|--------|
+| claude-memory-mcp | DEPRECATED | Engram covers all use cases with simpler setup |
+| MemCP | DEPRECATED | Complex, Node.js dependency, Engram preferred |
+| Anima | DEPRECATED | Not actively maintained |
 
-### Features
-- 24 MCP tools
-- 4-graph structure (semantic, temporal, causal, entity)
-- Built-in secret detection
-- 3-zone retention: Active → Archive → Purge
-- 4 sub-agents (analyzer, mapper, synthesizer, entity-extractor)
-
-### Storage
-- `~/.memcp/graph.db`
+If you have these configured, `bootstrap-mcp.sh` will set `"disabled": true` on them (never removes, preserves config).
 
 ---
-
-## Option 4: Anima (Token-Budgeted)
-
-Automatic token budget management + memory decay.
-
-### Install
-```bash
-pip install anima-mcp
-claude mcp add anima -- python -m anima.server
-```
-
-### Features
-- Global install (works across all projects)
-- Loads max 10% of context budget
-- Impact tags: CRITICAL/HIGH/MEDIUM/LOW
-- "Dream processing" — auto-consolidation between sessions
-
----
-
-## Which to Choose?
-
-| Need | Choose |
-|------|--------|
-| Simplest setup, no Node.js | **Engram** |
-| Best search quality | **claude-memory-mcp** |
-| Maximum token savings | **MemCP** |
-| Auto token management | **Anima** |
 
 ## After Installing
 
-Add to CLAUDE.md:
+Run health check:
+```bash
+bash scripts/bootstrap-mcp.sh --check
 ```
-## Memory
-Using [chosen MCP] for persistent memory. Search memory at session start for relevant context.
-```
+
+The session-start hook will warn if Engram is configured but not responding.

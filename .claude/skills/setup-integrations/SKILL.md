@@ -17,9 +17,20 @@ Read `integrations/memory-mcp/README.md` for full details.
 2. `claude mcp add engram -- engram mcp`
 3. Done. Agent now has `mem_save` and `mem_search`.
 
-**Alternative (claude-memory-mcp — more powerful):**
-1. `npm install -g claude-memory-mcp`
-2. `claude mcp add memory -- claude-memory-mcp`
+**Auto-install (detects OS, downloads binary):**
+```bash
+bash scripts/bootstrap-mcp.sh --install
+```
+
+**Verify installation:**
+```bash
+bash scripts/bootstrap-mcp.sh --check
+```
+
+**For Zed AI chat panel (in addition to Claude Code):**
+```bash
+bash scripts/bootstrap-mcp.sh --install --zed
+```
 
 ### 2. Telegram Bot (remote control from phone)
 Read `integrations/telegram/README.md` for full details.
