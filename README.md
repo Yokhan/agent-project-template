@@ -1,17 +1,25 @@
 # Agent Project Template v2
 
-[![Template Version](https://img.shields.io/badge/template-v2.4.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v2.5.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
 Self-deploying AI-agent optimized project template with persistent memory, autonomous work loops, self-improvement, and production-proven hooks.
 
+> **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
+
 ## Quick Start
 
-1. **Run `setup.bat` (Windows) or `./setup.sh` (Linux/macOS)** — enter project name → full agent-ready structure created
-2. **Open the project** in Claude Code or Zed
-3. **Tell Claude:** "Set up my project" or run `/setup-project`
-4. Claude configures everything for your stack automatically
+```bash
+git clone https://github.com/Yokhan/agent-project-template.git my-project
+cd my-project
+bash scripts/bootstrap-mcp.sh --install   # installs Engram + configures MCP
+claude                                     # open Claude Code
+```
+
+In Claude Code chat: `/setup-project` — Claude configures everything for your stack.
+
+For **Zed AI chat panel** (not terminal): add `--zed` flag to bootstrap.
 
 ## Updating Existing Projects
 
