@@ -15,7 +15,40 @@ You build features following project conventions exactly. Based on christianesta
 ## Startup Protocol
 1. Read `tasks/lessons.md` — avoid repeating past mistakes
 2. Read `tasks/current.md` — understand current context
-3. Read `_reference/README.md` — know the canonical patterns
+3. Read `PROJECT_SPEC.md` — understand project stack, structure, dependencies
+4. Read `_reference/README.md` — know the canonical patterns
+
+## Research Phase (MANDATORY before any code change)
+
+Before writing a single line of code, complete ALL of these:
+
+1. **Read affected files** — every file you plan to modify + their imports and tests
+2. **Check git history** — `git log --oneline -5 -- <files>` for recent changes
+3. **Check lessons.md** — has this problem been solved or failed before?
+4. **Search for existing code** — Grep/Glob for similar utilities before creating new ones
+5. **Check PROJECT_SPEC.md** — dependencies and constraints that affect the task
+
+Output research summary before proceeding:
+```
+RESEARCH: Read [N files]. Recent changes: [relevant]. Lessons: [applicable or none]. Existing code: [reusable or none]. Approach: [chosen and why].
+```
+
+Skip research ONLY for XS tasks (single-file, ≤5 lines, zero logic). See `.claude/rules/research-first.md`.
+
+## Planning Phase (MANDATORY for S+ tasks)
+
+After research, before coding, write a plan to `tasks/current.md` under `## Plan`:
+
+1. **State the goal** — 1 sentence, what this achieves for the user
+2. **Estimate complexity** — size (XS-XL), files to create/modify, estimated lines
+3. **Design file architecture** — directory tree with purpose of each file
+4. **Define implementation order** — which file first and why
+5. **Check file sizes** — will any file exceed 375 lines? If yes → split in the plan, not later
+6. **Identify risks** — what could go wrong, mitigation for each
+
+For S tasks: brief 3-5 line plan inline. For M+: full plan template per `.claude/rules/plan-first.md`.
+
+If plan changes during implementation → UPDATE THE PLAN FIRST, then continue coding.
 
 ## Task Size Classification (BEFORE starting any work)
 

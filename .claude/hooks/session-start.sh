@@ -32,6 +32,23 @@ if [ -f "tasks/current.md" ]; then
   head -3 tasks/current.md 2>/dev/null || true
 fi
 
+# PROJECT_SPEC.md freshness check
+if [ -f "PROJECT_SPEC.md" ]; then
+  spec_date=$(grep -oP '^\d{4}-\d{2}-\d{2}' PROJECT_SPEC.md 2>/dev/null | tail -1)
+  if [ -n "$spec_date" ]; then
+    spec_ts=$(date -d "$spec_date" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$spec_date" +%s 2>/dev/null || echo 0)
+    now_ts=$(date +%s 2>/dev/null || echo 0)
+    if [ "$spec_ts" -gt 0 ] && [ "$now_ts" -gt 0 ]; then
+      days_old=$(( (now_ts - spec_ts) / 86400 ))
+      if [ "$days_old" -gt 7 ]; then
+        echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
+      fi
+    fi
+  fi
+else
+  echo "ACTION: PROJECT_SPEC.md not found. Generate it now (see .claude/rules/context-first.md)."
+fi
+
 # Uncommitted changes warning
 unstaged=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 if [ "$unstaged" -gt 0 ] 2>/dev/null; then

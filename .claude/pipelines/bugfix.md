@@ -4,15 +4,24 @@ Systematic bug investigation and fix.
 
 ## Steps
 
+### 0. RESEARCH (researcher, Opus) | GATE: none
+- **Input**: bug report, error logs
+- **Actions**:
+  - Read affected files + their imports and tests
+  - `git log --oneline -5 -- <affected_files>` — did a recent change cause this?
+  - Check `tasks/lessons.md` — was this bug pattern seen before?
+  - Check `PROJECT_SPEC.md` — dependencies or constraints relevant to the bug
+  - Search Engram globally for similar bugs
+- **Output**: research context for reproduction and diagnosis
+
 ### 1. REPRODUCE (implementer, Sonnet) | GATE: none
-- **Input**: bug report, error logs, steps to reproduce
+- **Input**: bug report, error logs, research context, steps to reproduce
 - **Output**: minimal reproduction case, confirmed error
 - **Uses**: debug skill step 1
 
 ### 2. DIAGNOSE (researcher, Opus) | GATE: none
-- **Input**: reproduction case, affected files
+- **Input**: reproduction case, affected files, research context
 - **Output**: root cause analysis, affected code paths
-- **Search**: Engram globally for similar bugs, check lessons.md
 - **Uses**: debug skill steps 2-3
 
 ### 3. FIX (implementer, Sonnet) | GATE: typecheck

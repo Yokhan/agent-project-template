@@ -1,61 +1,76 @@
----
-status: idle
-current_task: ""
-branch: ""
-blockers: []
-next_steps: []
-last_updated: ""
----
+# Current Task — Three Template Changes
 
-# Current Task — Session Handoff
+## 1. Project Self-Scan + Living Spec
 
-This file maintains continuity between agent sessions. Before starting work, read this file to understand what was in progress. Before ending a session, update this file with current state so the next session can pick up seamlessly.
+Every project must scan itself at session start and maintain PROJECT_SPEC.md.
 
----
+### Add rule: `.claude/rules/context-first.md`
+- At session start: scan project structure, read recent git log (5 commits), check PROJECT_SPEC.md freshness
+- If PROJECT_SPEC.md exists and older than 7 days → warn
+- If doesn't exist → generate on first session
 
-## Active Task
+### PROJECT_SPEC.md (auto-generated, project root):
+- What this project IS (1-2 sentences)
+- Stack and key dependencies
+- File structure map
+- What it provides (APIs, URLs, exports)
+- What it depends on (other projects, services)
+- Current state (from tasks/current.md + git log)
+- Last scan date
 
-**Status**: IDLE
-**Branch**: —
-**Goal**: —
-**Started**: —
-
-## Context
-
-<!-- What is the broader objective? What decisions have already been made? -->
-
-## Progress
-
-<!-- What has been completed so far? List files modified, tests passing, etc. -->
-
-- [ ] ...
-
-## Blocked / Open Questions
-
-<!-- Anything that needs user input or external resolution before continuing -->
-
-## Next Steps
-
-<!-- Ordered list of what the next session should do first -->
-
-1. ...
-
-## Modified Files This Session
-
-<!-- Track all files touched so the next session knows what changed -->
-
-| File | Change Type | Status |
-|------|-------------|--------|
-| — | — | — |
-
-## Test State
-
-<!-- Last known test results -->
-
-- **Unit tests**: not run
-- **Type check**: not run
-- **Lint**: not run
+### Update session-start.sh:
+- Check PROJECT_SPEC.md freshness → warn if stale
 
 ---
 
-*Last updated: —*
+## 2. Mandatory Research Before Execution
+
+### Add rule: `.claude/rules/research-first.md`
+Before ANY task that modifies code/content:
+1. READ relevant files + their neighbors, imports, tests
+2. CHECK git log for recent changes to those files
+3. CHECK tasks/current.md and tasks/lessons.md
+4. CHECK PROJECT_SPEC.md for dependencies
+5. If cross-project → CHECK ecosystem.md
+6. State what you found BEFORE starting work
+
+### Update implementer.md:
+- Mandatory "Research Phase" before implementation
+- Agent must output what it read and found before coding
+
+### Update pipelines:
+- Every pipeline starts with Research step
+
+---
+
+## 3. Writer Agent Fix (from previous task)
+
+### Update writer.md:
+- Before ANY text: search project for constitution.md, style guides, customer passports, BAN-LIST
+- Load platform-specific rules if specified
+- Opus model mandatory
+
+### Add rule: `.claude/rules/project-writing.md`
+- BAN-LIST enforcement
+- Anti-AI patterns
+- Platform adaptation
+- Human voice verification
+
+---
+
+## Success Criteria
+
+- [x] context-first.md rule created
+- [x] research-first.md rule created
+- [x] plan-first.md rule created (added: mandatory planning with file architecture)
+- [x] PROJECT_SPEC.md template in template root
+- [x] session-start.sh updated (PROJECT_SPEC.md freshness check)
+- [x] implementer.md has research phase + planning phase
+- [x] writer.md has pre-write protocol (constitution, style guide, BAN-LIST, customer passport search)
+- [x] writing.md rule created (universal, syncs to all projects)
+- [x] All 3 pipelines updated with Research step (feature, bugfix, security-patch)
+- [x] CLAUDE.md updated with new rules references + PROJECT_SPEC.md in context
+
+---
+
+_Last updated: 2026-03-26_

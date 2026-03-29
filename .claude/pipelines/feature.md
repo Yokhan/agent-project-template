@@ -6,12 +6,24 @@ Full lifecycle for adding a new feature.
 
 ### 1. RESEARCH (researcher, Opus) | GATE: none
 - **Input**: feature description, linked issue
-- **Output**: findings — existing patterns, affected files, risks, approach options
+- **Actions**:
+  - Read all affected files + their imports and tests
+  - `git log --oneline -5 -- <affected_files>` for recent changes
+  - Check `tasks/lessons.md` for related past mistakes
+  - Check `PROJECT_SPEC.md` for project constraints and dependencies
+  - Search for existing utilities (Grep/Glob) before planning new ones
+- **Output**: research summary — existing patterns, affected files, risks, reusable code, approach options
 - **Budget**: ~20 tool calls
 
 ### 2. PLAN (implementer, Sonnet) | GATE: user_approval
 - **Input**: research findings + feature description
-- **Output**: implementation plan — files, order, dependencies, tests needed
+- **Output**: written plan in `tasks/current.md` including:
+  - Goal (1 sentence)
+  - Complexity estimate (size, file count, line estimate)
+  - File architecture (directory tree with purpose per file)
+  - Implementation order with dependencies
+  - File size check (nothing >375 lines)
+  - Risks and mitigations
 - **Action**: present plan to user, wait for approval/annotations
 
 ### 3. IMPLEMENT (implementer, Sonnet) | GATE: typecheck

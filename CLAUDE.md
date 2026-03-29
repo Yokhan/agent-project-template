@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 2.5.0 -->
+<!-- Template Version: 2.6.0 -->
 
 AI-agent optimized project with persistent memory, autonomous hooks, and self-improving context infrastructure.
 
@@ -57,6 +57,10 @@ Not configured yet.
 - Template files (.claude/rules, agents, skills, commands without `project-` prefix) are read-only. Project customizations → `project-*` files.
 - When analyzing external material: extract PRINCIPLES first, never copy surface structure (.claude/rules/analysis-first.md)
 - Project-specific hooks go in `.claude/settings.local.json` (never synced, Claude Code merges both)
+- **Context first**: read PROJECT_SPEC.md + lessons.md + current.md at session start (.claude/rules/context-first.md)
+- **Research before code**: read affected files, git log, lessons before ANY code change (.claude/rules/research-first.md)
+- **Plan before build**: write file architecture + complexity estimate to tasks/current.md before coding S+ tasks (.claude/rules/plan-first.md)
+- **Writing guard**: all user-facing text passes anti-AI check, BAN-LIST, platform adaptation (.claude/rules/writing.md)
 
 ## Hooks
 
@@ -85,6 +89,7 @@ Rule: Never present blog/SEO-level evidence as best practice. Check evidence hie
 
 ## Context on demand
 
+- `PROJECT_SPEC.md` — auto-generated project overview (stack, structure, dependencies, state)
 - `docs/ARCHITECTURE.md` — modules and dependencies
 - `docs/DATA_DESIGN.md` — data schema
 - `docs/API_CONTRACTS.md` — API contracts
@@ -132,7 +137,7 @@ Risk override: auth/security/health → always 4 gates.
 - No confidence claims without having considered and rejected at least one alternative
 
 ## Template Version
-2.5.0 — Run `bash scripts/check-drift.sh` to verify template health.
+2.6.0 — Run `bash scripts/check-drift.sh` to verify template health.
 
 ## Compaction
 

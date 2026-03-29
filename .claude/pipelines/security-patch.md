@@ -4,8 +4,17 @@ Fix security vulnerability with full audit.
 
 ## Steps
 
-### 1. ASSESS (security-auditor, Opus) | GATE: none
+### 0. RESEARCH (researcher, Opus) | GATE: none
 - **Input**: vulnerability report, CVE, or audit finding
+- **Actions**:
+  - Read affected files + their imports
+  - `git log --oneline -5 -- <affected_files>` — recent changes to vulnerable code
+  - Check `tasks/lessons.md` — past security issues in this area
+  - Check `PROJECT_SPEC.md` — what depends on the affected code
+- **Output**: research context for security assessment
+
+### 1. ASSESS (security-auditor, Opus) | GATE: none
+- **Input**: vulnerability report, CVE, research context
 - **Output**: severity (P0-P3), affected code paths, attack surface, blast radius
 - **Priority**: P0/P1 → treat as hotfix-speed. P2/P3 → normal pipeline.
 
