@@ -34,15 +34,19 @@ fi
 
 # PROJECT_SPEC.md freshness check
 if [ -f "PROJECT_SPEC.md" ]; then
-  spec_date=$(grep -oP '^\d{4}-\d{2}-\d{2}' PROJECT_SPEC.md 2>/dev/null | tail -1)
+  # Cross-platform: use python for date math (works on Windows Git Bash, Linux, macOS)
+  spec_date=$(grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' PROJECT_SPEC.md 2>/dev/null | tail -1 | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
   if [ -n "$spec_date" ]; then
-    spec_ts=$(date -d "$spec_date" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$spec_date" +%s 2>/dev/null || echo 0)
-    now_ts=$(date +%s 2>/dev/null || echo 0)
-    if [ "$spec_ts" -gt 0 ] && [ "$now_ts" -gt 0 ]; then
-      days_old=$(( (now_ts - spec_ts) / 86400 ))
-      if [ "$days_old" -gt 7 ]; then
-        echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
-      fi
+    days_old=$(python3 -c "
+from datetime import datetime
+try:
+    d = datetime.strptime('$spec_date', '%Y-%m-%d')
+    print((datetime.now() - d).days)
+except:
+    print(-1)
+" 2>/dev/null || echo -1)
+    if [ "$days_old" -gt 7 ] 2>/dev/null; then
+      echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
     fi
   fi
 else
