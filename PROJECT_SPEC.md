@@ -31,6 +31,27 @@ scripts/       — _[purpose]_
 
 - _[External APIs, other projects, services]_
 
+## Module Dependency Map
+
+> Text-based for agent consumption. For visual graph → use Obsidian Graph View.
+
+```
+[module A] → [module B]    (imports types)
+[module A] → [module C]    (calls API)
+[module B] → [shared/utils] (uses helpers)
+[external: Stripe API] ← [module A] (payment processing)
+[external: PostgreSQL] ← [module B] (data storage)
+```
+
+_Key: `→` = depends on, `←` = consumed by external_
+
+## Cross-Project Dependencies
+
+> See `ecosystem.md` for full cross-project map.
+
+- _[Project X] consumes our [API/export]_
+- _We consume [Project Y]'s [API/export]_
+
 ## Current State
 
 - **Phase**: _[new / MVP / production / maintenance]_

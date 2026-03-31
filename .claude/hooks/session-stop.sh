@@ -19,4 +19,9 @@ if [ -d "brain/01-daily" ]; then
   echo "## Session stats: $commits commits today" >> "$f"
 fi
 
+# Collect session metrics
+if [ -f scripts/session-metrics.sh ]; then
+  bash scripts/session-metrics.sh 2>/dev/null || true
+fi
+
 exit 0

@@ -59,6 +59,15 @@ src/
 ### Risks & Mitigations
 - [Risk 1] → [Mitigation]
 - [Risk 2] → [Mitigation]
+
+### Plan B (mandatory for M+ tasks)
+If the primary approach fails at step [N], the fallback is:
+- [Alternative approach — what changes]
+- [What can be reused from Plan A]
+- [Signal to switch: what specific failure triggers Plan B]
+
+For S tasks: mental Plan B is fine (no need to write it out).
+For L/XL tasks: Plan B must be written and approved by user alongside Plan A.
 ```
 
 ## File Architecture Rules

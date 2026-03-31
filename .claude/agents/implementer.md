@@ -33,6 +33,10 @@ Output research summary before proceeding:
 RESEARCH: Read [N files]. Recent changes: [relevant]. Lessons: [applicable or none]. Existing code: [reusable or none]. Approach: [chosen and why].
 ```
 
+**Before fresh research**: check `tasks/.research-cache.md` — findings may already exist from a previous pass or pre-compaction save. Update existing entries, don't duplicate.
+
+**After research**: append findings to `tasks/.research-cache.md` (date, files, findings, status). This survives compaction.
+
 Skip research ONLY for XS tasks (single-file, ≤5 lines, zero logic). See `.claude/rules/research-first.md`.
 
 ## Planning Phase (MANDATORY for S+ tasks)

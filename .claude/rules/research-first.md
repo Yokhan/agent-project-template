@@ -37,6 +37,16 @@ RESEARCH:
 - Approach: [chosen approach and why]
 ```
 
+## Research Cache (`tasks/.research-cache.md`)
+
+Before running fresh research, check the cache — previous findings may still be valid.
+After completing research, append findings to the cache with date, files, discoveries, status.
+
+- The cache survives compaction (pre-compact hook references it)
+- UPDATE existing entries when revisiting the same topic — don't create duplicates
+- Mark entries `stale` when the related work is done and committed
+- Delete stale entries periodically to keep the cache useful
+
 ## When to Skip (XS tasks only)
 - Single-file typo fix (≤5 characters)
 - Config value change with no logic impact

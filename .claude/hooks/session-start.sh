@@ -106,6 +106,31 @@ if [ -f tasks/lessons.md ]; then
   fi
 fi
 
+# Agent frontmatter validation
+if [ -d ".claude/agents" ]; then
+  AGENT_ERRORS=0
+  for agent_file in .claude/agents/*.md; do
+    [ -f "$agent_file" ] || continue
+    # Check frontmatter exists (starts with ---)
+    first_line=$(head -1 "$agent_file" 2>/dev/null)
+    if [ "$first_line" != "---" ]; then
+      echo "ERROR: $agent_file missing frontmatter (no --- on line 1)"
+      AGENT_ERRORS=$((AGENT_ERRORS + 1))
+      continue
+    fi
+    # Check required fields: name, model
+    has_name=$(head -10 "$agent_file" | grep -c "^name:" 2>/dev/null || echo 0)
+    has_model=$(head -10 "$agent_file" | grep -c "^model:" 2>/dev/null || echo 0)
+    if [ "$has_name" -eq 0 ] || [ "$has_model" -eq 0 ]; then
+      echo "ERROR: $agent_file frontmatter missing name or model field"
+      AGENT_ERRORS=$((AGENT_ERRORS + 1))
+    fi
+  done
+  if [ "$AGENT_ERRORS" -gt 0 ]; then
+    echo "WARNING: $AGENT_ERRORS agent(s) have broken frontmatter — they won't launch correctly"
+  fi
+fi
+
 # MCP health check: verify Engram is reachable
 if [ -f ".mcp.json" ]; then
   HAS_ENGRAM=$(python3 -c "import json; d=json.load(open('.mcp.json')); print('yes' if 'engram' in d.get('mcpServers',{}) and not d['mcpServers']['engram'].get('disabled') else 'no')" 2>/dev/null || echo "no")

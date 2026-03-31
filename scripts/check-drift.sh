@@ -4,7 +4,7 @@
 # Usage: bash scripts/check-drift.sh
 
 # Template version check
-TEMPLATE_VERSION="2.5.0"
+TEMPLATE_VERSION="2.7.0"
 CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"
@@ -18,7 +18,7 @@ WARNINGS=0
 ERRORS=0
 
 # 1. Check if docs are stale (>30 days)
-echo "[1/8] Checking document freshness..."
+echo "[1/9] Checking document freshness..."
 if [ -d docs ]; then
   for doc in docs/*.md; do
     [ -f "$doc" ] || continue
@@ -44,7 +44,7 @@ if [ -d src ] && [ -d docs ]; then
 fi
 
 # 2. Check CLAUDE.md size
-echo "[2/8] Checking CLAUDE.md size..."
+echo "[2/9] Checking CLAUDE.md size..."
 if [ -f CLAUDE.md ]; then
   lines=$(wc -l < CLAUDE.md)
   if [ "$lines" -gt 300 ]; then
@@ -56,7 +56,7 @@ if [ -f CLAUDE.md ]; then
 fi
 
 # 3. Check lessons.md size (>50 = time to promote)
-echo "[3/8] Checking lessons.md..."
+echo "[3/9] Checking lessons.md..."
 if [ -f tasks/lessons.md ]; then
   entries=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
   if [ "$entries" -gt 50 ]; then
@@ -68,7 +68,7 @@ if [ -f tasks/lessons.md ]; then
 fi
 
 # 4. Check for files > 375 lines in src/
-echo "[4/8] Checking file sizes in src/..."
+echo "[4/9] Checking file sizes in src/..."
 if [ -d src ]; then
   find src -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.js" -o -name "*.jsx" \) | while read -r file; do
     lines=$(wc -l < "$file")
@@ -79,7 +79,7 @@ if [ -d src ]; then
 fi
 
 # 5. Check module entry points exist
-echo "[5/8] Checking module entry points..."
+echo "[5/9] Checking module entry points..."
 if [ -d src/features ]; then
   find src/features -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     found=0
@@ -93,7 +93,7 @@ if [ -d src/features ]; then
 fi
 
 # 6. Check architecture boundaries
-echo "[6/8] Checking architecture boundaries..."
+echo "[6/9] Checking architecture boundaries..."
 if command -v npx &> /dev/null && [ -f .dependency-cruiser.js ]; then
   npx dependency-cruiser src --output-type err 2>/dev/null || echo "  ⚠️  Boundary violations detected"
 else
@@ -101,7 +101,7 @@ else
 fi
 
 # 7. Check for secrets in tracked files
-echo "[7/8] Scanning for potential secrets..."
+echo "[7/9] Scanning for potential secrets..."
 if git rev-parse --git-dir > /dev/null 2>&1; then
   secrets=$(grep -rlE '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|-----BEGIN.*(RSA|EC|DSA))' src/ 2>/dev/null || true)
   if [ -n "$secrets" ]; then
@@ -113,7 +113,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # 8. Check template manifest integrity
-echo "[8/8] Checking template manifest..."
+echo "[8/9] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
@@ -170,6 +170,40 @@ for path, info in m.get('files', {}).items():
   fi
 else
   echo "  ℹ️  No $MANIFEST found (sync not configured)"
+fi
+
+# 9. Check template rules not modified locally (read-only enforcement)
+echo "[9/9] Checking template rules integrity..."
+if [ -f "$MANIFEST" ]; then
+  RULE_DRIFT=0
+  for rule_file in .claude/rules/*.md .claude/agents/*.md; do
+    [ -f "$rule_file" ] || continue
+    # Skip project-* files (those ARE meant to be local)
+    basename_f=$(basename "$rule_file")
+    case "$basename_f" in project-*) continue ;; esac
+    # Check if file is in manifest and hash matches
+    EXPECTED_HASH=$(python3 -c "
+import json, os
+m = json.load(open('$MANIFEST'))
+info = m.get('files', {}).get('$rule_file', {})
+print(info.get('hash', ''))
+" 2>/dev/null || echo "")
+    if [ -n "$EXPECTED_HASH" ]; then
+      ACTUAL_HASH=$(_get_hash "$rule_file")
+      if [ "$ACTUAL_HASH" != "$EXPECTED_HASH" ]; then
+        echo "  ⚠️  $rule_file modified locally (template file — should be read-only)"
+        RULE_DRIFT=$((RULE_DRIFT + 1))
+      fi
+    fi
+  done
+  if [ "$RULE_DRIFT" -gt 0 ]; then
+    echo "  ⚠️  $RULE_DRIFT template rule(s) modified locally. Run /update-template to restore."
+    WARNINGS=$((WARNINGS + RULE_DRIFT))
+  else
+    echo "  ✅ All template rules/agents match manifest"
+  fi
+else
+  echo "  ℹ️  No manifest — cannot check rule integrity"
 fi
 
 echo ""

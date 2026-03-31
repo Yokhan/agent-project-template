@@ -27,3 +27,8 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Rule**: Before recommending ANY external package, verify it exists by running `npm view <package>` or checking the official registry. If unable to verify, state confidence as LOW and flag it explicitly.
 **Applies to**: researcher, implementer, general
 **Category**: tooling
+
+### 2026-03-31 — Minimum analysis depth
+**Error**: Agent reported services as "working" based on HTTP 200 without checking actual user experience.
+**Rule**: Minimum analysis = browser walkthrough of full user journey + marketer lens evaluation. Reference: PersonalAssistant/brain/02-projects/personal-strategy/content/funnel-deep-audit-v2.md — this is what proper analysis looks like.
+**Applies to**: All agents doing project health checks or status reports

@@ -30,6 +30,17 @@ if [ -f tasks/lessons.md ]; then
   tail -15 tasks/lessons.md >> "$SNAPSHOT"
 fi
 
+# Research cache preservation hint
+echo "" >> "$SNAPSHOT"
+echo "### Research Cache" >> "$SNAPSHOT"
+if [ -f tasks/.research-cache.md ] && [ -s tasks/.research-cache.md ]; then
+  # Include active entries count
+  ACTIVE=$(grep -c "^## " tasks/.research-cache.md 2>/dev/null || echo 0)
+  echo "Research cache has $ACTIVE entries. Read tasks/.research-cache.md for full context." >> "$SNAPSHOT"
+else
+  echo "No research cache entries." >> "$SNAPSHOT"
+fi
+
 # Also save to daily log
 if [ -d "brain/01-daily" ]; then
   d=$(date +%Y-%m-%d)

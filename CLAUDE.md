@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 2.6.0 -->
+<!-- Template Version: 2.7.0 -->
 
 AI-agent optimized project with persistent memory, autonomous hooks, and self-improving context infrastructure.
 
@@ -61,6 +61,8 @@ Not configured yet.
 - **Research before code**: read affected files, git log, lessons before ANY code change (.claude/rules/research-first.md)
 - **Plan before build**: write file architecture + complexity estimate to tasks/current.md before coding S+ tasks (.claude/rules/plan-first.md)
 - **Writing guard**: all user-facing text passes anti-AI check, BAN-LIST, platform adaptation (.claude/rules/writing.md)
+- **Deep analysis**: no surface-level reports — full user journey walkthrough mandatory (.claude/rules/deep-analysis.md)
+- **Ecosystem awareness**: cross-project dependencies tracked in ecosystem.md, checked during research
 
 ## Hooks
 
@@ -97,6 +99,9 @@ Rule: Never present blog/SEO-level evidence as best practice. Check evidence hie
 - `brain/02-projects/` — project context and goals
 - `brain/03-knowledge/` — patterns and lessons learned
 - `tasks/lessons.md` — self-improvement log (read at session start!)
+- `tasks/.research-cache.md` — incremental research findings (survives compaction)
+- `tasks/post-mortems/` — post-mortem records (template: TEMPLATE.md)
+- `ecosystem.md` — cross-project dependency map
 - `_reference/README.md` — canonical implementations
 
 ## Persistent Memory
@@ -137,7 +142,7 @@ Risk override: auth/security/health → always 4 gates.
 - No confidence claims without having considered and rejected at least one alternative
 
 ## Template Version
-2.6.0 — Run `bash scripts/check-drift.sh` to verify template health.
+2.7.0 — Run `bash scripts/check-drift.sh` to verify template health.
 
 ## Compaction
 
