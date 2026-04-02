@@ -36,3 +36,125 @@
 
 ## For Details
 See `brain/03-knowledge/domains/product-design-ux.md`, `graphic-design-and-writing.md`, `game-design.md` for full practices.
+
+---
+
+# Design Pipeline — Token-First, Component-First, Compose-First
+
+> Universal design production rules. Project-specific details (component IDs, brand tokens)
+> belong in `project-figma-workflow.md`, not here.
+
+## Core Principles
+
+### Token-First
+NEVER hardcode visual values. Always bind to tokens/variables:
+- Colors → design token or CSS variable (never raw hex in code or Figma)
+- Typography → text style or font token (never raw fontSize)
+- Spacing → spacing token (never raw px)
+- Border radius → radius token (never raw value)
+- Shadows → effect style (never raw box-shadow)
+
+### Component-First
+NEVER build from raw shapes or primitives when a component exists:
+- Search design system / component library first
+- Use instances/imports of existing components
+- Only create new when no match exists AND the pattern will be reused
+
+### Composition Over Creation
+Build screens by composing existing components, not by drawing new ones:
+- Assemble from component instances
+- Override props/slots/variants — don't recreate from scratch
+- If a component doesn't support what you need → extend it, don't bypass it
+
+## 8-Phase Design Pipeline
+
+Every design task follows this pipeline. No phase may be skipped.
+
+| Phase | Name | What |
+|-------|------|------|
+| 0 | **CONTEXT** | User journey, design language, device/viewport |
+| 1 | **ANALYZE** | 5-lens: Art Direction, UX, UI, Flow, Behavior |
+| 2 | **REFERENCE** | Find gold-standard, deep-inspect structure |
+| 3 | **BOM** | Bill of Materials — list ALL component instances needed |
+| 4 | **DISCOVER** | Query available tokens, styles, components |
+| 5 | **COMPOSE** | Create from instances, bind all values to tokens |
+| 6 | **VALIDATE** | Screenshot + compare + self-audit gate |
+| 7 | **ITERATE** | Fix deviations, re-validate |
+
+### Phase 1 Detail: 5-Lens Analysis
+1. **Art Direction** — brand guidelines match? Tone, mood, identity?
+2. **UX** — can user accomplish goal? No dead ends? Clear hierarchy?
+3. **UI** — all values from tokens? Consistent spacing? Systematic?
+4. **Flow** — where from → what they see → where they go?
+5. **Behavior** — all states covered? (see State Coverage below)
+
+## State Coverage (mandatory)
+
+Every interactive element must have these states designed:
+
+| State | When |
+|-------|------|
+| Default | Resting |
+| Hover | Mouse over |
+| Active/Pressed | Being clicked |
+| Focus | Keyboard navigation |
+| Disabled | Non-interactive |
+| Loading | Async in progress |
+| Error | Validation / error |
+| Empty | No data |
+
+Not all states apply everywhere. But the designer must DECIDE which apply — not ignore them.
+
+## Self-Audit Gate (after every creation step)
+
+```
+[ ] Every color bound to a token/variable? (no raw hex)
+[ ] Every text has a text style applied? (no raw font settings)
+[ ] Every border radius bound to a token? (all corners)
+[ ] Every spacing/padding bound to a token?
+[ ] Every effect uses an effect style?
+[ ] Every container has layout mode set?
+[ ] No fixed sizing where HUG/FILL is appropriate?
+[ ] No placeholder text? (real content or realistic data)
+[ ] Screenshot taken and visually verified?
+```
+
+If ANY fails → fix before moving to next component.
+
+## Atomic Design Hierarchy
+
+```
+Tokens     → Color, typography, spacing, radius, shadows
+Atoms      → Icon, Logo, Avatar, Divider, Badge, Label
+Molecules  → Button, Input, Tag, Toggle, SearchBar
+Organisms  → Header, Footer, Card, Sidebar, Form
+Templates  → Page layouts (organisms in grid)
+Screens    → Templates + real data + navigation
+```
+
+**Build order**: always Tokens → Screens. Never skip levels.
+
+## Figma MCP Specifics (when available)
+
+### Two-Tool Workflow
+- **Figma MCP (`use_figma`)**: structure, instances, token binding, layout
+- **Chrome DevTools console**: font loading workarounds, text overrides
+
+### Key Rules
+- `importComponentByKeyAsync` fails on local components → use `figma.getNodeById(id).createInstance()`
+- Always discover tokens first (`getLocalVariablesAsync`, `getLocalTextStylesAsync`)
+- Use `textStyleId` to switch fonts without `loadFontAsync`
+- `clipsContent = false` on organizational frames, `true` on viewport screens
+- Validate with `get_screenshot` after every structural change
+
+### Pre-Creation Gate
+Before creating ANY element in Figma:
+1. `search_design_system` — does this component already exist?
+2. TOKEN lookup — is there a token for this value?
+3. Text style lookup — is there a style for this size/weight?
+4. If YES → USE EXISTING. If NO → create AND register in tool-registry.
+
+## Cross-References
+- `.claude/rules/atomic-reuse.md` — code-side reuse protocol (same philosophy)
+- `_reference/tool-registry.md` — Design Tokens section for component registry
+- `.claude/rules/deep-analysis.md` — "Level 0 analysis is never acceptable" applies to design too

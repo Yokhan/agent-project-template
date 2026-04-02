@@ -4,7 +4,7 @@
 # Usage: bash scripts/check-drift.sh
 
 # Template version check
-TEMPLATE_VERSION="2.7.0"
+TEMPLATE_VERSION="2.8.0"
 CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"
@@ -18,7 +18,7 @@ WARNINGS=0
 ERRORS=0
 
 # 1. Check if docs are stale (>30 days)
-echo "[1/9] Checking document freshness..."
+echo "[1/10] Checking document freshness..."
 if [ -d docs ]; then
   for doc in docs/*.md; do
     [ -f "$doc" ] || continue
@@ -44,7 +44,7 @@ if [ -d src ] && [ -d docs ]; then
 fi
 
 # 2. Check CLAUDE.md size
-echo "[2/9] Checking CLAUDE.md size..."
+echo "[2/10] Checking CLAUDE.md size..."
 if [ -f CLAUDE.md ]; then
   lines=$(wc -l < CLAUDE.md)
   if [ "$lines" -gt 300 ]; then
@@ -56,7 +56,7 @@ if [ -f CLAUDE.md ]; then
 fi
 
 # 3. Check lessons.md size (>50 = time to promote)
-echo "[3/9] Checking lessons.md..."
+echo "[3/10] Checking lessons.md..."
 if [ -f tasks/lessons.md ]; then
   entries=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
   if [ "$entries" -gt 50 ]; then
@@ -68,7 +68,7 @@ if [ -f tasks/lessons.md ]; then
 fi
 
 # 4. Check for files > 375 lines in src/
-echo "[4/9] Checking file sizes in src/..."
+echo "[4/10] Checking file sizes in src/..."
 if [ -d src ]; then
   find src -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.js" -o -name "*.jsx" \) | while read -r file; do
     lines=$(wc -l < "$file")
@@ -79,7 +79,7 @@ if [ -d src ]; then
 fi
 
 # 5. Check module entry points exist
-echo "[5/9] Checking module entry points..."
+echo "[5/10] Checking module entry points..."
 if [ -d src/features ]; then
   find src/features -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     found=0
@@ -93,7 +93,7 @@ if [ -d src/features ]; then
 fi
 
 # 6. Check architecture boundaries
-echo "[6/9] Checking architecture boundaries..."
+echo "[6/10] Checking architecture boundaries..."
 if command -v npx &> /dev/null && [ -f .dependency-cruiser.js ]; then
   npx dependency-cruiser src --output-type err 2>/dev/null || echo "  ⚠️  Boundary violations detected"
 else
@@ -101,7 +101,7 @@ else
 fi
 
 # 7. Check for secrets in tracked files
-echo "[7/9] Scanning for potential secrets..."
+echo "[7/10] Scanning for potential secrets..."
 if git rev-parse --git-dir > /dev/null 2>&1; then
   secrets=$(grep -rlE '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|-----BEGIN.*(RSA|EC|DSA))' src/ 2>/dev/null || true)
   if [ -n "$secrets" ]; then
@@ -113,7 +113,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # 8. Check template manifest integrity
-echo "[8/9] Checking template manifest..."
+echo "[8/10] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
@@ -173,7 +173,7 @@ else
 fi
 
 # 9. Check template rules not modified locally (read-only enforcement)
-echo "[9/9] Checking template rules integrity..."
+echo "[9/10] Checking template rules integrity..."
 if [ -f "$MANIFEST" ]; then
   RULE_DRIFT=0
   for rule_file in .claude/rules/*.md .claude/agents/*.md; do
@@ -204,6 +204,47 @@ print(info.get('hash', ''))
   fi
 else
   echo "  ℹ️  No manifest — cannot check rule integrity"
+fi
+
+# 10. Check tool registry health
+echo "[10/10] Checking tool registry..."
+REGISTRY="_reference/tool-registry.md"
+if [ -f "$REGISTRY" ]; then
+  # Check for stale entries (referenced paths that don't exist)
+  STALE_TOOLS=0
+  while IFS='|' read -r _ _ path _; do
+    path=$(echo "$path" | xargs 2>/dev/null)
+    [ -z "$path" ] && continue
+    [ "$path" = "Path" ] && continue
+    [ "$path" = "Signature" ] && continue
+    [[ "$path" == _* ]] && continue
+    if [ ! -e "$path" ]; then
+      STALE_TOOLS=$((STALE_TOOLS + 1))
+    fi
+  done < <(grep "^|" "$REGISTRY" 2>/dev/null)
+
+  if [ "$STALE_TOOLS" -gt 0 ]; then
+    echo "  ⚠️  $STALE_TOOLS stale entries in tool registry (files deleted). Run: bash scripts/audit-reuse.sh"
+    WARNINGS=$((WARNINGS + 1))
+  else
+    echo "  ✅ Tool registry: no stale entries"
+  fi
+
+  # Check if registry is too empty for a project with src/
+  if [ -d src ]; then
+    ENTRIES=$(grep -cE "^\| [^_|]" "$REGISTRY" 2>/dev/null || echo 0)
+    if [ "$ENTRIES" -lt 8 ]; then
+      echo "  ⚠️  Tool registry has only $ENTRIES entries. Run: bash scripts/scan-project.sh"
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  fi
+else
+  if [ -d src ]; then
+    echo "  ⚠️  No tool registry found. Run: bash scripts/scan-project.sh"
+    WARNINGS=$((WARNINGS + 1))
+  else
+    echo "  ℹ️  No tool registry (no src/ directory)"
+  fi
 fi
 
 echo ""

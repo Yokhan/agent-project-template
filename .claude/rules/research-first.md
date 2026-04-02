@@ -22,11 +22,16 @@ Why: someone may have just changed the same code. Avoid conflicts and redundant 
 - `tasks/lessons.md` — has this exact problem been solved (or failed) before?
 - `PROJECT_SPEC.md` — does the project have dependencies or constraints that affect this?
 
-### 4. Check for cross-project impact
+### 4. Check tool registry
+- `_reference/tool-registry.md` — does a utility/component already exist for what you're about to build?
+- If found → REUSE it. If close match → extend it. Don't write new code for solved problems.
+- See `.claude/rules/atomic-reuse.md` for full protocol.
+
+### 5. Check for cross-project impact
 - If the change affects shared code, APIs, or exports: check who consumes them
 - If `ecosystem.md` exists: check for downstream dependencies
 
-### 5. State findings BEFORE coding
+### 6. State findings BEFORE coding
 Output a brief research summary:
 ```
 RESEARCH:

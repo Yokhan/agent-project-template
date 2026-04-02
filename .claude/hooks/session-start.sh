@@ -32,6 +32,16 @@ if [ -f "tasks/current.md" ]; then
   head -3 tasks/current.md 2>/dev/null || true
 fi
 
+# Tool registry check
+if [ -f "_reference/tool-registry.md" ]; then
+  REGISTRY_ENTRIES=$(grep -cE "^\| [^_|]" _reference/tool-registry.md 2>/dev/null || echo 0)
+  if [ "$REGISTRY_ENTRIES" -lt 8 ] && [ -d src ]; then
+    echo "WARNING: Tool registry has few entries ($REGISTRY_ENTRIES). Run: bash scripts/audit-reuse.sh"
+  fi
+elif [ -d src ]; then
+  echo "WARNING: No _reference/tool-registry.md found. Run: bash scripts/scan-project.sh"
+fi
+
 # PROJECT_SPEC.md freshness check
 if [ -f "PROJECT_SPEC.md" ]; then
   # Cross-platform: use python for date math (works on Windows Git Bash, Linux, macOS)

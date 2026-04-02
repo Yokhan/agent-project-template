@@ -82,6 +82,21 @@ For Python: use `__init__.py` as entry points.
 For Go: use `package` directories.
 For Rust: use `mod.rs` as entry points.
 
+### Phase 3b: Scan and populate tool registry
+
+Run project scanner to auto-detect existing utilities:
+```bash
+bash scripts/scan-project.sh
+```
+
+This populates `_reference/tool-registry.md` with:
+- Shared utilities found in `shared/`, `utils/`, `helpers/`, `common/`, `lib/`
+- Scripts found in `scripts/`, `bin/`, `tools/`
+- Components found in `components/`, `ui/` (React/Vue/Svelte)
+- Design tokens if `design-tokens/` or Figma config exists
+
+For existing projects with code: this is critical — the registry enables agents to find and reuse existing code instead of writing new.
+
 ## Phase 4: Configure Tooling
 
 ### Formatter

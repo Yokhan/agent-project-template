@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 2.7.0 -->
+<!-- Template Version: 2.8.0 -->
 
 AI-agent optimized project with persistent memory, autonomous hooks, and self-improving context infrastructure.
 
@@ -63,6 +63,8 @@ Not configured yet.
 - **Writing guard**: all user-facing text passes anti-AI check, BAN-LIST, platform adaptation (.claude/rules/writing.md)
 - **Deep analysis**: no surface-level reports — full user journey walkthrough mandatory (.claude/rules/deep-analysis.md)
 - **Ecosystem awareness**: cross-project dependencies tracked in ecosystem.md, checked during research
+- **Atomic reuse**: search before create — check tool-registry before writing new utilities (.claude/rules/atomic-reuse.md)
+- **Design pipeline**: token-first, component-first, 8-phase pipeline for all design work (.claude/rules/domain-design.md)
 
 ## Hooks
 
@@ -103,6 +105,7 @@ Rule: Never present blog/SEO-level evidence as best practice. Check evidence hie
 - `tasks/post-mortems/` — post-mortem records (template: TEMPLATE.md)
 - `ecosystem.md` — cross-project dependency map
 - `_reference/README.md` — canonical implementations
+- `_reference/tool-registry.md` — searchable index of reusable utilities (check before writing new code)
 
 ## Persistent Memory
 
@@ -142,7 +145,7 @@ Risk override: auth/security/health → always 4 gates.
 - No confidence claims without having considered and rejected at least one alternative
 
 ## Template Version
-2.7.0 — Run `bash scripts/check-drift.sh` to verify template health.
+2.8.0 — Run `bash scripts/check-drift.sh` to verify template health.
 
 ## Compaction
 

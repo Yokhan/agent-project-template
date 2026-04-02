@@ -87,6 +87,16 @@ When the user points out a flaw and your reaction is "you're right!":
 
 Goal: zero "you're right!" moments. Every flaw should be surfaced by the agent BEFORE the user has to point it out.
 
+## Reuse Gate (M+ tasks, in addition to Doubt Protocol)
+
+Before presenting implementation:
+- [ ] Did I search for existing utilities before creating new ones? (grep + tool-registry)
+- [ ] Are there similar functions elsewhere I should consolidate?
+- [ ] New shared utilities registered in `_reference/tool-registry.md`?
+- [ ] If I created a helper — is it genuinely needed in 2+ places, or should it be inline?
+
+If any answer is "no" or "didn't check" → go back and check before presenting.
+
 ## Anti-Patterns This Prevents
 
 | Bias | How it manifests | How this protocol stops it |
