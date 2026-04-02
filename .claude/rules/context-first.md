@@ -41,6 +41,35 @@ If PROJECT_SPEC.md does NOT exist → generate it immediately (see template in p
 4. Check git log for recent activity patterns
 5. Write PROJECT_SPEC.md with findings
 
+## Session End Handoff (MANDATORY)
+
+Before ending a session or when work is interrupted, update `tasks/current.md`:
+
+```markdown
+## Handoff — [DATE]
+### Status: [in-progress / blocked / completed]
+### Current file: [path to file being edited]
+### What was done: [1-2 sentences]
+### What's left: [next steps, ordered]
+### Blockers: [what's preventing progress, if any]
+### Modified files: [list, or "see git diff"]
+### Key decisions: [anything the next session needs to know]
+```
+
+This is not optional. Without handoff context, the next session (or a different agent) wastes time re-discovering what was already known.
+
+## Documentation Freshness SLA
+
+| Document | Max staleness | Check method |
+|----------|--------------|-------------|
+| PROJECT_SPEC.md | 7 days | session-start.sh warns |
+| docs/ARCHITECTURE.md | 30 days | check-drift.sh warns |
+| docs/API_CONTRACTS.md | On every API change | manual/PR review |
+| _reference/tool-registry.md | 14 days | audit-reuse.sh --quick |
+| ecosystem.md | 30 days | manual check |
+
+If a document exceeds its SLA → regenerate or update before proceeding with work that depends on it.
+
 ## Why This Matters
 
 Without project context, agents:

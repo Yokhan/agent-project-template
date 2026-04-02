@@ -8,7 +8,7 @@
 5. **Myers-Briggs (MBTI)** — Test-retest reliability: 50% get different type in 5 weeks. No predictive validity for job performance. Instead: Big Five (OCEAN).
 6. **Left-Brain/Right-Brain** — fMRI shows both hemispheres active in virtually all tasks. No "logical left" vs "creative right." Instead: recognize distributed neural networks.
 7. **Brainstorming Groups > Individuals** — Meta-analyses show groups produce fewer and lower-quality ideas than same number of individuals working alone. Instead: brainwriting, nominal group technique.
-8. **Multitasking as Skill** — Task-switching costs 40% productivity (APA). Only 2.5% are genuine "supertaskers." Instead: deep work, time-blocking.
+8. **Multitasking as Skill** — See `domain-productivity.md` item #5 for evidence. Same principle applies to psychological context.
 9. **Willpower as Muscle (Ego Depletion)** — Failed to replicate in large pre-registered studies (n=2,141). Effect likely driven by beliefs about willpower. Instead: environmental design, habit formation.
 10. **Catharsis Theory** — Venting anger increases aggression, not reduces it (Bushman 2002, meta-analysis). Instead: cognitive reappraisal, distraction.
 11. **Bystander Effect as Absolute** — Replication shows bystanders DO intervene in 91% of real-world violent incidents (Philpot et al. 2019, CCTV study). The classic Kitty Genovese story was inaccurate. Effect is real but weaker than taught.

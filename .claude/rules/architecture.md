@@ -70,3 +70,32 @@ Default: **monolith**. Split ONLY when you have a concrete reason:
 - Trade-off: shared DB = easy consistency, hard independence. Separate DB = easy independence, hard consistency (eventual consistency, sagas).
 - Rule: even with shared DB, modules access ONLY their own tables. Cross-module data goes through the module's public API.
 - Migrations always versioned, reversible, and owned by the module that owns the table.
+
+## Cross-Cutting Concerns (auth, logging, validation)
+
+Cross-cutting concerns don't fit clean vertical slices. Place them in:
+
+- **`shared/middleware/`** — auth middleware, request logging, rate limiting, CORS
+- **`shared/validators/`** — input validation, sanitization (used by multiple features)
+- **`shared/observability/`** — structured logger, metrics collector, error reporter
+
+Rules:
+- Cross-cutting code lives in `shared/`, never inside a feature module
+- Features CONSUME cross-cutting services via import, never duplicate them
+- Each cross-cutting concern has a single owner file (e.g., `shared/middleware/auth.ts`)
+- Register all cross-cutting utilities in `_reference/tool-registry.md`
+- If a validation/middleware pattern is used by 3+ features → it's cross-cutting, extract it
+
+## Safe Refactoring Protocol
+
+Before refactoring ANY code:
+
+1. **Write characterization tests first** — tests that capture CURRENT behavior, even if wrong
+2. **Verify tests pass** — if they don't pass before refactoring, you can't trust them after
+3. **Refactor** — make structural changes WITHOUT changing behavior
+4. **Re-run tests** — all characterization tests must still pass
+5. **Then fix behavior** — if behavior changes are needed, do them in a SEPARATE commit
+
+Never refactor and change behavior in the same commit. The git history must show:
+- Commit 1: "refactor: extract auth logic to shared/middleware" (tests pass, behavior unchanged)
+- Commit 2: "fix: update auth middleware to check token expiry" (behavior change, tests updated)

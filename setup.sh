@@ -135,7 +135,9 @@ generate_manifest() {
   # Build JSON
   {
     printf '{\n'
-    printf '  "template_version": "2.4.0",\n'
+    local tpl_ver
+    tpl_ver=$(grep -oP '(?<=Template Version: )[\d.]+' "$SCRIPT_DIR/CLAUDE.md" 2>/dev/null || echo "3.0.0")
+    printf '  "template_version": "%s",\n' "$tpl_ver"
     printf '  "template_remote": "%s",\n' "$TEMPLATE_REMOTE"
     printf '  "created": "%s",\n' "$today"
     printf '  "updated": "%s",\n' "$today"

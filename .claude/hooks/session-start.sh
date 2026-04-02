@@ -55,7 +55,7 @@ try:
 except:
     print(-1)
 " 2>/dev/null || echo -1)
-    if [ "$days_old" -gt 7 ] 2>/dev/null; then
+    if [ -n "$days_old" ] && [ "$days_old" -ne -1 ] && [ "$days_old" -gt 7 ]; then
       echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
     fi
   fi

@@ -1,5 +1,6 @@
 ---
 name: documenter
+model: sonnet
 description: "Documentation agent. Generates and maintains API docs, README, CHANGELOG, architecture diagrams. Never invents — only documents what exists."
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---

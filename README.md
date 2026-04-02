@@ -1,10 +1,10 @@
-# Agent Project Template v2
+# Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v2.5.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v3.0.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Self-deploying AI-agent optimized project template with persistent memory, autonomous work loops, self-improvement, and production-proven hooks.
+Self-deploying AI-agent optimized project template with persistent memory, autonomous work loops, self-improvement, atomic code reuse, and merge-safe sync.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
 
@@ -133,13 +133,15 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 19 | 8 core (architecture, code-style, testing, git-workflow, self-improvement, conflict-resolution, error-handling, self-verification) + 8 domain guards + critical-thinking + strategic-thinking + analysis-first |
-| **Hooks** | 7 hook scripts | 7 hook scripts across 5 event types (PostToolUse, PreToolUse, Stop, SessionStart, PreCompact) |
-| **Skills** | 22 | 15 core (setup-project, add-feature, debug, security-audit, daily-brief, self-update, api-contract, sprint, setup-integrations, coverage, health-check, migrate, modify-api, setup-telegram, update-deps) + 6 domain review + strategic-review |
-| **Agents** | 9 | reviewer, simplifier, researcher, implementer, test-engineer, security-auditor, devops |
-| **Commands** | 12 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template |
-| **Brain** | Obsidian vault | session logs, decisions, knowledge base, note templates |
-| **Memory** | tasks/ | lessons.md (self-improvement loop) + current.md (handoff) |
+| **Rules** | 25 | 6 process + 7 technical + 4 meta + 8 domain guards |
+| **Hooks** | 7 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate |
+| **Skills** | 29 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 7 other |
+| **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
+| **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
+| **Scripts** | 12 | check-drift, audit-reuse, scan-project, sync-template, bootstrap-mcp, + 7 more |
+| **Pipelines** | 3 | feature, bugfix, security-patch |
+| **Brain** | Obsidian vault | session logs, decisions, knowledge base |
+| **Memory** | tasks/ | lessons.md, current.md, .research-cache.md, post-mortems/ |
 
 ### After Claude setup (/setup-project)
 - Project initialized for your stack (TypeScript/Python/Go/Rust/etc.)
@@ -212,6 +214,33 @@ brain/
 Auto-setup: `bash scripts/bootstrap-mcp.sh --install`
 For Zed AI chat: `bash scripts/bootstrap-mcp.sh --install --zed`
 See `integrations/*/README.md` for details.
+
+## Upgrading from v2.x to v3.0
+
+```bash
+# 1. Preview changes
+bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
+
+# 2. Apply (with conflict detection)
+bash scripts/sync-template.sh /path/to/agent-project-template
+
+# 3. Review any CONFLICT files (*.template-new)
+# 4. Run validation
+bash scripts/check-drift.sh
+```
+
+**New in v3.0**: sync now detects conflicts (files modified locally AND in template) instead of silently overwriting. See `*.template-new` files for template version, resolve manually.
+
+## Changelog
+
+| Version | Key Changes |
+|---------|------------|
+| **3.0.0** | Merge-safe sync (conflict detection), cross-platform lib, 25 rules, 29 skills, 10 agents, audit-reuse system, design pipeline, validate-template.sh |
+| 2.8.0 | Atomic reuse protocol, tool registry, design pipeline (domain-design.md) |
+| 2.7.0 | Deep analysis rule, ecosystem map, research cache, session metrics, post-mortems |
+| 2.5.0 | Agent routing, task queue, pipelines, graduated verification, circuit breaker |
+| 2.4.0 | Template sync system, manifest-based hash verification |
+| 2.0.0 | Initial release: 19 rules, 9 agents, 22 skills, hooks, brain vault |
 
 ## Sources
 

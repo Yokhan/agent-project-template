@@ -1,5 +1,8 @@
 #!/bin/bash
 # Scan Project — populate tool-registry.md from existing codebase
+# shellcheck source=lib/platform.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 # Usage:
 #   bash scripts/scan-project.sh          # scan + populate registry
 #   bash scripts/scan-project.sh --report # dry-run, no writes
@@ -184,7 +187,11 @@ fi
 
 # Update last scan date
 if grep -q "^_Last scan:" "$REGISTRY" 2>/dev/null; then
-  sed -i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY"
+  if command -v _sed_i &>/dev/null; then
+    _sed_i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY"
+  else
+    sed -i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY" 2>/dev/null || true
+  fi
 fi
 
 echo ""

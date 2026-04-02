@@ -87,6 +87,21 @@ When the user points out a flaw and your reaction is "you're right!":
 
 Goal: zero "you're right!" moments. Every flaw should be surfaced by the agent BEFORE the user has to point it out.
 
+## Error Recovery Protocol ("I'm stuck")
+
+When confidence is LOW or you're blocked after 2+ attempts:
+
+1. **STOP coding**. Do not retry the same approach.
+2. **State what you know**: "I attempted X. It failed because Y. I've tried Z alternatives."
+3. **State what you don't know**: "I'm uncertain about [specific gap]."
+4. **Present options** (max 3): each with effort estimate and risk level
+5. **Ask the user** to choose — or suggest what information would unblock you
+6. **Log to tasks/lessons.md** after resolution: what was the block, what resolved it
+
+Never spin silently. The user seeing "I'm stuck on X, here are my options" is 100x better than the agent producing wrong code on attempt #4.
+
+See also: `.claude/rules/conflict-resolution.md` — Escalation Protocol, Confidence-Based Escalation.
+
 ## Reuse Gate (M+ tasks, in addition to Doubt Protocol)
 
 Before presenting implementation:
@@ -111,3 +126,5 @@ If any answer is "no" or "didn't check" → go back and check before presenting.
 - `.claude/rules/critical-thinking.md` — evidence hierarchy, red flags
 - `.claude/rules/strategic-thinking.md` — OODA loop, Commander's Intent
 - `.claude/rules/conflict-resolution.md` — confidence-based escalation
+- `.claude/rules/self-improvement.md` — sycophancy failure tracking (must align with circuit breaker above)
+- `.claude/rules/critical-thinking.md` — evidence hierarchy prevents overconfident recommendations

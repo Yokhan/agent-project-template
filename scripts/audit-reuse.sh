@@ -1,5 +1,8 @@
 #!/bin/bash
 # Audit Reuse — detect duplicate code, extraction candidates, stale registry entries
+# shellcheck source=lib/platform.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 # Usage:
 #   bash scripts/audit-reuse.sh          # full scan + update registry
 #   bash scripts/audit-reuse.sh --quick  # lightweight (session-start)
@@ -236,7 +239,11 @@ echo "Updating registry timestamp..."
 if [ -f "$REGISTRY" ]; then
   # Update last scan date
   if grep -q "^_Last scan:" "$REGISTRY" 2>/dev/null; then
-    sed -i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY"
+    if command -v _sed_i &>/dev/null; then
+      _sed_i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY"
+    else
+      sed -i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY" 2>/dev/null || true
+    fi
   fi
 fi
 

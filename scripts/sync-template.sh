@@ -300,8 +300,36 @@ while IFS='|' read -r filepath old_hash category; do
     continue
   fi
 
+  # Check if local file was modified (conflict detection)
+  local_hash=""
+  CONFLICTS=${CONFLICTS:-0}
+  if [ -f "$filepath" ]; then
+    local_hash=$(get_hash "$filepath")
+  fi
+
+  if [ -n "$local_hash" ] && [ "$local_hash" != "$old_hash" ] && [ "$FORCE" = false ]; then
+    # File modified BOTH locally AND in template = CONFLICT
+    if [ "$DRY_RUN" = true ]; then
+      local diff_stat
+      diff_stat=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "cannot diff")
+      echo "  CONFLICT: $filepath (modified locally AND in template) — $diff_stat"
+    else
+      # Save template version alongside, don't overwrite
+      cp "$template_file" "${filepath}.template-new"
+      echo "  CONFLICT: $filepath — local changes detected. Template version saved as ${filepath}.template-new"
+      echo "    Review: diff $filepath ${filepath}.template-new"
+    fi
+    CONFLICTS=$((CONFLICTS + 1))
+    continue
+  fi
+
   if [ "$DRY_RUN" = true ]; then
-    echo "  WOULD UPDATE: $filepath"
+    local diff_stat=""
+    if [ -f "$filepath" ]; then
+      diff_stat=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "")
+      [ -n "$diff_stat" ] && diff_stat=" — $diff_stat"
+    fi
+    echo "  WOULD UPDATE: $filepath$diff_stat"
   else
     # Ensure parent directory exists
     mkdir -p "$(dirname "$filepath")"
@@ -461,13 +489,48 @@ echo ""
 echo "=== Sync Report: $CURRENT_VER → $NEW_VER ==="
 echo "UPDATED:    $UPDATED template files"
 echo "NEW:        $NEW_FILES template files added"
+echo "CONFLICTS:  ${CONFLICTS:-0} files with local modifications (review manually)"
 echo "SKIPPED:    $SKIPPED template files (unchanged)"
 echo "PRESERVED:  $PRESERVED project files (untouched)"
 echo "DEPRECATED: $DEPRECATED template files (removed from template, kept locally)"
 
+if [ "${CONFLICTS:-0}" -gt 0 ]; then
+  echo ""
+  echo "⚠️  CONFLICTS detected. Template versions saved as *.template-new files."
+  echo "Review each conflict: diff <file> <file>.template-new"
+  echo "After resolving: rm *.template-new and update manifest hashes."
+  echo "To force-overwrite all conflicts: rerun with --force"
+fi
+
 if [ "$DRY_RUN" = true ]; then
   echo ""
   echo "(Dry run — no files were modified)"
+fi
+
+# --- Post-sync reconciliation ---
+if [ "$DRY_RUN" = false ] && [ $((UPDATED + NEW_FILES)) -gt 0 ]; then
+  echo ""
+  echo "--- Post-sync checks ---"
+
+  # Auto-scan project if tool-registry is empty
+  if [ -f "_reference/tool-registry.md" ] && [ -d src ]; then
+    REGISTRY_ENTRIES=$(grep -cE "^\| [^_|]" _reference/tool-registry.md 2>/dev/null || echo 0)
+    if [ "$REGISTRY_ENTRIES" -lt 8 ] && [ -f scripts/scan-project.sh ]; then
+      echo "  Tool registry has few entries. Running scan-project.sh..."
+      bash scripts/scan-project.sh 2>/dev/null || true
+    fi
+  fi
+
+  # Version jump warning
+  if [ "$CURRENT_VER" != "unknown" ] && [ "$NEW_VER" != "unknown" ]; then
+    OLD_MAJOR="${CURRENT_VER%%.*}"
+    NEW_MAJOR="${NEW_VER%%.*}"
+    if [ "$OLD_MAJOR" != "$NEW_MAJOR" ]; then
+      echo ""
+      echo "⚠️  MAJOR VERSION UPGRADE ($CURRENT_VER → $NEW_VER). Review changes carefully."
+      echo "  Run: bash scripts/check-drift.sh"
+    fi
+  fi
 fi
 
 echo ""

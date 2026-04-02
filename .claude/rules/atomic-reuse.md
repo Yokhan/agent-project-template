@@ -45,7 +45,9 @@ If ANY of these finds a match → read it first, then decide:
 
 ## The "3 Uses" Rule
 
-When a utility is used in 3+ files → it belongs in `shared/` (or equivalent).
+**Thresholds:**
+- **2 uses** → consider extraction to shared/ (agent judgment call)
+- **3+ uses** → mandatory extraction to shared/ (no exceptions)
 
 **How this is detected** (agents don't need to remember):
 - `bash scripts/audit-reuse.sh` scans import patterns across the project
@@ -55,7 +57,8 @@ When a utility is used in 3+ files → it belongs in `shared/` (or equivalent).
 
 **Agent responsibility**: after creating any new utility:
 1. Register it in `_reference/tool-registry.md` (name, path, purpose)
-2. If it's used in 2+ places already → consider shared/ immediately (don't wait for 3)
+2. If already used in 2+ places → consider extracting to shared/ now
+3. At 3+ uses → extract immediately, this is not optional
 
 ## Anti-Patterns
 

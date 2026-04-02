@@ -7,6 +7,8 @@ Before recommending ANY practice, verify its evidence level:
 - **C**: Expert consensus / authoritative textbook
 - **D**: Blog post / SEO article / "everyone does it" — NOT SUFFICIENT for recommendations
 
+This A/B/C/D hierarchy is the canonical reference. Domain-specific rules (domain-health.md, domain-science.md) reference this classification. Use these labels consistently across all recommendations.
+
 Rule: Never present D-level evidence as best practice. If only D-level available, say so explicitly.
 
 ## Universal Anti-Patterns (NEVER recommend — each appears in 7+ domains)

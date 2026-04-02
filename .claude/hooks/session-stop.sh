@@ -19,6 +19,17 @@ if [ -d "brain/01-daily" ]; then
   echo "## Session stats: $commits commits today" >> "$f"
 fi
 
+# Save modified files to current.md for handoff context
+if [ -f tasks/current.md ]; then
+  modified=$(git diff --name-only HEAD 2>/dev/null | head -10)
+  if [ -n "$modified" ]; then
+    echo "" >> tasks/current.md
+    echo "## Session End — $(date +%Y-%m-%d\ %H:%M)" >> tasks/current.md
+    echo "Modified files:" >> tasks/current.md
+    echo "$modified" >> tasks/current.md
+  fi
+fi
+
 # Collect session metrics
 if [ -f scripts/session-metrics.sh ]; then
   bash scripts/session-metrics.sh 2>/dev/null || true
