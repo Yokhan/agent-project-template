@@ -105,9 +105,31 @@ for f in "${REQUIRED_FILES[@]}"; do
 done
 echo "  Checked ${#REQUIRED_FILES[@]} required files"
 
-# 6. Command count matches CLAUDE.md
+# 6. Cross-platform safety: no bare python3, no <<<
 echo ""
-echo "[6/6] Checking counts..."
+echo "[6/8] Checking cross-platform safety..."
+# Direct python3 calls (should use $PYTHON)
+BARE_PY=$(grep -rn "python3 -[cm]" scripts/*.sh .claude/hooks/*.sh 2>/dev/null | grep -v "command -v" | grep -v "^#" || true)
+if [ -n "$BARE_PY" ]; then
+  echo "  ERROR: Bare 'python3' calls found (use \$PYTHON instead):"
+  echo "$BARE_PY" | head -5
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: No bare python3 calls"
+fi
+# Here-strings (don't work on all Windows bash)
+HERESTR=$(grep -rn "<<<" scripts/*.sh .claude/hooks/*.sh 2>/dev/null || true)
+if [ -n "$HERESTR" ]; then
+  echo "  ERROR: Here-strings (<<<) found (use pipe or process substitution):"
+  echo "$HERESTR" | head -5
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: No here-strings"
+fi
+
+# 7. Command count
+echo ""
+echo "[7/8] Checking counts..."
 CMD_COUNT=$(ls .claude/commands/*.md 2>/dev/null | wc -l | tr -d ' ')
 AGENT_COUNT=$(ls .claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
 RULE_COUNT=$(ls .claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -115,6 +137,16 @@ echo "  Commands: $CMD_COUNT"
 echo "  Agents: $AGENT_COUNT"
 echo "  Rules: $RULE_COUNT"
 echo "  Skills: $SKILL_COUNT"
+
+# 8. Platform lib exists and is sourced
+echo ""
+echo "[8/8] Checking platform.sh..."
+if [ -f "scripts/lib/platform.sh" ]; then
+  bash -n scripts/lib/platform.sh 2>/dev/null && echo "  OK: platform.sh valid" || { echo "  ERROR: platform.sh syntax error"; ERRORS=$((ERRORS + 1)); }
+else
+  echo "  ERROR: scripts/lib/platform.sh missing"
+  ERRORS=$((ERRORS + 1))
+fi
 
 # Summary
 echo ""

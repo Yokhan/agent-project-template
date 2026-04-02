@@ -1,6 +1,31 @@
 #!/bin/bash
 # platform.sh — Cross-platform helper functions
 # Source this file: source "$(dirname "$0")/lib/platform.sh"
+# All scripts MUST use these helpers instead of calling python3/sed -i/date -I directly.
+
+# --- Python detection (CRITICAL for Windows) ---
+# Windows Git Bash: `python3` often doesn't exist, only `python`.
+# Some Linux: only `python3`, no `python`.
+# This detects once and exports PYTHON for all subsequent use.
+if [ -z "${PYTHON:-}" ]; then
+  if command -v python3 &>/dev/null; then
+    PYTHON="python3"
+  elif command -v python &>/dev/null; then
+    PYTHON="python"
+  else
+    PYTHON=""
+  fi
+  export PYTHON
+fi
+
+# Run python with auto-detected binary. Usage: _python -c "print(1)"
+_python() {
+  if [ -z "$PYTHON" ]; then
+    echo "ERROR: Neither python3 nor python found. Install Python." >&2
+    return 1
+  fi
+  "$PYTHON" "$@"
+}
 
 # Portable sed -i (macOS requires -i '', GNU requires -i)
 _sed_i() {
@@ -25,8 +50,7 @@ _stat_mtime() {
   elif [ "$(uname)" = "Darwin" ]; then
     stat -f %m "$file" 2>/dev/null
   else
-    # Windows Git Bash / fallback: use python
-    python3 -c "import os; print(int(os.path.getmtime('$file')))" 2>/dev/null || echo 0
+    _python -c "import os; print(int(os.path.getmtime('$file')))" 2>/dev/null || echo 0
   fi
 }
 
@@ -48,6 +72,15 @@ _require() {
   local msg="${2:-$cmd is required but not found}"
   if ! command -v "$cmd" &>/dev/null; then
     echo "ERROR: $msg"
+    return 1
+  fi
+}
+
+# Require python (with helpful error)
+_require_python() {
+  if [ -z "$PYTHON" ]; then
+    echo "ERROR: Python is required but neither python3 nor python was found."
+    echo "Install Python 3: https://www.python.org/downloads/"
     return 1
   fi
 }

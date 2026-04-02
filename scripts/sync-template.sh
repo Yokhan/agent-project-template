@@ -8,6 +8,16 @@
 
 set -euo pipefail
 
+# --- Platform helpers ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
+# Fallback python detection if platform.sh not available
+if [ -z "${PYTHON:-}" ]; then
+  if command -v "$PYTHON" &>/dev/null; then PYTHON="python3"
+  elif command -v python &>/dev/null; then PYTHON="python"
+  else PYTHON=""; fi
+fi
+
 # --- Config ---
 TEMPLATE_PATH=""
 DRY_RUN=false
@@ -47,7 +57,7 @@ if [ "$FROM_GIT" = true ]; then
     if [ -z "$TEMPLATE_REMOTE" ]; then
         # Try reading from manifest
         MANIFEST_PATH=".template-manifest.json"
-        TEMPLATE_REMOTE=$(MANIFEST_PATH="$MANIFEST_PATH" python3 -c "import json,os; print(json.load(open(os.environ['MANIFEST_PATH'])).get('template_remote',''))" 2>/dev/null || true)
+        TEMPLATE_REMOTE=$(MANIFEST_PATH="$MANIFEST_PATH" $PYTHON -c "import json,os; print(json.load(open(os.environ['MANIFEST_PATH'])).get('template_remote',''))" 2>/dev/null || true)
         if [ -n "$TEMPLATE_REMOTE" ]; then
             git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || true
         fi
@@ -102,8 +112,8 @@ if [ "$FROM_GIT" = true ]; then
 fi
 
 # --- L1: Dependency check ---
-if ! command -v python3 &>/dev/null; then
-    echo "Error: python3 is required for sync. Install Python 3."
+if [ -z "$PYTHON" ]; then
+    echo "Error: Python is required for sync. Neither python3 nor python found."
     exit 1
 fi
 
@@ -140,7 +150,7 @@ if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
 fi
 
 # Warn if manifest version is unknown
-manifest_ver=$(python3 -c "import json; print(json.load(open('.template-manifest.json')).get('template_version','unknown'))" 2>/dev/null || echo "unknown")
+manifest_ver=$($PYTHON -c "import json; print(json.load(open('.template-manifest.json')).get('template_version','unknown'))" 2>/dev/null || echo "unknown")
 if [ "$manifest_ver" = "unknown" ] || [ -z "$manifest_ver" ]; then
   echo "WARNING: Manifest version is '$manifest_ver'. Will be updated after sync."
 fi
@@ -224,7 +234,7 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 # Get current and new template versions (C1: use env vars for Python)
-CURRENT_VER=$(MANIFEST_PATH="$MANIFEST" python3 -c "
+CURRENT_VER=$(MANIFEST_PATH="$MANIFEST" $PYTHON -c "
 import json, os
 print(json.load(open(os.environ['MANIFEST_PATH']))['template_version'])
 " 2>/dev/null || echo "unknown")
@@ -256,7 +266,7 @@ echo "--- Phase A: Updating template files ---"
 
 # Read manifest files using python (portable JSON parsing)
 # M1: Don't suppress manifest parsing errors
-manifest_files=$(MANIFEST_PATH="$MANIFEST" python3 -c "
+manifest_files=$(MANIFEST_PATH="$MANIFEST" $PYTHON -c "
 import json, os
 m = json.load(open(os.environ['MANIFEST_PATH']))
 for path, info in m.get('files', {}).items():
@@ -310,9 +320,8 @@ while IFS='|' read -r filepath old_hash category; do
   if [ -n "$local_hash" ] && [ "$local_hash" != "$old_hash" ] && [ "$FORCE" = false ]; then
     # File modified BOTH locally AND in template = CONFLICT
     if [ "$DRY_RUN" = true ]; then
-      local diff_stat
-      diff_stat=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "cannot diff")
-      echo "  CONFLICT: $filepath (modified locally AND in template) — $diff_stat"
+      diff_info=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "cannot diff")
+      echo "  CONFLICT: $filepath (modified locally AND in template) — $diff_info"
     else
       # Save template version alongside, don't overwrite
       cp "$template_file" "${filepath}.template-new"
@@ -324,12 +333,12 @@ while IFS='|' read -r filepath old_hash category; do
   fi
 
   if [ "$DRY_RUN" = true ]; then
-    local diff_stat=""
+    diff_info=""
     if [ -f "$filepath" ]; then
-      diff_stat=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "")
-      [ -n "$diff_stat" ] && diff_stat=" — $diff_stat"
+      diff_info=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "")
+      [ -n "$diff_info" ] && diff_info=" — $diff_info"
     fi
-    echo "  WOULD UPDATE: $filepath$diff_stat"
+    echo "  WOULD UPDATE: $filepath$diff_info"
   else
     # Ensure parent directory exists
     mkdir -p "$(dirname "$filepath")"
@@ -337,7 +346,7 @@ while IFS='|' read -r filepath old_hash category; do
     echo "  UPDATED: $filepath"
   fi
   UPDATED=$((UPDATED + 1))
-done <<< "$manifest_files"
+done < <(echo "$manifest_files")
 
 # --- Phase B: Detect new files in template ---
 echo "--- Phase B: Checking for new template files ---"
@@ -358,7 +367,7 @@ for pattern in ".claude/settings.json" ".claude/rules/*.md" ".claude/agents/*.md
     esac
 
     # Check if already in manifest (C1: use env vars for Python)
-    in_manifest=$(MANIFEST_PATH="$MANIFEST" REL_PATH="$rel_path" python3 -c "
+    in_manifest=$(MANIFEST_PATH="$MANIFEST" REL_PATH="$rel_path" $PYTHON -c "
 import json, os
 m = json.load(open(os.environ['MANIFEST_PATH']))
 print('yes' if os.environ['REL_PATH'] in m.get('files', {}) else 'no')
@@ -400,7 +409,7 @@ done
 if [ "$DRY_RUN" = false ] && [ $((UPDATED + NEW_FILES)) -gt 0 ]; then
   echo "--- Updating manifest ---"
   # C1: Pass all variables via environment; C2: certutil fallback; C3: skills scanning
-  MANIFEST_PATH="$MANIFEST" TEMPLATE_DIR="$TEMPLATE_PATH" NEW_VERSION="$NEW_VER" SYNC_DATE="$(date +%Y-%m-%d)" python3 -c "
+  MANIFEST_PATH="$MANIFEST" TEMPLATE_DIR="$TEMPLATE_PATH" NEW_VERSION="$NEW_VER" SYNC_DATE="$(date +%Y-%m-%d)" $PYTHON -c "
 import json, subprocess, os
 
 manifest_path = os.environ['MANIFEST_PATH']
@@ -478,7 +487,7 @@ fi
 # --- Validation (M2: already inside DRY_RUN=false check) ---
 if [ "$DRY_RUN" = false ]; then
   echo "--- Validation ---"
-  python3 -m json.tool .claude/settings.json > /dev/null 2>&1 && echo "  settings.json: valid JSON" || echo "  settings.json: invalid JSON"
+  $PYTHON -m json.tool .claude/settings.json > /dev/null 2>&1 && echo "  settings.json: valid JSON" || echo "  settings.json: invalid JSON"
   for script in scripts/*.sh; do
     bash -n "$script" 2>/dev/null && echo "  $script: valid bash" || echo "  $script: syntax error"
   done

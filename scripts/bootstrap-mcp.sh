@@ -175,7 +175,7 @@ detect_engram_path() {
 }
 
 detect_cgc() {
-  python3 -m codegraphcontext --help &>/dev/null 2>&1 || \
+  $PYTHON -m codegraphcontext --help &>/dev/null 2>&1 || \
   python -m codegraphcontext --help &>/dev/null 2>&1 || \
   command -v cgc.exe &>/dev/null || command -v cgc &>/dev/null
 }

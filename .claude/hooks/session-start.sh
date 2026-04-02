@@ -1,6 +1,11 @@
 #!/bin/bash
 # Session Start Hook — creates session log, shows reminders, checks template
 
+# Python detection (Windows: python, Linux/Mac: python3)
+if command -v python3 &>/dev/null; then PYTHON="python3"
+elif command -v python &>/dev/null; then PYTHON="python"
+else PYTHON=""; fi
+
 # TEST_MODE guard
 if [ "$TEST_MODE" = "1" ]; then
   echo "test-mode: would create session log and show reminders"
@@ -47,7 +52,7 @@ if [ -f "PROJECT_SPEC.md" ]; then
   # Cross-platform: use python for date math (works on Windows Git Bash, Linux, macOS)
   spec_date=$(grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' PROJECT_SPEC.md 2>/dev/null | tail -1 | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
   if [ -n "$spec_date" ]; then
-    days_old=$(python3 -c "
+    days_old=$($PYTHON -c "
 from datetime import datetime
 try:
     d = datetime.strptime('$spec_date', '%Y-%m-%d')
@@ -76,7 +81,7 @@ fi
 
 # Template version check
 if [ -f ".template-manifest.json" ] && [ -f "scripts/check-drift.sh" ]; then
-  proj_ver=$(python3 -c "import json; print(json.load(open('.template-manifest.json'))['template_version'])" 2>/dev/null || true)
+  proj_ver=$($PYTHON -c "import json; print(json.load(open('.template-manifest.json'))['template_version'])" 2>/dev/null || true)
   script_ver=$(grep -o 'TEMPLATE_VERSION="[^"]*"' scripts/check-drift.sh 2>/dev/null | head -1 | cut -d'"' -f2 || true)
   if [ -n "$proj_ver" ] && [ -n "$script_ver" ] && [ "$proj_ver" != "$script_ver" ]; then
     echo "WARNING: Template outdated ($proj_ver vs $script_ver). Run /update-template."
@@ -143,9 +148,9 @@ fi
 
 # MCP health check: verify Engram is reachable
 if [ -f ".mcp.json" ]; then
-  HAS_ENGRAM=$(python3 -c "import json; d=json.load(open('.mcp.json')); print('yes' if 'engram' in d.get('mcpServers',{}) and not d['mcpServers']['engram'].get('disabled') else 'no')" 2>/dev/null || echo "no")
+  HAS_ENGRAM=$($PYTHON -c "import json; d=json.load(open('.mcp.json')); print('yes' if 'engram' in d.get('mcpServers',{}) and not d['mcpServers']['engram'].get('disabled') else 'no')" 2>/dev/null || echo "no")
   if [ "$HAS_ENGRAM" = "yes" ]; then
-    ENGRAM_CMD=$(python3 -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['engram']['command'])" 2>/dev/null || echo "")
+    ENGRAM_CMD=$($PYTHON -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['engram']['command'])" 2>/dev/null || echo "")
     if [ -n "$ENGRAM_CMD" ] && ! command -v "$ENGRAM_CMD" &>/dev/null 2>&1; then
       echo "WARNING: Engram configured but binary not found ($ENGRAM_CMD). Memory will use file fallback."
       echo "  Fix: bash scripts/bootstrap-mcp.sh --install"

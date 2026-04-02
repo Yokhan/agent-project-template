@@ -3,6 +3,15 @@
 # Run before major sessions or weekly to catch stale docs and violations
 # Usage: bash scripts/check-drift.sh
 
+# shellcheck source=lib/platform.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
+if [ -z "${PYTHON:-}" ]; then
+  if command -v python3 &>/dev/null; then PYTHON="python3"
+  elif command -v python &>/dev/null; then PYTHON="python"
+  else PYTHON=""; fi
+fi
+
 # Template version check
 TEMPLATE_VERSION="3.0.0"
 CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
@@ -117,7 +126,7 @@ echo "[8/10] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
-  if python3 -m json.tool "$MANIFEST" > /dev/null 2>&1; then
+  if $PYTHON -m json.tool "$MANIFEST" > /dev/null 2>&1; then
     echo "  ✅ $MANIFEST: valid JSON"
   else
     echo "  ❌ $MANIFEST: invalid JSON"
@@ -125,7 +134,7 @@ if [ -f "$MANIFEST" ]; then
   fi
 
   # Report template version
-  tpl_ver=$(python3 -c "import json; print(json.load(open('$MANIFEST')).get('template_version', 'unknown'))" 2>/dev/null || echo "unknown")
+  tpl_ver=$($PYTHON -c "import json; print(json.load(open('$MANIFEST')).get('template_version', 'unknown'))" 2>/dev/null || echo "unknown")
   echo "  Template version (manifest): $tpl_ver"
 
   # Count drifted template files
@@ -154,13 +163,13 @@ if [ -f "$MANIFEST" ]; then
     else
       drift_count=$((drift_count + 1))
     fi
-  done <<< "$(python3 -c "
+  done < <($PYTHON -c "
 import json
 m = json.load(open('$MANIFEST'))
 for path, info in m.get('files', {}).items():
     if info.get('category') != 'project':
         print(f\"{path}|{info.get('hash', '')}\")
-" 2>/dev/null)"
+" 2>/dev/null)
 
   if [ "$drift_count" -gt 0 ]; then
     echo "  ⚠️  $drift_count/$drift_total template files have drifted from manifest hashes"
@@ -182,7 +191,7 @@ if [ -f "$MANIFEST" ]; then
     basename_f=$(basename "$rule_file")
     case "$basename_f" in project-*) continue ;; esac
     # Check if file is in manifest and hash matches
-    EXPECTED_HASH=$(python3 -c "
+    EXPECTED_HASH=$($PYTHON -c "
 import json, os
 m = json.load(open('$MANIFEST'))
 info = m.get('files', {}).get('$rule_file', {})
