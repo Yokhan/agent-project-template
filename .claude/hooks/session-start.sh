@@ -6,6 +6,31 @@ if command -v python3 &>/dev/null; then PYTHON="python3"
 elif command -v python &>/dev/null; then PYTHON="python"
 else PYTHON=""; fi
 
+# CRITICAL: Python is required for template infrastructure (JSON parsing, manifest sync)
+if [ -z "$PYTHON" ]; then
+  echo ""
+  echo "============================================="
+  echo "  STOP: Python not found"
+  echo "============================================="
+  echo ""
+  echo "  This agent template requires Python for:"
+  echo "  - Template sync (manifest JSON parsing)"
+  echo "  - Drift detection (hash verification)"
+  echo "  - MCP bootstrap"
+  echo ""
+  echo "  Install Python 3:"
+  echo "    Windows:  winget install Python.Python.3"
+  echo "    macOS:    brew install python3"
+  echo "    Ubuntu:   sudo apt install python3"
+  echo ""
+  echo "  After installing, restart this session."
+  echo "============================================="
+  echo ""
+  # Don't exit 1 — that would block Claude Code entirely.
+  # Instead, print the warning and let the session continue
+  # with degraded functionality.
+fi
+
 # TEST_MODE guard
 if [ "$TEST_MODE" = "1" ]; then
   echo "test-mode: would create session log and show reminders"
@@ -49,19 +74,16 @@ fi
 
 # PROJECT_SPEC.md freshness check
 if [ -f "PROJECT_SPEC.md" ]; then
-  # Cross-platform: use python for date math (works on Windows Git Bash, Linux, macOS)
+  # Date math in pure bash (no python needed)
   spec_date=$(grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' PROJECT_SPEC.md 2>/dev/null | tail -1 | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
   if [ -n "$spec_date" ]; then
-    days_old=$($PYTHON -c "
-from datetime import datetime
-try:
-    d = datetime.strptime('$spec_date', '%Y-%m-%d')
-    print((datetime.now() - d).days)
-except:
-    print(-1)
-" 2>/dev/null || echo -1)
-    if [ -n "$days_old" ] && [ "$days_old" -ne -1 ] && [ "$days_old" -gt 7 ]; then
-      echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
+    now_epoch=$(date +%s 2>/dev/null || echo 0)
+    spec_epoch=$(date -d "$spec_date" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$spec_date" +%s 2>/dev/null || echo 0)
+    if [ "$now_epoch" -gt 0 ] && [ "$spec_epoch" -gt 0 ]; then
+      days_old=$(( (now_epoch - spec_epoch) / 86400 ))
+      if [ "$days_old" -gt 7 ]; then
+        echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
+      fi
     fi
   fi
 else
