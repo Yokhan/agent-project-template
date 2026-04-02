@@ -72,6 +72,33 @@ Not configured yet.
 - **Strategic thinking**: OODA loop, Commander's Intent, 63 principles from 12 sources (strategic-thinking.md)
 - **Deep analysis**: full user journey, Three Whys, Level 1 minimum (deep-analysis.md)
 
+## Design Work — HARD RULES (Figma, CSS, UI)
+
+**These rules are NON-NEGOTIABLE when doing ANY visual/design work.**
+
+1. **NEVER hardcode visual values.** No raw hex colors, no raw px sizes, no raw font names.
+   → Always use: design tokens, CSS variables, text styles, spacing tokens.
+   → If tokens don't exist yet — CREATE THEM FIRST, then use them.
+
+2. **NEVER build from raw shapes.** No raw rectangles, no manual styling.
+   → Always use: existing components, instances, imports from design system.
+   → If component doesn't exist — CREATE IT FIRST as reusable, then use instances.
+
+3. **Build order: System → Tokens → Components → Screens.**
+   - First: variables/tokens (colors, spacing, radius, typography)
+   - Then: atomic components (Button, Input, Card, etc.) with auto-layout
+   - Then: compose screens FROM components
+   - NEVER skip to screens. NEVER.
+
+4. **Every container must have layout mode** (auto-layout in Figma, flexbox/grid in CSS).
+   No absolute positioning except background decorations.
+
+5. **8 states for every interactive element**: Default, Hover, Active, Focus, Disabled, Loading, Error, Empty.
+
+6. **Before creating ANYTHING**: search_design_system / grep components — does it already exist?
+
+Violation = immediate revert and redo. See `.claude/rules/domain-design.md` for full 8-phase pipeline.
+
 ### Domain (8 files)
 - **domain-business.md** — startups, finance, unit economics
 - **domain-design.md** — UX/UI/game design + 8-phase design pipeline (token-first, component-first)
