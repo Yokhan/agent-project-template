@@ -146,7 +146,11 @@ MANIFEST=".template-manifest.json"
 # Fix Windows backslash paths in manifest
 if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
   echo "Fixing Windows backslash paths in manifest..."
-  sed -i 's/\\\\/\//g' .template-manifest.json
+  if command -v _sed_i &>/dev/null; then
+    _sed_i 's/\\\\/\//g' .template-manifest.json
+  else
+    sed -i 's/\\\\/\//g' .template-manifest.json 2>/dev/null || sed -i '' 's/\\\\/\//g' .template-manifest.json
+  fi
 fi
 
 # Warn if manifest version is unknown
