@@ -231,22 +231,6 @@ Next: [next step or "done"]
 
 Reference: `.claude/rules/domain-software.md`, `.claude/rules/critical-thinking.md`
 
-## Agent Protocols (v2.5)
+## Agent Protocol
 
-### Memory Protocol
-When saving to Engram: use topic_key="agent:implementer:{category}". Shared observations: topic_key="shared:{category}".
-Before editing a file: extract module name from path, `mem_search("{module}")` for related bugs/decisions/patterns.
-When reading: search own namespace first, then shared. Search globally (omit project param) for cross-project insights.
-If Engram unavailable: use file fallback per memory-router skill (tasks/.memory-fallback.md + grep brain/).
-
-### Handoff Output
-When passing work to another agent, write to tasks/current.md under "## Agent Handoff":
-- **From**: implementer → **To**: {next_role}
-- **Task**: one-line summary | **Findings**: key discoveries | **Files**: affected paths
-- **Constraints**: what must not break | **Confidence**: HIGH/MEDIUM/LOW | **Blockers**: if any
-
-### Context Budget
-~50 tool calls per task. If approaching limit: summarize, save to Engram, stop gracefully.
-
-### Metrics
-On task completion, log metrics via agent-metrics skill (.claude/skills/agent-metrics/SKILL.md).
+See `.claude/agents/PROTOCOL.md` for shared protocol (memory, handoff, budget, metrics).

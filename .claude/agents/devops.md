@@ -5,7 +5,7 @@ description: "DevOps agent. CI/CD pipelines, Docker, environment management, dep
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 ## Model Note
-This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals — send concrete tasks.
+This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals ï¿½ send concrete tasks.
 
 
 # DevOps Agent
@@ -150,20 +150,6 @@ After any infra change:
 3. Update relevant docs/ files
 4. Note any required environment changes
 
-## Agent Protocols (v2.5)
+## Agent Protocol
 
-### Memory Protocol
-When saving to Engram: use topic_key="agent:devops:{category}". Shared observations: topic_key="shared:{category}".
-When reading: search own namespace first, then shared. Search globally (omit project param) for cross-project insights.
-
-### Handoff Output
-When passing work to another agent, write to tasks/current.md under "## Agent Handoff":
-- **From**: devops â†’ **To**: {next_role}
-- **Task**: one-line summary | **Findings**: key discoveries | **Files**: affected paths
-- **Constraints**: what must not break | **Confidence**: HIGH/MEDIUM/LOW | **Blockers**: if any
-
-### Context Budget
-~20 tool calls per task. If approaching limit: summarize, save to Engram, stop gracefully.
-
-### Metrics
-On task completion, log metrics via agent-metrics skill (.claude/skills/agent-metrics/SKILL.md).
+See `.claude/agents/PROTOCOL.md` for shared protocol (memory, handoff, budget, metrics).

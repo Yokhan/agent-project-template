@@ -130,6 +130,25 @@ STOP coding. State what you know, what you don't, present max 3 options. Ask use
 
 See `.claude/rules/self-verification.md`.
 
+## MCP MEMORY (Engram) — PROACTIVE, NOT ON-DEMAND
+
+If Engram MCP is available (`mem_save`, `mem_search`, `mem_context` tools exist):
+
+**Session start**: call `mem_session_start` with project name. Then `mem_context` to load recent history.
+**After compaction**: call `mem_context` immediately to restore what was lost.
+
+**PROACTIVE saves** (do NOT wait to be asked):
+- After ANY decision → `mem_save(topic_key="decision:{slug}", content="chose X over Y because Z")`
+- After ANY bug fix → `mem_save(topic_key="bug:{slug}", content="error: X, root cause: Y, fix: Z")`
+- After ANY discovery → `mem_save(topic_key="discovery:{slug}", content="found: X in Y")`
+- After ANY convention established → `mem_save(topic_key="convention:{slug}", content="rule: X")`
+
+**Before research**: `mem_search("{topic}")` — answer may already exist from previous session.
+**Session end**: `mem_session_end` with summary of what was done.
+
+If Engram not available → degrade to file-only: tasks/lessons.md + brain/. Still log, just to files.
+This is NOT optional. Skipping memory saves = next session starts blind.
+
 ## SELF-IMPROVEMENT — After Every Correction
 
 1. Classify: BUG / KNOWLEDGE_GAP / STYLE / DESIGN / MISUNDERSTANDING
