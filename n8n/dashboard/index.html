@@ -1,148 +1,244 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Agent Command Center</title>
+<html><head><meta charset="utf-8"><title>Command Center</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0a15;color:#d0d0e0;font-family:-apple-system,system-ui,sans-serif;overflow:hidden}
-.app{display:grid;grid-template-columns:280px 1fr;grid-template-rows:auto 1fr auto;height:100vh}
-.hdr{grid-column:1/-1;padding:8px 15px;background:#0f0f1a;border-bottom:1px solid #1a1a30;display:flex;justify-content:space-between;align-items:center}
-.hdr h1{font-size:1.1em;color:#fff}
-.hdr .t{color:#555;font-size:.75em}
-.hdr .btns{display:flex;gap:5px}
-.hdr .btns button{background:#161630;color:#777;border:1px solid #252545;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:.7em}
-.hdr .btns button:hover{background:#1e1e40;color:#aaa}
-.side{background:#0d0d18;border-right:1px solid #1a1a30;display:flex;flex-direction:column;overflow:hidden}
-.side .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px}
-.side .st{background:#12122a;padding:6px;border-radius:5px;text-align:center}
-.side .st .n{font-size:1.2em;font-weight:700}
-.side .st .l{font-size:.6em;color:#555}
-.side .list{flex:1;overflow-y:auto}
-.side .item{padding:8px 12px;border-bottom:1px solid #111;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s}
-.side .item:hover{background:#12122a}
-.side .item.active{background:#161635;border-left:3px solid #3a6a9a}
-.side .item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.side .item .dot.working{background:#22c55e;animation:pulse 2s infinite}
-.side .item .dot.idle{background:#eab308}
-.side .item .dot.sleeping{background:#444}
-.side .info{flex:1;min-width:0}
-.side .info .name{font-size:.85em;font-weight:600;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side .info .meta{font-size:.65em;color:#555}
-.side .info .last{font-size:.7em;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side .time{font-size:.6em;color:#444;flex-shrink:0}
-.side .modules{padding:6px 12px;border-top:1px solid #1a1a30;max-height:150px;overflow-y:auto;font-size:.7em}
-.side .modules .mod{display:flex;justify-content:space-between;padding:2px 0;color:#777}
-.side .modules .ok{color:#22c55e}.side .modules .warning{color:#eab308}.side .modules .error{color:#ef4444}
-.chat{display:flex;flex-direction:column;overflow:hidden}
-.chat .chdr{padding:10px 15px;border-bottom:1px solid #1a1a30;font-weight:600;font-size:.9em;color:#fff;display:flex;justify-content:space-between;align-items:center}
-.chat .chdr .ps{font-size:.7em;color:#666;font-weight:400}
-.msgs{flex:1;overflow-y:auto;padding:12px 15px;display:flex;flex-direction:column;gap:8px}
-.m{max-width:80%;padding:8px 12px;border-radius:12px;font-size:.85em;line-height:1.4;word-wrap:break-word}
-.m.u{align-self:flex-end;background:#1e3a5f;color:#d0e0ff;border-bottom-right-radius:3px}
-.m.a{align-self:flex-start;background:#1a1a30;color:#c0c0d0;border-bottom-left-radius:3px}
-.m pre{white-space:pre-wrap;font-size:.8em;margin-top:4px;color:#8899aa;font-family:monospace}
-.m .ts{font-size:.6em;color:#555;margin-top:3px}
-.typing{padding:8px 15px;font-size:.75em;color:#666;font-style:italic;display:none}
-.inp{display:flex;gap:6px;padding:10px 15px;border-top:1px solid #1a1a30}
-.inp input{flex:1;background:#12122a;color:#d0d0e0;border:1px solid #2a2a4a;padding:9px 12px;border-radius:8px;font-size:.85em;outline:none}
-.inp input:focus{border-color:#3a5a8a}
-.inp button{background:#1e3a5f;color:#d0e0ff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:.85em}
-.inp button:hover{background:#2a4a7f}
-.inp button:disabled{opacity:.3;cursor:wait}
-.feed{grid-column:1/-1;border-top:1px solid #1a1a30;padding:5px 12px;max-height:80px;overflow-y:auto;font-size:.65em;color:#555;background:#08080f}
-.feed .e{padding:2px 0}.feed .tm{color:#444;margin-right:4px}.feed .tp{color:#3a6a9a;margin-right:3px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+:root{--bg:#000;--card:#0a0a0a;--border:#1a1a1a;--text:#fff;--dim:#666;--accent:#D71921;--green:#22c55e;--yellow:#eab308;--mute:#333}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;overflow-x:hidden}
+
+/* === LAYOUT === */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.hdr{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.hdr h1{font-size:14px;text-transform:uppercase;letter-spacing:3px;font-weight:400}
+.hdr .r{display:flex;align-items:center;gap:12px}
+.hdr .r span{font-size:11px;color:var(--dim)}
+.hdr .r button{background:none;color:var(--dim);border:1px solid var(--border);padding:4px 10px;font-family:inherit;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
+.hdr .r button:hover{color:var(--text);border-color:var(--mute)}
+
+/* === MAIN: dashboard view === */
+.main{flex:1;display:flex}
+.content{flex:1;padding:20px 24px;overflow-y:auto}
+.chat-side{width:340px;border-left:1px solid var(--border);display:flex;flex-direction:column}
+
+/* === STATS ROW === */
+.stats{display:flex;gap:12px;margin-bottom:20px}
+.stat{border:1px solid var(--border);padding:12px 16px;flex:1;text-align:center}
+.stat .n{font-size:28px;font-weight:700;line-height:1}
+.stat .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+
+/* === PROJECT GRID === */
+.grid-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:20px}
+.tile{background:var(--card);border:1px solid var(--border);padding:14px;cursor:pointer;transition:all .2s;position:relative}
+.tile:hover{border-color:var(--mute);transform:translateY(-1px)}
+.tile .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tile .name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.tile .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.tile .dot.working{background:var(--green);box-shadow:0 0 6px var(--green)}
+.tile .dot.idle{background:var(--yellow)}
+.tile .dot.sleeping{background:var(--mute)}
+.tile .ver{font-size:9px;color:var(--dim)}
+.tile .row{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
+.tile .branch{font-size:10px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .bar{position:absolute;bottom:0;left:0;height:2px;transition:width .5s}
+.tile .dirty{color:var(--yellow)}
+.tile .dirty.high{color:var(--accent)}
+
+/* === PROJECT DETAIL (inside view) === */
+.detail{display:none;flex-direction:column;flex:1}
+.detail.show{display:flex}
+.detail .back{font-size:10px;color:var(--dim);cursor:pointer;padding:8px 0;text-transform:uppercase;letter-spacing:1px}
+.detail .back:hover{color:var(--text)}
+.detail .proj-hdr{padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:12px}
+.detail .proj-hdr h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.detail .proj-hdr .meta{font-size:10px;color:var(--dim);margin-top:4px}
+.detail .panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.panel{border:1px solid var(--border);padding:12px}
+.panel h3{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.panel .mod{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #0a0a0a}
+.panel .ok{color:var(--green)}.panel .warning{color:var(--yellow)}.panel .error{color:var(--accent)}
+.detail .chat-area{flex:1;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:300px}
+
+/* === CHAT (shared) === */
+.ch-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.ch-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:85%;padding:7px 10px;font-size:11px;line-height:1.4;word-wrap:break-word}
+.m.u{align-self:flex-end;background:#111;border:1px solid var(--border);color:var(--text)}
+.m.a{align-self:flex-start;color:var(--dim)}
+.m pre{white-space:pre-wrap;font-size:10px;margin-top:3px;font-family:inherit}
+.m .ts{font-size:8px;color:var(--mute);margin-top:2px}
+.ch-typ{padding:6px 12px;font-size:10px;color:var(--dim);display:none}
+.ch-inp{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border)}
+.ch-inp input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px 10px;font-family:inherit;font-size:11px;outline:none}
+.ch-inp input:focus{border-color:var(--mute)}
+.ch-inp button{background:none;color:var(--text);border:1px solid var(--border);padding:8px 14px;font-family:inherit;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
+.ch-inp button:hover{border-color:var(--accent);color:var(--accent)}
+.ch-inp button:disabled{opacity:.2}
+
+/* === FEED === */
+.feed{border-top:1px solid var(--border);padding:6px 24px;font-size:9px;color:var(--mute);max-height:60px;overflow-y:auto}
 </style></head>
 <body>
 <div class="app">
   <div class="hdr">
-    <h1>Agent Command Center</h1>
-    <div class="btns">
-      <button onclick="act('briefing')">Briefing</button>
-      <button onclick="act('drift')">Drift</button>
-      <button onclick="act('weekly')">Weekly</button>
-      <button onclick="loadAll()">Refresh</button>
-    </div>
-    <span class="t" id="ts"></span>
-  </div>
-  <div class="side">
-    <div class="stats" id="stats"></div>
-    <div class="list" id="list"></div>
-    <div class="modules" id="modules"></div>
-  </div>
-  <div class="chat">
-    <div class="chdr"><span id="ct">Select a project</span><span class="ps" id="cs"></span></div>
-    <div class="msgs" id="msgs"></div>
-    <div class="typing" id="typ">Agent is thinking...</div>
-    <div class="inp">
-      <input id="ci" placeholder="Message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}">
-      <button id="cb" onclick="send()">Send</button>
+    <h1>Command Center</h1>
+    <div class="r">
+      <button onclick="act('briefing')">briefing</button>
+      <button onclick="act('drift')">drift</button>
+      <button onclick="act('weekly')">weekly</button>
+      <button onclick="loadAll()">refresh</button>
+      <span id="ts"></span>
     </div>
   </div>
-  <div class="feed" id="feed">Loading...</div>
+
+  <div class="main">
+    <!-- DASHBOARD VIEW -->
+    <div class="content" id="dashboard-view">
+      <div class="stats" id="stats"></div>
+      <div class="grid-title">projects</div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <!-- PROJECT DETAIL VIEW (hidden by default) -->
+    <div class="detail" id="detail-view">
+      <div style="padding:20px 24px;flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="back" onclick="showDashboard()">&larr; back to dashboard</div>
+        <div class="proj-hdr">
+          <h2><span class="dot" id="d-dot"></span> <span id="d-name"></span></h2>
+          <div class="meta" id="d-meta"></div>
+        </div>
+        <div class="panels">
+          <div class="panel"><h3>modules</h3><div id="d-modules">Loading...</div></div>
+          <div class="panel"><h3>info</h3><div id="d-info"></div></div>
+        </div>
+        <div class="chat-area">
+          <div class="ch-title">chat &mdash; <span id="d-chat-name"></span></div>
+          <div class="ch-msgs" id="d-msgs"></div>
+          <div class="ch-typ" id="d-typ">thinking...</div>
+          <div class="ch-inp">
+            <input id="d-ci" placeholder="message..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendDetail();}">
+            <button id="d-cb" onclick="sendDetail()">send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORCHESTRATOR CHAT (always visible on right) -->
+    <div class="chat-side">
+      <div class="ch-title">orchestrator</div>
+      <div class="ch-msgs" id="o-msgs"></div>
+      <div class="ch-typ" id="o-typ">thinking...</div>
+      <div class="ch-inp">
+        <input id="o-ci" placeholder="talk to PA..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendOrch();}">
+        <button id="o-cb" onclick="sendOrch()">send</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="feed" id="feed"></div>
 </div>
+
 <script>
-let agents=[],cur='',chatMap={};
-async function loadAgents(){
-  try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents=d.agents;document.getElementById('ts').textContent=new Date().toLocaleString();}catch(e){console.error(e);}
+let agents=[],curProj=null;
+
+async function loadAll(){
+  await Promise.all([loadAgents(),loadFeed(),loadOrchChat()]);
+  render();
 }
-async function loadChats(){
-  try{const r=await fetch('/api/chats');const d=await r.json();chatMap={};(d.chats||[]).forEach(c=>chatMap[c.project]=c);}catch{}
+
+async function loadAgents(){
+  try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents=d.agents;document.getElementById('ts').textContent=new Date().toLocaleTimeString();}catch{}
 }
 async function loadFeed(){
-  try{const r=await fetch('/api/feed');const d=await r.json();document.getElementById('feed').innerHTML=(d.feed||[]).map(e=>`<span class="e"><span class="tm">${ft(e.time)}</span><span class="tp">[${e.type}]</span><b>${e.project||''}</b> ${(e.message||'').substring(0,40)}</span> `).join('')||'No activity';}catch{}
+  try{const r=await fetch('/api/feed');const d=await r.json();document.getElementById('feed').innerHTML=(d.feed||[]).map(e=>`${ft(e.time)} [${e.type}] ${e.project||''} ${(e.message||'').substring(0,40)} &nbsp; `).join('')||'no activity';}catch{}
 }
-async function loadAll(){await Promise.all([loadAgents(),loadChats(),loadFeed()]);renderSide();}
+async function loadOrchChat(){
+  try{const r=await fetch('/api/chat/_orchestrator');const d=await r.json();renderChat('o-msgs',(d.messages||[]));}catch{}
+}
 
-function renderSide(){
+function render(){
   const h=agents.filter(a=>a.status==='working').length;
   const i=agents.filter(a=>a.status==='idle').length;
   const s=agents.filter(a=>a.status==='sleeping').length;
+  const dirty=agents.reduce((s,a)=>s+(a.uncommitted||0),0);
   document.getElementById('stats').innerHTML=
-    `<div class="st"><div class="n" style="color:#22c55e">${h}</div><div class="l">Working</div></div>`+
-    `<div class="st"><div class="n" style="color:#eab308">${i}</div><div class="l">Idle</div></div>`+
-    `<div class="st"><div class="n" style="color:#555">${s}</div><div class="l">Sleep</div></div>`;
-  const items=agents.map(a=>({...a,...(chatMap[a.name]||{})}));
-  items.sort((a,b)=>(b.last_ts||'').localeCompare(a.last_ts||'')||(a.days||999)-(b.days||999));
-  const o=chatMap['_orchestrator']||{};
-  let html=`<div class="item ${cur===''?'active':''}" onclick="sel('')"><div class="dot working"></div><div class="info"><div class="name">PA Orchestrator</div><div class="last">${esc(o.last_msg||'Start here...')}</div></div></div>`;
-  for(const a of items){
-    html+=`<div class="item ${cur===a.name?'active':''}" onclick="sel('${a.name}')"><div class="dot ${a.status}"></div><div class="info"><div class="name">${esc(a.name)}</div><div class="meta">${esc(a.branch||'')} · ${a.uncommitted||0} dirty</div><div class="last">${esc(a.last_msg||'')}</div></div><div class="time">${a.last_commit||''}</div></div>`;
-  }
-  document.getElementById('list').innerHTML=html;
+    `<div class="stat"><div class="n" style="color:var(--green)">${h}</div><div class="l">working</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--yellow)">${i}</div><div class="l">idle</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--mute)">${s}</div><div class="l">sleeping</div></div>`+
+    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`+
+    `<div class="stat"><div class="n" style="color:${dirty>50?'var(--accent)':'var(--yellow)'}">${dirty}</div><div class="l">uncommitted</div></div>`;
+
+  const sorted=[...agents].sort((a,b)=>(a.days||999)-(b.days||999));
+  document.getElementById('grid').innerHTML=sorted.map(a=>{
+    const pct=Math.min(100,Math.max(5,((7-(a.days||999))/7)*100));
+    const dirtyClass=(a.uncommitted||0)>20?'dirty high':(a.uncommitted||0)>5?'dirty':'';
+    return`<div class="tile" onclick="openProject('${esc(a.name)}')">
+      <div class="top"><span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}</span><span class="ver">${esc(a.template_version||'')}</span></div>
+      <div class="branch">${esc(a.branch||'')}</div>
+      <div class="row"><span class="${dirtyClass}">${a.uncommitted||0} dirty</span><span>${a.last_commit||''}</span></div>
+      <div class="bar" style="width:${pct}%;background:${({working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)'})[a.status]||'var(--mute)'}"></div>
+    </div>`;
+  }).join('');
 }
 
-async function sel(name){
-  cur=name;renderSide();
-  document.getElementById('ct').textContent=name||'PA Orchestrator';
-  const ep=name?'/api/chat/'+name:'/api/chat/_orchestrator';
+function showDashboard(){
+  curProj=null;
+  document.getElementById('dashboard-view').style.display='block';
+  document.getElementById('detail-view').className='detail';
+}
+
+async function openProject(name){
+  curProj=name;
+  document.getElementById('dashboard-view').style.display='none';
+  document.getElementById('detail-view').className='detail show';
+
+  const ag=agents.find(a=>a.name===name)||{};
+  document.getElementById('d-dot').className='dot '+(ag.status||'');
+  document.getElementById('d-name').textContent=name;
+  document.getElementById('d-chat-name').textContent=name;
+  document.getElementById('d-meta').textContent=`${ag.branch||''} · ${ag.uncommitted||0} uncommitted · ${ag.last_commit||''} · ${ag.status||''}`;
+  document.getElementById('d-info').innerHTML=
+    `<div style="font-size:11px;color:var(--dim)">`+
+    `<div>branch: ${esc(ag.branch||'')}</div>`+
+    `<div>dirty: ${ag.uncommitted||0}</div>`+
+    `<div>last: ${esc(ag.last_commit||'')}</div>`+
+    `<div>template: ${esc(ag.template_version||'none')}</div>`+
+    `<div>status: ${ag.status||''}</div></div>`;
+
+  // Load modules
   try{
-    const r=await fetch(ep);const d=await r.json();
-    document.getElementById('msgs').innerHTML=(d.messages||[]).map(m=>
-      `<div class="m ${m.role==='user'?'u':'a'}">${m.role==='assistant'?'<pre>'+esc(m.msg)+'</pre>':esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`
-    ).join('');
-    document.getElementById('msgs').scrollTop=9999;
-  }catch{}
-  if(name){
-    try{const r=await fetch('/api/modules/'+name);const d=await r.json();
-      document.getElementById('modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'No modules';
-    }catch{document.getElementById('modules').innerHTML='';}
-    const ag=agents.find(a=>a.name===name);
-    document.getElementById('cs').textContent=ag?`${ag.status} · ${ag.uncommitted} dirty · ${ag.branch}`:'';
-  }else{document.getElementById('modules').innerHTML='';document.getElementById('cs').textContent='orchestrator';}
-  document.getElementById('ci').focus();
+    const r=await fetch('/api/modules/'+name);const d=await r.json();
+    document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--dim)">no modules detected</span>';
+  }catch{document.getElementById('d-modules').innerHTML='failed';}
+
+  // Load chat
+  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('d-msgs',d.messages||[]);}catch{}
+  document.getElementById('d-ci').focus();
 }
 
-async function send(){
-  const inp=document.getElementById('ci');const msg=inp.value.trim();if(!msg)return;
-  const ms=document.getElementById('msgs');
+function renderChat(elId, messages){
+  const el=document.getElementById(elId);
+  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='assistant'?'<pre>'+esc(m.msg)+'</pre>':esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function sendOrch(){await doSend('','o-ci','o-cb','o-msgs','o-typ');}
+async function sendDetail(){if(!curProj)return;await doSend(curProj,'d-ci','d-cb','d-msgs','d-typ');}
+
+async function doSend(proj,inputId,btnId,msgsId,typId){
+  const inp=document.getElementById(inputId);
+  const msg=inp.value.trim();if(!msg)return;
+  const ms=document.getElementById(msgsId);
   ms.innerHTML+=`<div class="m u">${esc(msg)}<div class="ts">${ft()}</div></div>`;
-  inp.value='';document.getElementById('cb').disabled=true;document.getElementById('typ').style.display='block';ms.scrollTop=9999;
+  inp.value='';document.getElementById(btnId).disabled=true;
+  document.getElementById(typId).style.display='block';ms.scrollTop=ms.scrollHeight;
   try{
-    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:cur,message:msg})});
-    const d=await r.json();document.getElementById('typ').style.display='none';
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
+    const d=await r.json();document.getElementById(typId).style.display='none';
     if(d.status==='complete')ms.innerHTML+=`<div class="m a"><pre>${esc(d.response||'')}</pre><div class="ts">${ft(d.ts)}</div></div>`;
-    else ms.innerHTML+=`<div class="m a" style="color:#ef4444">Error: ${esc(d.error||'?')}</div>`;
-  }catch(e){document.getElementById('typ').style.display='none';ms.innerHTML+=`<div class="m a" style="color:#ef4444">${esc(e.message)}</div>`;}
-  document.getElementById('cb').disabled=false;ms.scrollTop=9999;loadChats().then(renderSide);loadFeed();
+    else ms.innerHTML+=`<div class="m a" style="color:var(--accent)">error: ${esc(d.error||'?')}</div>`;
+  }catch(e){document.getElementById(typId).style.display='none';ms.innerHTML+=`<div class="m a" style="color:var(--accent)">${esc(e.message)}</div>`;}
+  document.getElementById(btnId).disabled=false;ms.scrollTop=ms.scrollHeight;loadFeed();
 }
 
 async function act(n){
@@ -151,6 +247,8 @@ async function act(n){
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function ft(t){if(!t)return new Date().toLocaleTimeString();try{return new Date(t).toLocaleTimeString();}catch{return t;}}
-loadAll();setInterval(()=>{loadAgents();loadChats().then(renderSide);},30000);setInterval(loadFeed,15000);
+
+loadAll();
+setInterval(loadAll,30000);
 </script>
 </body></html>
