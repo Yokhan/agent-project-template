@@ -30,8 +30,8 @@ echo ""
 echo "Claude config:"
 check ".claude/settings.json" test -f .claude/settings.json
 check "settings.json valid JSON" python -m json.tool .claude/settings.json
-check ">=19 rule files" bash -c '[ $(ls .claude/rules/*.md 2>/dev/null | wc -l) -ge 19 ]'
-check ">=9 domain rule files" bash -c '[ $(ls .claude/rules/domain-*.md .claude/rules/critical-thinking.md 2>/dev/null | wc -l) -ge 9 ]'
+check "router.md exists" bash -c '[ -f .claude/rules/router.md ]'
+check ">=15 library rule files" bash -c '[ $(find .claude/library -name "*.md" 2>/dev/null | wc -l) -ge 15 ]'
 check ">=7 agent files" bash -c '[ $(ls .claude/agents/*.md 2>/dev/null | wc -l) -ge 7 ]'
 check ">=21 skill dirs" bash -c '[ $(ls -d .claude/skills/*/ 2>/dev/null | wc -l) -ge 21 ]'
 check ">=6 domain skill dirs" bash -c '[ $(ls -d .claude/skills/domain-*/ 2>/dev/null | wc -l) -ge 6 ]'

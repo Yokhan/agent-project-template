@@ -280,6 +280,6 @@ Coordination protocol:
 
 ## Cross-Reference
 
-- `.claude/rules/strategic-thinking.md` -- OODA loop mechanics, Commander Intent, center of gravity, culmination point, flow over batch (small batches with validation), know when to stop
-- `.claude/rules/conflict-resolution.md` -- Circuit breaker rules for file edit limits and test failure limits
-- `.claude/rules/self-improvement.md` -- Lessons logging protocol, promotion cycle
+- `.claude/library/meta/strategic-thinking.md` -- OODA loop mechanics, Commander Intent, center of gravity, culmination point, flow over batch (small batches with validation), know when to stop
+- `.claude/library/conflict/conflict-resolution.md` -- Circuit breaker rules for file edit limits and test failure limits
+- `.claude/library/process/self-improvement.md` -- Lessons logging protocol, promotion cycle

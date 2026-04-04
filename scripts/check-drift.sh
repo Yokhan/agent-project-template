@@ -185,7 +185,7 @@ fi
 echo "[9/10] Checking template rules integrity..."
 if [ -f "$MANIFEST" ]; then
   RULE_DRIFT=0
-  for rule_file in .claude/rules/*.md .claude/agents/*.md; do
+  for rule_file in .claude/rules/*.md .claude/library/*/*.md .claude/agents/*.md; do
     [ -f "$rule_file" ] || continue
     # Skip project-* files (those ARE meant to be local)
     basename_f=$(basename "$rule_file")

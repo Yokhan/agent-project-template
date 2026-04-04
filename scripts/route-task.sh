@@ -20,7 +20,7 @@ FILES="$LIB/process/context-first.md"
 MODES=""
 
 # CODE
-if echo "$TASK" | grep -qiE "implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate"; then
+if echo "$TASK" | grep -qiE "implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate|настрой|создай|добавь|исправь|починь|реализуй|напиши код|сделай|баг|не работает|падает|ошибка|сломал"; then
   FILES="$FILES $LIB/process/research-first.md $LIB/process/plan-first.md $LIB/process/self-verification.md $LIB/technical/architecture.md $LIB/technical/code-style.md $LIB/technical/error-handling.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES code"
 fi
@@ -32,13 +32,13 @@ if echo "$TASK" | grep -qiE "test|coverage|tdd|spec|assert|mock|jest|pytest|vite
 fi
 
 # DESIGN
-if echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen"; then
+if echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen|дизайн|макет|фигма|экран|интерфейс|стиль"; then
   FILES="$FILES $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES design"
 fi
 
 # REVIEW
-if echo "$TASK" | grep -qiE "review|audit|check|analyze|report|status|health|inspect|evaluate"; then
+if echo "$TASK" | grep -qiE "review|audit|check|analyze|report|status|health|inspect|evaluate|посмотри|проверь|оцени|разбери|покажи"; then
   FILES="$FILES $LIB/meta/analysis.md $LIB/meta/critical-thinking.md $LIB/process/self-verification.md"
   MODES="$MODES review"
 fi
@@ -56,19 +56,19 @@ if echo "$TASK" | grep -qiE "commit|push|pr|pull.request|merge|branch|release|de
 fi
 
 # PLAN
-if echo "$TASK" | grep -qiE "plan|strategy|architect|roadmap|estimate|decompose|breakdown"; then
+if echo "$TASK" | grep -qiE "plan|strategy|architect|roadmap|estimate|decompose|breakdown|спланируй|декомпозируй|разбей|оцени сложность|архитектур"; then
   FILES="$FILES $LIB/meta/strategic-thinking.md $LIB/process/plan-first.md $LIB/conflict/conflict-resolution.md"
   MODES="$MODES plan"
 fi
 
 # SAFETY-CRITICAL
-if echo "$TASK" | grep -qiE "health|fitness|medical|nutrition|exercise|science|evidence|study|research paper"; then
+if echo "$TASK" | grep -qiE "health|fitness|medical|nutrition|exercise|science|evidence|study|research paper|здоровье|фитнес|тренировк|питание|наук"; then
   FILES="$FILES $LIB/domain/domain-guards.md $LIB/meta/critical-thinking.md"
   MODES="$MODES safety"
 fi
 
 # REFACTOR
-if echo "$TASK" | grep -qiE "refactor|simplif|clean.up|extract|split|reorganize"; then
+if echo "$TASK" | grep -qiE "refactor|simplif|clean.up|extract|split|reorganize|рефактор|упрости|вынеси|раздели"; then
   FILES="$FILES $LIB/technical/architecture.md $LIB/technical/code-style.md $LIB/process/self-verification.md $LIB/technical/testing.md"
   MODES="$MODES refactor"
 fi

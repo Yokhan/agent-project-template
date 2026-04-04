@@ -182,7 +182,7 @@ The last 20% of coverage often requires 80% of the testing effort. Before chasin
 
 ## Cross-Reference
 
-- `.claude/rules/domain-software.md` -- "Property-Based Testing": for pure functions with wide input space, generate random inputs. Catches edge cases unit tests miss.
-- `.claude/rules/strategic-thinking.md` -- "Find the bottleneck" (Theory of Constraints): low coverage in high-risk code is the bottleneck. Improving coverage in low-risk code is waste. "Culmination point": coverage effort has diminishing returns -- know when to stop.
-- `.claude/rules/testing.md` -- Coverage thresholds by layer, test structure, what to test and what not to test
-- `.claude/rules/critical-thinking.md` -- Goodhart Law awareness: when the metric becomes the target, the metric loses meaning
+- `.claude/library/domain/domain-guards.md` -- "Property-Based Testing": for pure functions with wide input space, generate random inputs. Catches edge cases unit tests miss.
+- `.claude/library/meta/strategic-thinking.md` -- "Find the bottleneck" (Theory of Constraints): low coverage in high-risk code is the bottleneck. Improving coverage in low-risk code is waste. "Culmination point": coverage effort has diminishing returns -- know when to stop.
+- `.claude/library/technical/testing.md` -- Coverage thresholds by layer, test structure, what to test and what not to test
+- `.claude/library/meta/critical-thinking.md` -- Goodhart Law awareness: when the metric becomes the target, the metric loses meaning

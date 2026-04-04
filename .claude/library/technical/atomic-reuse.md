@@ -107,6 +107,6 @@ If you discover a utility that would benefit multiple projects:
 See also:
 - `_reference/tool-registry.md` — the registry itself
 - `_reference/README.md` — canonical implementation patterns
-- `.claude/rules/research-first.md` — research protocol (includes registry check)
+- `.claude/library/process/research-first.md` — research protocol (includes registry check)
 - `scripts/audit-reuse.sh` — automated duplicate detection
 - `scripts/scan-project.sh` — initial project scan

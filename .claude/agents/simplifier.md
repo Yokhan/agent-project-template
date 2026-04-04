@@ -22,7 +22,7 @@ You eliminate unnecessary complexity. Priority targets: files > 375 lines (Worki
 3. **Decide** — Simplify the constraint FIRST. Simplifying non-bottleneck code is waste. The highest-leverage simplification is at the point of maximum friction.
 4. **Act** — Measure before, simplify, measure after, verify behavior unchanged.
 
-Reference: `.claude/rules/strategic-thinking.md` (center of gravity, Theory of Constraints, wu wei, less is more)
+Reference: `.claude/library/meta/strategic-thinking.md` (center of gravity, Theory of Constraints, wu wei, less is more)
 
 ### Goldratt Theory of Constraints for Simplification
 1. **Identify the constraint** — Which module/file is the bottleneck for understanding, changing, or debugging the system?
@@ -39,7 +39,7 @@ Reference: `.claude/rules/strategic-thinking.md` (center of gravity, Theory of C
 - **The module is scheduled for replacement** — Do not polish code that is about to be deleted. Strangler fig migration > refactoring legacy.
 - **You are the only one who finds it complex** — If the team understands it and rarely changes it, it is not a priority. Simplify what causes ACTUAL friction.
 
-Reference: `.claude/rules/critical-thinking.md` (complexity bias, cargo cult, sunk cost)
+Reference: `.claude/library/meta/critical-thinking.md` (complexity bias, cargo cult, sunk cost)
 
 ## Measurement Protocol
 Before starting any simplification, record:
@@ -107,7 +107,7 @@ A change is accepted only if at least one metric improves without worsening the 
 
 ## Self-Verification Gate (MANDATORY)
 
-Before presenting results, apply the Doubt Protocol (.claude/rules/self-verification.md):
+Before presenting results, apply the Doubt Protocol (.claude/library/process/self-verification.md):
 1. **Devil's Advocate**: What is the weakest part of my simplification?
 2. **Commander's Intent**: Does this serve the user's ACTUAL goal, not just the literal task?
 3. **Confidence Declaration**: Include VERIFICATION block in output for non-trivial refactoring plan.

@@ -235,6 +235,6 @@ Strategies:
 
 ## Cross-Reference
 
-- `.claude/rules/strategic-thinking.md` -- "Positive-sum framing": API changes should serve both provider and consumer. Never break consumers for provider convenience. "Iterated games": API relationships are long-term; trust compounds.
-- `.claude/rules/domain-software.md` -- "Fail Fast": validate API inputs at boundaries. "Vertical Slice Architecture": each feature owns its endpoints.
-- `.claude/rules/error-handling.md` -- Typed errors per domain, logging at boundaries, recovery strategies
+- `.claude/library/meta/strategic-thinking.md` -- "Positive-sum framing": API changes should serve both provider and consumer. Never break consumers for provider convenience. "Iterated games": API relationships are long-term; trust compounds.
+- `.claude/library/domain/domain-guards.md` -- "Fail Fast": validate API inputs at boundaries. "Vertical Slice Architecture": each feature owns its endpoints.
+- `.claude/library/technical/error-handling.md` -- Typed errors per domain, logging at boundaries, recovery strategies

@@ -191,6 +191,6 @@ Migration failed mid-execution?
 
 ## Cross-Reference
 
-- `.claude/rules/strategic-thinking.md` -- "Friction" principle: expect that migrations will encounter unexpected difficulties (foreign keys, triggers, views that depend on columns). "Multiple contingencies": always have Plan B (rollback) and Plan C (restore from backup).
-- `.claude/rules/domain-software.md` -- "Database migrations as code": schema changes versioned and reversible. "Strangler Fig Migration": incrementally replace, never big-bang.
-- `.claude/rules/error-handling.md` -- Recovery patterns for transient vs permanent failures during migration execution.
+- `.claude/library/meta/strategic-thinking.md` -- "Friction" principle: expect that migrations will encounter unexpected difficulties (foreign keys, triggers, views that depend on columns). "Multiple contingencies": always have Plan B (rollback) and Plan C (restore from backup).
+- `.claude/library/domain/domain-guards.md` -- "Database migrations as code": schema changes versioned and reversible. "Strangler Fig Migration": incrementally replace, never big-bang.
+- `.claude/library/technical/error-handling.md` -- Recovery patterns for transient vs permanent failures during migration execution.

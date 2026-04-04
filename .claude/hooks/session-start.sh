@@ -87,12 +87,12 @@ if [ -f "PROJECT_SPEC.md" ]; then
     if [ "$now_epoch" -gt 0 ] && [ "$spec_epoch" -gt 0 ]; then
       days_old=$(( (now_epoch - spec_epoch) / 86400 ))
       if [ "$days_old" -gt 7 ]; then
-        echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/rules/context-first.md)."
+        echo "WARNING: PROJECT_SPEC.md is ${days_old} days old. Regenerate it (see .claude/library/process/context-first.md)."
       fi
     fi
   fi
 else
-  echo "ACTION: PROJECT_SPEC.md not found. Generate it now (see .claude/rules/context-first.md)."
+  echo "ACTION: PROJECT_SPEC.md not found. Generate it now (see .claude/library/process/context-first.md)."
 fi
 
 # Uncommitted changes warning

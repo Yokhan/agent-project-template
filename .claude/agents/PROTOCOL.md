@@ -57,10 +57,7 @@ Stay within your tool call budget. If approaching limit:
 
 On task completion, log metrics via agent-metrics skill (`.claude/skills/agent-metrics/SKILL.md`).
 
-## Subagent Context Discipline
+## Note
 
-When the orchestrator launches you as a subagent:
-- You receive CLAUDE.md + your agent file + relevant rules as context
-- Do NOT re-read files that the orchestrator already summarized in the prompt
-- Do NOT pass full file contents to nested subagents — pass summaries
-- Stay focused on your specific task, don't expand scope
+Old "Subagent Context Discipline" section removed (contradicted lines 11-18 above).
+Subagent routing discipline is defined in the "Subagent Context Discipline" section at the top of this file.

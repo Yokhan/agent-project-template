@@ -100,7 +100,7 @@ When confidence is LOW or you're blocked after 2+ attempts:
 
 Never spin silently. The user seeing "I'm stuck on X, here are my options" is 100x better than the agent producing wrong code on attempt #4.
 
-See also: `.claude/rules/conflict-resolution.md` — Escalation Protocol, Confidence-Based Escalation.
+See also: `.claude/library/conflict/conflict-resolution.md` — Escalation Protocol, Confidence-Based Escalation.
 
 ## Reuse Gate (M+ tasks, in addition to Doubt Protocol)
 
@@ -123,8 +123,8 @@ If any answer is "no" or "didn't check" → go back and check before presenting.
 | Authority bias | "Best practice says..." | Critical-thinking.md evidence hierarchy |
 
 ## References
-- `.claude/rules/critical-thinking.md` — evidence hierarchy, red flags
-- `.claude/rules/strategic-thinking.md` — OODA loop, Commander's Intent
-- `.claude/rules/conflict-resolution.md` — confidence-based escalation
-- `.claude/rules/self-improvement.md` — sycophancy failure tracking (must align with circuit breaker above)
-- `.claude/rules/critical-thinking.md` — evidence hierarchy prevents overconfident recommendations
+- `.claude/library/meta/critical-thinking.md` — evidence hierarchy, red flags
+- `.claude/library/meta/strategic-thinking.md` — OODA loop, Commander's Intent
+- `.claude/library/conflict/conflict-resolution.md` — confidence-based escalation
+- `.claude/library/process/self-improvement.md` — sycophancy failure tracking (must align with circuit breaker above)
+- `.claude/library/meta/critical-thinking.md` — evidence hierarchy prevents overconfident recommendations

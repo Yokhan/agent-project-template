@@ -25,7 +25,7 @@ Why: someone may have just changed the same code. Avoid conflicts and redundant 
 ### 4. Check tool registry
 - `_reference/tool-registry.md` — does a utility/component already exist for what you're about to build?
 - If found → REUSE it. If close match → extend it. Don't write new code for solved problems.
-- See `.claude/rules/atomic-reuse.md` for full protocol.
+- See `.claude/library/technical/atomic-reuse.md` for full protocol.
 
 ### 5. Check for cross-project impact
 - If the change affects shared code, APIs, or exports: check who consumes them

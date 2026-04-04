@@ -155,6 +155,6 @@ Before creating ANY element in Figma:
 4. If YES → USE EXISTING. If NO → create AND register in tool-registry.
 
 ## Cross-References
-- `.claude/rules/atomic-reuse.md` — code-side reuse protocol (same philosophy)
+- `.claude/library/technical/atomic-reuse.md` — code-side reuse protocol (same philosophy)
 - `_reference/tool-registry.md` — Design Tokens section for component registry
-- `.claude/rules/deep-analysis.md` — "Level 0 analysis is never acceptable" applies to design too
+- `.claude/library/meta/analysis.md` — "Level 0 analysis is never acceptable" applies to design too

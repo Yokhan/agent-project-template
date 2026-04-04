@@ -191,6 +191,6 @@ If you fix a bug and do not add a test, you have not fixed it -- you have merely
 
 ## Cross-Reference
 
-- `.claude/rules/strategic-thinking.md` -- "Center of gravity" principle: find the root cause (center of gravity), not the symptom (periphery). "Friction" principle: the simplest bug is harder than it looks.
-- `.claude/rules/error-handling.md` -- Typed errors, logging at boundaries, recovery patterns
-- `.claude/rules/testing.md` -- Test structure, coverage thresholds, property-based testing for edge cases
+- `.claude/library/meta/strategic-thinking.md` -- "Center of gravity" principle: find the root cause (center of gravity), not the symptom (periphery). "Friction" principle: the simplest bug is harder than it looks.
+- `.claude/library/technical/error-handling.md` -- Typed errors, logging at boundaries, recovery patterns
+- `.claude/library/technical/testing.md` -- Test structure, coverage thresholds, property-based testing for edge cases

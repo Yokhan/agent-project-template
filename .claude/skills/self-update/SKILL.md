@@ -215,6 +215,6 @@ Save retrospective summary to `brain/01-daily/weekly-YYYY-MM-DD.md`:
 
 ## Cross-Reference
 
-- `.claude/rules/strategic-thinking.md` -- "Kaizen" (continuous improvement): small consistent improvements compound. "Study, do not just check" (PDCA): understand WHY a lesson emerged, do not just file it.
-- `.claude/rules/self-improvement.md` -- Lessons.md protocol, promotion cycle, anti-patterns to track
-- `.claude/rules/critical-thinking.md` -- Evidence hierarchy applies to self-improvement too: 3+ occurrences = evidence, 1 occurrence = anecdote
+- `.claude/library/meta/strategic-thinking.md` -- "Kaizen" (continuous improvement): small consistent improvements compound. "Study, do not just check" (PDCA): understand WHY a lesson emerged, do not just file it.
+- `.claude/library/process/self-improvement.md` -- Lessons.md protocol, promotion cycle, anti-patterns to track
+- `.claude/library/meta/critical-thinking.md` -- Evidence hierarchy applies to self-improvement too: 3+ occurrences = evidence, 1 occurrence = anecdote
