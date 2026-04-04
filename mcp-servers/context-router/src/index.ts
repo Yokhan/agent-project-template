@@ -8,10 +8,11 @@ import { loadRules, getProjectContext } from './context.js';
 import { getState, updateState, restoreState } from './state.js';
 import { runResearch, runVerify, runPlanScaffold } from './research.js';
 import { searchMemory, getEngramStatus } from './engram.js';
+import { runPipeline, listPipelines, pipelineStatus } from './n8n.js';
 
 const server = new McpServer({
   name: 'context-router',
-  version: '1.2.0',
+  version: '1.4.0',
 });
 
 // --- Tool: get_context ---
@@ -221,6 +222,44 @@ server.tool(
   },
   async ({ task }) => {
     const result = await runPlanScaffold(task);
+    return { content: [{ type: 'text' as const, text: result }] };
+  }
+);
+
+// --- Tool: run_pipeline (n8n) ---
+server.tool(
+  'run_pipeline',
+  'Trigger n8n workflow pipeline via webhook. Returns execution result. Requires n8n running at N8N_URL.',
+  {
+    name: z.string().describe('Pipeline/webhook name, e.g. "briefing", "health", "scan"'),
+    params: z.record(z.string()).optional().describe('Optional key-value parameters'),
+  },
+  async ({ name, params }) => {
+    const result = await runPipeline(name, params);
+    return { content: [{ type: 'text' as const, text: result }] };
+  }
+);
+
+// --- Tool: list_pipelines (n8n) ---
+server.tool(
+  'list_pipelines',
+  'List active n8n workflows. Requires n8n running with API key.',
+  {},
+  async () => {
+    const result = await listPipelines();
+    return { content: [{ type: 'text' as const, text: result }] };
+  }
+);
+
+// --- Tool: pipeline_status (n8n) ---
+server.tool(
+  'pipeline_status',
+  'Get execution status of an n8n pipeline run.',
+  {
+    execution_id: z.string().describe('n8n execution ID'),
+  },
+  async ({ execution_id }) => {
+    const result = await pipelineStatus(execution_id);
     return { content: [{ type: 'text' as const, text: result }] };
   }
 );

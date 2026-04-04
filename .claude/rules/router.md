@@ -63,6 +63,9 @@ get_active_rules()            — restore after compaction
 research(target)              — auto research: files, importers, git, lessons, registry
 verify(size)                  — auto verification: file sizes, syntax, gates
 plan_scaffold(task)           — auto plan: affected files, size estimate, template
+run_pipeline(name, params?)   — trigger n8n workflow (if n8n running)
+list_pipelines()              — list active n8n workflows
+pipeline_status(execution_id) — check pipeline execution result
 ```
 
 ## Bash fallbacks (if MCP unavailable):
