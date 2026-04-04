@@ -1,0 +1,48 @@
+{
+  "name": "Chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst os = require('os');\nconst input = $input.first().json;\nconst message = (input.params && input.params.message) || input.message || '';\nconst project = (input.params && input.params.project) || input.project || '';\nconst projRoot = '__PROJECT_ROOT__';\nconst docsDir = '__DOCUMENTS_DIR__';\n\nif (!message) return [{json:{status:'error',error:'Missing message'}}];\n\nconst cwd = project ? docsDir + '/' + project : projRoot;\nconst tmp = os.tmpdir() + '/chat-' + Date.now() + '.txt';\n\ntry {\n  fs.writeFileSync(tmp, message);\n  const result = cp.execSync('claude -p < \"' + tmp.replace(/\\/g, '/') + '\"', {cwd, timeout: 300000, encoding: 'utf8', shell: true}).trim();\n  try { fs.unlinkSync(tmp); } catch {}\n\n  // Append to chat history\n  const historyFile = projRoot + '/tasks/.chat-history.jsonl';\n  const entry = JSON.stringify({ts: new Date().toISOString(), project: project || 'PA', message, result: result.substring(0, 500)});\n  fs.appendFileSync(historyFile, entry + String.fromCharCode(10));\n\n  return [{json:{status:'complete', response: result, project: project || 'PA', timestamp: new Date().toISOString()}}];\n} catch(e) {\n  try { fs.unlinkSync(tmp); } catch {}\n  return [{json:{status:'error', error: (e.stderr || '') + e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "Agent State",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-state",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst projRoot = '__PROJECT_ROOT__';\nconst docsDir = '__DOCUMENTS_DIR__';\n\ntry {\n  const raw = cp.execSync('bash scripts/scan-projects.sh \"' + docsDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const now = Math.floor(Date.now() / 1000);\n\n  // Parse scan output\n  const agents = raw.trim().split(String.fromCharCode(10)).filter(l => l.includes('|true|')).map((l, i) => {\n    const [name, branch, last, age, uncommitted] = l.split('|');\n    const days = parseInt(age) ? Math.floor((now - parseInt(age)) / 86400) : 999;\n    const status = days <= 1 ? 'working' : days <= 7 ? 'idle' : 'sleeping';\n    return {id: i, name, status, branch, last_commit: last, uncommitted: parseInt(uncommitted)||0, days};\n  });\n\n  // Check chat history for recent activity (overrides status)\n  const historyFile = projRoot + '/tasks/.chat-history.jsonl';\n  if (fs.existsSync(historyFile)) {\n    const lines = fs.readFileSync(historyFile, 'utf8').trim().split(String.fromCharCode(10)).slice(-10);\n    const recent = new Set();\n    for (const line of lines) {\n      try {\n        const e = JSON.parse(line);\n        const ago = (Date.now() - new Date(e.ts).getTime()) / 60000;\n        if (ago < 30) recent.add(e.project);\n      } catch {}\n    }\n    for (const a of agents) {\n      if (recent.has(a.name)) a.status = 'working';\n    }\n  }\n\n  return [{json:{agents, timestamp: new Date().toISOString()}}];\n} catch(e) {\n  return [{json:{agents:[], error: (e.stderr||'')+e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

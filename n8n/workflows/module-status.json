@@ -1,0 +1,48 @@
+{
+  "name": "Module Status",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "module-status",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst input = $input.first().json;\nconst project = (input.params && input.params.project) || input.project || '';\nconst projRoot = '__PROJECT_ROOT__';\nconst docsDir = '__DOCUMENTS_DIR__';\n\nif (!project) return [{json:{status:'error',error:'Missing project'}}];\n\nconst path = docsDir + '/' + project;\ntry {\n  const output = cp.execSync('bash scripts/module-status.sh \"' + path + '\" 2>&1', {cwd: projRoot, timeout: 30000, encoding: 'utf8'});\n  const modules = output.trim().split(String.fromCharCode(10)).filter(l => l.includes('|')).map(l => {\n    const [name, status, files, lines, issues] = l.split('|');\n    return {name, status, files: parseInt(files)||0, lines: parseInt(lines)||0, issues: issues||''};\n  });\n  return [{json:{status:'complete', project, modules}}];\n} catch(e) {\n  return [{json:{status:'error', error: (e.stderr||'')+e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

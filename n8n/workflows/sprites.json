@@ -1,0 +1,48 @@
+{
+  "name": "Sprites",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sprites",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst projRoot = '__PROJECT_ROOT__';\ntry {\n  const data = fs.readFileSync(projRoot + '/n8n/dashboard/sprites.json', 'utf8');\n  return [{json: JSON.parse(data)}];\n} catch(e) {\n  return [{json:{error: 'sprites.json not found: ' + e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

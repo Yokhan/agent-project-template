@@ -1,0 +1,48 @@
+{
+  "name": "Activity Feed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feed",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst projRoot = '__PROJECT_ROOT__';\nconst feed = [];\n\n// Chat history\nconst histFile = projRoot + '/tasks/.chat-history.jsonl';\nif (fs.existsSync(histFile)) {\n  const lines = fs.readFileSync(histFile, 'utf8').trim().split(String.fromCharCode(10)).slice(-10);\n  for (const line of lines) {\n    try {\n      const e = JSON.parse(line);\n      feed.push({type:'chat', project: e.project, message: e.message, time: e.ts});\n    } catch {}\n  }\n}\n\n// Sort by time desc\nfeed.sort((a,b) => new Date(b.time) - new Date(a.time));\n\nreturn [{json:{feed: feed.slice(0, 15), timestamp: new Date().toISOString()}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

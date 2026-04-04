@@ -74,3 +74,8 @@ Before ANY task that modifies code/content:
 ---
 
 _Last updated: 2026-03-26_
+
+## Session End — 2026-04-04 22:46
+Modified files:
+n8n/build-dashboard.py
+n8n/workflows/dashboard.json
