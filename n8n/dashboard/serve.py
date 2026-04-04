@@ -13,6 +13,8 @@ import sys
 import os
 import json
 import time
+import tempfile
+import re
 from pathlib import Path
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3333
@@ -107,6 +109,177 @@ def get_feed():
     return {'feed': feed, 'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S')}
 
 
+CHATS_DIR = os.path.join(ROOT, 'tasks', 'chats')
+os.makedirs(CHATS_DIR, exist_ok=True)
+
+
+def get_chats():
+    """List all project chats with last message."""
+    chats = []
+    if not os.path.exists(CHATS_DIR):
+        return {'chats': []}
+    for f in sorted(os.listdir(CHATS_DIR)):
+        if not f.endswith('.jsonl'):
+            continue
+        project = f[:-6]  # strip .jsonl
+        path = os.path.join(CHATS_DIR, f)
+        try:
+            lines = open(path, encoding='utf-8').readlines()
+            last = json.loads(lines[-1]) if lines else {}
+            chats.append({
+                'project': project,
+                'last_msg': last.get('msg', '')[:60],
+                'last_ts': last.get('ts', ''),
+                'msg_count': len(lines),
+                'role': last.get('role', '')
+            })
+        except:
+            chats.append({'project': project, 'last_msg': '', 'last_ts': '', 'msg_count': 0})
+    # Sort by last_ts descending
+    chats.sort(key=lambda c: c.get('last_ts', ''), reverse=True)
+    return {'chats': chats}
+
+
+def get_chat_history(project):
+    """Get last 50 messages for a project."""
+    path = os.path.join(CHATS_DIR, f'{project}.jsonl')
+    messages = []
+    if os.path.exists(path):
+        try:
+            for line in open(path, encoding='utf-8').readlines()[-50:]:
+                messages.append(json.loads(line.strip()))
+        except:
+            pass
+    return {'project': project, 'messages': messages}
+
+
+def send_chat(project, message):
+    """Send message to project via claude -p, save history."""
+    if not message:
+        return {'status': 'error', 'error': 'Empty message'}
+
+    cwd = os.path.join(DOCS_DIR, project) if project else ROOT
+    if project and not os.path.exists(cwd):
+        return {'status': 'error', 'error': f'Project not found: {cwd}'}
+
+    chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
+    ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+
+    # Save user message
+    with open(chat_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': message}) + '\n')
+
+    # Execute via claude -p (temp file for injection safety)
+    tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(message)
+        result = subprocess.run(
+            f'claude -p < "{tmp}"',
+            shell=True, capture_output=True, text=True, timeout=300, cwd=cwd
+        )
+        response = result.stdout.strip() or result.stderr.strip() or 'No response'
+    except subprocess.TimeoutExpired:
+        response = 'Error: claude -p timed out (5 min)'
+    except Exception as e:
+        response = f'Error: {e}'
+    finally:
+        try:
+            os.unlink(tmp)
+        except:
+            pass
+
+    # Save assistant response
+    ts2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    with open(chat_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': response}) + '\n')
+
+    return {'status': 'complete', 'response': response, 'project': project or '_orchestrator', 'ts': ts2}
+
+
+def get_modules(project):
+    """Get module status for a project."""
+    path = os.path.join(DOCS_DIR, project)
+    if not os.path.exists(path):
+        return {'status': 'error', 'error': 'Project not found'}
+
+    script = os.path.join(ROOT, 'scripts', 'module-status.sh')
+    if not os.path.exists(script):
+        return {'status': 'error', 'error': 'module-status.sh not found'}
+
+    try:
+        result = subprocess.run(
+            ['bash', script, path], capture_output=True, text=True, timeout=15, cwd=ROOT
+        )
+        modules = []
+        for line in result.stdout.strip().split('\n'):
+            if '|' not in line:
+                continue
+            parts = line.split('|')
+            if len(parts) >= 5:
+                modules.append({
+                    'name': parts[0], 'status': parts[1],
+                    'files': int(parts[2]) if parts[2].isdigit() else 0,
+                    'lines': int(parts[3]) if parts[3].isdigit() else 0,
+                    'issues': parts[4]
+                })
+        return {'status': 'complete', 'project': project, 'modules': modules}
+    except Exception as e:
+        return {'status': 'error', 'error': str(e)}
+
+
+def run_action(name, params=None):
+    """Execute a named action locally."""
+    if name == 'briefing':
+        agents = get_agents()
+        a = agents.get('agents', [])
+        hot = [x['name'] for x in a if x['status'] == 'working']
+        idle = [x['name'] for x in a if x['status'] == 'idle']
+        sleeping = [x['name'] for x in a if x['status'] == 'sleeping']
+        dirty = [(x['name'], x['uncommitted']) for x in a if x.get('uncommitted', 0) > 10]
+        text = f"Briefing {time.strftime('%Y-%m-%d')}:\n"
+        text += f"Hot: {', '.join(hot) or 'none'}\n"
+        text += f"Idle: {len(idle)} projects\n"
+        text += f"Sleeping: {', '.join(sleeping) or 'none'}\n"
+        if dirty:
+            text += f"Dirty: {', '.join(f'{n}({c})' for n,c in dirty)}\n"
+        return {'status': 'complete', 'text': text}
+
+    elif name == 'drift':
+        # Run check-drift on hot/warm projects
+        agents = get_agents().get('agents', [])
+        active = [a for a in agents if a['status'] in ('working', 'idle')]
+        alerts = []
+        for a in active[:8]:  # limit to 8 to avoid timeout
+            path = os.path.join(DOCS_DIR, a['name'])
+            script = os.path.join(path, 'scripts', 'check-drift.sh')
+            if not os.path.exists(script):
+                continue
+            try:
+                r = subprocess.run(['bash', script], capture_output=True, text=True, timeout=15, cwd=path)
+                wm = re.search(r'(\d+) warnings', r.stdout)
+                em = re.search(r'(\d+) errors', r.stdout)
+                w = int(wm.group(1)) if wm else 0
+                e = int(em.group(1)) if em else 0
+                if w > 0 or e > 0:
+                    alerts.append({'project': a['name'], 'warnings': w, 'errors': e})
+            except:
+                pass
+        return {'status': 'complete', 'alerts': alerts, 'checked': len(active)}
+
+    elif name == 'weekly':
+        agents = get_agents().get('agents', [])
+        return {
+            'status': 'complete',
+            'total': len(agents),
+            'active': len([a for a in agents if a['status'] != 'sleeping']),
+            'dirty_total': sum(a.get('uncommitted', 0) for a in agents),
+            'text': f"Weekly: {len(agents)} projects, {len([a for a in agents if a['status']!='sleeping'])} active"
+        }
+
+    return {'status': 'error', 'error': f'Unknown action: {name}'}
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIR, **kwargs)
@@ -116,6 +289,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response(get_agents())
         elif self.path == '/api/feed':
             self._json_response(get_feed())
+        elif self.path == '/api/chats':
+            self._json_response(get_chats())
+        elif self.path.startswith('/api/chat/'):
+            project = self.path.split('/api/chat/')[1]
+            self._json_response(get_chat_history(project))
+        elif self.path.startswith('/api/modules/'):
+            project = self.path.split('/api/modules/')[1]
+            self._json_response(get_modules(project))
         elif self.path.startswith('/webhook/'):
             self._proxy('GET')
         else:
@@ -125,10 +306,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         body = self._read_body()
+        data = {}
+        try:
+            data = json.loads(body)
+        except:
+            pass
+
         if self.path == '/api/agents':
             self._json_response(get_agents())
         elif self.path == '/api/feed':
             self._json_response(get_feed())
+        elif self.path == '/api/chat':
+            project = data.get('project', '')
+            message = data.get('message', '')
+            self._json_response(send_chat(project, message))
+        elif self.path.startswith('/api/modules/'):
+            project = self.path.split('/api/modules/')[1]
+            self._json_response(get_modules(project))
+        elif self.path.startswith('/api/action/'):
+            action = self.path.split('/api/action/')[1]
+            self._json_response(run_action(action, data))
         elif self.path.startswith('/webhook/'):
             self._proxy('POST', body)
         else:
@@ -181,10 +378,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     print(f'Dashboard:  http://localhost:{PORT}')
-    print(f'Fast API:   /api/agents (local, ~2s)')
-    print(f'            /api/feed (local, instant)')
+    print(f'API:        /api/agents /api/chats /api/chat /api/modules /api/action')
     print(f'n8n proxy:  /webhook/* -> {N8N}')
     print(f'Projects:   {DOCS_DIR}')
+    print(f'Chats:      {CHATS_DIR}')
     print()
     import threading
     class ThreadedServer(http.server.HTTPServer):
