@@ -1,19 +1,14 @@
 #!/bin/bash
-# Serve dashboard on localhost:3333 — instant load, no n8n overhead
-# n8n webhooks still used for API calls (agent-state, chat, feed, etc.)
+# Serve dashboard with n8n webhook proxy (solves CORS)
 # Usage: bash n8n/dashboard/serve.sh [port]
 PORT="${1:-3333}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Dashboard: http://localhost:$PORT"
-echo "n8n API:   http://localhost:5678/webhook/*"
-echo ""
-
 if command -v python &>/dev/null; then
-  cd "$DIR" && python -m http.server "$PORT" --bind 127.0.0.1
+  python "$DIR/serve.py" "$PORT"
 elif command -v python3 &>/dev/null; then
-  cd "$DIR" && python3 -m http.server "$PORT" --bind 127.0.0.1
+  python3 "$DIR/serve.py" "$PORT"
 else
-  echo "ERROR: Python required. Install python."
+  echo "ERROR: Python required."
   exit 1
 fi

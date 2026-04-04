@@ -97,7 +97,7 @@ HTML = """<!DOCTYPE html>
   <div class="feed" id="feed">No activity yet</div>
 </div>
 <script>
-const API=window.location.port==='5678'?'':'http://localhost:5678';
+const API=''; // proxy handles routing to n8n
 let projects=[];
 const C={working:'#22c55e',idle:'#eab308',sleeping:'#555',error:'#ef4444'};
 
