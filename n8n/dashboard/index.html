@@ -1,14 +1,6 @@
-"""
-Build Agent Command Center dashboard — data-first, lightweight.
-Usage: python n8n/build-dashboard.py
-"""
-import json
-from pathlib import Path
-
-ROOT = Path(__file__).parent.parent
-OUTPUT = ROOT / 'n8n' / 'workflows' / 'dashboard.json'
-
-CSS = """
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Agent Command Center</title>
+<style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0a15;color:#d0d0e0;font-family:-apple-system,system-ui,sans-serif;overflow-x:hidden}
 .app{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;height:100vh}
@@ -63,11 +55,7 @@ h2{font-size:.9em;color:#888;margin:5px 0}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 .btns button{background:#161630;color:#8888aa;border:1px solid #252545;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:.75em}
 .btns button:hover{background:#1e1e40;color:#aaa}
-"""
-
-HTML = """<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Agent Command Center</title>
-<style>STYLES</style></head>
+</style></head>
 <body>
 <div class="app">
   <div class="hdr">
@@ -199,31 +187,4 @@ load();loadFeed();
 setInterval(load,30000);
 setInterval(loadFeed,15000);
 </script>
-</body></html>"""
-
-html = HTML.replace('STYLES', CSS)
-
-wf = {
-    "name": "Dashboard",
-    "nodes": [
-        {"parameters": {"httpMethod": "GET", "path": "dashboard", "responseMode": "responseNode", "options": {}},
-         "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [250, 300], "name": "Webhook"},
-        {"parameters": {"jsCode": "return [{json: {html: " + json.dumps(html) + "}}];"},
-         "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [470, 300], "name": "Serve"},
-        {"parameters": {"respondWith": "text", "responseBody": "={{ $json.html }}",
-                         "options": {"responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/html; charset=utf-8"}]}}},
-         "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [690, 300], "name": "Respond"}
-    ],
-    "connections": {
-        "Webhook": {"main": [[{"node": "Serve", "type": "main", "index": 0}]]},
-        "Serve": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
-    },
-    "settings": {"executionOrder": "v1"}
-}
-
-with open(OUTPUT, 'w', encoding='utf-8') as f:
-    json.dump(wf, f, indent=2, ensure_ascii=False)
-
-json.loads(OUTPUT.read_text(encoding='utf-8'))
-size_kb = OUTPUT.stat().st_size / 1024
-print(f'Dashboard v4: {size_kb:.0f} KB (data-first, no sprites)')
+</body></html>

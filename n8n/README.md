@@ -7,7 +7,11 @@ Visual workflow automation for agent template. Claude triggers pipelines via MCP
 ```bash
 bash n8n/setup.sh    # install n8n, create config, import workflows
 bash n8n/start.sh    # start n8n (separate terminal)
+bash n8n/dashboard/serve.sh  # open dashboard (another terminal)
 ```
+
+Dashboard: **http://localhost:3333** (instant load, 10KB)
+n8n UI: http://localhost:5678 (workflow editor)
 
 First time: open http://localhost:5678, create account, get API key, add to `.env`.
 
