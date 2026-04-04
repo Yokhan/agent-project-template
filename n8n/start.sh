@@ -8,6 +8,7 @@ set -e
 
 # Allow Code node to run shell commands
 export NODE_FUNCTION_ALLOW_BUILTIN=child_process,fs,path
+export N8N_RUNNERS_TASK_TIMEOUT=120
 export N8N_SECURE_COOKIE=false
 
 # Load project .env if exists

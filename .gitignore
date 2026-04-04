@@ -6,6 +6,9 @@
 # Project-local Claude Code settings (not synced with template)
 # .claude/settings.local.json
 
+# n8n local config (user-specific paths)
+n8n/config.json
+
 # Memory MCP local state
 .memory/
 

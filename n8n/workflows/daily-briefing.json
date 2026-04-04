@@ -1,0 +1,78 @@
+{
+  "name": "Daily Briefing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Daily 9AM"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "briefing",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        500
+      ],
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const scanResult = cp.execSync('bash scripts/scan-projects.sh 2>&1', {cwd: projRoot, timeout: 30000, encoding: 'utf8'});\n  const driftResult = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: projRoot, timeout: 30000, encoding: 'utf8'});\n  const gitLog = cp.execSync('git log --oneline --since=\"24 hours ago\" 2>/dev/null || echo \"no commits\"', {cwd: projRoot, timeout: 5000, encoding: 'utf8'});\n\n  const context = 'Project scan:\\n' + scanResult + '\\nDrift:\\n' + driftResult + '\\nCommits 24h:\\n' + gitLog;\n  const prompt = 'Based on this data write a 5-line daily briefing. What needs attention, progress, blockers. Be direct.\\n\\n' + context;\n  const safePrompt = prompt.replace(/\"/g, '\\\\\"').replace(/\\n/g, ' ').substring(0, 4000);\n\n  const briefing = cp.execSync('claude -p \"' + safePrompt + '\"', {timeout: 120000, encoding: 'utf8'}).trim();\n  return [{json: {status:'complete', briefing, timestamp:new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status:'error', error:(e.stderr||'')+e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        400
+      ],
+      "name": "Generate Briefing"
+    }
+  ],
+  "connections": {
+    "Daily 9AM": {
+      "main": [
+        [
+          {
+            "node": "Generate Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

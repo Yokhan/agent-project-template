@@ -1,45 +1,58 @@
 # n8n Pipeline Automation
 
-Visual workflow automation for agent template. Claude triggers pipelines via MCP, you see them on n8n map.
+Visual workflow automation for agent template. Claude triggers pipelines via MCP, n8n triggers Claude via `claude -p`.
 
 ## Quick Start
 
 ```bash
-bash n8n/start.sh              # start n8n + auto-import workflows
-# Open http://localhost:5678   # create account, get API key
-# Add to .env: N8N_API_KEY=your_key
-bash n8n/import.sh             # import all workflows
+bash n8n/setup.sh    # install n8n, create config, import workflows
+bash n8n/start.sh    # start n8n (separate terminal)
 ```
+
+First time: open http://localhost:5678, create account, get API key, add to `.env`.
 
 ## Pipelines
 
-| Pipeline | Webhook | Trigger | What it does |
+| Pipeline | Webhook | Trigger | Uses Claude? |
 |----------|---------|---------|-------------|
-| Health Check | `/webhook/health` | MCP / manual | drift check + git status + services |
-| Template Sync | `/webhook/sync` | MCP | sync template to target project |
-| Project Scanner | `/webhook/scan` | MCP / manual | scan ~/Documents for all repos, classify activity |
-| Drift Alert | `/webhook/drift-alert` | Cron 9AM daily | check all agent projects, alert on issues |
+| Health Check | `/webhook/health` | MCP / manual | no |
+| Project Scanner | `/webhook/scan` | MCP / manual | no |
+| Template Sync | `/webhook/sync` | MCP | no |
+| Drift Alert | `/webhook/drift-alert` | Cron 9AM / manual | no |
+| Daily Briefing | `/webhook/briefing` | Cron 9AM / manual | **yes** (`claude -p`) |
 
-## MCP Tools (from Claude Code)
+## Two-Way Communication
 
 ```
-run_pipeline(name="health")                              → health check
-run_pipeline(name="scan")                                → scan all projects
-run_pipeline(name="sync", params={project: "/path/to"})  → sync template
-run_pipeline(name="drift-alert")                         → manual drift check
-list_pipelines()                                         → list active workflows
-pipeline_status(execution_id="...")                       → check execution
+Claude Code ──MCP──→ run_pipeline("health") ──→ n8n webhook ──→ result
+n8n ──cron──→ claude -p "daily briefing" ──→ Claude CLI ──→ result
 ```
 
-## Requirements
+## ToS Note
 
-- `npm install -g n8n` (done by bootstrap-mcp.sh)
-- `NODE_FUNCTION_ALLOW_BUILTIN=child_process` (set by start.sh)
-- API key in `.env` as `N8N_API_KEY`
+`claude -p` is the official Claude Code CLI. Calling it from n8n is equivalent to typing in terminal — NOT third-party API access. Keep automated calls **moderate** (1-3/day for briefings, not mass automation). Heavy work should use bash scripts that don't invoke Claude.
+
+## Config
+
+`n8n/config.json` (created by setup.sh):
+```json
+{
+  "project_root": "/path/to/this/project",
+  "documents_dir": "/path/to/Documents"
+}
+```
+
+Workflows read paths from this file — no hardcoded paths.
 
 ## Adding Custom Pipelines
 
 1. Create workflow in n8n UI (http://localhost:5678)
-2. Export as JSON: Settings → Export
+2. Export: workflow menu → Export
 3. Save to `n8n/workflows/your-pipeline.json`
 4. Claude calls: `run_pipeline(name="your-webhook-path")`
+
+## Requirements
+
+- Node.js 18+
+- `npm install -g n8n`
+- `NODE_FUNCTION_ALLOW_BUILTIN=child_process` (set by start.sh / .n8n/.env)

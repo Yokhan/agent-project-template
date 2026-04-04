@@ -46,6 +46,15 @@ for wf in data.get('data', []):
     print(wf['name'])
 " 2>/dev/null || echo "")
 
+# Load config for path injection
+CONFIG_FILE="n8n/config.json"
+PROJ_ROOT="."
+DOCS_DIR="."
+if [ -f "$CONFIG_FILE" ]; then
+  PROJ_ROOT=$($PYTHON -c "import json; print(json.load(open('$CONFIG_FILE')).get('project_root','.'))" 2>/dev/null || echo ".")
+  DOCS_DIR=$($PYTHON -c "import json; print(json.load(open('$CONFIG_FILE')).get('documents_dir','.'))" 2>/dev/null || echo ".")
+fi
+
 IMPORTED=0
 SKIPPED=0
 
@@ -66,11 +75,15 @@ for wf_file in "$WF_DIR"/*.json; do
     continue
   fi
 
-  # Import
+  # Import — inject config paths into workflow JSON
+  TMP_WF="/tmp/n8n-import-$$.json"
+  sed "s|__PROJECT_ROOT__|$PROJ_ROOT|g; s|__DOCUMENTS_DIR__|$DOCS_DIR|g" "$wf_file" > "$TMP_WF"
+
   HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$N8N_URL/api/v1/workflows" \
     -H "X-N8N-API-KEY: $N8N_API_KEY" \
     -H "Content-Type: application/json" \
-    -d @"$wf_file")
+    -d @"$TMP_WF")
+  rm -f "$TMP_WF"
 
   if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
     echo "  IMPORTED: $WF_NAME"

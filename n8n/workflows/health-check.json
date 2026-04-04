@@ -10,23 +10,39 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "name": "Webhook"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst input = $input.first().json;\nconst proj = (input.params && input.params.project) || input.project || 'C:/Users/iohan/Documents/ClaudeObsidian/agent-project-template';\nconst results = {};\n\ntry {\n  results.drift = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: proj, timeout: 30000, encoding: 'utf8'});\n} catch(e) {\n  results.drift = (e.stdout || '') + (e.stderr || e.message);\n}\n\ntry {\n  const status = cp.execSync('git status --porcelain 2>&1', {cwd: proj, timeout: 5000, encoding: 'utf8'});\n  results.uncommitted = status.split('\\n').filter(l => l.trim()).length;\n  results.branch = cp.execSync('git branch --show-current 2>&1', {cwd: proj, timeout: 5000, encoding: 'utf8'}).trim();\n} catch(e) {\n  results.git_error = e.message;\n}\n\ntry {\n  const lessons = cp.execSync('grep -c \"^### \" tasks/lessons.md 2>/dev/null || echo 0', {cwd: proj, timeout: 5000, encoding: 'utf8'}).trim();\n  results.lessons_count = parseInt(lessons);\n} catch { results.lessons_count = 0; }\n\nresults.status = 'complete';\nresults.project = proj;\nresults.timestamp = new Date().toISOString();\nreturn [{json: results}];"
+        "jsCode": "const cp = require('child_process');\nconst input = $input.first().json;\nconst proj = (input.params && input.params.project) || input.project || '__PROJECT_ROOT__';\nconst results = {project: proj};\n\ntry {\n  results.drift = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: proj, timeout: 30000, encoding: 'utf8'});\n} catch(e) {\n  results.drift = (e.stdout || '') + (e.stderr || e.message);\n}\ntry {\n  results.uncommitted = cp.execSync('git status --porcelain 2>&1', {cwd: proj, timeout: 5000, encoding: 'utf8'}).split('\\n').filter(l => l.trim()).length;\n  results.branch = cp.execSync('git branch --show-current 2>&1', {cwd: proj, timeout: 5000, encoding: 'utf8'}).trim();\n} catch(e) { results.git_error = e.message; }\ntry {\n  results.lessons_count = parseInt(cp.execSync('grep -c \"^### \" tasks/lessons.md 2>/dev/null || echo 0', {cwd: proj, timeout: 5000, encoding: 'utf8'}).trim());\n} catch { results.lessons_count = 0; }\n\nresults.status = 'complete';\nresults.timestamp = new Date().toISOString();\nreturn [{json: results}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [470, 300],
+      "position": [
+        470,
+        300
+      ],
       "name": "Run Health Check"
     }
   ],
   "connections": {
     "Webhook": {
-      "main": [[{"node": "Run Health Check", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Run Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": {"executionOrder": "v1"}
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

@@ -4,12 +4,20 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{"field": "cronExpression", "expression": "0 9 * * *"}]
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "name": "Daily 9AM"
     },
     {
@@ -21,26 +29,50 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 500],
+      "position": [
+        250,
+        500
+      ],
       "name": "Manual Trigger"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst scanDir = 'C:/Users/iohan/Documents';\n\ntry {\n  // Get agent projects list\n  const projects = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: 'C:/Users/iohan/Documents/ClaudeObsidian/agent-project-template', timeout: 30000, encoding: 'utf8'})\n    .trim().split('\\n').filter(l => l.includes('|true|')).map(l => ({name: l.split('|')[0], path: scanDir + '/' + l.split('|')[0]}));\n\n  const alerts = [];\n  for (const p of projects) {\n    try {\n      const output = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: p.path, timeout: 30000, encoding: 'utf8'});\n      const wMatch = output.match(/(\\d+) warnings/);\n      const eMatch = output.match(/(\\d+) errors/);\n      const w = wMatch ? parseInt(wMatch[1]) : 0;\n      const e = eMatch ? parseInt(eMatch[1]) : 0;\n      if (w > 0 || e > 0) alerts.push({project: p.name, warnings: w, errors: e});\n    } catch(e) {\n      alerts.push({project: p.name, warnings: 0, errors: 1, error: 'check-drift failed'});\n    }\n  }\n\n  return [{json: {\n    status: 'complete', total_alerts: alerts.length,\n    message: alerts.length === 0 ? 'All projects healthy' : alerts.length + ' project(s) need attention',\n    alerts, timestamp: new Date().toISOString()\n  }}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+        "jsCode": "const cp = require('child_process');\nconst scanDir = '__DOCUMENTS_DIR__';\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const raw = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const agentProjects = raw.trim().split('\\n').filter(l => l.includes('|true|')).map(l => l.split('|')[0]);\n  const alerts = [];\n  for (const name of agentProjects) {\n    const path = scanDir + '/' + name;\n    try {\n      const output = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: path, timeout: 30000, encoding: 'utf8'});\n      const w = parseInt((output.match(/(\\d+) warnings/) || [,'0'])[1]);\n      const e = parseInt((output.match(/(\\d+) errors/) || [,'0'])[1]);\n      if (w > 0 || e > 0) alerts.push({project: name, warnings: w, errors: e});\n    } catch { alerts.push({project: name, warnings: 0, errors: 1, error: 'check-drift failed'}); }\n  }\n  return [{json: {status:'complete', total_alerts:alerts.length, message:alerts.length===0?'All projects healthy':alerts.length+' project(s) need attention', alerts, timestamp:new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status:'error', error:(e.stderr||'')+e.message}}];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [470, 400],
+      "position": [
+        470,
+        400
+      ],
       "name": "Check All Projects"
     }
   ],
   "connections": {
     "Daily 9AM": {
-      "main": [[{"node": "Check All Projects", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Check All Projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Manual Trigger": {
-      "main": [[{"node": "Check All Projects", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Check All Projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": {"executionOrder": "v1"}
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

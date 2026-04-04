@@ -10,23 +10,39 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "name": "Webhook"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst input = $input.first().json;\nconst scanDir = (input.params && input.params.directory) || input.directory || 'C:/Users/iohan/Documents';\n\ntry {\n  const output = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: 'C:/Users/iohan/Documents/ClaudeObsidian/agent-project-template', timeout: 60000, encoding: 'utf8'});\n\n  const now = Math.floor(Date.now() / 1000);\n  const projects = output.trim().split('\\n').filter(l => l.includes('|')).map(line => {\n    const [name, branch, last, age, uncommitted, hasManifest, tplVer] = line.split('|');\n    const days = age && age !== '0' ? Math.floor((now - parseInt(age)) / 86400) : 999;\n    const activity = days <= 1 ? 'hot' : days <= 7 ? 'warm' : days <= 30 ? 'cool' : 'cold';\n    return {name, branch, last_commit: last, days_since_commit: days, uncommitted: parseInt(uncommitted) || 0, has_manifest: hasManifest === 'true', template_version: tplVer, activity};\n  });\n\n  const order = {hot:0, warm:1, cool:2, cold:3};\n  projects.sort((a,b) => (order[a.activity]||4) - (order[b.activity]||4));\n\n  return [{json: {\n    status: 'complete', scanned: scanDir, total: projects.length,\n    agent_projects: projects.filter(p => p.has_manifest).length,\n    summary: {hot: projects.filter(p=>p.activity==='hot').length, warm: projects.filter(p=>p.activity==='warm').length, cool: projects.filter(p=>p.activity==='cool').length, cold: projects.filter(p=>p.activity==='cold').length},\n    projects, timestamp: new Date().toISOString()\n  }}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message, scanned: scanDir}}];\n}"
+        "jsCode": "const cp = require('child_process');\nconst input = $input.first().json;\nconst scanDir = (input.params && input.params.directory) || input.directory || '__DOCUMENTS_DIR__';\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const output = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const now = Math.floor(Date.now() / 1000);\n  const projects = output.trim().split('\\n').filter(l => l.includes('|')).map(line => {\n    const [name, branch, last, age, uncommitted, hasManifest, tplVer] = line.split('|');\n    const days = age && age !== '0' ? Math.floor((now - parseInt(age)) / 86400) : 999;\n    const activity = days <= 1 ? 'hot' : days <= 7 ? 'warm' : days <= 30 ? 'cool' : 'cold';\n    return {name, branch, last_commit: last, days_since_commit: days, uncommitted: parseInt(uncommitted) || 0, has_manifest: hasManifest === 'true', template_version: tplVer, activity};\n  });\n  const order = {hot:0, warm:1, cool:2, cold:3};\n  projects.sort((a,b) => (order[a.activity]||4) - (order[b.activity]||4));\n  return [{json: {status:'complete', scanned:scanDir, total:projects.length, agent_projects:projects.filter(p=>p.has_manifest).length, summary:{hot:projects.filter(p=>p.activity==='hot').length, warm:projects.filter(p=>p.activity==='warm').length, cool:projects.filter(p=>p.activity==='cool').length, cold:projects.filter(p=>p.activity==='cold').length}, projects, timestamp:new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status:'error', error:(e.stderr||'')+e.message, scanned:scanDir}}];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [470, 300],
+      "position": [
+        470,
+        300
+      ],
       "name": "Scan Projects"
     }
   ],
   "connections": {
     "Webhook": {
-      "main": [[{"node": "Scan Projects", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "Scan Projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": {"executionOrder": "v1"}
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
