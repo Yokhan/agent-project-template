@@ -1,5 +1,5 @@
 {
-  "name": "Drift Alert (Cron)",
+  "name": "Drift Alert",
   "nodes": [
     {
       "parameters": {
@@ -7,7 +7,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 9 * * *"
+              "expression": "0 */6 * * *"
             }
           ]
         }
@@ -18,7 +18,7 @@
         250,
         300
       ],
-      "name": "Daily 9AM"
+      "name": "Every 6h"
     },
     {
       "parameters": {
@@ -33,38 +33,44 @@
         250,
         500
       ],
-      "name": "Manual Trigger"
+      "name": "Manual"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst scanDir = '__DOCUMENTS_DIR__';\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const raw = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const now = Math.floor(Date.now() / 1000);\n  const agentProjects = raw.trim().split(String.fromCharCode(10)).filter(l => l.includes('|true|')).map(l => {\n    const parts = l.split('|');\n    const age = parseInt(parts[3]) || 0;\n    const days = age ? Math.floor((now - age) / 86400) : 999;\n    return {name: parts[0], days};\n  }).filter(p => p.days <= 7);\n\n  const alerts = [];\n  for (const p of agentProjects) {\n    const path = scanDir + '/' + p.name;\n    try {\n      const output = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: path, timeout: 30000, encoding: 'utf8'});\n      const w = parseInt((output.match(/(\\d+) warnings/) || [,'0'])[1]);\n      const e = parseInt((output.match(/(\\d+) errors/) || [,'0'])[1]);\n      if (w > 0 || e > 0) alerts.push({project: p.name, warnings: w, errors: e});\n    } catch(err) {\n      alerts.push({project: p.name, warnings: 0, errors: 1, error: 'check-drift failed'});\n    }\n  }\n\n  return [{json: {\n    status: 'complete', checked: agentProjects.length, total_alerts: alerts.length,\n    message: alerts.length === 0 ? 'All active projects healthy' : alerts.length + ' project(s) need attention',\n    alerts, timestamp: new Date().toISOString()\n  }}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+        "url": "http://localhost:3333/api/action/drift",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         470,
         400
       ],
-      "name": "Check All Projects"
+      "name": "Check Drift"
     }
   ],
   "connections": {
-    "Daily 9AM": {
+    "Every 6h": {
       "main": [
         [
           {
-            "node": "Check All Projects",
+            "node": "Check Drift",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Manual Trigger": {
+    "Manual": {
       "main": [
         [
           {
-            "node": "Check All Projects",
+            "node": "Check Drift",
             "type": "main",
             "index": 0
           }

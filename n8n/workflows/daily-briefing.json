@@ -33,19 +33,25 @@
         250,
         500
       ],
-      "name": "Manual Trigger"
+      "name": "Manual"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst os = require('os');\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const scanResult = cp.execSync('bash scripts/scan-projects.sh 2>&1', {cwd: projRoot, timeout: 30000, encoding: 'utf8'});\n  const driftResult = cp.execSync('bash scripts/check-drift.sh 2>&1', {cwd: projRoot, timeout: 30000, encoding: 'utf8'});\n  const gitLog = cp.execSync('git log --oneline --since=\"24 hours ago\" 2>/dev/null || echo \"no commits\"', {cwd: projRoot, timeout: 5000, encoding: 'utf8'});\n\n  const prompt = 'Based on this data write a 5-line daily briefing. What needs attention, progress, blockers. Be direct.\\n\\nProject scan:\\n' + scanResult + '\\nDrift:\\n' + driftResult + '\\nCommits 24h:\\n' + gitLog;\n\n  // SAFE: write prompt to temp file, pass via stdin \u2014 no shell injection possible\n  const tmpFile = os.tmpdir() + '/briefing-' + Date.now() + '.txt';\n  fs.writeFileSync(tmpFile, prompt.substring(0, 4000));\n  const briefing = cp.execSync('claude -p < \"' + tmpFile.replace(/\\/g, '/') + '\"', {timeout: 120000, encoding: 'utf8', shell: true}).trim();\n  try { fs.unlinkSync(tmpFile); } catch {}\n\n  return [{json: {status: 'complete', briefing, timestamp: new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+        "url": "http://localhost:3333/api/action/briefing",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         470,
         400
       ],
-      "name": "Generate Briefing"
+      "name": "Get Briefing"
     }
   ],
   "connections": {
@@ -53,18 +59,18 @@
       "main": [
         [
           {
-            "node": "Generate Briefing",
+            "node": "Get Briefing",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Manual Trigger": {
+    "Manual": {
       "main": [
         [
           {
-            "node": "Generate Briefing",
+            "node": "Get Briefing",
             "type": "main",
             "index": 0
           }

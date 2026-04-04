@@ -18,7 +18,7 @@
         250,
         300
       ],
-      "name": "Monday 10AM"
+      "name": "Mon 10AM"
     },
     {
       "parameters": {
@@ -33,38 +33,44 @@
         250,
         500
       ],
-      "name": "Manual Trigger"
+      "name": "Manual"
     },
     {
       "parameters": {
-        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst projRoot = '__PROJECT_ROOT__';\nconst scanDir = '__DOCUMENTS_DIR__';\n\ntry {\n  const scan = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const weekCommits = cp.execSync('git log --oneline --since=\"7 days ago\" 2>/dev/null || echo none', {cwd: projRoot, timeout: 5000, encoding: 'utf8'});\n  const now = Math.floor(Date.now() / 1000);\n  const lines = scan.trim().split(String.fromCharCode(10)).filter(l => l.includes('|true|'));\n  let totalLessons = 0;\n  for (const line of lines) {\n    const name = line.split('|')[0];\n    try {\n      const lf = scanDir + '/' + name + '/tasks/lessons.md';\n      if (fs.existsSync(lf)) {\n        const c = fs.readFileSync(lf, 'utf8');\n        totalLessons += (c.match(/^### /gm) || []).length;\n      }\n    } catch {}\n  }\n  const projects = lines.map(l => {\n    const p = l.split('|');\n    const days = parseInt(p[3]) ? Math.floor((now - parseInt(p[3])) / 86400) : 999;\n    return {name: p[0], days, uncommitted: parseInt(p[4]) || 0, version: p[6]};\n  });\n  return [{json: {\n    status: 'complete', period: '7 days', agent_projects: projects.length,\n    active_this_week: projects.filter(p => p.days <= 7).length,\n    stale: projects.filter(p => p.days > 7).map(p => p.name),\n    dirty: projects.filter(p => p.uncommitted > 5).map(p => ({name: p.name, n: p.uncommitted})),\n    total_lessons: totalLessons,\n    template_commits: weekCommits.trim().split(String.fromCharCode(10)).filter(l => l.trim()).length,\n    timestamp: new Date().toISOString()\n  }}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+        "url": "http://localhost:3333/api/action/weekly",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         470,
         400
       ],
-      "name": "Collect Data"
+      "name": "Get Weekly"
     }
   ],
   "connections": {
-    "Monday 10AM": {
+    "Mon 10AM": {
       "main": [
         [
           {
-            "node": "Collect Data",
+            "node": "Get Weekly",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Manual Trigger": {
+    "Manual": {
       "main": [
         [
           {
-            "node": "Collect Data",
+            "node": "Get Weekly",
             "type": "main",
             "index": 0
           }
