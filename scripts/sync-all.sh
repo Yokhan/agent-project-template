@@ -55,7 +55,7 @@ while IFS= read -r -d '' manifest; do
   CURRENT_VER=$(grep -o '"template_version"[[:space:]]*:[[:space:]]*"[^"]*"' "$manifest" 2>/dev/null | head -1 | sed 's/.*"\([^"]*\)"/\1/' || echo "unknown")
 
   # Read template version from CLAUDE.md (template itself doesn't have .template-manifest.json)
-  TEMPLATE_VER=$(grep -oP '(?<=Template Version: )[\d.]+' "$TEMPLATE_DIR/CLAUDE.md" 2>/dev/null || echo "unknown")
+  TEMPLATE_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$TEMPLATE_DIR/CLAUDE.md" 2>/dev/null || echo "unknown")
 
   if [ "$CURRENT_VER" = "$TEMPLATE_VER" ]; then
     printf "${GREEN}✓${NC} %-30s v%s (current)\n" "$PROJECT_NAME" "$CURRENT_VER"

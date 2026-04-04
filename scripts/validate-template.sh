@@ -13,9 +13,9 @@ echo ""
 
 # 1. Version consistency
 echo "[1/6] Checking version consistency..."
-CLAUDE_VER=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "MISSING")
-DRIFT_VER=$(grep -oP '(?<=TEMPLATE_VERSION=")[^"]+' scripts/check-drift.sh 2>/dev/null || echo "MISSING")
-README_VER=$(grep -oP '(?<=template-v)[^-]+' README.md 2>/dev/null || echo "MISSING")
+CLAUDE_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "MISSING")
+DRIFT_VER=$(sed -n 's/.*TEMPLATE_VERSION="\([^"]*\)".*/\1/p' scripts/check-drift.sh 2>/dev/null || echo "MISSING")
+README_VER=$(sed -n 's/.*template-v\([0-9.]*\).*/\1/p' README.md 2>/dev/null || echo "MISSING")
 
 if [ "$CLAUDE_VER" = "$DRIFT_VER" ]; then
   echo "  OK: CLAUDE.md ($CLAUDE_VER) = check-drift.sh ($DRIFT_VER)"
@@ -116,6 +116,15 @@ if [ -n "$BARE_PY" ]; then
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: No bare python3 calls"
+fi
+# grep -P (Perl regex, not portable)
+GREP_P=$(grep -rn "grep -[a-zA-Z]*P" scripts/*.sh .claude/hooks/*.sh setup.sh 2>/dev/null || true)
+if [ -n "$GREP_P" ]; then
+  echo "  ERROR: grep -P (Perl regex) found (not portable, use sed):"
+  echo "$GREP_P" | head -5
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: No grep -P"
 fi
 # Here-strings (don't work on all Windows bash)
 HERESTR=$(grep -rn "<<<" scripts/*.sh .claude/hooks/*.sh 2>/dev/null || true)

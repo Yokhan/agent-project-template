@@ -250,7 +250,7 @@ CURRENT_VER=$(MANIFEST_PATH="$MANIFEST" $PYTHON -c "
 import json, os
 print(json.load(open(os.environ['MANIFEST_PATH']))['template_version'])
 " 2>/dev/null || echo "unknown")
-NEW_VER=$(grep -oP '(?<=Template Version: )[\d.]+' "$TEMPLATE_PATH/CLAUDE.md" 2>/dev/null || echo "unknown")
+NEW_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$TEMPLATE_PATH/CLAUDE.md" 2>/dev/null || echo "unknown")
 
 echo "=== Template Sync ==="
 echo "Current: $CURRENT_VER → New: $NEW_VER"

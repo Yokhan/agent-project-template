@@ -14,7 +14,7 @@ fi
 
 # Template version check
 TEMPLATE_VERSION="3.2.1"
-CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
+CLAUDE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"
 elif [ "$CLAUDE_VERSION" != "$TEMPLATE_VERSION" ]; then
