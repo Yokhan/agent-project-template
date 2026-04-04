@@ -1,278 +1,221 @@
 """
-Build Agent Command Center v3 dashboard.
-Assembles HTML + inline JS (office.js) + CSS into dashboard.json workflow.
+Build Agent Command Center dashboard — data-first, lightweight.
 Usage: python n8n/build-dashboard.py
 """
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-OFFICE_JS = ROOT / 'n8n' / 'dashboard' / 'office.js'
 OUTPUT = ROOT / 'n8n' / 'workflows' / 'dashboard.json'
-
-# Read office.js
-office_code = OFFICE_JS.read_text(encoding='utf-8')
-
-# Escape for embedding in JS string (will be inside n8n Code node)
-# office.js will be injected directly into <script> tag in HTML
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0a15;color:#d0d0e0;font-family:-apple-system,system-ui,sans-serif}
-.app{display:grid;grid-template-columns:1fr 380px;grid-template-rows:auto 1fr auto;height:100vh;gap:0}
-.top-bar{grid-column:1/-1;padding:12px 20px;background:#0f0f1a;border-bottom:1px solid #1a1a30;display:flex;justify-content:space-between;align-items:center}
-.top-bar h1{font-size:1.3em;color:#fff}
-.top-bar .meta{color:#555;font-size:.8em}
-.office-panel{padding:10px;overflow:hidden;border-right:1px solid #1a1a30;display:flex;flex-direction:column;gap:10px}
-.office-panel canvas{border-radius:8px;background:#1a1a2e;width:100%;cursor:default}
-.stats{display:flex;gap:8px;flex-wrap:wrap}
-.stat{background:#12122a;border:1px solid #1e1e3a;padding:6px 12px;border-radius:6px;text-align:center;flex:1;min-width:60px}
-.stat-n{font-size:1.4em;font-weight:700;line-height:1.2}
-.stat-l{color:#555;font-size:.7em}
-.project-grid{display:flex;flex-wrap:wrap;gap:6px;overflow-y:auto;max-height:200px;padding:2px}
-.project-card{background:#12122a;border:1px solid #1e1e3a;padding:6px 10px;border-radius:6px;font-size:.75em;cursor:pointer;transition:border-color .2s;min-width:100px}
-.project-card:hover{border-color:#3a3a6a}
-.project-card .name{font-weight:600;color:#fff}
-.project-card .meta{color:#555;margin-top:2px}
-.chat-panel{display:flex;flex-direction:column;background:#0d0d1a;border-left:1px solid #1a1a30}
-.chat-header{padding:10px 15px;border-bottom:1px solid #1a1a30;display:flex;align-items:center;gap:8px}
-.chat-header select{background:#12122a;color:#d0d0e0;border:1px solid #2a2a4a;padding:4px 8px;border-radius:4px;font-size:.85em;flex:1}
-.chat-messages{flex:1;overflow-y:auto;padding:10px 15px;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:85%;padding:8px 12px;border-radius:10px;font-size:.85em;line-height:1.4;word-wrap:break-word}
-.msg.user{align-self:flex-end;background:#1e3a5f;color:#d0e0ff;border-bottom-right-radius:2px}
-.msg.bot{align-self:flex-start;background:#1a1a30;color:#c0c0d0;border-bottom-left-radius:2px}
-.msg.bot pre{white-space:pre-wrap;font-size:.8em;margin-top:4px;color:#8899aa}
-.chat-input{display:flex;gap:6px;padding:10px 15px;border-top:1px solid #1a1a30}
-.chat-input input{flex:1;background:#12122a;color:#d0d0e0;border:1px solid #2a2a4a;padding:8px 12px;border-radius:6px;font-size:.85em;outline:none}
-.chat-input input:focus{border-color:#3a5a8a}
-.chat-input button{background:#1e3a5f;color:#d0e0ff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:.85em}
-.chat-input button:hover{background:#2a4a7f}
-.chat-input button:disabled{opacity:.5;cursor:wait}
-.feed-panel{grid-column:1/-1;border-top:1px solid #1a1a30;padding:8px 15px;max-height:150px;overflow-y:auto;font-size:.75em;color:#666}
-.feed-panel .entry{padding:3px 0;border-bottom:1px solid #111}
-.feed-panel .time{color:#444;margin-right:8px}
-.feed-panel .type{color:#3a6a9a;margin-right:6px}
+body{background:#0a0a15;color:#d0d0e0;font-family:-apple-system,system-ui,sans-serif;overflow-x:hidden}
+.app{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;height:100vh}
+.hdr{grid-column:1/-1;padding:10px 20px;background:#0f0f1a;border-bottom:1px solid #1a1a30;display:flex;justify-content:space-between;align-items:center}
+.hdr h1{font-size:1.2em;color:#fff}
+.hdr .t{color:#555;font-size:.8em}
+.main{padding:15px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.st{background:#12122a;border:1px solid #1e1e3a;padding:10px;border-radius:8px;text-align:center}
+.st .n{font-size:1.6em;font-weight:700;line-height:1.1}
+.st .l{color:#555;font-size:.7em;margin-top:2px}
+h2{font-size:.9em;color:#888;margin:5px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.card{background:#12122a;border:1px solid #1e1e3a;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.card:hover{border-color:#3a3a6a;transform:translateY(-1px)}
+.card .top{display:flex;justify-content:space-between;align-items:center}
+.card .name{font-weight:600;font-size:.85em;color:#fff;display:flex;align-items:center;gap:6px}
+.card .dot{width:8px;height:8px;border-radius:50%;display:inline-block;animation:pulse 2s infinite}
+.card .dot.working{background:#22c55e}
+.card .dot.idle{background:#eab308;animation:none}
+.card .dot.sleeping{background:#555;animation:none}
+.card .dot.error{background:#ef4444}
+.card .branch{font-size:.7em;color:#666;font-family:monospace}
+.card .meta{display:flex;gap:12px;margin-top:6px;font-size:.7em;color:#555}
+.card .meta span{display:flex;align-items:center;gap:3px}
+.card .bar{position:absolute;bottom:0;left:0;height:2px;background:#22c55e;transition:width .5s}
+.card .modules{display:none;margin-top:8px;border-top:1px solid #1e1e3a;padding-top:6px}
+.card.expanded .modules{display:block}
+.mod{display:flex;justify-content:space-between;font-size:.7em;padding:2px 0;color:#888}
+.mod .ok{color:#22c55e}
+.mod .warn{color:#eab308}
+.mod .err{color:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.chat{display:flex;flex-direction:column;background:#0d0d1a;border-left:1px solid #1a1a30}
+.chat .hd{padding:8px 12px;border-bottom:1px solid #1a1a30;display:flex;align-items:center;gap:6px;font-size:.85em}
+.chat select{background:#12122a;color:#d0d0e0;border:1px solid #2a2a4a;padding:4px 8px;border-radius:4px;font-size:.8em;flex:1}
+.msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:90%;padding:7px 10px;border-radius:8px;font-size:.8em;line-height:1.3;word-wrap:break-word}
+.m.u{align-self:flex-end;background:#1e3a5f;color:#d0e0ff}
+.m.b{align-self:flex-start;background:#1a1a30;color:#c0c0d0}
+.m pre{white-space:pre-wrap;font-size:.75em;margin-top:3px;color:#8899aa}
+.inp{display:flex;gap:5px;padding:8px 10px;border-top:1px solid #1a1a30}
+.inp input{flex:1;background:#12122a;color:#d0d0e0;border:1px solid #2a2a4a;padding:7px 10px;border-radius:5px;font-size:.8em;outline:none}
+.inp input:focus{border-color:#3a5a8a}
+.inp button{background:#1e3a5f;color:#d0e0ff;border:none;padding:7px 14px;border-radius:5px;cursor:pointer;font-size:.8em}
+.inp button:hover{background:#2a4a7f}
+.inp button:disabled{opacity:.4}
+.feed{grid-column:1/-1;border-top:1px solid #1a1a30;padding:6px 15px;max-height:120px;overflow-y:auto;font-size:.7em;color:#555}
+.feed .e{padding:2px 0;border-bottom:1px solid #0f0f1a}
+.feed .tm{color:#444;margin-right:6px}
+.feed .tp{color:#3a6a9a;margin-right:4px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btns button{background:#161630;color:#8888aa;border:1px solid #252545;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:.75em}
+.btns button:hover{background:#1e1e40;color:#aaa}
 """
 
-# Dashboard HTML template (JS will fetch sprites + agent state dynamically)
-HTML_TEMPLATE = """<!DOCTYPE html>
+HTML = """<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Agent Command Center</title>
-<style>STYLES_PLACEHOLDER</style></head>
+<style>STYLES</style></head>
 <body>
 <div class="app">
-  <div class="top-bar">
+  <div class="hdr">
     <h1>Agent Command Center</h1>
-    <span class="meta" id="timestamp">loading...</span>
+    <span class="t" id="ts">loading...</span>
   </div>
-
-  <div class="office-panel">
-    <canvas id="office"></canvas>
+  <div class="main">
     <div class="stats" id="stats"></div>
-    <div class="project-grid" id="projects"></div>
-  </div>
-
-  <div class="chat-panel">
-    <div class="chat-header">
-      <span>Chat:</span>
-      <select id="chat-project"><option value="">PA Orchestrator</option></select>
+    <div class="btns">
+      <button onclick="act('health')">Health Check</button>
+      <button onclick="act('scan')">Rescan</button>
+      <button onclick="act('dep-check')">Dependencies</button>
+      <button onclick="act('weekly')">Weekly</button>
+      <button onclick="location.reload()">Refresh</button>
     </div>
-    <div class="chat-messages" id="messages"></div>
-    <div class="chat-input">
-      <input id="chat-input" placeholder="Type a task..." onkeydown="if(event.key==='Enter')sendChat()">
-      <button id="chat-send" onclick="sendChat()">Send</button>
+    <h2>Projects</h2>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="chat">
+    <div class="hd">Chat <select id="cp"><option value="">PA</option></select></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="inp">
+      <input id="ci" placeholder="Task..." onkeydown="if(event.key==='Enter')send()">
+      <button id="cb" onclick="send()">Send</button>
     </div>
   </div>
-
-  <div class="feed-panel" id="feed">Activity feed loading...</div>
+  <div class="feed" id="feed">No activity yet</div>
 </div>
-
 <script>
-OFFICE_JS_PLACEHOLDER
+let projects=[];
+const C={working:'#22c55e',idle:'#eab308',sleeping:'#555',error:'#ef4444'};
 
-// --- Dashboard Controller ---
-let office = null;
-let projects = [];
-
-function loadSprites() {
-  // Sprites inlined at build time — no network request
-  return window.__SPRITES__ || {characters:[], floors:[], furniture:{}};
+async function load(){
+  try{
+    const r=await fetch('/webhook/agent-state',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(d.agents){projects=d.agents;render(d.agents);document.getElementById('ts').textContent=new Date().toLocaleString();}
+  }catch(e){console.error(e);}
 }
 
-async function loadAgentState() {
-  try {
-    const r = await fetch('/webhook/agent-state', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const d = await r.json();
-    if (d.agents) {
-      projects = d.agents;
-      if (office) office.setAgents(d.agents);
-      renderStats(d.agents);
-      renderProjects(d.agents);
-      renderProjectDropdown(d.agents);
-      document.getElementById('timestamp').textContent = new Date().toLocaleString();
-    }
-  } catch(e) { console.error('agent-state:', e); }
+function render(a){
+  const hot=a.filter(x=>x.status==='working').length;
+  const idle=a.filter(x=>x.status==='idle').length;
+  const slp=a.filter(x=>x.status==='sleeping').length;
+  const dirty=a.reduce((s,x)=>s+(x.uncommitted||0),0);
+  document.getElementById('stats').innerHTML=
+    `<div class="st"><div class="n" style="color:#22c55e">${hot}</div><div class="l">Working</div></div>`+
+    `<div class="st"><div class="n" style="color:#eab308">${idle}</div><div class="l">Idle</div></div>`+
+    `<div class="st"><div class="n" style="color:#555">${slp}</div><div class="l">Sleeping</div></div>`+
+    `<div class="st"><div class="n">${a.length}</div><div class="l">Agents</div></div>`+
+    `<div class="st"><div class="n" style="color:${dirty>50?'#ef4444':'#eab308'}">${dirty}</div><div class="l">Dirty</div></div>`;
+
+  document.getElementById('grid').innerHTML=a.map(p=>{
+    const pct=Math.min(100,Math.max(5,(7-p.days)/7*100));
+    return `<div class="card" onclick="toggle(this,'${p.name}')">
+      <div class="top"><span class="name"><span class="dot ${p.status}"></span>${p.name}</span><span class="branch">${(p.branch||'').substring(0,20)}</span></div>
+      <div class="meta"><span>${p.uncommitted||0} dirty</span><span>${p.last_commit||''}</span><span>${p.days||0}d ago</span></div>
+      <div class="bar" style="width:${pct}%;background:${C[p.status]||'#555'}"></div>
+      <div class="modules" id="mod-${p.name}">Loading...</div>
+    </div>`;
+  }).join('');
+
+  const sel=document.getElementById('cp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">PA</option>'+a.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+  sel.value=cur;
 }
 
-async function loadFeed() {
-  try {
-    const r = await fetch('/webhook/feed', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const d = await r.json();
-    const el = document.getElementById('feed');
-    if (d.feed && d.feed.length) {
-      el.innerHTML = d.feed.map(e =>
-        '<div class="entry"><span class="time">' + new Date(e.time).toLocaleTimeString() + '</span>' +
-        '<span class="type">[' + e.type + ']</span>' +
-        '<strong>' + (e.project||'') + '</strong> ' + (e.message||'').substring(0,60) + '</div>'
-      ).join('');
-    } else {
-      el.innerHTML = '<div class="entry">No activity yet</div>';
-    }
-  } catch(e) { console.error('feed:', e); }
-}
-
-function renderStats(agents) {
-  const hot = agents.filter(a => a.status === 'working').length;
-  const idle = agents.filter(a => a.status === 'idle').length;
-  const sleep = agents.filter(a => a.status === 'sleeping').length;
-  const dirty = agents.reduce((s,a) => s + (a.uncommitted||0), 0);
-  document.getElementById('stats').innerHTML =
-    '<div class="stat"><div class="stat-n" style="color:#22c55e">' + hot + '</div><div class="stat-l">Working</div></div>' +
-    '<div class="stat"><div class="stat-n" style="color:#eab308">' + idle + '</div><div class="stat-l">Idle</div></div>' +
-    '<div class="stat"><div class="stat-n" style="color:#666">' + sleep + '</div><div class="stat-l">Sleeping</div></div>' +
-    '<div class="stat"><div class="stat-n">' + agents.length + '</div><div class="stat-l">Agents</div></div>' +
-    '<div class="stat"><div class="stat-n" style="color:' + (dirty > 50 ? '#ef4444' : '#eab308') + '">' + dirty + '</div><div class="stat-l">Uncommitted</div></div>';
-}
-
-function renderProjects(agents) {
-  const colors = {working:'#22c55e',idle:'#eab308',sleeping:'#666',error:'#ef4444'};
-  document.getElementById('projects').innerHTML = agents.map(a =>
-    '<div class="project-card" onclick="selectProject(\\'' + a.name + '\\')">' +
-    '<div class="name"><span style="color:' + (colors[a.status]||'#666') + '">\\u25CF</span> ' + a.name + '</div>' +
-    '<div class="meta">' + a.branch + ' \\u2022 ' + (a.uncommitted||0) + ' dirty</div></div>'
-  ).join('');
-}
-
-function renderProjectDropdown(agents) {
-  const sel = document.getElementById('chat-project');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">PA Orchestrator</option>' +
-    agents.map(a => '<option value="' + a.name + '">' + a.name + '</option>').join('');
-  sel.value = current;
-}
-
-function selectProject(name) {
-  document.getElementById('chat-project').value = name;
-  document.getElementById('chat-input').focus();
-}
-
-async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-
-  const project = document.getElementById('chat-project').value;
-  const messages = document.getElementById('messages');
-
-  // Add user message
-  messages.innerHTML += '<div class="msg user">' + msg + (project ? ' <small>\\u2192 ' + project + '</small>' : '') + '</div>';
-  input.value = '';
-  document.getElementById('chat-send').disabled = true;
-  messages.scrollTop = messages.scrollHeight;
-
-  // Add loading
-  messages.innerHTML += '<div class="msg bot" id="loading">Thinking...</div>';
-  messages.scrollTop = messages.scrollHeight;
-
-  try {
-    const r = await fetch('/webhook/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: msg, project: project})
-    });
-    const d = await r.json();
-    const loading = document.getElementById('loading');
-    if (loading) loading.remove();
-
-    if (d.status === 'complete') {
-      messages.innerHTML += '<div class="msg bot"><pre>' + (d.response||'').substring(0, 3000) + '</pre></div>';
-    } else {
-      messages.innerHTML += '<div class="msg bot" style="color:#ef4444">Error: ' + (d.error||'unknown') + '</div>';
-    }
-  } catch(e) {
-    const loading = document.getElementById('loading');
-    if (loading) loading.remove();
-    messages.innerHTML += '<div class="msg bot" style="color:#ef4444">Failed: ' + e.message + '</div>';
+async function toggle(el,name){
+  el.classList.toggle('expanded');
+  if(el.classList.contains('expanded')){
+    const m=document.getElementById('mod-'+name);
+    try{
+      const r=await fetch('/webhook/module-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:name})});
+      const d=await r.json();
+      if(d.modules&&d.modules.length){
+        m.innerHTML=d.modules.map(x=>`<div class="mod"><span>${x.name}</span><span class="${x.status}">${x.status} (${x.files}f/${x.lines}L)</span></div>`).join('');
+      }else{m.innerHTML='<div class="mod">No modules detected</div>';}
+    }catch{m.innerHTML='<div class="mod err">Failed to load</div>';}
   }
-
-  document.getElementById('chat-send').disabled = false;
-  messages.scrollTop = messages.scrollHeight;
-  loadAgentState(); // refresh after action
-  loadFeed();
 }
 
-// --- Init ---
-async function init() {
-  const sprites = loadSprites();
-  const canvas = document.getElementById('office');
-  office = new PixelOffice(canvas, sprites);
-  office.start();
-
-  await loadAgentState();
-  await loadFeed();
-
-  // Polling
-  setInterval(loadAgentState, 30000);
-  setInterval(loadFeed, 15000);
+async function loadFeed(){
+  try{
+    const r=await fetch('/webhook/feed',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    const el=document.getElementById('feed');
+    if(d.feed&&d.feed.length){
+      el.innerHTML=d.feed.map(e=>`<div class="e"><span class="tm">${new Date(e.time).toLocaleTimeString()}</span><span class="tp">[${e.type}]</span><b>${e.project||''}</b> ${(e.message||'').substring(0,50)}</div>`).join('');
+    }
+  }catch{}
 }
 
-init();
+async function send(){
+  const inp=document.getElementById('ci');
+  const msg=inp.value.trim();if(!msg)return;
+  const proj=document.getElementById('cp').value;
+  const msgs=document.getElementById('msgs');
+  msgs.innerHTML+=`<div class="m u">${msg}${proj?' <small>&rarr; '+proj+'</small>':''}</div>`;
+  inp.value='';document.getElementById('cb').disabled=true;
+  msgs.innerHTML+='<div class="m b" id="ld">Thinking...</div>';
+  msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const r=await fetch('/webhook/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,project:proj})});
+    const d=await r.json();
+    const ld=document.getElementById('ld');if(ld)ld.remove();
+    if(d.status==='complete'){msgs.innerHTML+=`<div class="m b"><pre>${(d.response||'').substring(0,2000)}</pre></div>`;}
+    else{msgs.innerHTML+=`<div class="m b" style="color:#ef4444">Error: ${d.error||'unknown'}</div>`;}
+  }catch(e){
+    const ld=document.getElementById('ld');if(ld)ld.remove();
+    msgs.innerHTML+=`<div class="m b" style="color:#ef4444">${e.message}</div>`;
+  }
+  document.getElementById('cb').disabled=false;
+  msgs.scrollTop=msgs.scrollHeight;
+  load();loadFeed();
+}
+
+async function act(name){
+  try{
+    const r=await fetch('/webhook/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    alert(name+': '+(d.status==='complete'?'OK':(d.error||d.message||'done')));
+    load();
+  }catch(e){alert(name+' failed: '+e.message);}
+}
+
+load();loadFeed();
+setInterval(load,30000);
+setInterval(loadFeed,15000);
 </script>
 </body></html>"""
 
-# Load sprites and inline them
-SPRITES_FILE = ROOT / 'n8n' / 'dashboard' / 'sprites.json'
-sprites_json = ''
-if SPRITES_FILE.exists():
-    sprites_json = SPRITES_FILE.read_text(encoding='utf-8')
-    print(f'Sprites: {len(sprites_json) // 1024} KB inlined')
-else:
-    print('WARNING: sprites.json not found — run: python scripts/decode-sprites.py')
-    sprites_json = '{"characters":[],"floors":[],"furniture":{}}'
+html = HTML.replace('STYLES', CSS)
 
-sprite_injection = f'<script>window.__SPRITES__={sprites_json};</script>'
-
-# Assemble
-html = HTML_TEMPLATE.replace('STYLES_PLACEHOLDER', CSS).replace('OFFICE_JS_PLACEHOLDER', office_code)
-# Inject sprites before closing </body>
-html = html.replace('</body>', sprite_injection + '</body>')
-
-# Build n8n workflow that serves this HTML
-# The Code node returns {html}, respondToWebhook sends it
 wf = {
     "name": "Dashboard",
     "nodes": [
-        {
-            "parameters": {"httpMethod": "GET", "path": "dashboard", "responseMode": "responseNode", "options": {}},
-            "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [250, 300], "name": "Webhook"
-        },
-        {
-            "parameters": {
-                "jsCode": "return [{json: {html: " + json.dumps(html) + "}}];"
-            },
-            "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [470, 300], "name": "Serve HTML"
-        },
-        {
-            "parameters": {
-                "respondWith": "text",
-                "responseBody": "={{ $json.html }}",
-                "options": {"responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/html; charset=utf-8"}]}}
-            },
-            "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [690, 300], "name": "Respond"
-        }
+        {"parameters": {"httpMethod": "GET", "path": "dashboard", "responseMode": "responseNode", "options": {}},
+         "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [250, 300], "name": "Webhook"},
+        {"parameters": {"jsCode": "return [{json: {html: " + json.dumps(html) + "}}];"},
+         "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [470, 300], "name": "Serve"},
+        {"parameters": {"respondWith": "text", "responseBody": "={{ $json.html }}",
+                         "options": {"responseHeaders": {"entries": [{"name": "Content-Type", "value": "text/html; charset=utf-8"}]}}},
+         "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1.1, "position": [690, 300], "name": "Respond"}
     ],
     "connections": {
-        "Webhook": {"main": [[{"node": "Serve HTML", "type": "main", "index": 0}]]},
-        "Serve HTML": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+        "Webhook": {"main": [[{"node": "Serve", "type": "main", "index": 0}]]},
+        "Serve": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
     },
     "settings": {"executionOrder": "v1"}
 }
@@ -280,9 +223,6 @@ wf = {
 with open(OUTPUT, 'w', encoding='utf-8') as f:
     json.dump(wf, f, indent=2, ensure_ascii=False)
 
-# Verify
 json.loads(OUTPUT.read_text(encoding='utf-8'))
 size_kb = OUTPUT.stat().st_size / 1024
-print(f'Dashboard v3: OK ({size_kb:.0f} KB)')
-print(f'office.js: {len(office_code)} chars inlined')
-print(f'CSS: {len(CSS)} chars inlined')
+print(f'Dashboard v4: {size_kb:.0f} KB (data-first, no sprites)')
