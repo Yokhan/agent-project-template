@@ -6,10 +6,11 @@ import { existsSync } from 'fs';
 import { routeKeywords, getLibraryMap } from './router.js';
 import { loadRules, getProjectContext } from './context.js';
 import { getState, updateState, restoreState } from './state.js';
+import { runResearch, runVerify, runPlanScaffold } from './research.js';
 
 const server = new McpServer({
   name: 'context-router',
-  version: '1.1.0',
+  version: '1.2.0',
 });
 
 // --- Tool: get_context ---
@@ -172,6 +173,45 @@ server.tool(
     ];
 
     return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+  }
+);
+
+// --- Tool: research ---
+server.tool(
+  'research',
+  'Auto research protocol: reads target files, importers, git log, lessons, registry, ecosystem, cache. Replaces 6+ manual tool calls.',
+  {
+    target: z.string().describe('File or directory path to research, e.g. "src/features/auth/"'),
+  },
+  async ({ target }) => {
+    const result = await runResearch(target);
+    return { content: [{ type: 'text' as const, text: result }] };
+  }
+);
+
+// --- Tool: verify ---
+server.tool(
+  'verify',
+  'Auto verification checklist: file sizes, syntax, tests, gates by task size. Replaces manual verification.',
+  {
+    size: z.enum(['XS', 'S', 'M', 'L', 'XL']).optional().default('M').describe('Task size for gate selection'),
+  },
+  async ({ size }) => {
+    const result = await runVerify(size);
+    return { content: [{ type: 'text' as const, text: result }] };
+  }
+);
+
+// --- Tool: plan_scaffold ---
+server.tool(
+  'plan_scaffold',
+  'Generate plan skeleton: finds affected files, estimates size, creates implementation template.',
+  {
+    task: z.string().describe('Task description, e.g. "add OAuth flow to auth module"'),
+  },
+  async ({ task }) => {
+    const result = await runPlanScaffold(task);
+    return { content: [{ type: 'text' as const, text: result }] };
   }
 );
 

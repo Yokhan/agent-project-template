@@ -54,11 +54,23 @@ NEVER hardcode visual values. System→Tokens→Components→Screens.
 Every container needs layout mode. 8 states for interactive elements.
 Search before creating.
 
-## Runtime helpers:
+## MCP Tools (use these, not bash scripts):
 
 ```
-bash scripts/research.sh <path>        — auto research (1 call vs 6)
-bash scripts/plan-scaffold.sh <task>   — auto plan template
-bash scripts/verify-check.sh --size M  — auto verification
-bash scripts/context-restore.sh        — context recovery
+get_context(keywords, depth)  — route task + load rules (brief/normal/full)
+switch_context(keywords)      — switch task mid-conversation
+get_active_rules()            — restore after compaction
+research(target)              — auto research: files, importers, git, lessons, registry
+verify(size)                  — auto verification: file sizes, syntax, gates
+plan_scaffold(task)           — auto plan: affected files, size estimate, template
+```
+
+## Bash fallbacks (if MCP unavailable):
+
+```
+bash scripts/route-task.sh <keywords>
+bash scripts/research.sh <path>
+bash scripts/verify-check.sh --size M
+bash scripts/plan-scaffold.sh <task>
+bash scripts/context-restore.sh
 ```
