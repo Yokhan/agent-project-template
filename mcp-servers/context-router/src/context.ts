@@ -21,7 +21,7 @@ export async function loadRules(files: string[]): Promise<{ text: string; lines:
         contents.push(`# --- ${f} ---\n${content}`);
         totalLines += content.split('\n').length;
       } catch {
-        // File not found — skip silently
+        contents.push(`# --- ${f} --- [NOT FOUND]`);
       }
     })
   );
@@ -48,7 +48,7 @@ async function grepFile(filePath: string, keywords: string): Promise<string> {
 
   try {
     const content = await readFile(filePath, 'utf-8');
-    const keywordList = keywords.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+    const keywordList = keywords.toLowerCase().split(/\s+/).filter(k => k.length > 1);
 
     if (keywordList.length === 0) return '';
 

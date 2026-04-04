@@ -1,6 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { routeKeywords, getLibraryMap } from './router.js';
 import { loadRules, getProjectContext } from './context.js';
 import { getState, updateState, restoreState } from './state.js';
@@ -15,7 +17,7 @@ server.tool(
   'get_context',
   'Route task to relevant rules and return full context. Call this on EVERY new task.',
   {
-    keywords: z.string().describe('English keywords extracted from user message, e.g. "fix auth login bug"'),
+    keywords: z.string().max(500).describe('English keywords extracted from user message, e.g. "fix auth login bug"'),
     include_rules: z.boolean().optional().default(true).describe('Include rule text in response'),
     include_lessons: z.boolean().optional().default(true).describe('Grep lessons for keywords'),
     include_git: z.boolean().optional().default(true).describe('Include recent git log'),
@@ -184,6 +186,12 @@ server.resource(
 
 // --- Start ---
 async function main() {
+  // Pre-flight checks
+  const libraryPath = join(process.cwd(), '.claude', 'library');
+  if (!existsSync(libraryPath)) {
+    console.error(`WARNING: ${libraryPath} not found. Rules won't load.`);
+  }
+
   // Try to restore state from disk on startup
   await restoreState();
 
