@@ -20,6 +20,11 @@ First time: open http://localhost:5678, create account, get API key, add to `.en
 | Template Sync | `/webhook/sync` | MCP | no |
 | Drift Alert | `/webhook/drift-alert` | Cron 9AM / manual | no |
 | Daily Briefing | `/webhook/briefing` | Cron 9AM / manual | **yes** (`claude -p`) |
+| Telegram Notify | `/webhook/notify` | MCP / other pipelines | no |
+| Weekly Summary | `/webhook/weekly` | Cron Mon 10AM / manual | no |
+| Task Pickup | `/webhook/task-pickup` | MCP / manual | **yes** (`claude -p`) |
+| Dependency Check | `/webhook/dep-check` | MCP / manual | no |
+| Dashboard | `GET /webhook/dashboard` | browser | no |
 
 ## Two-Way Communication
 

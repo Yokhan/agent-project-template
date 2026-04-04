@@ -1,0 +1,82 @@
+{
+  "name": "Dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "dashboard",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst scanDir = '__DOCUMENTS_DIR__';\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const raw = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const now = Math.floor(Date.now() / 1000);\n  const projects = raw.trim().split(String.fromCharCode(10)).filter(l => l.includes('|')).map(l => {\n    const [name, branch, last, age, uncommitted, manifest, tpl] = l.split('|');\n    const days = parseInt(age) ? Math.floor((now - parseInt(age)) / 86400) : 999;\n    const activity = days <= 1 ? 'hot' : days <= 7 ? 'warm' : days <= 30 ? 'cool' : 'cold';\n    const color = {hot:'#22c55e',warm:'#eab308',cool:'#94a3b8',cold:'#ef4444'}[activity];\n    return {name, branch, last, days, uncommitted: parseInt(uncommitted)||0, isAgent: manifest==='true', tpl, activity, color};\n  });\n  const a = projects.filter(p => p.isAgent);\n  const rows = projects.map(p => '<tr style=\"border-bottom:1px solid #333\"><td style=\"padding:8px\"><span style=\"color:' + p.color + '\">\u25cf</span> ' + p.name + '</td><td>' + p.branch + '</td><td>' + p.last + '</td><td>' + p.uncommitted + '</td><td>' + (p.isAgent ? p.tpl : '-') + '</td><td style=\"color:' + p.color + '\">' + p.activity + '</td></tr>').join('');\n  const html = '<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Agent Dashboard</title><style>body{background:#1a1a2e;color:#e0e0e0;font-family:system-ui;margin:40px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #555;color:#888}h1{color:#fff}.stats{display:flex;gap:30px;margin:20px 0}.stat{background:#16213e;padding:15px 25px;border-radius:8px;text-align:center}.stat-num{font-size:2em;font-weight:bold}.stat-label{color:#888;font-size:0.9em}</style></head><body><h1>Agent Project Dashboard</h1><p style=\"color:#888\">' + new Date().toISOString().split('T')[0] + '</p><div class=\"stats\"><div class=\"stat\"><div class=\"stat-num\" style=\"color:#22c55e\">' + a.filter(p=>p.activity==='hot').length + '</div><div class=\"stat-label\">Hot</div></div><div class=\"stat\"><div class=\"stat-num\" style=\"color:#eab308\">' + a.filter(p=>p.activity==='warm').length + '</div><div class=\"stat-label\">Warm</div></div><div class=\"stat\"><div class=\"stat-num\" style=\"color:#94a3b8\">' + a.filter(p=>p.activity==='cool').length + '</div><div class=\"stat-label\">Cool</div></div><div class=\"stat\"><div class=\"stat-num\" style=\"color:#ef4444\">' + a.filter(p=>p.activity==='cold').length + '</div><div class=\"stat-label\">Cold</div></div><div class=\"stat\"><div class=\"stat-num\">' + a.length + '</div><div class=\"stat-label\">Agent Projects</div></div></div><table><thead><tr><th>Project</th><th>Branch</th><th>Last Commit</th><th>Dirty</th><th>Template</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>';\n  return [{json: {html}}];\n} catch(e) {\n  return [{json: {html: '<h1>Error</h1><pre>' + ((e.stderr||'') + e.message) + '</pre>'}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Generate HTML"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        690,
+        300
+      ],
+      "name": "Respond"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

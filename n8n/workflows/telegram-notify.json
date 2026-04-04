@@ -1,0 +1,48 @@
+{
+  "name": "Telegram Notify",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst input = $input.first().json;\nconst message = (input.params && input.params.message) || input.message || 'No message';\nlet chatId = (input.params && input.params.chat_id) || input.chat_id || '';\nlet botToken = (input.params && input.params.bot_token) || input.bot_token || '';\n\n// Read from .env if not provided\nif (!chatId || !botToken) {\n  try {\n    const env = fs.readFileSync('__PROJECT_ROOT__/.env', 'utf8');\n    if (!chatId) chatId = (env.match(/TELEGRAM_CHAT_ID=(.+)/) || [])[1] || '';\n    if (!botToken) botToken = (env.match(/TELEGRAM_BOT_TOKEN=(.+)/) || [])[1] || '';\n  } catch {}\n}\n\nif (!chatId || !botToken) {\n  return [{json: {status: 'error', error: 'Missing TELEGRAM_CHAT_ID or TELEGRAM_BOT_TOKEN'}}];\n}\n\ntry {\n  const url = 'https://api.telegram.org/bot' + botToken.trim() + '/sendMessage';\n  const body = JSON.stringify({chat_id: chatId.trim(), text: message.substring(0, 4000), parse_mode: 'Markdown'});\n  cp.execSync('curl -s -X POST \"' + url + '\" -H \"Content-Type: application/json\" -d ' + JSON.stringify(body).replace(/\"/g, '\\\\\"'), {timeout: 10000, encoding: 'utf8'});\n  return [{json: {status: 'sent', chat_id: chatId, length: message.length, timestamp: new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Send Telegram"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

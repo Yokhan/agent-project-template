@@ -1,0 +1,48 @@
+{
+  "name": "Task Pickup",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "task-pickup",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst os = require('os');\nconst projRoot = '__PROJECT_ROOT__';\nconst queueFile = projRoot + '/tasks/queue.md';\n\ntry {\n  if (!fs.existsSync(queueFile)) {\n    return [{json: {status: 'empty', message: 'No queue file'}}];\n  }\n  const content = fs.readFileSync(queueFile, 'utf8');\n  const lines = content.split(String.fromCharCode(10));\n  const idx = lines.findIndex(l => /^- \\[ \\]/.test(l));\n  if (idx === -1) {\n    return [{json: {status: 'empty', message: 'No pending tasks'}}];\n  }\n  const task = lines[idx].replace(/^- \\[ \\]\\s*/, '').trim();\n  if (!task) return [{json: {status: 'empty', message: 'Empty task'}}];\n\n  // Mark in-progress\n  lines[idx] = lines[idx].replace('- [ ]', '- [~]');\n  fs.writeFileSync(queueFile, lines.join('\n'));\n\n  // Safe execution via temp file\n  const tmp = os.tmpdir() + '/task-' + Date.now() + '.txt';\n  fs.writeFileSync(tmp, task);\n  let result;\n  try {\n    result = cp.execSync('claude -p < \"' + tmp.replace(/\\/g, '/') + '\"', {cwd: projRoot, timeout: 300000, encoding: 'utf8', shell: true}).trim();\n  } finally {\n    try { fs.unlinkSync(tmp); } catch {}\n  }\n\n  // Mark done\n  const updated = fs.readFileSync(queueFile, 'utf8').split(String.fromCharCode(10));\n  const doneIdx = updated.findIndex(l => l.includes('[~]') && l.includes(task.substring(0, 30)));\n  if (doneIdx >= 0) updated[doneIdx] = updated[doneIdx].replace('- [~]', '- [x]');\n  fs.writeFileSync(queueFile, updated.join('\n'));\n\n  return [{json: {status: 'complete', task, result: result.substring(0, 2000), timestamp: new Date().toISOString()}}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Process Task"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

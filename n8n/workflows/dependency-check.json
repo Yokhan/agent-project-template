@@ -1,0 +1,48 @@
+{
+  "name": "Dependency Check",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dep-check",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        300
+      ],
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cp = require('child_process');\nconst fs = require('fs');\nconst scanDir = '__DOCUMENTS_DIR__';\nconst projRoot = '__PROJECT_ROOT__';\n\ntry {\n  const raw = cp.execSync('bash scripts/scan-projects.sh \"' + scanDir + '\" 2>&1', {cwd: projRoot, timeout: 60000, encoding: 'utf8'});\n  const agents = raw.trim().split(String.fromCharCode(10)).filter(l => l.includes('|true|')).map(l => l.split('|')[0]);\n  const issues = [];\n  const versions = {};\n\n  for (const name of agents) {\n    const eco = scanDir + '/' + name + '/ecosystem.md';\n    if (!fs.existsSync(eco)) {\n      issues.push({project: name, issue: 'missing ecosystem.md'});\n    } else {\n      const c = fs.readFileSync(eco, 'utf8');\n      if (c.includes('_[') || c.length < 200) issues.push({project: name, issue: 'ecosystem.md not filled'});\n    }\n    const mPath = scanDir + '/' + name + '/.template-manifest.json';\n    if (fs.existsSync(mPath)) {\n      try {\n        const v = JSON.parse(fs.readFileSync(mPath, 'utf8')).template_version || 'unknown';\n        if (!versions[v]) versions[v] = [];\n        versions[v].push(name);\n      } catch {}\n    }\n  }\n\n  return [{json: {\n    status: 'complete', total: agents.length, issues,\n    template_versions: versions, version_mismatch: Object.keys(versions).length > 1,\n    timestamp: new Date().toISOString()\n  }}];\n} catch(e) {\n  return [{json: {status: 'error', error: (e.stderr || '') + e.message}}];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        300
+      ],
+      "name": "Check Deps"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Deps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
