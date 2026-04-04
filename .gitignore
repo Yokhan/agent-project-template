@@ -12,6 +12,10 @@
 # Session cache (runtime, regenerated)
 .session-cache/
 
+# MCP server dependencies (installed per-project)
+mcp-servers/*/node_modules/
+mcp-servers/*/dist/
+
 # Active rules state (project-local, set by route-task.sh)
 tasks/.active-rules
 tasks/.mode

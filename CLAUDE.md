@@ -19,16 +19,22 @@ Not configured yet.
 ## How This Template Works
 
 **Rules are NOT pre-loaded.** They live in `.claude/library/` and load ON DEMAND per task.
-The router (`.claude/rules/router.md`) tells you how. Read it first.
 
-**On every new task**: `bash scripts/route-task.sh "<task>"` → loads only relevant rules.
-**On task switch**: re-run route-task.sh. State: "Switching: old→new, loading N rules".
-**Manual mode**: `/mode-code`, `/mode-design`, `/mode-review`, `/mode-research`, `/mode-write`, `/mode-fix`, `/mode-plan`
+**On every new task**:
+1. User gives task (any language, any jargon)
+2. YOU extract English keywords: task type + domain + action
+3. Call `get_context(keywords="...")` → receives mode + rules + lessons + context in ONE call
+4. Work with received rules. No extra file reads needed.
+
+**On task switch**: `switch_context(keywords="...")`
+**After compaction**: `get_active_rules()`
+**Fallback (no MCP)**: `bash scripts/route-task.sh "<keywords>"` + Read listed files
+**Manual**: `/mode-code` `/mode-design` `/mode-review` `/mode-research` `/mode-write` `/mode-fix` `/mode-plan`
 
 ## Session Start
 1. `bash scripts/context-restore.sh` — shows mode, task, lessons, git state
-2. If Engram available: `mem_session_start` + `mem_context`
-3. `bash scripts/route-task.sh "<first task>"` → Read listed files
+2. If Engram: `mem_session_start` + `mem_context`
+3. `get_context(keywords="<first task>")` → ready to work
 
 ## Session End
 Update `tasks/current.md` with handoff (status, files, next steps, blockers).

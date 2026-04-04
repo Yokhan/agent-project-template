@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "context-router": {
+      "command": "npx",
+      "args": ["tsx", "mcp-servers/context-router/src/index.ts"],
+      "env": {}
+    }
+  }
+}

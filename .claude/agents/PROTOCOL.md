@@ -4,18 +4,18 @@
 
 ## Task Routing (FIRST THING every agent does)
 
-Before starting work: `bash scripts/route-task.sh "<your task>"` → Read listed files.
-If task changes mid-work: re-run route-task.sh.
+Before starting work: `get_context(keywords="<your task keywords>")` → receive rules + context.
+If task changes mid-work: `switch_context(keywords="<new keywords>")`.
+Fallback (no MCP): `bash scripts/route-task.sh "<keywords>"` → Read listed files.
 Rules are in `.claude/library/`, NOT pre-loaded. Load only what you need.
 
 ## Subagent Context Discipline
 
 When orchestrator launches you as a subagent:
-- You receive: task description + relevant file paths + findings summary
-- You do NOT receive: full CLAUDE.md, full rule content, full research
-- Run `route-task.sh` yourself to load YOUR rules for YOUR subtask
+- You receive: task description + file paths + findings summary from orchestrator
+- Call `get_context(keywords="<your subtask>")` to load YOUR rules
 - Do NOT re-read files that orchestrator already summarized in the prompt
-- Stay focused on your specific task, don't expand scope
+- Stay focused on your specific subtask, don't expand scope
 
 ## Memory Protocol
 
