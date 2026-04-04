@@ -7,6 +7,7 @@ import { routeKeywords, getLibraryMap } from './router.js';
 import { loadRules, getProjectContext } from './context.js';
 import { getState, updateState, restoreState } from './state.js';
 import { runResearch, runVerify, runPlanScaffold } from './research.js';
+import { searchMemory, getEngramStatus } from './engram.js';
 
 const server = new McpServer({
   name: 'context-router',
@@ -90,6 +91,13 @@ server.tool(
       sections.push(context.research);
     }
 
+    // Engram memory search (full depth only)
+    const memory = await searchMemory(keywords);
+    if (memory) {
+      sections.push('');
+      sections.push(memory);
+    }
+
     return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
   }
 );
@@ -164,10 +172,12 @@ server.tool(
       };
     }
 
+    const engramStatus = await getEngramStatus();
     const lines = [
       `MODE: ${state.currentModes.join('+')}`,
       `TASK: ${state.taskDescription}`,
       `ROUTED AT: ${state.lastRouteTime}`,
+      engramStatus,
       `RULES (${state.activeRules.length} files):`,
       ...state.activeRules.map(f => `  .claude/library/${f}`)
     ];
