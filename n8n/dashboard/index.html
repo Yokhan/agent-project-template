@@ -3,17 +3,18 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#000;--card:#0c0c0c;--card-h:#111;--border:#1c1c1c;--text:#e8e8e8;--dim:#5a5a5a;--accent:#D71921;--green:#33d17a;--yellow:#f5c211;--mute:#2a2a2a;--radius:0px}
-body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+:root{--bg:#000;--sf:#0c0c0c;--sf2:#141414;--border:#1e1e1e;--text:#fff;--t2:#999;--t3:#555;--accent:#D71921;--green:#33d17a;--yellow:#f5c211;--mute:#2a2a2a;--dot:#222;--glow:rgba(215,25,33,.08)}
+[data-theme="light"]{--bg:#fff;--sf:#f5f5f5;--sf2:#ebebeb;--border:#e0e0e0;--text:#000;--t2:#666;--t3:#999;--mute:#ccc;--dot:#ddd;--glow:rgba(215,25,33,.06)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
 
 /* === LAYOUT === */
 .app{min-height:100vh;display:flex;flex-direction:column}
 .hdr{padding:12px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.hdr h1{font-size:12px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:4px;font-weight:400;color:var(--dim)}
+.hdr h1{font-size:12px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:4px;font-weight:400;color:var(--t2)}
 .hdr .r{display:flex;align-items:center;gap:12px}
-.hdr .r span{font-size:11px;color:var(--dim)}
-.hdr .r button{background:var(--card);color:var(--dim);border:1px solid var(--border);padding:5px 12px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
-.hdr .r button:hover{color:var(--text);border-color:#444;background:var(--card-h)}
+.hdr .r span{font-size:11px;color:var(--t2)}
+.hdr .r button{background:var(--sf);color:var(--t2);border:1px solid var(--border);padding:5px 12px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.hdr .r button:hover{color:var(--text);border-color:#444;background:var(--sf2)}
 
 /* === MAIN: dashboard view === */
 .main{flex:1;display:flex}
@@ -22,23 +23,25 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 
 /* === STATS ROW === */
 .stats{display:flex;gap:12px;margin-bottom:20px}
-.stat{border:1px solid var(--border);padding:14px 16px;flex:1;text-align:center;background:var(--card)}
+.stat{border:1px solid var(--border);padding:14px 16px;flex:1;text-align:center;background:var(--sf)}
 .stat .n{font-size:24px;font-weight:300;line-height:1;font-family:'Space Mono',monospace}
 .stat .l{font-size:8px;color:var(--mute);text-transform:uppercase;letter-spacing:3px;margin-top:6px}
 
 /* === PROJECT GRID === */
-.grid-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.grid-title{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:20px}
-.tile{background:var(--card);border:1px solid var(--border);padding:12px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
-.tile:hover{border-color:#333;background:var(--card-h)}
+.tile{background:var(--sf);border:1px solid var(--border);padding:12px 14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.tile:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--glow),0 0 20px var(--glow)}
+.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) .5px,transparent .5px);background-size:6px 6px;opacity:.12;pointer-events:none;transition:opacity .2s}
+.tile:hover::before{opacity:.25}
 .tile .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .tile .name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;letter-spacing:-.2px}
 .tile .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 .tile .dot.working{background:var(--green);box-shadow:0 0 6px var(--green)}
 .tile .dot.idle{background:var(--yellow)}
 .tile .dot.sleeping{background:var(--mute)}
-.tile .ver{font-size:9px;color:var(--dim)}
-.tile .row{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
+.tile .ver{font-size:9px;color:var(--t2)}
+.tile .row{display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-top:4px}
 .tile .branch{font-size:10px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tile .bar{position:absolute;bottom:0;left:0;height:2px;transition:width .5s}
 .tile .dirty{color:var(--yellow)}
@@ -47,27 +50,27 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 /* === PROJECT DETAIL (inside view) === */
 .detail{display:none;flex-direction:column;flex:1}
 .detail.show{display:flex}
-.detail .back{font-size:10px;color:var(--dim);cursor:pointer;padding:8px 0;text-transform:uppercase;letter-spacing:1px}
+.detail .back{font-size:10px;color:var(--t2);cursor:pointer;padding:8px 0;text-transform:uppercase;letter-spacing:1px}
 .detail .back:hover{color:var(--text)}
 .detail .proj-hdr{padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:12px}
 .detail .proj-hdr h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
-.detail .proj-hdr .meta{font-size:10px;color:var(--dim);margin-top:4px}
+.detail .proj-hdr .meta{font-size:10px;color:var(--t2);margin-top:4px}
 .detail .panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .panel{border:1px solid var(--border);padding:12px}
-.panel h3{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.panel h3{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
 .panel .mod{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #0a0a0a}
 .panel .ok{color:var(--green)}.panel .warning{color:var(--yellow)}.panel .error{color:var(--accent)}
 .detail .chat-area{flex:1;display:flex;flex-direction:column;border-top:1px solid var(--border);min-height:300px}
 
 /* === CHAT (shared) === */
-.ch-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.ch-title{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:2px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .ch-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .m{max-width:85%;padding:7px 10px;font-size:11px;line-height:1.4;word-wrap:break-word}
 .m.u{align-self:flex-end;background:#111;border:1px solid var(--border);color:var(--text)}
-.m.a{align-self:flex-start;color:var(--dim)}
+.m.a{align-self:flex-start;color:var(--t2)}
 .m pre{white-space:pre-wrap;font-size:10px;margin-top:3px;font-family:inherit}
 .m .ts{font-size:8px;color:var(--mute);margin-top:2px}
-.ch-typ{padding:6px 12px;font-size:10px;color:var(--dim);display:none}
+.ch-typ{padding:6px 12px;font-size:10px;color:var(--t2);display:none}
 .ch-inp{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border)}
 .ch-inp input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px 10px;font-family:inherit;font-size:11px;outline:none}
 .ch-inp input:focus{border-color:var(--mute)}
@@ -87,6 +90,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
       <button onclick="act('drift')">drift</button>
       <button onclick="act('weekly')">weekly</button>
       <button onclick="loadAll()">refresh</button>
+      <button onclick="toggleTheme()" id="theme-btn">light</button>
       <span id="ts"></span>
     </div>
   </div>
@@ -139,6 +143,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-s
 </div>
 
 <script>
+// Theme
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='light'?'dark':'light';
+  document.documentElement.setAttribute('data-theme',next==='dark'?'':next);
+  localStorage.setItem('theme',next);
+  document.getElementById('theme-btn').textContent=next==='dark'?'light':'dark';
+}
+(function(){const t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');
+document.getElementById('theme-btn').textContent=(t==='light')?'dark':'light';})();
+
 let agents=[],curProj=null;
 
 async function loadAll(){
@@ -162,11 +177,11 @@ function render(){
   const s=agents.filter(a=>a.status==='sleeping').length;
   const dirty=agents.reduce((s,a)=>s+(a.uncommitted||0),0);
   document.getElementById('stats').innerHTML=
-    `<div class="stat"><div class="n" style="color:#33d17a">${h}</div><div class="l">working</div></div>`+
-    `<div class="stat"><div class="n" style="color:#888">${i}</div><div class="l">idle</div></div>`+
-    `<div class="stat"><div class="n" style="color:#333">${s}</div><div class="l">sleeping</div></div>`+
-    `<div class="stat"><div class="n" style="color:#ccc">${agents.length}</div><div class="l">total</div></div>`+
-    `<div class="stat"><div class="n" style="color:${dirty>50?'#D71921':'#888'}">${dirty}</div><div class="l">uncommitted</div></div>`;
+    `<div class="stat"><div class="n" style="color:var(--green)">${h}</div><div class="l">working</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--t2)">${i}</div><div class="l">idle</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--mute)">${s}</div><div class="l">sleeping</div></div>`+
+    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`+
+    `<div class="stat"><div class="n" style="color:${dirty>50?'var(--accent)':'var(--t2)'}">${dirty}</div><div class="l">uncommitted</div></div>`;
 
   const sorted=[...agents].sort((a,b)=>(a.days||999)-(b.days||999));
   document.getElementById('grid').innerHTML=sorted.map(a=>{
@@ -198,7 +213,7 @@ async function openProject(name){
   document.getElementById('d-chat-name').textContent=name;
   document.getElementById('d-meta').textContent=`${ag.branch||''} · ${ag.uncommitted||0} uncommitted · ${ag.last_commit||''} · ${ag.status||''}`;
   document.getElementById('d-info').innerHTML=
-    `<div style="font-size:11px;color:var(--dim)">`+
+    `<div style="font-size:11px;color:var(--t2)">`+
     `<div>branch: ${esc(ag.branch||'')}</div>`+
     `<div>dirty: ${ag.uncommitted||0}</div>`+
     `<div>last: ${esc(ag.last_commit||'')}</div>`+
@@ -208,7 +223,7 @@ async function openProject(name){
   // Load modules
   try{
     const r=await fetch('/api/modules/'+name);const d=await r.json();
-    document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--dim)">no modules detected</span>';
+    document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--t2)">no modules detected</span>';
   }catch{document.getElementById('d-modules').innerHTML='failed';}
 
   // Load chat

@@ -174,11 +174,28 @@ def send_chat(project, message):
     try:
         with open(tmp, 'w', encoding='utf-8') as f:
             f.write(message)
+        # Force UTF-8 on Windows (otherwise cmd.exe uses cp1251/cp866)
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+        env['LANG'] = 'en_US.UTF-8'
+        env['CHCP'] = '65001'
         result = subprocess.run(
-            f'claude -p < "{tmp}"',
-            shell=True, capture_output=True, text=True, timeout=300, cwd=cwd
+            f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+            shell=True, capture_output=True, timeout=300, cwd=cwd, env=env
         )
-        response = result.stdout.strip() or result.stderr.strip() or 'No response'
+        # Decode with fallback
+        try:
+            response = result.stdout.decode('utf-8').strip()
+        except (UnicodeDecodeError, AttributeError):
+            try:
+                response = result.stdout.decode('cp1251').strip()
+            except:
+                response = str(result.stdout).strip()
+        if not response:
+            try:
+                response = result.stderr.decode('utf-8').strip()
+            except:
+                response = 'No response'
     except subprocess.TimeoutExpired:
         response = 'Error: claude -p timed out (5 min)'
     except Exception as e:
