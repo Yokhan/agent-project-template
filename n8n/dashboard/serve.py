@@ -158,7 +158,9 @@ def send_chat(project, message):
     if not message:
         return {'status': 'error', 'error': 'Empty message'}
 
-    cwd = os.path.join(DOCS_DIR, project) if project else ROOT
+    # Orchestrator chat runs in PersonalAssistant, not template root
+    PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+    cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
     if project and not os.path.exists(cwd):
         return {'status': 'error', 'error': f'Project not found: {cwd}'}
 
