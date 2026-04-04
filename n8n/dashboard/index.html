@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Command Center</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#000;--card:#0a0a0a;--border:#1a1a1a;--text:#fff;--dim:#666;--accent:#D71921;--green:#22c55e;--yellow:#eab308;--mute:#333}
-body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;overflow-x:hidden}
+:root{--bg:#000;--card:#0c0c0c;--card-h:#111;--border:#1c1c1c;--text:#e8e8e8;--dim:#5a5a5a;--accent:#D71921;--green:#33d17a;--yellow:#f5c211;--mute:#2a2a2a;--radius:0px}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
 /* === LAYOUT === */
 .app{min-height:100vh;display:flex;flex-direction:column}
-.hdr{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.hdr h1{font-size:14px;text-transform:uppercase;letter-spacing:3px;font-weight:400}
+.hdr{padding:12px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.hdr h1{font-size:12px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:4px;font-weight:400;color:var(--dim)}
 .hdr .r{display:flex;align-items:center;gap:12px}
 .hdr .r span{font-size:11px;color:var(--dim)}
-.hdr .r button{background:none;color:var(--dim);border:1px solid var(--border);padding:4px 10px;font-family:inherit;font-size:10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
-.hdr .r button:hover{color:var(--text);border-color:var(--mute)}
+.hdr .r button{background:var(--card);color:var(--dim);border:1px solid var(--border);padding:5px 12px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.hdr .r button:hover{color:var(--text);border-color:#444;background:var(--card-h)}
 
 /* === MAIN: dashboard view === */
 .main{flex:1;display:flex}
@@ -22,17 +22,17 @@ body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;o
 
 /* === STATS ROW === */
 .stats{display:flex;gap:12px;margin-bottom:20px}
-.stat{border:1px solid var(--border);padding:12px 16px;flex:1;text-align:center}
-.stat .n{font-size:28px;font-weight:700;line-height:1}
-.stat .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.stat{border:1px solid var(--border);padding:14px 16px;flex:1;text-align:center;background:var(--card)}
+.stat .n{font-size:24px;font-weight:300;line-height:1;font-family:'Space Mono',monospace}
+.stat .l{font-size:8px;color:var(--mute);text-transform:uppercase;letter-spacing:3px;margin-top:6px}
 
 /* === PROJECT GRID === */
 .grid-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:20px}
-.tile{background:var(--card);border:1px solid var(--border);padding:14px;cursor:pointer;transition:all .2s;position:relative}
-.tile:hover{border-color:var(--mute);transform:translateY(-1px)}
+.tile{background:var(--card);border:1px solid var(--border);padding:12px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.tile:hover{border-color:#333;background:var(--card-h)}
 .tile .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.tile .name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.tile .name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;letter-spacing:-.2px}
 .tile .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 .tile .dot.working{background:var(--green);box-shadow:0 0 6px var(--green)}
 .tile .dot.idle{background:var(--yellow)}
@@ -162,11 +162,11 @@ function render(){
   const s=agents.filter(a=>a.status==='sleeping').length;
   const dirty=agents.reduce((s,a)=>s+(a.uncommitted||0),0);
   document.getElementById('stats').innerHTML=
-    `<div class="stat"><div class="n" style="color:var(--green)">${h}</div><div class="l">working</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--yellow)">${i}</div><div class="l">idle</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--mute)">${s}</div><div class="l">sleeping</div></div>`+
-    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`+
-    `<div class="stat"><div class="n" style="color:${dirty>50?'var(--accent)':'var(--yellow)'}">${dirty}</div><div class="l">uncommitted</div></div>`;
+    `<div class="stat"><div class="n" style="color:#33d17a">${h}</div><div class="l">working</div></div>`+
+    `<div class="stat"><div class="n" style="color:#888">${i}</div><div class="l">idle</div></div>`+
+    `<div class="stat"><div class="n" style="color:#333">${s}</div><div class="l">sleeping</div></div>`+
+    `<div class="stat"><div class="n" style="color:#ccc">${agents.length}</div><div class="l">total</div></div>`+
+    `<div class="stat"><div class="n" style="color:${dirty>50?'#D71921':'#888'}">${dirty}</div><div class="l">uncommitted</div></div>`;
 
   const sorted=[...agents].sort((a,b)=>(a.days||999)-(b.days||999));
   document.getElementById('grid').innerHTML=sorted.map(a=>{
