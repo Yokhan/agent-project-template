@@ -22,4 +22,6 @@ export interface ProjectContext {
   research: string;
   gitLog: string;
   currentTask: string;
+  toolRegistry: string;
+  ecosystem: string;
 }

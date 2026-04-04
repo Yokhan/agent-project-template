@@ -9,9 +9,11 @@ Rules live in `.claude/library/`. They are NOT pre-loaded. Load ONLY what each t
    Examples: "ну чёт с логином пиздец" → "fix auth login bug"
             "накидай дизайн экрана" → "design screen layout figma"
             "проверь что тут не так" → "review check code"
-3. Call MCP: `get_context(keywords="fix auth login bug")`
-4. Server returns: mode + rules text + lessons + git log + current task — ALL IN ONE
-5. Work with the rules you received. Don't read extra files.
+3. Call: `get_context(keywords="fix auth login bug")`
+   - Default depth=brief → returns MODE + AGENT + file list (~50 tokens)
+   - For M+ tasks: `get_context(keywords="...", depth="normal")` → includes full rule text
+   - For L/XL tasks: `get_context(keywords="...", depth="full")` → rules + lessons + git + registry + ecosystem
+4. Work. Read specific rule files only if you hit a situation that needs them.
 
 ## ON TASK CHANGE mid-conversation:
 

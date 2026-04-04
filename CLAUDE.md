@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 3.1.0 -->
+<!-- Template Version: 3.2.1 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -23,8 +23,10 @@ Not configured yet.
 **On every new task**:
 1. User gives task (any language, any jargon)
 2. YOU extract English keywords: task type + domain + action
-3. Call `get_context(keywords="...")` → receives mode + rules + lessons + context in ONE call
-4. Work with received rules. No extra file reads needed.
+3. Call `get_context(keywords="...")` → default depth=brief (~50 tokens: mode + agent + file list)
+4. For M+ tasks: `get_context(keywords="...", depth="normal")` → includes full rule text
+5. For L/XL or unfamiliar domain: `depth="full"` → rules + lessons + git + registry + ecosystem
+6. Work. Read specific files from the list only when you need them.
 
 **On task switch**: `switch_context(keywords="...")`
 **After compaction**: `get_active_rules()`
@@ -94,7 +96,7 @@ When >50 entries → promote via `/weekly`.
 Not configured yet.
 
 ## Template Version
-3.1.0 — Run `bash scripts/check-drift.sh` to verify health.
+3.2.1 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

@@ -414,6 +414,28 @@ else
   DISABLED+=("chrome-devtools")
 fi
 
+# 7. context-router (template MCP — dynamic rule loading)
+echo -n "  context-router: "
+if [ -f "mcp-servers/context-router/package.json" ]; then
+  # Install deps if needed
+  if [ ! -d "mcp-servers/context-router/node_modules" ]; then
+    echo -n "installing deps... "
+    (cd mcp-servers/context-router && npm install --silent 2>/dev/null) || true
+  fi
+  if [ -d "mcp-servers/context-router/node_modules" ]; then
+    echo "ENABLED (dynamic rule routing)"
+    ENABLED+=("context-router")
+    DETECTED_SERVERS+="context-router|{\"command\":\"npx\",\"args\":[\"tsx\",\"mcp-servers/context-router/src/index.ts\"]}
+"
+  else
+    echo "FAILED (npm install failed)"
+    DISABLED+=("context-router")
+  fi
+else
+  echo "DISABLED (mcp-servers/context-router/ not found)"
+  DISABLED+=("context-router")
+fi
+
 # DEPRECATED
 echo -n "  memcp: "
 echo "DEPRECATED (will be disabled if present)"

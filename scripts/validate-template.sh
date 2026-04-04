@@ -127,9 +127,41 @@ else
   echo "  OK: No here-strings"
 fi
 
-# 7. Command count
+# 7. Library structure + MCP server
 echo ""
-echo "[7/8] Checking counts..."
+echo "[7/10] Checking library structure..."
+if [ -d ".claude/library" ]; then
+  LIB_COUNT=$(find .claude/library -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
+  echo "  OK: .claude/library/ has $LIB_COUNT rule files"
+  for subdir in process technical meta domain conflict; do
+    if [ ! -d ".claude/library/$subdir" ]; then
+      echo "  WARNING: .claude/library/$subdir/ missing"
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  done
+else
+  echo "  ERROR: .claude/library/ not found"
+  ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+echo "[8/10] Checking MCP server..."
+if [ -f "mcp-servers/context-router/package.json" ]; then
+  echo "  OK: context-router package.json exists"
+  if [ -f "mcp-servers/context-router/src/index.ts" ]; then
+    echo "  OK: context-router src/index.ts exists"
+  else
+    echo "  ERROR: context-router src/index.ts missing"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  WARNING: No MCP context-router (fallback to bash scripts)"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+# 9. Counts
+echo ""
+echo "[9/10] Checking counts..."
 CMD_COUNT=$(ls .claude/commands/*.md 2>/dev/null | wc -l | tr -d ' ')
 AGENT_COUNT=$(ls .claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
 RULE_COUNT=$(ls .claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -138,9 +170,9 @@ echo "  Agents: $AGENT_COUNT"
 echo "  Rules: $RULE_COUNT"
 echo "  Skills: $SKILL_COUNT"
 
-# 8. Platform lib exists and is sourced
+# 10. Platform lib
 echo ""
-echo "[8/8] Checking platform.sh..."
+echo "[10/10] Checking platform.sh..."
 if [ -f "scripts/lib/platform.sh" ]; then
   bash -n scripts/lib/platform.sh 2>/dev/null && echo "  OK: platform.sh valid" || { echo "  ERROR: platform.sh syntax error"; ERRORS=$((ERRORS + 1)); }
 else

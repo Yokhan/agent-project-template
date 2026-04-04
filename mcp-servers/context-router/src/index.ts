@@ -9,103 +9,49 @@ import { getState, updateState, restoreState } from './state.js';
 
 const server = new McpServer({
   name: 'context-router',
-  version: '1.0.0',
+  version: '1.1.0',
 });
 
 // --- Tool: get_context ---
 server.tool(
   'get_context',
-  'Route task to relevant rules and return full context. Call this on EVERY new task.',
+  'Route task to relevant rules and return context. Call on EVERY new task. Default depth=brief (cheap). Use depth=full for L/XL tasks.',
   {
     keywords: z.string().max(500).describe('English keywords extracted from user message, e.g. "fix auth login bug"'),
-    include_rules: z.boolean().optional().default(true).describe('Include rule text in response'),
-    include_lessons: z.boolean().optional().default(true).describe('Grep lessons for keywords'),
-    include_git: z.boolean().optional().default(true).describe('Include recent git log'),
-    include_research: z.boolean().optional().default(true).describe('Include research cache'),
+    depth: z.enum(['brief', 'normal', 'full']).optional().default('brief').describe('brief=route only (~50 tokens), normal=+rules text, full=+lessons+git+registry+ecosystem'),
   },
-  async ({ keywords, include_rules, include_lessons, include_git, include_research }) => {
+  async ({ keywords, depth }) => {
     const route = routeKeywords(keywords);
-    const { text: rulesText, lines: rulesLines } = include_rules
-      ? await loadRules(route.files)
-      : { text: '', lines: 0 };
-
-    const context = await getProjectContext(
-      include_lessons || include_git || include_research ? keywords : ''
-    );
-
     updateState(route.modes, route.files, keywords);
 
     const sections: string[] = [];
-
     sections.push(`MODE: ${route.modes.join('+')}`);
     sections.push(`AGENT: ${route.agent}`);
-    sections.push(`RULES: ${route.files.length} files, ${rulesLines} lines`);
-    sections.push('');
+    sections.push(`RULES: ${route.files.length} files`);
 
-    if (include_rules && rulesText) {
-      sections.push('=== RULES ===');
-      sections.push(rulesText);
+    // BRIEF: just routing info + file list (for XS/S tasks and subagents)
+    if (depth === 'brief') {
       sections.push('');
+      sections.push('FILES (read only if needed):');
+      for (const f of route.files) {
+        sections.push(`  .claude/library/${f}`);
+      }
+      return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
     }
 
-    if (include_lessons && context.lessons) {
-      sections.push('=== RELEVANT LESSONS ===');
-      sections.push(context.lessons);
-      sections.push('');
-    }
-
-    if (include_git && context.gitLog) {
-      sections.push('=== RECENT GIT ===');
-      sections.push(context.gitLog);
-      sections.push('');
-    }
-
-    if (context.currentTask) {
-      sections.push('=== CURRENT TASK ===');
-      sections.push(context.currentTask);
-      sections.push('');
-    }
-
-    if (include_research && context.research) {
-      sections.push('=== RESEARCH CACHE ===');
-      sections.push(context.research);
-    }
-
-    return {
-      content: [{ type: 'text' as const, text: sections.join('\n') }]
-    };
-  }
-);
-
-// --- Tool: switch_context ---
-server.tool(
-  'switch_context',
-  'Switch to a different task context mid-conversation. Reports what changed.',
-  {
-    keywords: z.string().describe('New task keywords'),
-  },
-  async ({ keywords }) => {
-    const previousState = getState();
-    const previousMode = previousState.currentModes.join('+') || 'none';
-
-    const route = routeKeywords(keywords);
+    // NORMAL: + full rules text
     const { text: rulesText, lines: rulesLines } = await loadRules(route.files);
-    const context = await getProjectContext(keywords);
-
-    const previousRules = new Set(previousState.activeRules);
-    const newRules = new Set(route.files);
-    const added = route.files.filter(f => !previousRules.has(f));
-    const dropped = previousState.activeRules.filter(f => !newRules.has(f));
-
-    updateState(route.modes, route.files, keywords);
-
-    const sections: string[] = [];
-    sections.push(`SWITCHED: ${previousMode} → ${route.modes.join('+')}`);
-    sections.push(`AGENT: ${route.agent}`);
-    sections.push(`RULES: ${route.files.length} files, ${rulesLines} lines (+${added.length} new, -${dropped.length} dropped)`);
+    sections[2] = `RULES: ${route.files.length} files, ${rulesLines} lines`;
     sections.push('');
     sections.push('=== RULES ===');
     sections.push(rulesText);
+
+    if (depth === 'normal') {
+      return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
+    }
+
+    // FULL: + lessons + git + current task + registry + ecosystem + research
+    const context = await getProjectContext(keywords);
 
     if (context.lessons) {
       sections.push('');
@@ -113,15 +59,86 @@ server.tool(
       sections.push(context.lessons);
     }
 
+    if (context.gitLog) {
+      sections.push('');
+      sections.push('=== RECENT GIT ===');
+      sections.push(context.gitLog);
+    }
+
     if (context.currentTask) {
       sections.push('');
       sections.push('=== CURRENT TASK ===');
       sections.push(context.currentTask);
     }
 
-    return {
-      content: [{ type: 'text' as const, text: sections.join('\n') }]
-    };
+    if (context.toolRegistry) {
+      sections.push('');
+      sections.push('=== TOOL REGISTRY (matches) ===');
+      sections.push(context.toolRegistry);
+    }
+
+    if (context.ecosystem) {
+      sections.push('');
+      sections.push('=== ECOSYSTEM (cross-project deps) ===');
+      sections.push(context.ecosystem);
+    }
+
+    if (context.research) {
+      sections.push('');
+      sections.push('=== RESEARCH CACHE ===');
+      sections.push(context.research);
+    }
+
+    return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
+  }
+);
+
+// --- Tool: switch_context ---
+server.tool(
+  'switch_context',
+  'Switch to a different task context mid-conversation. Returns brief by default.',
+  {
+    keywords: z.string().max(500).describe('New task keywords'),
+    depth: z.enum(['brief', 'normal', 'full']).optional().default('brief'),
+  },
+  async ({ keywords, depth }) => {
+    const previousState = getState();
+    const previousMode = previousState.currentModes.join('+') || 'none';
+
+    const route = routeKeywords(keywords);
+    const previousRules = new Set(previousState.activeRules);
+    const added = route.files.filter(f => !previousRules.has(f));
+    const dropped = previousState.activeRules.filter(f => !new Set(route.files).has(f));
+
+    updateState(route.modes, route.files, keywords);
+
+    const sections: string[] = [];
+    sections.push(`SWITCHED: ${previousMode} → ${route.modes.join('+')}`);
+    sections.push(`AGENT: ${route.agent}`);
+    sections.push(`RULES: ${route.files.length} files (+${added.length} new, -${dropped.length} dropped)`);
+
+    if (depth === 'brief') {
+      sections.push('');
+      sections.push('NEW FILES:');
+      for (const f of added) sections.push(`  + .claude/library/${f}`);
+      for (const f of dropped) sections.push(`  - .claude/library/${f}`);
+      return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
+    }
+
+    // normal/full: include rule text
+    const { text: rulesText, lines: rulesLines } = await loadRules(route.files);
+    sections[2] = `RULES: ${route.files.length} files, ${rulesLines} lines (+${added.length} new, -${dropped.length} dropped)`;
+    sections.push('');
+    sections.push('=== RULES ===');
+    sections.push(rulesText);
+
+    if (depth === 'full') {
+      const context = await getProjectContext(keywords);
+      if (context.lessons) { sections.push(''); sections.push('=== LESSONS ==='); sections.push(context.lessons); }
+      if (context.currentTask) { sections.push(''); sections.push('=== CURRENT TASK ==='); sections.push(context.currentTask); }
+    }
+
+    return { content: [{ type: 'text' as const, text: sections.join('\n') }] };
   }
 );
 
@@ -154,9 +171,7 @@ server.tool(
       ...state.activeRules.map(f => `  .claude/library/${f}`)
     ];
 
-    return {
-      content: [{ type: 'text' as const, text: lines.join('\n') }]
-    };
+    return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
   }
 );
 
@@ -186,15 +201,11 @@ server.resource(
 
 // --- Start ---
 async function main() {
-  // Pre-flight checks
   const libraryPath = join(process.cwd(), '.claude', 'library');
   if (!existsSync(libraryPath)) {
     console.error(`WARNING: ${libraryPath} not found. Rules won't load.`);
   }
-
-  // Try to restore state from disk on startup
   await restoreState();
-
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

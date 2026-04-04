@@ -1,10 +1,10 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v3.0.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v3.2.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Self-deploying AI-agent optimized project template with persistent memory, autonomous work loops, self-improvement, atomic code reuse, and merge-safe sync.
+Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
 
@@ -235,6 +235,8 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **3.2.1** | MCP Context Router (1 tool call instead of 9), depth=brief/normal/full, rules cache, Russian keywords, -93% per-message tokens |
+| 3.1.x | Dynamic task router, rules moved to .claude/library/, 7 mode commands, 6 runtime helpers |
 | **3.0.0** | Merge-safe sync (conflict detection), cross-platform lib, 25 rules, 29 skills, 10 agents, audit-reuse system, design pipeline, validate-template.sh |
 | 2.8.0 | Atomic reuse protocol, tool registry, design pipeline (domain-design.md) |
 | 2.7.0 | Deep analysis rule, ecosystem map, research cache, session metrics, post-mortems |
