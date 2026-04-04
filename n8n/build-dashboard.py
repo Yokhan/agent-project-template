@@ -93,11 +93,9 @@ OFFICE_JS_PLACEHOLDER
 let office = null;
 let projects = [];
 
-async function loadSprites() {
-  try {
-    const r = await fetch('/webhook/sprites', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    return await r.json();
-  } catch { return {characters:[], floors:[], furniture:{}}; }
+function loadSprites() {
+  // Sprites inlined at build time — no network request
+  return window.__SPRITES__ || {characters:[], floors:[], furniture:{}};
 }
 
 async function loadAgentState() {
@@ -214,7 +212,7 @@ async function sendChat() {
 
 // --- Init ---
 async function init() {
-  const sprites = await loadSprites();
+  const sprites = loadSprites();
   const canvas = document.getElementById('office');
   office = new PixelOffice(canvas, sprites);
   office.start();
@@ -231,8 +229,22 @@ init();
 </script>
 </body></html>"""
 
+# Load sprites and inline them
+SPRITES_FILE = ROOT / 'n8n' / 'dashboard' / 'sprites.json'
+sprites_json = ''
+if SPRITES_FILE.exists():
+    sprites_json = SPRITES_FILE.read_text(encoding='utf-8')
+    print(f'Sprites: {len(sprites_json) // 1024} KB inlined')
+else:
+    print('WARNING: sprites.json not found — run: python scripts/decode-sprites.py')
+    sprites_json = '{"characters":[],"floors":[],"furniture":{}}'
+
+sprite_injection = f'<script>window.__SPRITES__={sprites_json};</script>'
+
 # Assemble
 html = HTML_TEMPLATE.replace('STYLES_PLACEHOLDER', CSS).replace('OFFICE_JS_PLACEHOLDER', office_code)
+# Inject sprites before closing </body>
+html = html.replace('</body>', sprite_injection + '</body>')
 
 # Build n8n workflow that serves this HTML
 # The Code node returns {html}, respondToWebhook sends it
