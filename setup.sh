@@ -191,12 +191,19 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
     echo "Run 'bash scripts/sync-template.sh --from-git' to check for updates."
 fi
 
+# Auto-bootstrap MCP servers (context-router, engram, n8n if docker available)
+echo ""
+echo "--- Auto-bootstrapping MCP servers ---"
+if [ -f scripts/bootstrap-mcp.sh ]; then
+  bash scripts/bootstrap-mcp.sh --install 2>&1 || echo "WARNING: MCP bootstrap had issues. Run manually: bash scripts/bootstrap-mcp.sh --install"
+fi
+
 echo ""
 echo "✅ Project '$PROJECT_DIR' created successfully!"
 echo ""
 echo "Next steps:"
 echo "  1. cd $PROJECT_DIR"
-echo "  2. Open in Claude Code"
+echo "  2. Open in Claude Code or Zed"
 echo "  3. Run /setup-project to configure for your stack"
 echo ""
-echo "Included: 19 rules, 9 agents, 22 skills, 12 commands"
+echo "Included: 18 library rules, 10 agents, 29 skills, 23 commands, 9 MCP tools"

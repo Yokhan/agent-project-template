@@ -94,6 +94,25 @@ else
   exit 1
 fi
 
+# --- Check for node/npm (needed for context-router MCP) ---
+HAS_NODE=false
+if command -v node &>/dev/null && command -v npm &>/dev/null; then
+  HAS_NODE=true
+  echo "Node.js: $(node --version), npm: $(npm --version)"
+else
+  echo "WARNING: Node.js/npm not found. Context-router MCP will not work."
+  echo "  Install: https://nodejs.org/ or: winget install OpenJS.NodeJS.LTS"
+fi
+
+# --- Check for docker (needed for n8n) ---
+HAS_DOCKER=false
+if command -v docker &>/dev/null; then
+  HAS_DOCKER=true
+  echo "Docker: $(docker --version 2>/dev/null | head -c 40)"
+else
+  echo "INFO: Docker not found. n8n auto-install unavailable (optional)."
+fi
+
 # --- Install helpers ---
 
 install_engram() {
@@ -434,6 +453,50 @@ if [ -f "mcp-servers/context-router/package.json" ]; then
 else
   echo "DISABLED (mcp-servers/context-router/ not found)"
   DISABLED+=("context-router")
+fi
+
+# 8. n8n (workflow automation — optional, requires docker)
+echo -n "  n8n: "
+N8N_URL="${N8N_URL:-http://localhost:5678}"
+# Check if n8n is already running
+if curl -s --connect-timeout 2 "$N8N_URL/healthz" >/dev/null 2>&1 || \
+   curl -s --connect-timeout 2 "$N8N_URL/api/v1/workflows" >/dev/null 2>&1; then
+  echo "ENABLED (running at $N8N_URL)"
+  ENABLED+=("n8n")
+elif [ "$DO_INSTALL" = true ]; then
+  # Try to install via docker
+  if command -v docker &>/dev/null; then
+    echo -n "installing via docker... "
+    if docker ps -a --format '{{.Names}}' | grep -q "^n8n$" 2>/dev/null; then
+      # Container exists, start it
+      docker start n8n >/dev/null 2>&1 || true
+      echo "STARTED (existing container)"
+    else
+      # Create new container
+      docker run -d \
+        --name n8n \
+        -p 5678:5678 \
+        -v n8n_data:/home/node/.n8n \
+        -e N8N_SECURE_COOKIE=false \
+        --restart unless-stopped \
+        n8nio/n8n:latest >/dev/null 2>&1 && echo "INSTALLED (docker)" || echo "FAILED (docker run failed)"
+    fi
+    # Verify
+    sleep 3
+    if curl -s --connect-timeout 5 "$N8N_URL/healthz" >/dev/null 2>&1; then
+      ENABLED+=("n8n")
+    else
+      echo "  n8n: started but not yet responding (may need a few more seconds)"
+      DISABLED+=("n8n")
+    fi
+  else
+    echo "SKIPPED (docker not installed — install Docker Desktop first)"
+    echo "    Manual: docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n n8nio/n8n"
+    DISABLED+=("n8n")
+  fi
+else
+  echo "NOT RUNNING (optional — install with: --install + docker)"
+  DISABLED+=("n8n")
 fi
 
 # DEPRECATED
