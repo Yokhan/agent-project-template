@@ -8,6 +8,13 @@
 
 # Memory MCP local state
 .memory/
+
+# Session cache (runtime, regenerated)
+.session-cache/
+
+# Active rules state (project-local, set by route-task.sh)
+tasks/.active-rules
+tasks/.mode
 .engram/
 .memcp/
 .anima/

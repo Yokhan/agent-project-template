@@ -13,7 +13,7 @@ if [ -z "${PYTHON:-}" ]; then
 fi
 
 # Template version check
-TEMPLATE_VERSION="3.0.0"
+TEMPLATE_VERSION="3.1.0"
 CLAUDE_VERSION=$(grep -oP '(?<=Template Version: )[\d.]+' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"

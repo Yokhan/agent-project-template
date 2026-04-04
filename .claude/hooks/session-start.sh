@@ -53,13 +53,18 @@ if [ -d "brain/01-daily" ]; then
   echo "" >> "$f"
 fi
 
-# Reminders
-if [ -f "tasks/lessons.md" ]; then
-  echo "REMINDER: Read tasks/lessons.md for past learnings"
+# Context restore (replaces manual reminders)
+if [ -f "scripts/context-restore.sh" ]; then
+  bash scripts/context-restore.sh 2>/dev/null || true
+else
+  # Fallback: manual reminders
+  [ -f "tasks/lessons.md" ] && echo "REMINDER: Read tasks/lessons.md"
+  [ -f "tasks/current.md" ] && echo "REMINDER: Read tasks/current.md" && head -3 tasks/current.md 2>/dev/null || true
 fi
-if [ -f "tasks/current.md" ]; then
-  echo "REMINDER: Read tasks/current.md for handoff context"
-  head -3 tasks/current.md 2>/dev/null || true
+
+# Context budget check
+if [ -f "scripts/measure-context.sh" ]; then
+  bash scripts/measure-context.sh --budget 200 2>/dev/null | tail -3
 fi
 
 # Tool registry check

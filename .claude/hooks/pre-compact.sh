@@ -30,6 +30,15 @@ if [ -f tasks/lessons.md ]; then
   tail -15 tasks/lessons.md >> "$SNAPSHOT"
 fi
 
+# Active rules (for route restoration after compaction)
+echo "" >> "$SNAPSHOT"
+echo "### Active Rules" >> "$SNAPSHOT"
+if [ -f tasks/.active-rules ]; then
+  cat tasks/.active-rules >> "$SNAPSHOT"
+else
+  echo "No active rules set. Run route-task.sh after compaction." >> "$SNAPSHOT"
+fi
+
 # Research cache preservation hint
 echo "" >> "$SNAPSHOT"
 echo "### Research Cache" >> "$SNAPSHOT"

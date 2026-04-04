@@ -1,6 +1,21 @@
-# Agent Protocol v3.0 — Shared by ALL agents
+# Agent Protocol v3.1 — Shared by ALL agents
 
 > This file is loaded alongside agent definitions. Do NOT duplicate this content in agent files.
+
+## Task Routing (FIRST THING every agent does)
+
+Before starting work: `bash scripts/route-task.sh "<your task>"` → Read listed files.
+If task changes mid-work: re-run route-task.sh.
+Rules are in `.claude/library/`, NOT pre-loaded. Load only what you need.
+
+## Subagent Context Discipline
+
+When orchestrator launches you as a subagent:
+- You receive: task description + relevant file paths + findings summary
+- You do NOT receive: full CLAUDE.md, full rule content, full research
+- Run `route-task.sh` yourself to load YOUR rules for YOUR subtask
+- Do NOT re-read files that orchestrator already summarized in the prompt
+- Stay focused on your specific task, don't expand scope
 
 ## Memory Protocol
 
