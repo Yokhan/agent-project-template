@@ -103,7 +103,7 @@ const C={working:'#22c55e',idle:'#eab308',sleeping:'#555',error:'#ef4444'};
 
 async function load(){
   try{
-    const r=await fetch(API+'/webhook/agent-state',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const r=await fetch('/api/agents',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     const d=await r.json();
     if(d.agents){projects=d.agents;render(d.agents);document.getElementById('ts').textContent=new Date().toLocaleString();}
   }catch(e){console.error(e);}
@@ -153,7 +153,7 @@ async function toggle(el,name){
 
 async function loadFeed(){
   try{
-    const r=await fetch(API+'/webhook/feed',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const r=await fetch('/api/feed',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
     const d=await r.json();
     const el=document.getElementById('feed');
     if(d.feed&&d.feed.length){
