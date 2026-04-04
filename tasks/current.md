@@ -4,7 +4,7 @@
 
 Every project must scan itself at session start and maintain PROJECT_SPEC.md.
 
-### Add rule: `.claude/rules/context-first.md`
+### Add rule: `.claude/library/process/context-first.md`
 - At session start: scan project structure, read recent git log (5 commits), check PROJECT_SPEC.md freshness
 - If PROJECT_SPEC.md exists and older than 7 days → warn
 - If doesn't exist → generate on first session
@@ -25,7 +25,7 @@ Every project must scan itself at session start and maintain PROJECT_SPEC.md.
 
 ## 2. Mandatory Research Before Execution
 
-### Add rule: `.claude/rules/research-first.md`
+### Add rule: `.claude/library/process/research-first.md`
 Before ANY task that modifies code/content:
 1. READ relevant files + their neighbors, imports, tests
 2. CHECK git log for recent changes to those files

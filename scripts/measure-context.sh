@@ -15,7 +15,7 @@ if [ -f CLAUDE.md ]; then
   echo "CLAUDE.md: $CLAUDE_LINES lines"
 fi
 
-# Rules (auto-loaded from .claude/rules/)
+# Rules (auto-loaded from .claude/rules/ — should be only router.md)
 RULES_LINES=0
 RULES_COUNT=0
 for f in .claude/rules/*.md; do
@@ -38,7 +38,7 @@ echo "BUDGET: $BUDGET lines"
 if [ "$TOTAL" -gt "$BUDGET" ]; then
   OVER=$((TOTAL - BUDGET))
   echo "⚠️  OVER BUDGET by $OVER lines!"
-  echo "Action: move rules from .claude/rules/ to .claude/library/"
+  echo "Action: check .claude/rules/ contains only router.md + project-* files"
   exit 1
 else
   UNDER=$((BUDGET - TOTAL))

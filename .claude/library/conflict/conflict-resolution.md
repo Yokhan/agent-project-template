@@ -12,7 +12,7 @@ When encountering merge conflicts:
 
 When CLAUDE.md, rules, skills, or docs give conflicting guidance:
 - **Hooks** (settings.json) take highest priority — they are deterministic
-- **Rules** (.claude/rules/) take second priority
+- **Rules** (.claude/rules/router.md + .claude/library/) take second priority
 - **CLAUDE.md** takes third priority
 - **Skills/docs** provide guidance, not mandates
 - If still unclear — follow the most restrictive interpretation

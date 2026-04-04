@@ -158,7 +158,7 @@ Based on AI-agent spec v3.1 + patterns from 20+ production repositories:
 ```
 Three-tier context infrastructure:
 
-Tier 1 (Hot Memory)     — CLAUDE.md + .claude/rules/ + tasks/lessons.md    (every session)
+Tier 1 (Hot Memory)     — CLAUDE.md + .claude/rules/router.md + tasks/lessons.md    (every session)
 Tier 2 (Specialists)    — .claude/skills/ + agents/                         (on demand)
 Tier 3 (Cold Memory)    — docs/ + brain/                                    (by request)
 ```

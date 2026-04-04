@@ -199,10 +199,13 @@ if [ ! -f "$MANIFEST" ]; then
       ".claude/hooks/*.sh" \
       ".claude/pipelines/*.md" \
       "scripts/*.sh" "scripts/lib/*.sh" \
+      "mcp-servers/context-router/src/*.ts" \
+      "mcp-servers/context-router/package.json" \
+      "mcp-servers/context-router/tsconfig.json" \
       "tests/rules/*.test.md" \
       ".editorconfig" "Makefile" "SECURITY.md" "CONTRIBUTING.md" \
       "_reference/tool-registry.md" "_reference/README.md" \
-      "CLAUDE.md" ".gitignore" ".vscode/extensions.json"; do
+      ".mcp.json" "CLAUDE.md" ".gitignore" ".vscode/extensions.json"; do
       for f in $pattern; do
         [ -f "$f" ] || continue
         # Skip project-* files (agent-created)
@@ -361,7 +364,7 @@ done < <(echo "$manifest_files")
 echo "--- Phase B: Checking for new template files ---"
 
 # Define template file patterns to check
-for pattern in ".claude/settings.json" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/lib/*.sh" "tests/rules/*.test.md" "_reference/*.md" ".editorconfig" "Makefile" "SECURITY.md" "CONTRIBUTING.md"; do
+for pattern in ".claude/settings.json" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/lib/*.sh" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "tests/rules/*.test.md" "_reference/*.md" ".mcp.json" ".editorconfig" "Makefile" "SECURITY.md" "CONTRIBUTING.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
@@ -460,7 +463,7 @@ for filepath, info in list(manifest['files'].items()):
             info['hash'] = h
 
 # Add new files from standard directories
-for pattern_dir in ['.claude/rules', '.claude/library/process', '.claude/library/technical', '.claude/library/meta', '.claude/library/domain', '.claude/library/conflict', '.claude/agents', '.claude/commands', '.claude/hooks', '.claude/pipelines', 'scripts', 'scripts/lib', 'tests/rules', '_reference']:
+for pattern_dir in ['.claude/rules', '.claude/library/process', '.claude/library/technical', '.claude/library/meta', '.claude/library/domain', '.claude/library/conflict', '.claude/agents', '.claude/commands', '.claude/hooks', '.claude/pipelines', 'scripts', 'scripts/lib', 'mcp-servers/context-router/src', 'tests/rules', '_reference']:
     if not os.path.isdir(pattern_dir):
         continue
     for fname in os.listdir(pattern_dir):

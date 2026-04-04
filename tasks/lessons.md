@@ -2,7 +2,7 @@
 
 Self-improvement log for AI agent sessions. After EVERY user correction or discovered mistake, add an entry below using the format shown in the example. Read this file at the start of every session to avoid repeating past mistakes.
 
-When this file exceeds 50 entries, run `/weekly` to promote recurring patterns into permanent rules (`.claude/rules/`) and archive promoted entries to `brain/03-knowledge/lessons-archive.md`.
+When this file exceeds 50 entries, run `/weekly` to promote recurring patterns into permanent project rules (`.claude/rules/project-*.md`) and archive promoted entries to `brain/03-knowledge/lessons-archive.md`.
 
 ---
 

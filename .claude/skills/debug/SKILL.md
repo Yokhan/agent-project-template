@@ -50,7 +50,7 @@ If integration tests fail, the fix may have introduced a regression -- investiga
 ### 6. Document
 - Log the bug and fix in `brain/03-knowledge/` for future reference
 - If this is a pattern that could recur, consider:
-  - Adding a rule to `.claude/rules/`
+  - Adding a project rule to `.claude/rules/project-*.md`
   - Adding a test to prevent regression
   - Adding a type constraint to prevent at compile time
 

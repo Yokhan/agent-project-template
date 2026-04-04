@@ -1,7 +1,7 @@
 # Tool Registry
 
 > Searchable index of reusable utilities across this project.
-> **Check HERE before writing new code.** See `.claude/rules/atomic-reuse.md`.
+> **Check HERE before writing new code.** See `.claude/library/technical/atomic-reuse.md`.
 >
 > Maintained by: agents (manual), `scripts/scan-project.sh` (initial), `scripts/audit-reuse.sh` (ongoing).
 

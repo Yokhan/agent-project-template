@@ -4,13 +4,13 @@
 
 1. Read `CLAUDE.md` to understand the project
 2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Make changes following the rules in `.claude/rules/`
+3. Make changes following the rules in `.claude/rules/` (router + project-specific)
 4. Run `/commit` or ensure: typecheck + lint + tests all pass
 5. Open a PR
 
 ## Code Style
 
-See `.claude/rules/code-style.md`. Key rules:
+See `.claude/library/technical/code-style.md`. Key rules:
 - No `any` type — use `unknown` + type guards
 - Immutability — return new objects, don't mutate
 - Files < 375 lines — split by responsibility
