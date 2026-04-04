@@ -1,7 +1,8 @@
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 const exec = promisify(execCb);
 
@@ -15,12 +16,10 @@ let engramAvailable: boolean | null = null;
 async function checkEngram(): Promise<boolean> {
   if (engramAvailable !== null) return engramAvailable;
 
-  // Check if engram binary exists
   try {
     await exec('engram --version', { timeout: 2000 });
     engramAvailable = true;
   } catch {
-    // Check if engram is configured in .mcp.json
     try {
       if (existsSync('.mcp.json')) {
         const config = JSON.parse(await readFile('.mcp.json', 'utf-8'));
@@ -35,9 +34,51 @@ async function checkEngram(): Promise<boolean> {
   return engramAvailable;
 }
 
+/** Safe shell escape for engram CLI */
+function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}
+
+/** Node.js native grep — no shell dependency */
+function nativeGrep(filePath: string, keyword: string, maxLines = 5): string {
+  if (!existsSync(filePath)) return '';
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const kw = keyword.toLowerCase();
+    return content.split('\n')
+      .filter(line => line.toLowerCase().includes(kw))
+      .slice(0, maxLines)
+      .join('\n');
+  } catch {
+    return '';
+  }
+}
+
+/** Node.js native find — search directory for files matching keyword */
+function nativeFindFiles(dir: string, keyword: string, max = 3): string[] {
+  if (!existsSync(dir)) return [];
+  const results: string[] = [];
+  const kw = keyword.toLowerCase();
+  try {
+    const walk = (d: string) => {
+      if (results.length >= max) return;
+      for (const entry of readdirSync(d)) {
+        if (entry.startsWith('.')) continue;
+        const full = join(d, entry);
+        try {
+          const content = readFileSync(full, 'utf-8');
+          if (content.toLowerCase().includes(kw)) results.push(full);
+        } catch { /* skip binary/inaccessible */ }
+      }
+    };
+    walk(dir);
+  } catch { /* dir inaccessible */ }
+  return results;
+}
+
 /**
  * Search Engram for relevant memories. Returns formatted string.
- * Falls back to grep on tasks/lessons.md if Engram unavailable.
+ * Falls back to Node.js native file search if Engram unavailable.
  */
 export async function searchMemory(keywords: string): Promise<string> {
   if (!keywords) return '';
@@ -45,42 +86,29 @@ export async function searchMemory(keywords: string): Promise<string> {
   const isAvailable = await checkEngram();
 
   if (isAvailable) {
-    // Try engram CLI search
     try {
       const { stdout } = await exec(
-        `engram search "${keywords.replace(/"/g, '\\"')}" --limit 5 --format text`,
+        `engram search ${shellEscape(keywords)} --limit 5 --format text`,
         { timeout: 5000 }
       );
       if (stdout.trim()) {
         return `=== ENGRAM MEMORY ===\n${stdout.trim()}`;
       }
-    } catch {
+    } catch (err) {
       // Engram available but search failed — fall through to file fallback
+      // Log: err instanceof Error ? err.message : 'search failed'
     }
   }
 
-  // File fallback: grep lessons + brain/
+  // File fallback: Node.js native search (no shell commands)
   const results: string[] = [];
+  const firstKeyword = keywords.split(/\s+/)[0] || keywords;
 
-  if (existsSync('tasks/lessons.md')) {
-    try {
-      const { stdout } = await exec(
-        `grep -i "${keywords.split(/\s+/)[0]}" tasks/lessons.md | head -5`,
-        { timeout: 2000 }
-      );
-      if (stdout.trim()) results.push(`LESSONS:\n${stdout.trim()}`);
-    } catch { /* no matches */ }
-  }
+  const lessonsMatch = nativeGrep('tasks/lessons.md', firstKeyword);
+  if (lessonsMatch) results.push(`LESSONS:\n${lessonsMatch}`);
 
-  if (existsSync('brain/03-knowledge')) {
-    try {
-      const { stdout } = await exec(
-        `grep -rl "${keywords.split(/\s+/)[0]}" brain/03-knowledge/ 2>/dev/null | head -3`,
-        { timeout: 2000 }
-      );
-      if (stdout.trim()) results.push(`BRAIN FILES:\n${stdout.trim()}`);
-    } catch { /* no matches */ }
-  }
+  const brainFiles = nativeFindFiles('brain/03-knowledge', firstKeyword);
+  if (brainFiles.length) results.push(`BRAIN FILES:\n${brainFiles.join('\n')}`);
 
   if (results.length > 0) {
     return `=== MEMORY (file fallback) ===\n${results.join('\n')}`;

@@ -22,7 +22,9 @@ export function updateState(modes: string[], rules: string[], task: string): voi
     lastRouteTime: new Date().toISOString(),
     taskDescription: task
   };
-  persistState().catch(() => {});
+  persistState().catch((err) => {
+    console.error(`state: persist failed — ${err instanceof Error ? err.message : String(err)}`);
+  });
 }
 
 async function persistState(): Promise<void> {
@@ -56,7 +58,8 @@ export async function restoreState(): Promise<ServerState | null> {
 
     state = { currentModes: modes, activeRules: rules, lastRouteTime: routedAt, taskDescription: task };
     return state;
-  } catch {
+  } catch (err) {
+    console.error(`state: restore failed — ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }

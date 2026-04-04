@@ -1,6 +1,6 @@
 {
   "name": "context-router",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "MCP Context Router — dynamic rule loading for agent-project-template",
   "type": "module",
   "main": "src/index.ts",

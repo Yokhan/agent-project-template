@@ -1,11 +1,89 @@
-import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join, basename, dirname } from 'path';
+import { readFile, readdir, stat } from 'fs/promises';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
+import { join, basename } from 'path';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
-import { readdirSync, statSync } from 'fs';
 
 const exec = promisify(execCb);
+
+/**
+ * Safe shell escape — prevents command injection.
+ * For use ONLY with exec() when native Node.js alternative isn't available.
+ */
+function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}
+
+/** Platform-safe grep: uses Node.js readFile + includes() instead of shell grep */
+async function nativeGrep(filePath: string, keyword: string, maxLines = 5): Promise<string> {
+  if (!existsSync(filePath)) return '';
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    const kw = keyword.toLowerCase();
+    const matches = content.split('\n')
+      .filter(line => line.toLowerCase().includes(kw))
+      .slice(0, maxLines);
+    return matches.join('\n');
+  } catch {
+    return '';
+  }
+}
+
+/** Platform-safe find importers: uses Node.js fs instead of shell grep -rl */
+async function nativeFindImporters(keyword: string, dirs = ['src', 'lib', 'app']): Promise<string[]> {
+  const results: string[] = [];
+  const kw = keyword.toLowerCase();
+  const exts = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.vue', '.svelte'];
+
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue;
+    try {
+      const walk = (d: string) => {
+        if (results.length >= 10) return;
+        for (const entry of readdirSync(d)) {
+          if (entry === 'node_modules' || entry === '.git' || entry === 'dist') continue;
+          const full = join(d, entry);
+          try {
+            const s = statSync(full);
+            if (s.isDirectory()) { walk(full); continue; }
+            if (!exts.some(e => full.endsWith(e))) continue;
+            const content = readFileSync(full, 'utf-8');
+            if (content.toLowerCase().includes(kw)) {
+              results.push(full);
+            }
+          } catch { /* skip inaccessible files */ }
+        }
+      };
+      walk(dir);
+    } catch { /* dir doesn't exist or inaccessible */ }
+  }
+  return results;
+}
+
+/** Platform-safe find by keyword: uses Node.js fs instead of shell find */
+async function nativeFindByKeyword(word: string, dirs = ['src', 'lib', 'app']): Promise<string[]> {
+  const results: string[] = [];
+  const kw = word.toLowerCase();
+
+  for (const dir of dirs) {
+    if (!existsSync(dir)) continue;
+    try {
+      const walk = (d: string) => {
+        if (results.length >= 5) return;
+        for (const entry of readdirSync(d)) {
+          if (entry === 'node_modules' || entry === '.git') continue;
+          const full = join(d, entry);
+          try {
+            if (statSync(full).isDirectory()) { walk(full); continue; }
+            if (entry.toLowerCase().includes(kw)) results.push(full);
+          } catch { /* skip */ }
+        }
+      };
+      walk(dir);
+    } catch { /* skip */ }
+  }
+  return results;
+}
 
 export async function runResearch(targetPath: string): Promise<string> {
   const sections: string[] = [];
@@ -17,62 +95,68 @@ export async function runResearch(targetPath: string): Promise<string> {
   // 1. Target files
   sections.push('FILES:');
   if (existsSync(targetPath)) {
-    if (statSync(targetPath).isDirectory()) {
-      const files = findSourceFiles(targetPath, 20);
-      for (const f of files) {
-        const lines = countLines(f);
-        sections.push(`  ${f} (${lines} lines)`);
+    try {
+      if (statSync(targetPath).isDirectory()) {
+        const files = findSourceFiles(targetPath, 20);
+        for (const f of files) {
+          sections.push(`  ${f} (${countLines(f)} lines)`);
+        }
+      } else {
+        sections.push(`  ${targetPath} (${countLines(targetPath)} lines)`);
       }
-    } else {
-      const lines = countLines(targetPath);
-      sections.push(`  ${targetPath} (${lines} lines)`);
+    } catch (err) {
+      sections.push(`  ⚠ Cannot read ${targetPath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   } else {
     sections.push(`  Target not found: ${targetPath}`);
   }
 
-  // 2. Importers
+  // 2. Importers (Node.js native — no shell)
   sections.push('');
   sections.push('IMPORTERS:');
-  const importers = await findImporters(keywords);
-  if (importers.length) {
-    for (const f of importers) sections.push(`  ${f}`);
-  } else {
-    sections.push('  (none found)');
+  try {
+    const importers = await nativeFindImporters(keywords);
+    if (importers.length) {
+      for (const f of importers) sections.push(`  ${f}`);
+    } else {
+      sections.push('  (none found)');
+    }
+  } catch (err) {
+    sections.push(`  ⚠ Search failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 3. Git log
+  // 3. Git log (safe — uses shellEscape)
   sections.push('');
   sections.push('RECENT GIT:');
   try {
-    const { stdout } = await exec(`git log --oneline -5 -- "${targetPath}"`, { timeout: 3000 });
+    const { stdout } = await exec(`git log --oneline -5 -- ${shellEscape(targetPath)}`, { timeout: 3000 });
     sections.push(stdout.trim() || '  (no history)');
-  } catch {
-    sections.push('  (not a git repo)');
+  } catch (err) {
+    sections.push(`  ⚠ git: ${err instanceof Error ? err.message : 'not a git repo'}`);
   }
 
-  // 4. Lessons
+  // 4. Lessons (Node.js native — no shell)
   sections.push('');
   sections.push('LESSONS:');
-  const lessons = await grepFileQuick('tasks/lessons.md', keywords);
+  const lessons = await nativeGrep('tasks/lessons.md', keywords);
   sections.push(lessons || '  (no relevant lessons)');
 
   // 5. Tool registry
   sections.push('');
   sections.push('REGISTRY:');
-  const registry = await grepFileQuick('_reference/tool-registry.md', keywords);
+  const registry = await nativeGrep('_reference/tool-registry.md', keywords);
   sections.push(registry || '  (no registry match)');
 
   // 6. Ecosystem
   sections.push('');
   sections.push('ECOSYSTEM:');
-  const ecosystem = await grepFileQuick('ecosystem.md', keywords);
+  const ecosystem = await nativeGrep('ecosystem.md', keywords);
   sections.push(ecosystem || '  (no ecosystem match)');
 
   // 7. Research cache
   sections.push('');
   sections.push('CACHE:');
-  const cache = await grepFileQuick('tasks/.research-cache.md', keywords);
+  const cache = await nativeGrep('tasks/.research-cache.md', keywords);
   sections.push(cache || '  (no cached research)');
 
   return sections.join('\n');
@@ -85,13 +169,15 @@ export async function runVerify(size: string): Promise<string> {
   sections.push(`=== VERIFICATION (size: ${size}) ===`);
   sections.push('');
 
-  // Modified files
+  // Modified files (git is safe — no user input)
   let modified: string[] = [];
   try {
     const { stdout } = await exec('git diff --name-only HEAD', { timeout: 3000 });
     const { stdout: staged } = await exec('git diff --cached --name-only', { timeout: 3000 });
     modified = [...new Set([...stdout.trim().split('\n'), ...staged.trim().split('\n')].filter(Boolean))];
-  } catch { /* no git */ }
+  } catch (err) {
+    sections.push(`⚠ git: ${err instanceof Error ? err.message : 'not available'}`);
+  }
 
   if (modified.length === 0) {
     sections.push('No modified files detected.');
@@ -115,20 +201,19 @@ export async function runVerify(size: string): Promise<string> {
     }
   }
 
-  // Gate 0: Syntax
+  // Gate 0: Syntax (bash -n — safe, only runs on .sh files we control)
   sections.push('');
   sections.push('--- Syntax ---');
   for (const f of modified) {
-    if (!existsSync(f)) continue;
-    if (f.endsWith('.sh')) {
-      try {
-        await exec(`bash -n "${f}"`, { timeout: 3000 });
-        sections.push(`  ✓ bash: ${f}`);
-        pass++;
-      } catch {
-        sections.push(`  ✗ bash: ${f}`);
-        fail++;
-      }
+    if (!existsSync(f) || !f.endsWith('.sh')) continue;
+    try {
+      await exec(`bash -n ${shellEscape(f)}`, { timeout: 3000 });
+      sections.push(`  ✓ bash: ${f}`);
+      pass++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message.split('\n')[0] : 'syntax error';
+      sections.push(`  ✗ bash: ${f} — ${msg}`);
+      fail++;
     }
   }
 
@@ -170,17 +255,15 @@ export async function runVerify(size: string): Promise<string> {
 
 export async function runPlanScaffold(task: string): Promise<string> {
   const sections: string[] = [];
-
-  // Find affected files by keywords
   const words = task.split(/\s+/).filter(w => w.length > 2).slice(0, 5);
   let affectedFiles: string[] = [];
+
   for (const word of words) {
-    const found = await findByKeyword(word);
+    const found = await nativeFindByKeyword(word);
     affectedFiles.push(...found);
   }
   affectedFiles = [...new Set(affectedFiles)].slice(0, 15);
 
-  // Size estimate
   let size = 'S';
   if (affectedFiles.length <= 1) size = 'XS';
   else if (affectedFiles.length <= 2) size = 'S';
@@ -190,16 +273,16 @@ export async function runPlanScaffold(task: string): Promise<string> {
 
   sections.push(`## Plan — ${task}`);
   sections.push('');
-  sections.push(`### Goal`);
+  sections.push('### Goal');
   sections.push(task);
   sections.push('');
-  sections.push(`### Complexity Estimate`);
+  sections.push('### Complexity Estimate');
   sections.push(`- Size: ${size}`);
   sections.push(`- Files to modify: ~${affectedFiles.length} (estimated)`);
-  sections.push(`- Files to create: [FILL IN]`);
-  sections.push(`- Risk: [LOW/MEDIUM/HIGH — FILL IN]`);
+  sections.push('- Files to create: [FILL IN]');
+  sections.push('- Risk: [LOW/MEDIUM/HIGH — FILL IN]');
   sections.push('');
-  sections.push(`### File Architecture`);
+  sections.push('### File Architecture');
   if (affectedFiles.length > 0) {
     for (const f of affectedFiles) {
       const lines = existsSync(f) ? countLines(f) : 0;
@@ -230,7 +313,7 @@ function findSourceFiles(dir: string, max: number): string[] {
     const walk = (d: string) => {
       if (results.length >= max) return;
       for (const entry of readdirSync(d)) {
-        if (entry === 'node_modules' || entry === '.git') continue;
+        if (entry === 'node_modules' || entry === '.git' || entry === 'dist') continue;
         const full = join(d, entry);
         try {
           const s = statSync(full);
@@ -238,56 +321,18 @@ function findSourceFiles(dir: string, max: number): string[] {
           else if (exts.some(e => full.endsWith(e)) && !full.includes('.test.') && !full.includes('.spec.')) {
             results.push(full);
           }
-        } catch { /* skip */ }
+        } catch { /* skip inaccessible */ }
       }
     };
     walk(dir);
-  } catch { /* skip */ }
+  } catch { /* dir inaccessible */ }
   return results;
 }
 
 function countLines(file: string): number {
   try {
-    const content = require('fs').readFileSync(file, 'utf-8');
-    return content.split('\n').length;
+    return readFileSync(file, 'utf-8').split('\n').length;
   } catch {
     return 0;
-  }
-}
-
-async function findImporters(keyword: string): Promise<string[]> {
-  try {
-    const { stdout } = await exec(
-      `grep -rl "${keyword}" src/ lib/ app/ 2>/dev/null | grep -v node_modules | head -10`,
-      { timeout: 3000 }
-    );
-    return stdout.trim().split('\n').filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-async function grepFileQuick(filePath: string, keyword: string): Promise<string> {
-  if (!existsSync(filePath)) return '';
-  try {
-    const { stdout } = await exec(
-      `grep -i "${keyword}" "${filePath}" | head -5`,
-      { timeout: 2000 }
-    );
-    return stdout.trim();
-  } catch {
-    return '';
-  }
-}
-
-async function findByKeyword(word: string): Promise<string[]> {
-  try {
-    const { stdout } = await exec(
-      `find src/ lib/ app/ -type f -iname "*${word}*" 2>/dev/null | head -5`,
-      { timeout: 2000 }
-    );
-    return stdout.trim().split('\n').filter(Boolean);
-  } catch {
-    return [];
   }
 }

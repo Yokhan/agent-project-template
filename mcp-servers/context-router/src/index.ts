@@ -12,7 +12,7 @@ import { runPipeline, listPipelines, pipelineStatus } from './n8n.js';
 
 const server = new McpServer({
   name: 'context-router',
-  version: '1.4.0',
+  version: '1.5.0',
 });
 
 // --- Tool: get_context ---

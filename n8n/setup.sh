@@ -53,6 +53,7 @@ ENVEOF
   else
     # Ensure our settings are in there
     grep -q "NODE_FUNCTION_ALLOW_BUILTIN" "$ENV_FILE" || echo "NODE_FUNCTION_ALLOW_BUILTIN=child_process,fs,path" >> "$ENV_FILE"
+    grep -q "N8N_RUNNERS_TASK_TIMEOUT" "$ENV_FILE" || echo "N8N_RUNNERS_TASK_TIMEOUT=120" >> "$ENV_FILE"
     echo "Updated: $ENV_FILE"
   fi
 fi

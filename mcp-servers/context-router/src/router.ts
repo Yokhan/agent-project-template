@@ -49,6 +49,21 @@ const ROUTES: Record<string, Route> = {
     keywords: /refactor|simplif|clean.?up|extract|split|reorganize|рефактор|упрости|вынеси|раздели/i,
     files: ['technical/architecture.md', 'technical/code-style.md', 'process/self-verification.md', 'technical/testing.md'],
     agent: 'simplifier'
+  },
+  research: {
+    keywords: /research|investigate|explore|understand|analyze|deep.?dive|study|ресёрч|исследуй|изуч|разбер|анализ/i,
+    files: ['meta/analysis.md', 'meta/strategic-thinking.md', 'process/research-first.md'],
+    agent: 'researcher'
+  },
+  audit: {
+    keywords: /audit|security|vulnerab|penetr|pentest|cve|xss|inject|owasp|аудит|безопасн|уязвим/i,
+    files: ['process/self-verification.md', 'domain/domain-guards.md', 'meta/critical-thinking.md'],
+    agent: 'security-auditor'
+  },
+  docs: {
+    keywords: /document|readme|changelog|api.?doc|jsdoc|typedoc|swagger|документ|задокумент/i,
+    files: ['process/context-first.md', 'technical/writing.md'],
+    agent: 'documenter'
   }
 };
 

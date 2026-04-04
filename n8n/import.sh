@@ -75,9 +75,12 @@ for wf_file in "$WF_DIR"/*.json; do
     continue
   fi
 
-  # Import — inject config paths into workflow JSON
-  TMP_WF="/tmp/n8n-import-$$.json"
-  sed "s|__PROJECT_ROOT__|$PROJ_ROOT|g; s|__DOCUMENTS_DIR__|$DOCS_DIR|g" "$wf_file" > "$TMP_WF"
+  # Import — inject config paths into workflow JSON (cross-platform temp dir)
+  TMP_WF="${TMPDIR:-${TMP:-/tmp}}/n8n-import-$$.json"
+  # Escape sed replacement strings (handle &, /, \ in paths)
+  ESC_ROOT=$(printf '%s\n' "$PROJ_ROOT" | sed 's/[&/\]/\\&/g')
+  ESC_DOCS=$(printf '%s\n' "$DOCS_DIR" | sed 's/[&/\]/\\&/g')
+  sed "s|__PROJECT_ROOT__|$ESC_ROOT|g; s|__DOCUMENTS_DIR__|$ESC_DOCS|g" "$wf_file" > "$TMP_WF"
 
   HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$N8N_URL/api/v1/workflows" \
     -H "X-N8N-API-KEY: $N8N_API_KEY" \
