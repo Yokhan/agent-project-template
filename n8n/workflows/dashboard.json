@@ -5,7 +5,7 @@
       "parameters": {
         "httpMethod": "GET",
         "path": "dashboard",
-        "responseMode": "lastNode",
+        "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
