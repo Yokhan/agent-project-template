@@ -455,7 +455,7 @@ else
   DISABLED+=("context-router")
 fi
 
-# 8. n8n (workflow automation — optional, requires docker)
+# 8. n8n (workflow automation — optional)
 echo -n "  n8n: "
 N8N_URL="${N8N_URL:-http://localhost:5678}"
 # Check if n8n is already running
@@ -464,38 +464,49 @@ if curl -s --connect-timeout 2 "$N8N_URL/healthz" >/dev/null 2>&1 || \
   echo "ENABLED (running at $N8N_URL)"
   ENABLED+=("n8n")
 elif [ "$DO_INSTALL" = true ]; then
-  # Try to install via docker
-  if command -v docker &>/dev/null; then
-    echo -n "installing via docker... "
-    if docker ps -a --format '{{.Names}}' | grep -q "^n8n$" 2>/dev/null; then
-      # Container exists, start it
-      docker start n8n >/dev/null 2>&1 || true
-      echo "STARTED (existing container)"
-    else
-      # Create new container
-      docker run -d \
-        --name n8n \
-        -p 5678:5678 \
-        -v n8n_data:/home/node/.n8n \
-        -e N8N_SECURE_COOKIE=false \
-        --restart unless-stopped \
-        n8nio/n8n:latest >/dev/null 2>&1 && echo "INSTALLED (docker)" || echo "FAILED (docker run failed)"
-    fi
-    # Verify
-    sleep 3
-    if curl -s --connect-timeout 5 "$N8N_URL/healthz" >/dev/null 2>&1; then
+  # Method 1: npm (lightweight, no Docker overhead)
+  if command -v npm &>/dev/null; then
+    if command -v n8n &>/dev/null; then
+      echo "INSTALLED (npm global). Start with: n8n start"
       ENABLED+=("n8n")
     else
-      echo "  n8n: started but not yet responding (may need a few more seconds)"
+      echo -n "installing via npm... "
+      if npm install -g n8n --silent 2>/dev/null; then
+        echo "INSTALLED (npm). Start with: n8n start"
+        ENABLED+=("n8n")
+      else
+        echo "npm install failed"
+      fi
+    fi
+  fi
+  # Method 2: Docker (if npm failed or unavailable)
+  if ! echo "${ENABLED[*]}" | grep -q "n8n" 2>/dev/null; then
+    if command -v docker &>/dev/null && docker ps &>/dev/null 2>&1; then
+      echo -n "installing via docker... "
+      if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^n8n$"; then
+        docker start n8n >/dev/null 2>&1 || true
+        echo "STARTED (existing container)"
+      else
+        docker run -d --name n8n -p 5678:5678 \
+          -v n8n_data:/home/node/.n8n \
+          -e N8N_SECURE_COOKIE=false \
+          --restart unless-stopped \
+          n8nio/n8n:latest >/dev/null 2>&1 && echo "INSTALLED (docker)" || echo "FAILED"
+      fi
+      sleep 3
+      if curl -s --connect-timeout 5 "$N8N_URL/healthz" >/dev/null 2>&1; then
+        ENABLED+=("n8n")
+      else
+        DISABLED+=("n8n")
+      fi
+    else
+      echo "SKIPPED (no npm or docker available)"
+      echo "    Install: npm install -g n8n  OR  docker run n8nio/n8n"
       DISABLED+=("n8n")
     fi
-  else
-    echo "SKIPPED (docker not installed — install Docker Desktop first)"
-    echo "    Manual: docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n n8nio/n8n"
-    DISABLED+=("n8n")
   fi
 else
-  echo "NOT RUNNING (optional — install with: --install + docker)"
+  echo "NOT RUNNING (optional — start with: n8n start OR --install)"
   DISABLED+=("n8n")
 fi
 
