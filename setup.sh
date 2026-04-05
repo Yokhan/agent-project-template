@@ -4,13 +4,16 @@
 
 set -euo pipefail
 
-# Check flags
+# Parse flags and project name
 IS_ORCHESTRATOR=false
-for arg in "$@"; do
-  case "$arg" in
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --orchestrator) IS_ORCHESTRATOR=true; shift ;;
+    *) POSITIONAL_ARGS+=("$1"); shift ;;
   esac
 done
+set -- "${POSITIONAL_ARGS[@]}"
 
 # Check dependencies
 if ! command -v git >/dev/null 2>&1; then
@@ -45,8 +48,10 @@ echo "Creating project: $PROJECT_DIR"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_REMOTE=$(cd "$SCRIPT_DIR" && git remote get-url origin 2>/dev/null || echo "")
 
-# Copy template
+# Copy template (exclude Command Center files — those stay in template root only)
 cp -r "$(dirname "$0")" "$PROJECT_DIR"
+# Remove Command Center files that should NOT be in individual projects
+rm -rf "$PROJECT_DIR/n8n" "$PROJECT_DIR/start.sh" "$PROJECT_DIR/start.bat" "$PROJECT_DIR/setup.sh" "$PROJECT_DIR/setup.bat" "$PROJECT_DIR/templates"
 
 cd "$PROJECT_DIR"
 

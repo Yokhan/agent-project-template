@@ -34,6 +34,37 @@ if os.path.exists(config_path):
     except:
         pass
 
+
+# Cached orchestrator directory lookup
+_orch_cache = {'name': None, 'dir': None, 'time': 0}
+
+def get_orch_dir():
+    """Get orchestrator project directory from config. Cached 60s."""
+    now = time.time()
+    if _orch_cache['dir'] and (now - _orch_cache['time']) < 60:
+        return _orch_cache['name'], _orch_cache['dir']
+    
+    orch_name = ''
+    try:
+        cfg = json.loads(open(config_path, encoding='utf-8').read())
+        orch_name = cfg.get('orchestrator_project', '') or ''
+    except:
+        pass
+    
+    if orch_name:
+        orch_dir = os.path.join(DOCS_DIR, orch_name)
+    else:
+        orch_dir = ROOT
+    
+    if not os.path.exists(orch_dir):
+        orch_dir = ROOT
+        orch_name = ''
+    
+    _orch_cache['name'] = orch_name
+    _orch_cache['dir'] = orch_dir
+    _orch_cache['time'] = now
+    return orch_name, orch_dir
+
 # Cache for scan results
 _scan_cache = {'data': None, 'time': 0}
 CACHE_TTL = 30  # seconds
@@ -437,14 +468,8 @@ def send_chat(project, message):
     if not message:
         return {'status': 'error', 'error': 'Empty message'}
 
-    # Orchestrator: prefer configured project, fallback to template root
-    orch_name = 'PersonalAssistant'
-    try:
-        cfg = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
-        orch_name = cfg.get('orchestrator_project', orch_name)
-    except: pass
-    PA_DIR = os.path.join(DOCS_DIR, orch_name)
-    cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
+    _, PA_DIR = get_orch_dir()
+    cwd = os.path.join(DOCS_DIR, project) if project else PA_DIR
     if project and not os.path.exists(cwd):
         return {'status': 'error', 'error': f'Project not found: {cwd}'}
 
@@ -1020,12 +1045,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/health':
             try:
-                orch_name_h = 'PersonalAssistant'
-                try:
-                    cfg_h = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
-                    orch_name_h = cfg_h.get('orchestrator_project', orch_name_h) or orch_name_h
-                except: pass
-                PA_DIR = os.path.join(DOCS_DIR, orch_name_h)
+                orch_name_h, PA_DIR = get_orch_dir()
                 agent_count = len((get_agents() or {}).get('agents', []))
                 self._json_response({
                     'status': 'ok',
@@ -1151,19 +1171,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response({'status': 'error', 'error': 'Empty message'})
             return
 
-        # Determine orchestrator directory
-        orch_name = 'PersonalAssistant'
-        try:
-            cfg2 = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
-            orch_name = cfg2.get('orchestrator_project', orch_name) or orch_name
-        except: pass
-        PA_DIR = os.path.join(DOCS_DIR, orch_name)
+        _, PA_DIR = get_orch_dir()
 
         prompt = message
         if not project:
             prompt = build_orchestrator_context() + message
 
-        cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
+        cwd = os.path.join(DOCS_DIR, project) if project else PA_DIR
         chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
         ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
         with open(chat_file, 'a', encoding='utf-8') as f:
