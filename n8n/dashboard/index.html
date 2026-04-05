@@ -287,7 +287,8 @@ if(af==='stale')a=a.filter(x=>(x.days||999)>7);const segMap={};const assigned=ne
   for(const[name,projects]of Object.entries(seg)){segMap[name]=a.filter(x=>projects.includes(x.name));projects.forEach(p=>assigned.add(p));}
   const other=a.filter(x=>!assigned.has(x.name));if(other.length)segMap['Other']=other;
   if(!a.length&&!isLoading.value&&!af)return html`<div class="content"><${StatsRow}/><${EmptyState}/></div>`;
-return html`<div class="content"><${StatsRow}/>${af?html`<div style="font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-s)">Filter: ${af} <span style="cursor:pointer;color:var(--accent)" onClick=${()=>activeFilter.value=''}>clear</span></div>`:''}`
+  const filterBar=af?html`<div style="font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-s)">Filter: ${af} <span style="cursor:pointer;color:var(--accent)" onClick=${()=>activeFilter.value=''}>clear</span></div>`:null;
+  return html`<div class="content"><${StatsRow}/>${filterBar}
     ${Object.entries(segMap).filter(([_,i])=>i.length).map(([name,items])=>html`
       <div class="seg-title">${name} (${items.length})</div>
       <div class="grid">${items.map(ag=>html`<${Tile} a=${ag}/>`)}</div>
