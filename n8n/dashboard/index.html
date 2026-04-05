@@ -146,7 +146,12 @@ effect(()=>{
 // ===== API =====
 async function loadAgents(){try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents.value=d.agents;}catch{}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
-async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();sideMessages.value=d.messages||[];}catch{sideMessages.value=[];}}
+async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=d.messages||[];sideMessages.value=msgs;
+// Restore delegation state from history
+const newDel={...delegations.value};
+for(const m of msgs){const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);if(dm&&!newDel[dm[1]]){newDel[dm[1]]={project:dm[2],status:m.msg.includes('✓')?'done':'pending'};}}
+delegations.value=newDel;
+}catch{sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){

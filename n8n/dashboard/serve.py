@@ -328,7 +328,65 @@ def execute_delegation(delegation_id):
     d['status'] = 'done'
     d['response'] = response
     clear_activity(target_project)
-    return {'status': 'complete', 'project': target_project, 'task': task_message, 'response': response}
+
+    # PA Review Loop: let PA evaluate the result
+    review_result = None
+    error_indicators = ['error', 'Error', 'failed', 'Failed', 'FAIL', 'not found', 'permission denied',
+                        'timed out', 'No response', 'syntax error', 'SyntaxError', 'TypeError']
+    has_error = any(indicator in response for indicator in error_indicators)
+
+    if has_error and d.get('retries', 0) < 2:
+        # Auto-retry with error context
+        d['retries'] = d.get('retries', 0) + 1
+        retry_msg = f"Previous attempt failed with: {response[:200]}\n\nPlease fix and retry: {task_message}"
+        chat_file = os.path.join(CHATS_DIR, f'{target_project}.jsonl')
+        ts_retry = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        with open(chat_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts_retry, 'role': 'system', 'msg': f'⚠ Error detected, auto-retrying ({d["retries"]}/2)...'}) + '\n')
+
+        # Log to orchestrator
+        orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
+        with open(orch_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts_retry, 'role': 'system', 'msg': f'⚠ {target_project}: error detected, auto-retrying ({d["retries"]}/2)'}) + '\n')
+
+        # Re-execute with error context
+        set_activity(target_project, 'retry', f'attempt {d["retries"]}/2')
+        tmp_retry = os.path.join(tempfile.gettempdir(), f'retry-{int(time.time()*1000)}.txt')
+        try:
+            with open(tmp_retry, 'w', encoding='utf-8') as f:
+                f.write(retry_msg)
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            retry_result = subprocess.run(
+                f'chcp 65001 >nul 2>&1 & claude --dangerously-skip-permissions -p < "{tmp_retry}"',
+                shell=True, capture_output=True, timeout=300, cwd=project_dir, env=env
+            )
+            try:
+                response = retry_result.stdout.decode('utf-8').strip()
+            except:
+                response = str(retry_result.stdout).strip()
+            if not response:
+                response = 'No response on retry'
+        except Exception as e:
+            response = f'Retry error: {e}'
+        finally:
+            try:
+                os.unlink(tmp_retry)
+            except:
+                pass
+
+        # Save retry response
+        ts_r2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        with open(chat_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts_r2, 'role': 'assistant', 'msg': response}) + '\n')
+        with open(orch_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts_r2, 'role': 'system', 'msg': f'✓ {target_project} retry result: {response[:200]}'}) + '\n')
+        clear_activity(target_project)
+        d['response'] = response
+        review_result = f'Auto-retried ({d["retries"]}/2). Final: {response[:200]}'
+
+    return {'status': 'complete', 'project': target_project, 'task': task_message,
+            'response': response, 'review': review_result}
 
 
 def get_chats():
