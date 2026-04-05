@@ -61,13 +61,23 @@ def get_agents():
             if len(parts) < 7:
                 continue
             name, branch, last, age, uncommitted, manifest, tpl = parts[:7]
+            # Extended fields (may not exist in old scan format)
+            current_task = parts[7] if len(parts) > 7 else ''
+            has_blockers = parts[8] == 'true' if len(parts) > 8 else False
+            phase = parts[9] if len(parts) > 9 else ''
+            lessons = int(parts[10]) if len(parts) > 10 and parts[10].isdigit() else 0
+
             days = int((now_ts - int(age)) / 86400) if age.isdigit() and int(age) > 0 else 999
             status = 'working' if days <= 1 else 'idle' if days <= 7 else 'sleeping'
+            if has_blockers:
+                status = 'blocked'
             if manifest == 'true':
                 agents.append({
                     'id': i, 'name': name, 'status': status, 'branch': branch,
                     'last_commit': last, 'uncommitted': int(uncommitted) if uncommitted.isdigit() else 0,
-                    'days': days, 'template_version': tpl
+                    'days': days, 'template_version': tpl,
+                    'task': current_task, 'blockers': has_blockers,
+                    'phase': phase, 'lessons': lessons
                 })
 
         # Check chat history for recent activity

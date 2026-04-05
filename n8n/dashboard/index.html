@@ -67,8 +67,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .tile .row{display:flex;justify-content:space-between;font-size:var(--fs-s);color:var(--t2);margin-top:var(--sp-xs)}
 .tile .branch{font-size:var(--fs-s);color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tile .bar{position:absolute;bottom:0;left:0;height:2px;transition:width .5s}
-.tile .dirty{color:var(--yellow)}
-.tile .dirty.high{color:var(--accent)}
+.tile .actions{position:absolute;top:var(--sp-xs);right:var(--sp-xs);display:none;gap:var(--sp-xs)}
+.tile:hover .actions{display:flex}
+.tile .actions button{background:var(--bg);color:var(--t2);border:1px solid var(--border);width:24px;height:24px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:all .15s}
+.tile .actions button:hover{color:var(--text);border-color:var(--accent)}
 
 /* === PROJECT DETAIL (inside view) === */
 .detail{display:none;flex-direction:column;flex:1}
@@ -201,26 +203,51 @@ async function loadOrchChat(){
 }
 
 function render(){
-  const h=agents.filter(a=>a.status==='working').length;
-  const i=agents.filter(a=>a.status==='idle').length;
-  const s=agents.filter(a=>a.status==='sleeping').length;
-  const dirty=agents.reduce((s,a)=>s+(a.uncommitted||0),0);
+  const blocked=agents.filter(a=>a.blockers).length;
+  const active=agents.filter(a=>a.task).length;
+  const healthy=agents.filter(a=>!a.blockers&&a.status!=='sleeping').length;
+  const stale=agents.filter(a=>(a.days||999)>7).length;
+  const needsAttn=agents.filter(a=>a.blockers||(a.uncommitted||0)>20).length;
   document.getElementById('stats').innerHTML=
-    `<div class="stat"><div class="n" style="color:var(--green)">${h}</div><div class="l">working</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--t2)">${i}</div><div class="l">idle</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--mute)">${s}</div><div class="l">sleeping</div></div>`+
-    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`+
-    `<div class="stat"><div class="n" style="color:${dirty>50?'var(--accent)':'var(--t2)'}">${dirty}</div><div class="l">uncommitted</div></div>`;
+    `<div class="stat"><div class="n" style="color:${needsAttn?'var(--accent)':'var(--green)'}">${needsAttn}</div><div class="l">need attention</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--green)">${active}</div><div class="l">in progress</div></div>`+
+    `<div class="stat"><div class="n">${healthy}</div><div class="l">healthy</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--mute)">${stale}</div><div class="l">stale</div></div>`+
+    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`;
 
-  const sorted=[...agents].sort((a,b)=>(a.days||999)-(b.days||999));
+  // Sort: blocked first, then by activity
+  const sorted=[...agents].sort((a,b)=>{
+    if(a.blockers&&!b.blockers)return -1;if(!a.blockers&&b.blockers)return 1;
+    if(a.task&&!b.task)return -1;if(!a.task&&b.task)return 1;
+    return(a.days||999)-(b.days||999);
+  });
+
+  const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
+  const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
+
   document.getElementById('grid').innerHTML=sorted.map(a=>{
-    const pct=Math.min(100,Math.max(5,((7-(a.days||999))/7)*100));
-    const dirtyClass=(a.uncommitted||0)>20?'dirty high':(a.uncommitted||0)>5?'dirty':'';
+    const task=a.task?esc(a.task):'<span style="color:var(--t3)">no active task</span>';
+    const blocker=a.blockers?'<div style="color:var(--accent);font-size:var(--fs-xs);margin-top:var(--sp-xs)">⚠ BLOCKER</div>':'';
+    const phase=a.phase?`<span style="color:var(--t3);font-size:var(--fs-xs)">${esc(a.phase)}</span>`:'';
+    const lessons=a.lessons?`<span style="font-size:var(--fs-xs);color:var(--t3)">${a.lessons} lessons</span>`:'';
     return`<div class="tile" onclick="openProject('${esc(a.name)}')">
-      <div class="top"><span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}</span><span class="ver">${esc(a.template_version||'')}</span></div>
-      <div class="branch">${esc(a.branch||'')}</div>
-      <div class="row"><span class="${dirtyClass}">${a.uncommitted||0} dirty</span><span>${a.last_commit||''}</span></div>
-      <div class="bar" style="width:${pct}%;background:${({working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)'})[a.status]||'var(--mute)'}"></div>
+      <div class="actions">
+        <button onclick="event.stopPropagation();quickAct('sync','${esc(a.name)}')" title="Sync template">↻</button>
+        <button onclick="event.stopPropagation();quickAct('health','${esc(a.name)}')" title="Health check">♥</button>
+        <button onclick="event.stopPropagation();openProject('${esc(a.name)}')" title="Open chat">→</button>
+      </div>
+      <div class="top">
+        <span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}</span>
+        ${phase}
+      </div>
+      <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0">${task}</div>
+      ${blocker}
+      <div class="row">
+        <span style="color:${statusColor[a.status]||'var(--t3)'}">${statusLabel[a.status]||a.status}</span>
+        <span>${a.last_commit||''}</span>
+        ${lessons}
+      </div>
+      <div class="bar" style="width:${Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${statusColor[a.status]||'var(--mute)'}"></div>
     </div>`;
   }).join('');
 }
@@ -298,6 +325,14 @@ async function doSend(proj,inputId,btnId,msgsId,typId){
   document.getElementById(btnId).disabled=false;ms.scrollTop=ms.scrollHeight;loadFeed();
 }
 
+async function quickAct(action,project){
+  try{
+    const r=await fetch('/api/action/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project})});
+    const d=await r.json();
+    alert(`${project} → ${action}: ${d.text||d.status||'done'}`);
+    loadAll();
+  }catch(e){alert(`${action} failed: ${e.message}`);}
+}
 async function act(n){
   try{const r=await fetch('/api/action/'+n,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json();alert(d.text||JSON.stringify(d).substring(0,300));loadAll();}catch(e){alert(e.message);}
 }

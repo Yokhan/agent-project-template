@@ -2,7 +2,7 @@
 Fast project scanner — Python native, minimal subprocess calls.
 Replaces scan-projects.sh: 1 git call per repo instead of 3, parallel execution.
 Usage: python scripts/scan-projects-fast.py [directory]
-Output: name|branch|last_commit|age_timestamp|uncommitted|has_manifest|template_version
+Output: name|branch|last_commit|age_timestamp|uncommitted|has_manifest|template_version|current_task|has_blockers|phase|lessons
 """
 import os
 import sys
@@ -71,7 +71,50 @@ def scan_repo(path: Path) -> str | None:
             except:
                 tpl_ver = '?'
 
-        return f'{path.name}|{branch}|{last_commit}|{age}|{uncommitted}|{str(has_manifest).lower()}|{tpl_ver}'
+        # --- Management data (file reads, no subprocess) ---
+
+        # Current task from tasks/current.md
+        current_task = ''
+        has_blockers = False
+        current_md = path / 'tasks' / 'current.md'
+        if current_md.exists():
+            try:
+                content = current_md.read_text(encoding='utf-8', errors='replace')
+                # First non-empty, non-heading line = current task
+                for line in content.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith('#') and not line.startswith('---'):
+                        current_task = line[:80]
+                        break
+                has_blockers = '## blocker' in content.lower() or '## blocked' in content.lower()
+            except:
+                pass
+
+        # Phase from PROJECT_SPEC.md
+        phase = ''
+        spec = path / 'PROJECT_SPEC.md'
+        if spec.exists():
+            try:
+                for line in spec.read_text(encoding='utf-8', errors='replace').splitlines():
+                    if 'phase' in line.lower() and ':' in line:
+                        phase = line.split(':', 1)[1].strip().strip('_[]* ')
+                        break
+            except:
+                pass
+
+        # Lessons count
+        lessons = 0
+        lessons_file = path / 'tasks' / 'lessons.md'
+        if lessons_file.exists():
+            try:
+                lessons = lessons_file.read_text(encoding='utf-8', errors='replace').count('### ')
+            except:
+                pass
+
+        # Extended output: original 7 fields + 4 management fields
+        return (f'{path.name}|{branch}|{last_commit}|{age}|{uncommitted}|'
+                f'{str(has_manifest).lower()}|{tpl_ver}|'
+                f'{current_task}|{str(has_blockers).lower()}|{phase}|{lessons}')
 
     except (subprocess.TimeoutExpired, Exception):
         return None
