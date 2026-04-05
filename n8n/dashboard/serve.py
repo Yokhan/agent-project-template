@@ -165,27 +165,81 @@ def build_orchestrator_context():
 # Pending delegations (in-memory, simple approach)
 _pending_delegations = {}
 
-# Live activity tracking — what's happening right now
-_active_tasks = {}  # project_name → {action, started, detail}
+# === TASK PERSISTENCE ===
+# Running tasks persisted to file — survives page reload
+TASKS_FILE = os.path.join(ROOT, 'tasks', '.running-tasks.json')
+_running_pids = {}  # project → subprocess.Popen object
+
+
+def _load_tasks():
+    """Load running tasks from file."""
+    try:
+        if os.path.exists(TASKS_FILE):
+            return json.loads(open(TASKS_FILE, encoding='utf-8').read())
+    except:
+        pass
+    return {}
+
+
+def _save_tasks(tasks):
+    """Save running tasks to file."""
+    try:
+        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(tasks, f, ensure_ascii=False)
+    except:
+        pass
 
 
 def set_activity(project, action, detail=''):
-    """Mark a project as actively doing something."""
-    _active_tasks[project] = {'action': action, 'detail': detail, 'started': time.time()}
+    """Mark project as active — persisted to file."""
+    tasks = _load_tasks()
+    tasks[project] = {'action': action, 'detail': detail, 'started': time.time()}
+    _save_tasks(tasks)
 
 
 def clear_activity(project):
-    """Clear active task for project."""
-    _active_tasks.pop(project, None)
+    """Clear active task — persisted."""
+    tasks = _load_tasks()
+    tasks.pop(project, None)
+    _save_tasks(tasks)
+    _running_pids.pop(project, None)
 
 
 def get_activities():
-    """Return current activities, auto-expire after 10 min."""
+    """Return current activities, auto-expire stale (>5 min)."""
+    tasks = _load_tasks()
     now = time.time()
-    expired = [k for k, v in _active_tasks.items() if now - v['started'] > 600]
+    expired = [k for k, v in tasks.items() if now - v.get('started', 0) > 300]
     for k in expired:
-        del _active_tasks[k]
-    return dict(_active_tasks)
+        tasks.pop(k, None)
+        # Kill zombie process if exists
+        proc = _running_pids.pop(k, None)
+        if proc and proc.poll() is None:
+            try:
+                proc.kill()
+            except:
+                pass
+    if expired:
+        _save_tasks(tasks)
+    return tasks
+
+
+def track_process(project, proc):
+    """Track a subprocess for cleanup."""
+    _running_pids[project] = proc
+
+
+def cleanup_all():
+    """Kill all tracked processes — called on server shutdown."""
+    for name, proc in list(_running_pids.items()):
+        if proc and proc.poll() is None:
+            try:
+                proc.kill()
+            except:
+                pass
+    _running_pids.clear()
+    if os.path.exists(TASKS_FILE):
+        os.unlink(TASKS_FILE)
 
 
 def parse_delegation(pa_response):
@@ -618,6 +672,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 cwd=cwd, env=env
             )
+            track_process(project or '_orchestrator', proc)
             # Read stdout line by line
             for raw_line in iter(proc.stdout.readline, b''):
                 try:
@@ -713,4 +768,6 @@ if __name__ == '__main__':
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print('\nStopped.')
+        print('\nCleaning up...')
+        cleanup_all()
+        print('Stopped.')

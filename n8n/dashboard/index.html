@@ -149,7 +149,20 @@ async function loadSegments(){try{const r=await fetch('/api/segments');const d=a
 async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();sideMessages.value=d.messages||[];}catch{sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
-async function loadActivity(){try{const r=await fetch('/api/activity');const d=await r.json();activities.value=d.activities||{};}catch{}}
+async function loadActivity(){
+  try{
+    const r=await fetch('/api/activity');const d=await r.json();
+    activities.value=d.activities||{};
+    // Show recovery notification if tasks were running when page loaded
+    const acts=d.activities||{};
+    const pending=Object.entries(acts);
+    if(pending.length&&!window._recoveryShown){
+      window._recoveryShown=true;
+      const names=pending.map(([k,v])=>k+' ('+v.action+')').join(', ');
+      console.log('Recovering running tasks:',names);
+    }
+  }catch{}
+}
 
 async function sendMessage(msg){
   if(!msg.trim())return;
@@ -263,12 +276,23 @@ function DetailView(){
   </div>`;
 }
 
+function RunningBanner(){
+  const proj=currentProject.value||'_orchestrator';
+  const act=activities.value[proj];
+  if(!act)return null;
+  const elapsed=Math.round((Date.now()/1000)-act.started);
+  return html`<div style="padding:var(--sp-s) var(--sp-m);background:var(--sf);border-bottom:1px solid var(--border);font-size:var(--fs-s);color:var(--green);font-family:var(--font-mono);display:flex;align-items:center;gap:var(--sp-s)">
+    <span style="animation:pulse .8s infinite">⚡</span> ${act.action}: ${act.detail} (${elapsed}s)
+  </div>`;
+}
+
 function ChatSidebar(){
   const inputRef=useRef();const msgsRef=useRef();
   useEffect(()=>{if(msgsRef.current)msgsRef.current.scrollTop=msgsRef.current.scrollHeight;});
   const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';sendMessage(v);};
   return html`<div class="chat-side">
     <div class="ch-title">${sideTitle}</div>
+    <${RunningBanner}/>
     <div class="ch-msgs" ref=${msgsRef}>
       ${sideMessages.value.map((m,i)=>html`<${ChatMsg} key=${i} m=${m}/>`)}
       <${StreamBubble}/>
