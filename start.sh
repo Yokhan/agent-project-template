@@ -1,30 +1,112 @@
 #!/bin/bash
-# Start Agent Command Center — n8n + dashboard
-# Usage: bash start.sh
+# Start Agent Command Center — preflight checks + n8n + dashboard
+# Usage: bash start.sh [--no-n8n] [--install]
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
-echo "Starting Command Center..."
+NO_N8N=false
+INSTALL=false
+for arg in "$@"; do
+  case "$arg" in
+    --no-n8n) NO_N8N=true ;;
+    --install) INSTALL=true ;;
+  esac
+done
 
-# Start n8n in background (if not already running)
-if ! curl -s --connect-timeout 1 http://localhost:5678/healthz >/dev/null 2>&1; then
-  echo "Starting n8n..."
-  NODE_FUNCTION_ALLOW_BUILTIN=child_process,fs,path n8n start &
-  sleep 5
+echo "=== Agent Command Center — Preflight ==="
+
+# 1. Check Python
+PYTHON=""
+if command -v python3 &>/dev/null; then PYTHON="python3"
+elif command -v python &>/dev/null; then PYTHON="python"
+fi
+if [ -z "$PYTHON" ]; then
+  echo "ERROR: Python not found. Install Python 3.8+ and retry."
+  exit 1
+fi
+echo "✓ Python: $($PYTHON --version 2>&1)"
+
+# 2. Check Node.js (for MCP context-router)
+if ! command -v node &>/dev/null; then
+  echo "ERROR: Node.js not found. Install Node.js 18+ and retry."
+  exit 1
+fi
+echo "✓ Node: $(node --version)"
+
+# 3. Check MCP context-router dependencies
+if [ ! -d "mcp-servers/context-router/node_modules" ]; then
+  echo "Installing MCP context-router dependencies..."
+  (cd mcp-servers/context-router && npm install --silent 2>/dev/null)
+fi
+echo "✓ MCP context-router: ready"
+
+# 4. Bootstrap MCP if --install or first run
+if [ "$INSTALL" = true ] || [ ! -f ".mcp.json" ]; then
+  echo "Bootstrapping MCP servers..."
+  bash scripts/bootstrap-mcp.sh --install 2>/dev/null || true
+fi
+if [ -f ".mcp.json" ]; then
+  echo "✓ .mcp.json: exists"
 else
-  echo "n8n already running"
+  echo "⚠ .mcp.json: missing (MCP tools won't work in Claude Code)"
+fi
+
+# 5. Check n8n (optional)
+if [ "$NO_N8N" = false ]; then
+  if command -v n8n &>/dev/null; then
+    echo "✓ n8n: $(n8n --version 2>/dev/null || echo 'installed')"
+  else
+    echo "⚠ n8n not found. Dashboard works without it. Install: npm install -g n8n"
+    NO_N8N=true
+  fi
+fi
+
+# 6. Check config
+if [ ! -f "n8n/config.json" ]; then
+  echo "Creating default config.json..."
+  DOCS_DIR="$(cd ~ && pwd)/Documents"
+  cat > n8n/config.json << EOCFG
+{
+  "documents_dir": "$DOCS_DIR",
+  "orchestrator_project": "PersonalAssistant"
+}
+EOCFG
+fi
+echo "✓ Config: n8n/config.json"
+
+echo ""
+echo "=== Starting Services ==="
+
+# Start n8n (if available and not --no-n8n)
+if [ "$NO_N8N" = false ]; then
+  if ! curl -s --connect-timeout 1 http://localhost:5678/healthz >/dev/null 2>&1; then
+    echo "Starting n8n..."
+    NODE_FUNCTION_ALLOW_BUILTIN=child_process,fs,path n8n start &
+    sleep 3
+  else
+    echo "✓ n8n already running"
+  fi
 fi
 
 # Start dashboard
-echo "Starting dashboard..."
-python n8n/dashboard/serve.py 2>/dev/null &
+if curl -s --connect-timeout 1 http://localhost:3333/ >/dev/null 2>&1; then
+  echo "✓ Dashboard already running"
+else
+  echo "Starting dashboard..."
+  $PYTHON n8n/dashboard/serve.py &
+  sleep 1
+fi
 
-sleep 2
 echo ""
-echo "=== Agent Command Center ==="
-echo "Dashboard:  http://localhost:3333"
-echo "n8n:        http://localhost:5678"
+echo "╔══════════════════════════════════════╗"
+echo "║   Agent Command Center — RUNNING     ║"
+echo "╠══════════════════════════════════════╣"
+echo "║  Dashboard:  http://localhost:3333    ║"
+[ "$NO_N8N" = false ] && echo "║  n8n:        http://localhost:5678    ║"
+echo "║                                      ║"
+echo "║  Shortcuts: / = chat, D = theme      ║"
+echo "║  Esc = back, 1-9 = project           ║"
+echo "╚══════════════════════════════════════╝"
 echo ""
-echo "Shortcuts: / = chat, D = theme, Esc = back, 1-9 = project"
 echo "Press Ctrl+C to stop"
 wait

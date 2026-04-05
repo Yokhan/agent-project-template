@@ -58,6 +58,16 @@ bash scripts/context-restore.sh        — context recovery after compaction
 bash scripts/measure-context.sh        — token budget meter
 ```
 
+## Command Center (Orchestration)
+
+If this project is configured as orchestrator (see `n8n/config.json`):
+- **Start**: `bash start.sh` or double-click `start.bat`
+- **Dashboard**: http://localhost:3333 — project tiles, chat, delegation
+- **Delegation**: Write `[DELEGATE:ProjectName]\ntask\n[/DELEGATE]` in response → dashboard sends to project agent
+- **Review loop**: Failed delegations auto-retry 2x with error context
+- **Chat files**: `tasks/chats/{project}.jsonl` — shared between orchestrator and project agents
+- **MCP**: context-router runs automatically via `.mcp.json` when Claude Code/Zed opens project
+
 ## Design Work — HARD RULES (Figma, CSS, UI)
 1. **NEVER hardcode visual values.** Use tokens/variables. Create tokens FIRST if missing.
 2. **NEVER build from raw shapes.** Use components. Create components FIRST if missing.

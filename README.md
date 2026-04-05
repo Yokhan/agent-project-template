@@ -13,13 +13,30 @@ Self-deploying AI-agent optimized project template with **MCP-based dynamic rule
 ```bash
 git clone https://github.com/Yokhan/agent-project-template.git my-project
 cd my-project
-bash scripts/bootstrap-mcp.sh --install   # installs Engram + configures MCP
-claude                                     # open Claude Code
+bash start.sh --install    # preflight checks + MCP bootstrap + start dashboard
 ```
 
-In Claude Code chat: `/setup-project` — Claude configures everything for your stack.
+Open http://localhost:3333 — Command Center dashboard.
+Open project in Claude Code or Zed — MCP context-router activates automatically.
+In chat: `/setup-project` — Claude configures everything for your stack.
 
-For **Zed AI chat panel** (not terminal): add `--zed` flag to bootstrap.
+**Windows**: double-click `start.bat` instead of `bash start.sh`.
+
+## Command Center
+
+Dashboard for managing multiple AI-agent projects from one place.
+
+```bash
+bash start.sh              # start dashboard + n8n
+bash start.sh --no-n8n     # dashboard only (no n8n needed)
+```
+
+Features:
+- **Project tiles** grouped by business segment with health status
+- **PA Orchestrator chat** — delegates tasks to project agents via `claude -p`
+- **Drill-down** — click tile → project detail + agent chat
+- **Auto-retry** — failed delegations retry 2x with error context
+- **Activity tracking** — see which agents are executing in real-time
 
 ## Updating Existing Projects
 
