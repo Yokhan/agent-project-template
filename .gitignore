@@ -85,3 +85,8 @@ out/
 coverage/
 .coverage
 htmlcov/
+
+# Dashboard runtime (per-machine, regenerated)
+tasks/chats/
+tasks/.running-tasks.json
+tasks/.current.md.bak
