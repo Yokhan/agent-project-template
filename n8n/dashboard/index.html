@@ -255,6 +255,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .analytics-bar .metric .v{color:var(--text);font-weight:500}
 .analytics-bar .metric .v.alert{color:var(--accent);font-size:var(--fs-m);font-weight:600}
 
+
+/* === CHAT UPGRADE === */
+.ch-inp textarea{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:var(--sp-s) var(--sp-m);font-family:var(--font-body);font-size:var(--fs-chat);outline:none;resize:none;min-height:36px;max-height:150px;line-height:1.4;overflow-y:auto}
+.ch-inp textarea:focus{border-color:var(--accent);box-shadow:0 0 8px var(--glow)}
+.ch-inp textarea::placeholder{color:var(--t3)}
+.m pre{position:relative}
+.m pre .copy-btn{position:absolute;top:4px;right:8px;background:var(--sf2);color:var(--t2);border:1px solid var(--border);padding:2px 8px;font-size:9px;cursor:pointer;font-family:var(--font-mono);opacity:0;transition:opacity .15s}
+.m pre:hover .copy-btn{opacity:1}
+.m pre .copy-btn:hover{color:var(--text);border-color:var(--accent)}
+.m pre .lang{position:absolute;top:4px;left:8px;font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+.m h1,.m h2,.m h3{color:var(--text);margin:var(--sp-s) 0 var(--sp-xs)}
+.m h1{font-size:var(--fs-l);font-weight:600}
+.m h2{font-size:var(--fs-m);font-weight:600}
+.m h3{font-size:var(--fs-s);font-weight:600;color:var(--t2)}
+.m a{color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--accent)}
+.m a:hover{border-bottom-style:solid}
+.m ul,.m ol{padding-left:var(--sp-l);margin:var(--sp-xs) 0}
+.m li{margin:2px 0}
+.thinking{padding:var(--sp-s) var(--sp-m);color:var(--t3);font-size:var(--fs-s);font-family:var(--font-mono);display:flex;align-items:center;gap:var(--sp-s)}
+.thinking .dots{display:inline-flex;gap:3px}
+.thinking .dots span{width:4px;height:4px;background:var(--t3);border-radius:50%;animation:pulse .8s infinite}
+.thinking .dots span:nth-child(2){animation-delay:.15s}
+.thinking .dots span:nth-child(3){animation-delay:.3s}
+.retry-btn{background:none;color:var(--accent);border:1px solid var(--accent);padding:2px 10px;font-size:var(--fs-xs);cursor:pointer;font-family:var(--font-mono);margin-left:var(--sp-s)}
+.retry-btn:hover{background:var(--accent-dim)}
+.m{position:relative}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -269,6 +296,8 @@ const sideMessages=signal([]);
 const sideTitle=signal('orchestrator');
 const streamText=signal('');
 const isStreaming=signal(false);
+const thinkStart=signal(0);
+const lastUserMsg=signal('');
 const delegations=signal({});
 const theme=signal(localStorage.getItem('theme')||'dark');
 const feedItems=signal([]);
@@ -334,8 +363,9 @@ async function loadActivity(){
 async function sendMessage(msg){
   if(!msg.trim())return;
   const proj=currentProject.value||'';
-  sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
-  isStreaming.value=true;streamText.value='';
+  lastUserMsg.value=msg;
+sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
+  isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     const reader=r.body.getReader();const dec=new TextDecoder();let buf='',full='';
@@ -571,7 +601,7 @@ function RunningBanner(){
 function ChatSidebar(){
   const inputRef=useRef();const msgsRef=useRef();
   const prevCount=useRef(0);useEffect(()=>{const cnt=sideMessages.value.length;const streaming=isStreaming.value;if(msgsRef.current&&(cnt!==prevCount.current||streaming)){msgsRef.current.scrollTop=msgsRef.current.scrollHeight;prevCount.current=cnt;}});
-  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';sendMessage(v);};
+  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';inputRef.current.style.height='36px';sendMessage(v);};
   return html`<div class="chat-side">
     <div class="ch-title">${sideTitle}</div>
     <${RunningBanner}/>
@@ -580,7 +610,7 @@ function ChatSidebar(){
       <${StreamBubble}/>
     </div>
     <div class="ch-inp">
-      <input ref=${inputRef} placeholder="talk to ${sideTitle.value}..." onKeyDown=${e=>{if(e.key==='Enter'){e.preventDefault();send();}}} disabled=${isStreaming.value}/>
+      <textarea ref=${inputRef} placeholder="talk to ${sideTitle.value}..." rows="1" onKeyDown=${e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} onInput=${e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,150)+'px';}} disabled=${isStreaming.value}/>
       <button onClick=${send} disabled=${isStreaming.value}>send</button>
     </div>
   </div>`;
@@ -588,19 +618,20 @@ function ChatSidebar(){
 
 function ChatMsg({m}){
   if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
-  const isViaPA=(m.msg||'').startsWith('[via PA]');const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
+  const isViaPA=(m.msg||'').startsWith('[via PA]');
+  const isError=(m.msg||'').startsWith('Error:')||(m.msg||'').includes('timed out');const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
   const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
   const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
   return html`<div class="m ${cls}">
     ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
-    <div class="ts">${ft(m.ts)}</div>
+    <div class="ts">${ft(m.ts)}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>
   </div>`;
 }
 
 function StreamBubble(){
   if(!isStreaming.value&&!streamText.value)return null;
-  if(!streamText.value)return html`<div class="m a" style="color:var(--t3)">thinking...</div>`;
+  if(!streamText.value){const el=thinkStart.value?Math.round((Date.now()-thinkStart.value)/1000):0;return html`<div class="thinking"><div class="dots"><span/><span/><span/></div> thinking${el>2?'... '+el+'s':''}</div>`;}
   return html`<div class="m a"><div dangerouslySetInnerHTML=${{__html:md(streamText.value.replace(/<delegation[^>]*\/>/g,''))}}></div></div>`;
 }
 
