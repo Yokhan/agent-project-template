@@ -180,6 +180,8 @@ function toggleTheme(){
 document.getElementById('theme-btn').textContent=(t==='light')?'dark':'light';})();
 
 let agents=[],curProj=null;
+const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
+const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 
 async function loadAll(){
   await Promise.all([loadAgents(),loadFeed(),loadOrchChat()]);
@@ -215,9 +217,6 @@ function render(){
     if(a.task&&!b.task)return -1;if(!a.task&&b.task)return 1;
     return(a.days||999)-(b.days||999);
   });
-
-  const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
-  const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 
   // Group by segment (business segments, not status)
   const segMap={};
