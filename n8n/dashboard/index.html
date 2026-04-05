@@ -198,6 +198,7 @@ const searchQuery=signal('');
 const actionPlan=signal(null);
 const showKbHelp=signal(false);
 const showPlan=signal(true);
+const projectPlan=signal(null);
 const activities=signal({});  // project → {action, detail, started}
 
 setInterval(()=>clock.value=new Date().toLocaleTimeString(),1000);
@@ -209,7 +210,7 @@ effect(()=>{
   const p=currentProject.value;
   sideTitle.value=p?p+' agent':'orchestrator';
   loadChat(p||'_orchestrator');
-  if(p)loadModules(p);
+  if(p){loadModules(p);loadProjectPlan(p);}else{projectPlan.value=null;}
 });
 
 // ===== API =====
@@ -223,6 +224,7 @@ delegations.value=newDel;
 }catch{sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
+async function loadProjectPlan(p){try{const r=await fetch("/api/project-plan/"+encodeURIComponent(p));projectPlan.value=await r.json();}catch{projectPlan.value=null;}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){
   try{
@@ -334,7 +336,7 @@ function PlanPanel(){
   const items=showPlan.value?p.plan.slice(0,8):[];
   return html`<div class="plan-panel">
     <div class="plan-hdr" onClick=${()=>showPlan.value=!showPlan.value}>
-      <span>action plan (${p.plan.length} items, ${p.high_count} high)</span>
+      <span>cross-project issues (${p.plan.length} items, ${p.high_count} high)</span>
       <span>${showPlan.value?'▾':'▸'}</span>
     </div>
     ${items.map(item=>html`<div class="plan-item">
@@ -415,6 +417,7 @@ function Tile({a}){
 function DetailView(){
   const name=currentProject.value;const ag=agents.value.find(a=>a.name===name)||{};
   const act=activities.value[name];
+  const pp=projectPlan.value;
   return html`<div class="content">
     <div class="back" onClick=${()=>currentProject.value=null}>← back to dashboard</div>
     <h2 style="font-size:var(--fs-xl);display:flex;align-items:center;gap:var(--sp-s)"><span class="dot ${act?'working':ag.status}"></span>${name}</h2>
@@ -427,16 +430,22 @@ function DetailView(){
       ${ag.blockers?html`<span style="color:var(--accent);font-weight:600">BLOCKED</span>`:''}
     </div>
     ${act?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--green);font-size:var(--fs-s);color:var(--green);font-family:var(--font-mono)">Running: ${act.action} — ${act.detail}</div>`:''}
-    ${ag.task?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--yellow);font-size:var(--fs-s)"><strong>Current task:</strong> <span dangerouslySetInnerHTML=${{__html:md(ag.task)}}></span></div>`:''}
+    ${pp&&pp.context?.task_title?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--yellow);font-size:var(--fs-s)"><strong>Task:</strong> ${pp.context.task_title}</div>`:(ag.task?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--yellow);font-size:var(--fs-s)"><strong>Task:</strong> <span dangerouslySetInnerHTML=${{__html:md(ag.task)}}></span></div>`:'')}
+    ${pp&&pp.blockers?.length?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--accent);font-size:var(--fs-s)"><strong style="color:var(--accent)">Blockers:</strong>
+      ${pp.blockers.map(b=>html`<div style="margin:var(--sp-xs) 0;padding-left:var(--sp-m);color:var(--t2)">• ${b}</div>`)}
+    </div>`:''}
     <div class="panels">
-      <div class="panel"><h3>modules</h3>${modules.value.length?modules.value.map(m=>html`<div class="mod"><span>${m.name}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`):html`<span style="color:var(--t3)">Use chat to scan → agent will detect modules</span>`}</div>
-      <div class="panel"><h3>project info</h3><div style="font-size:var(--fs-s);color:var(--t2)">
+      <div class="panel"><h3>next steps</h3>${pp&&pp.next_steps?.length?pp.next_steps.map((s,i)=>html`<div class="mod"><span style="color:var(--t3);min-width:20px">${i+1}.</span><span style="color:var(--t2)">${s}</span></div>`):html`<span style="color:var(--t3)">No next steps in tasks/current.md</span>`}</div>
+      <div class="panel"><h3>issues</h3>${pp&&pp.issues?.length?pp.issues.map(iss=>html`<div class="mod"><span class="pri ${iss.priority}" style="font-size:var(--fs-xs);padding:0 4px;border:1px solid">${iss.priority}</span><span style="color:var(--t2);margin-left:var(--sp-s)">${iss.text}</span></div>`):html`<span style="color:var(--green)">No issues detected</span>`}</div>
+    </div>
+    <div class="panels">
+      <div class="panel"><h3>modules</h3>${modules.value.length?modules.value.map(m=>html`<div class="mod"><span>${m.name}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`):html`<span style="color:var(--t3)">Scan via chat</span>`}</div>
+      <div class="panel"><h3>context</h3><div style="font-size:var(--fs-s);color:var(--t2)">
+        <div style="margin-bottom:var(--sp-xs)">phase: ${pp?.context?.phase||ag.phase||'unknown'}</div>
         <div style="margin-bottom:var(--sp-xs)">segment: ${ag.segment||'unassigned'}</div>
-        <div style="margin-bottom:var(--sp-xs)">phase: ${ag.phase||'unknown'}</div>
-        <div>last commit: ${ag.last_commit||'—'}</div>
+        ${pp?.context?.recent_commits?html`<div style="margin-top:var(--sp-s)"><strong>Recent:</strong>${pp.context.recent_commits.map(cm=>html`<div style="color:var(--t3);font-family:var(--font-mono);font-size:var(--fs-xs);margin:2px 0">${cm}</div>`)}</div>`:''}
       </div></div>
     </div>
-    <div style="color:var(--t3);font-size:var(--fs-s);margin-top:var(--sp-m)">Use the chat panel on the right to talk to this project's agent →</div>
   </div>`;
 }
 

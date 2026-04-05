@@ -900,6 +900,111 @@ def get_delegation_analytics():
         'by_status': by_status, 'patterns': patterns
     }
 
+def generate_project_plan(project_name):
+    """Generate detailed plan for a single project from its own data."""
+    project_dir = os.path.join(DOCS_DIR, project_name)
+    if not os.path.exists(project_dir):
+        return {'error': f'Project not found: {project_name}'}
+
+    plan = {'project': project_name, 'next_steps': [], 'issues': [], 'blockers': [], 'context': {}}
+
+    # 1. Read tasks/current.md for next steps and blockers
+    current_md = os.path.join(project_dir, 'tasks', 'current.md')
+    if os.path.exists(current_md):
+        try:
+            content = open(current_md, encoding='utf-8').read()
+            # Extract next steps
+            in_next = False
+            in_blockers = False
+            for line in content.split(chr(10)):
+                if 'next step' in line.lower() or '## Next' in line:
+                    in_next = True; in_blockers = False; continue
+                if 'blocker' in line.lower() or '## Blocker' in line:
+                    in_blockers = True; in_next = False; continue
+                if line.startswith('## ') and in_next:
+                    in_next = False
+                if line.startswith('## ') and in_blockers:
+                    in_blockers = False
+                if in_next and line.strip().startswith(('-', '*', '1', '2', '3', '4', '5')):
+                    step = line.strip().lstrip('-*0123456789. ')
+                    if step:
+                        plan['next_steps'].append(step)
+                if in_blockers and line.strip().startswith(('-', '*')):
+                    blocker = line.strip().lstrip('-* ')
+                    if blocker:
+                        plan['blockers'].append(blocker)
+            # Extract current task title
+            for line in content.split(chr(10))[:5]:
+                if line.startswith('# '):
+                    plan['context']['task_title'] = line[2:].strip()
+                    break
+        except:
+            pass
+
+    # 2. Read PROJECT_SPEC.md for context
+    spec = os.path.join(project_dir, 'PROJECT_SPEC.md')
+    if os.path.exists(spec):
+        try:
+            content = open(spec, encoding='utf-8').read()
+            for line in content.split(chr(10))[:15]:
+                if line.startswith('- **Phase**'):
+                    plan['context']['phase'] = line.split(':')[-1].strip().strip('_')
+                if line.startswith('- **Active work**'):
+                    plan['context']['active_work'] = line.split(':')[-1].strip().strip('_')
+        except:
+            pass
+
+    # 3. Check git status for issues
+    try:
+        r = subprocess.run(['git', 'status', '--porcelain'], capture_output=True, text=True, timeout=5, cwd=project_dir)
+        dirty = len([l for l in r.stdout.strip().splitlines() if l.strip()])
+        if dirty > 20:
+            plan['issues'].append({'priority': 'HIGH', 'text': f'{dirty} uncommitted files — review and commit'})
+        elif dirty > 5:
+            plan['issues'].append({'priority': 'MED', 'text': f'{dirty} uncommitted files'})
+    except:
+        pass
+
+    # 4. Check lessons count
+    lessons = os.path.join(project_dir, 'tasks', 'lessons.md')
+    if os.path.exists(lessons):
+        try:
+            count = open(lessons, encoding='utf-8').read().count('### ')
+            plan['context']['lessons'] = count
+            if count > 50:
+                plan['issues'].append({'priority': 'MED', 'text': f'{count} lessons accumulated — run /weekly'})
+        except:
+            pass
+
+    # 5. Check drift
+    drift_script = os.path.join(project_dir, 'scripts', 'check-drift.sh')
+    if os.path.exists(drift_script):
+        try:
+            r = subprocess.run(['bash', drift_script], capture_output=True, text=True, timeout=15, cwd=project_dir)
+            wm = re.search(r'(\d+) warnings', r.stdout)
+            em = re.search(r'(\d+) errors', r.stdout)
+            w = int(wm.group(1)) if wm else 0
+            e = int(em.group(1)) if em else 0
+            if e > 0:
+                plan['issues'].append({'priority': 'HIGH', 'text': f'{e} drift errors — fix before continuing'})
+            elif w > 2:
+                plan['issues'].append({'priority': 'MED', 'text': f'{w} drift warnings'})
+            plan['context']['drift_warnings'] = w
+            plan['context']['drift_errors'] = e
+        except:
+            pass
+
+    # 6. Read last 3 commits for recent context
+    try:
+        r = subprocess.run(['git', 'log', '--oneline', '-3'], capture_output=True, text=True, timeout=5, cwd=project_dir)
+        plan['context']['recent_commits'] = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]
+    except:
+        pass
+
+    plan['has_plan'] = bool(plan['next_steps'] or plan['issues'] or plan['blockers'])
+    return plan
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIR, **kwargs)
@@ -939,6 +1044,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/api/health-history/'):
             project = urllib.parse.unquote(self.path.split('/api/health-history/')[1])
             self._json_response(get_health_history(project))
+        elif self.path.startswith('/api/project-plan/'):
+            project = urllib.parse.unquote(self.path.split('/api/project-plan/')[1])
+            self._json_response(generate_project_plan(project))
         elif self.path.startswith('/api/impact/'):
             project = urllib.parse.unquote(self.path.split('/api/impact/')[1])
             self._json_response(analyze_impact(project))
