@@ -104,14 +104,15 @@ def get_agents():
             status = 'working' if days <= 1 else 'idle' if days <= 7 else 'sleeping'
             if has_blockers:
                 status = 'blocked'
-            if manifest == 'true':
-                agents.append({
+            managed = manifest == 'true'
+            agents.append({
                     'id': i, 'name': name, 'status': status, 'branch': branch,
                     'last_commit': last, 'uncommitted': int(uncommitted) if uncommitted.isdigit() else 0,
                     'days': days, 'template_version': tpl,
                     'task': current_task, 'blockers': has_blockers,
                     'phase': phase, 'lessons': lessons,
-                    'segment': PROJECT_SEGMENT.get(name, 'Other')
+                    'managed': managed,
+                    'segment': PROJECT_SEGMENT.get(name, 'Unmanaged' if not managed else 'Other')
                 })
 
         # Check chat history for recent activity

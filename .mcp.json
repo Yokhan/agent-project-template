@@ -2,8 +2,17 @@
   "mcpServers": {
     "context-router": {
       "command": "npx",
-      "args": ["tsx", "mcp-servers/context-router/src/index.ts"],
+      "args": [
+        "tsx",
+        "mcp-servers/context-router/src/index.ts"
+      ],
       "env": {}
+    },
+    "engram": {
+      "command": "engram",
+      "args": [
+        "mcp"
+      ]
     }
   }
 }

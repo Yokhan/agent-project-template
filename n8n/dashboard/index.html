@@ -143,6 +143,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .tile.t-blocked{border-left:3px solid var(--accent);background:color-mix(in srgb,var(--sf) 94%,var(--accent))}
 .tile.t-sleeping{opacity:.45;filter:saturate(.3)}
 .tile.t-sleeping:hover{opacity:.7;filter:saturate(.6)}
+.tile.t-unmanaged{opacity:.5;border-style:dashed}
+.tile.t-unmanaged:hover{opacity:.7}
+.tile.t-unmanaged .sys{color:var(--yellow)}
 
 /* Micro-text decoration */
 .tile .sys{position:absolute;top:8px;right:20px;font-family:var(--font-mono);font-size:7px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
@@ -507,8 +510,8 @@ if(af==='stale')a=a.filter(x=>(x.days||999)>7);const segMap={};const assigned=ne
 function Tile({a}){
   const act=activities.value[a.name];
   const isActive=!!act;
-  const stCls=isActive?'t-working':a.blockers?'t-blocked':a.status==='sleeping'?'t-sleeping':'';
-  const sysText=a.blockers?'SYS.BLOCKED':(a.uncommitted||0)>10?'SYS.DIRTY':isActive?'SYS.EXEC':'SYS.OK';
+  const stCls=isActive?'t-working':a.blockers?'t-blocked':a.status==='sleeping'?'t-sleeping':a.managed===false?'t-unmanaged':'';
+  const sysText=a.managed===false?'UNMANAGED':a.blockers?'SYS.BLOCKED':(a.uncommitted||0)>10?'SYS.DIRTY':isActive?'SYS.EXEC':'SYS.OK';
   return html`<div class="tile ${stCls}" onClick=${()=>currentProject.value=a.name}>
     <div class="top">
       <span class="name"><span class="dot ${isActive?'working':a.status}" style=${isActive?'animation:pulse .8s infinite':''}></span>${a.name}${a.blockers?html` <span style="color:var(--accent);font-size:var(--fs-xs)">· BLOCKED</span>`:''}</span>
