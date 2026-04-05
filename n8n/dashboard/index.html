@@ -415,8 +415,7 @@ async function loadActivity(){
 async function sendMessage(msg){
   if(!msg.trim())return;
   const proj=currentProject.value||'';
-  lastUserMsg.value=msg;if(attFiles.value.length){msg+='
-Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
+  lastUserMsg.value=msg;if(attFiles.value.length){msg+=' | Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
   isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{
