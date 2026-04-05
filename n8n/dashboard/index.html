@@ -302,6 +302,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .m th{background:var(--sf);font-weight:600}
 .draft-ind{font-size:8px;color:var(--t3);font-family:var(--font-mono);padding:0 var(--sp-m)}
 
+
+/* === SLASH + FOLD + COPY === */
+.slash-menu{position:absolute;bottom:100%;left:0;right:0;background:var(--sf);border:1px solid var(--border);max-height:200px;overflow-y:auto;z-index:60}
+.slash-item{padding:var(--sp-xs) var(--sp-m);font-size:var(--fs-s);cursor:pointer;display:flex;justify-content:space-between;font-family:var(--font-mono)}
+.slash-item:hover,.slash-item.active{background:var(--sf2);color:var(--accent)}
+.slash-item .desc{color:var(--t3);font-size:var(--fs-xs)}
+.msg-copy{position:absolute;top:4px;right:4px;background:var(--sf);border:1px solid var(--border);color:var(--t3);padding:1px 6px;font-size:8px;cursor:pointer;font-family:var(--font-mono);opacity:0;transition:opacity .15s}
+.m:hover .msg-copy{opacity:1}
+.m:hover .msg-copy:hover{color:var(--accent);border-color:var(--accent)}
+.paste-preview{padding:var(--sp-xs) var(--sp-m);display:flex;gap:var(--sp-s);align-items:center}
+.paste-preview img{max-height:60px;border:1px solid var(--border)}
+.paste-preview .rm{cursor:pointer;color:var(--accent);font-size:var(--fs-xs)}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -319,6 +332,8 @@ const isStreaming=signal(false);
 const thinkStart=signal(0);
 const lastUserMsg=signal('');
 const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
+const slashOpen=signal(false);const slashItems=signal([]);const pastedImg=signal(null);
+const SLASH_CMDS=[{cmd:'/clear',desc:'Clear chat'},{cmd:'/mode-code',desc:'Code mode'},{cmd:'/mode-design',desc:'Design mode'},{cmd:'/mode-review',desc:'Review mode'},{cmd:'/mode-fix',desc:'Fix mode'},{cmd:'/status',desc:'Status'},{cmd:'/health',desc:'Health check'},{cmd:'/briefing',desc:'Briefing'},{cmd:'/help',desc:'Commands list'}];
 const delegations=signal({});
 const theme=signal(localStorage.getItem('theme')||'dark');
 const feedItems=signal([]);
@@ -365,6 +380,10 @@ function saveDr(){const ta=document.querySelector(".ch-inp textarea");if(ta?.val
 function loadDr(){const d=localStorage.getItem("dr_"+(currentProject.value||"o"));if(d){const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=d;hasDraft.value=true;}}}
 function clrDr(){localStorage.removeItem("dr_"+(currentProject.value||"o"));hasDraft.value=false;}
 function beep(){try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=800;g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.12);o.stop(a.currentTime+0.12);}catch{}}
+
+function handleSlash(val){if(val.startsWith('/')){const q=val.slice(1).toLowerCase();const m=SLASH_CMDS.filter(c=>c.cmd.slice(1).includes(q));slashItems.value=m;slashOpen.value=m.length>0;}else slashOpen.value=false;}
+function execSlash(cmd){slashOpen.value=false;if(cmd==='/clear'){sideMessages.value=[];showToast('Cleared','success');return true;}if(cmd==='/help'){showToast(SLASH_CMDS.map(c=>c.cmd+' - '+c.desc).join(', '),'info',8000);return true;}if(cmd==='/briefing'){fetch('/api/digest').then(r=>r.json()).then(d=>showToast(d.text,'info',8000));return true;}return false;}
+function handlePaste(e){const items=e.clipboardData?.items;if(!items)return;for(const item of items){if(item.type.startsWith('image/')){e.preventDefault();const blob=item.getAsFile();const r=new FileReader();r.onload=()=>{pastedImg.value={data:r.result,name:'screenshot.png'};};r.readAsDataURL(blob);}}}
 async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
 async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch{}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
@@ -637,7 +656,7 @@ function ChatSidebar(){
   const prevCount=useRef(0);
   useEffect(()=>{const cnt=sideMessages.value.length;const s=isStreaming.value;if(msgsRef.current&&(cnt!==prevCount.current||s)){msgsRef.current.scrollTop=msgsRef.current.scrollHeight;prevCount.current=cnt;}});
   useEffect(()=>{loadDr();},[currentProject.value]);
-  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';inputRef.current.style.height='36px';inpHist.unshift(v);hIdx=-1;sendMessage(v);};
+  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;if(v.startsWith('/')&&execSlash(v.trim())){inputRef.current.value='';return;}inputRef.current.value='';inputRef.current.style.height='36px';inpHist.unshift(v);hIdx=-1;if(pastedImg.value){pastedImg.value=null;}sendMessage(v);};
   const onKey=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}if(e.key==='ArrowUp'&&!inputRef.current?.value&&inpHist.length){hIdx=Math.min(hIdx+1,inpHist.length-1);inputRef.current.value=inpHist[hIdx];}if(e.key==='ArrowDown'&&hIdx>=0){hIdx--;inputRef.current.value=hIdx>=0?inpHist[hIdx]:'';}};
   const onDrop=e=>{e.preventDefault();isDrag.value=false;if(e.dataTransfer?.files?.length)hdlFiles(e.dataTransfer.files);};
   return html`<div class="chat-side" onDragOver=${e=>{e.preventDefault();isDrag.value=true;}} onDragLeave=${()=>isDrag.value=false} onDrop=${onDrop}>
@@ -653,7 +672,7 @@ function ChatSidebar(){
     <div class="ch-inp">
       <button class="attach-btn" onClick=${()=>fileRef.current?.click()} title="Attach">+</button>
       <input type="file" ref=${fileRef} style="display:none" multiple onChange=${e=>{if(e.target.files.length)hdlFiles(e.target.files);e.target.value='';}}/>
-      <textarea ref=${inputRef} placeholder="talk to ${sideTitle.value}..." rows="1" onKeyDown=${onKey} onInput=${e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,150)+'px';clearTimeout(draftT);draftT=setTimeout(saveDr,2000);}} disabled=${isStreaming.value}/>
+      <textarea ref=${inputRef} placeholder="talk to ${sideTitle.value}..." rows="1" onKeyDown=${onKey} onInput=${e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,150)+'px';handleSlash(e.target.value);clearTimeout(draftT);draftT=setTimeout(saveDr,2000);}} onPaste=${handlePaste} disabled=${isStreaming.value}/>
       <button class="voice-btn ${isRec.value?'recording':''}" onClick=${togVoice} title="Voice">${isRec.value?'⏹':'○'}</button>
       <button onClick=${send} disabled=${isStreaming.value}>send</button>
     </div>
@@ -662,11 +681,13 @@ function ChatSidebar(){
 function ChatMsg({m}){
   if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
   const isViaPA=(m.msg||'').startsWith('[via PA]');
-  const isError=(m.msg||'').startsWith('Error:')||(m.msg||'').includes('timed out');const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
+  const isError=(m.msg||'').startsWith('Error:')||(m.msg||'').includes('timed out');
+  const canCopy=m.role==='assistant';const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
   const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
   const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
   return html`<div class="m ${cls}">
     ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
+    ${canCopy?html`<button class="msg-copy" onClick=${()=>{navigator.clipboard.writeText(m.msg||'');showToast('Copied','success',1500);}}>copy</button>`:''}
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
     <div class="ts">${ft(m.ts)}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>
   </div>`;
