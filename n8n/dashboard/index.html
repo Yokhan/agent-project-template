@@ -184,7 +184,9 @@ const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blo
 const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 
 async function loadAll(){
-  await Promise.all([loadAgents(),loadFeed(),loadOrchChat()]);
+  await Promise.all([loadAgents(),loadFeed()]);
+  // Only load orchestrator chat when NOT in project drill-down
+  if(!curProj) await loadOrchChat();
   render();
 }
 
