@@ -282,6 +282,26 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .retry-btn:hover{background:var(--accent-dim)}
 .m{position:relative}
 
+
+/* === CHAT V2 === */
+.voice-btn{background:none;color:var(--t3);border:1px solid var(--border);width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all .15s}
+.voice-btn:hover{color:var(--text);border-color:var(--accent)}
+.voice-btn.recording{color:var(--accent);border-color:var(--accent);animation:pulse .8s infinite;background:var(--accent-dim)}
+.attach-btn{background:none;color:var(--t3);border:1px solid var(--border);width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all .15s}
+.attach-btn:hover{color:var(--text);border-color:var(--accent)}
+.drop-zone{border:2px dashed var(--accent);background:var(--accent-dim);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;font-family:var(--font-mono);color:var(--accent)}
+.attached-files{display:flex;gap:var(--sp-xs);padding:var(--sp-xs) var(--sp-m);flex-wrap:wrap}
+.attached-file{font-size:var(--fs-xs);color:var(--t2);background:var(--sf);border:1px solid var(--border);padding:2px 8px;display:flex;align-items:center;gap:4px;font-family:var(--font-mono)}
+.attached-file .rm{cursor:pointer;color:var(--accent)}
+.conn-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.conn-dot.on{background:var(--green);box-shadow:0 0 4px var(--green)}
+.conn-dot.off{background:var(--accent)}
+.m .fpath{color:var(--cyan,#4af);font-family:var(--font-mono);font-size:var(--fs-chat-pre);border-bottom:1px dotted}
+.m table{border-collapse:collapse;margin:var(--sp-s) 0;font-size:var(--fs-s);width:100%}
+.m th,.m td{border:1px solid var(--border);padding:4px 8px}
+.m th{background:var(--sf);font-weight:600}
+.draft-ind{font-size:8px;color:var(--t3);font-family:var(--font-mono);padding:0 var(--sp-m)}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -298,6 +318,7 @@ const streamText=signal('');
 const isStreaming=signal(false);
 const thinkStart=signal(0);
 const lastUserMsg=signal('');
+const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
 const delegations=signal({});
 const theme=signal(localStorage.getItem('theme')||'dark');
 const feedItems=signal([]);
@@ -332,6 +353,18 @@ effect(()=>{
 });
 
 // ===== API =====
+
+let recog=null;
+function togVoice(){if(!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){showToast("No speech API","error");return;}if(isRec.value){recog?.stop();isRec.value=false;return;}const S=window.SpeechRecognition||window.webkitSpeechRecognition;recog=new S();recog.continuous=false;recog.interimResults=false;recog.lang="ru-RU";recog.onresult=e=>{const t=e.results[0][0].transcript;const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=(ta.value?ta.value+" ":"")+t;ta.dispatchEvent(new Event("input"));}};recog.onend=()=>isRec.value=false;recog.onerror=e=>{isRec.value=false;};recog.start();isRec.value=true;}
+function hdlFiles(fl){const nf=[...attFiles.value];for(const f of fl)nf.push({name:f.name,size:f.size});attFiles.value=nf;}
+function rmFile(i){attFiles.value=attFiles.value.filter((_,j)=>j!==i);}
+async function chkConn(){try{const r=await fetch("/api/health");isOn.value=r.ok;}catch{isOn.value=false;}}
+setInterval(chkConn,15000);
+let draftT=null;
+function saveDr(){const ta=document.querySelector(".ch-inp textarea");if(ta?.value?.trim()){localStorage.setItem("dr_"+(currentProject.value||"o"),ta.value);hasDraft.value=true;}else hasDraft.value=false;}
+function loadDr(){const d=localStorage.getItem("dr_"+(currentProject.value||"o"));if(d){const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=d;hasDraft.value=true;}}}
+function clrDr(){localStorage.removeItem("dr_"+(currentProject.value||"o"));hasDraft.value=false;}
+function beep(){try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=800;g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.12);o.stop(a.currentTime+0.12);}catch{}}
 async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
 async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch{}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
@@ -363,7 +396,8 @@ async function loadActivity(){
 async function sendMessage(msg){
   if(!msg.trim())return;
   const proj=currentProject.value||'';
-  lastUserMsg.value=msg;
+  lastUserMsg.value=msg;if(attFiles.value.length){msg+='
+Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
   isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{
@@ -382,7 +416,7 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     isStreaming.value=false;
     const dm=full.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
     if(dm){delegations.value={...delegations.value,[dm[1]]:{project:dm[2],status:'pending'}};}
-    sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full}];
+    beep();sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full}];
     streamText.value='';loadFeed();
   }catch(e){isStreaming.value=false;sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:'Error: '+e.message}];}
 }
@@ -599,22 +633,31 @@ function RunningBanner(){
 }
 
 function ChatSidebar(){
-  const inputRef=useRef();const msgsRef=useRef();
-  const prevCount=useRef(0);useEffect(()=>{const cnt=sideMessages.value.length;const streaming=isStreaming.value;if(msgsRef.current&&(cnt!==prevCount.current||streaming)){msgsRef.current.scrollTop=msgsRef.current.scrollHeight;prevCount.current=cnt;}});
-  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';inputRef.current.style.height='36px';sendMessage(v);};
-  return html`<div class="chat-side">
-    <div class="ch-title">${sideTitle}</div>
+  const inputRef=useRef();const msgsRef=useRef();const fileRef=useRef();
+  const prevCount=useRef(0);
+  useEffect(()=>{const cnt=sideMessages.value.length;const s=isStreaming.value;if(msgsRef.current&&(cnt!==prevCount.current||s)){msgsRef.current.scrollTop=msgsRef.current.scrollHeight;prevCount.current=cnt;}});
+  useEffect(()=>{loadDr();},[currentProject.value]);
+  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';inputRef.current.style.height='36px';inpHist.unshift(v);hIdx=-1;sendMessage(v);};
+  const onKey=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}if(e.key==='ArrowUp'&&!inputRef.current?.value&&inpHist.length){hIdx=Math.min(hIdx+1,inpHist.length-1);inputRef.current.value=inpHist[hIdx];}if(e.key==='ArrowDown'&&hIdx>=0){hIdx--;inputRef.current.value=hIdx>=0?inpHist[hIdx]:'';}};
+  const onDrop=e=>{e.preventDefault();isDrag.value=false;if(e.dataTransfer?.files?.length)hdlFiles(e.dataTransfer.files);};
+  return html`<div class="chat-side" onDragOver=${e=>{e.preventDefault();isDrag.value=true;}} onDragLeave=${()=>isDrag.value=false} onDrop=${onDrop}>
+    <div class="ch-title"><span class="conn-dot ${isOn.value?'on':'off'}"/>${sideTitle}</div>
+    ${isDrag.value?html`<div class="drop-zone">Drop files here</div>`:null}
     <${RunningBanner}/>
     <div class="ch-msgs" ref=${msgsRef}>
       ${sideMessages.value.map((m,i)=>html`<${ChatMsg} key=${i} m=${m}/>`)}
       <${StreamBubble}/>
     </div>
+    ${attFiles.value.length?html`<div class="attached-files">${attFiles.value.map((fi,i)=>html`<div class="attached-file"><span>${fi.name}</span><span class="rm" onClick=${()=>rmFile(i)}>x</span></div>`)}</div>`:null}
+    ${hasDraft.value?html`<div class="draft-ind">draft saved</div>`:null}
     <div class="ch-inp">
-      <textarea ref=${inputRef} placeholder="talk to ${sideTitle.value}..." rows="1" onKeyDown=${e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} onInput=${e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,150)+'px';}} disabled=${isStreaming.value}/>
+      <button class="attach-btn" onClick=${()=>fileRef.current?.click()} title="Attach">+</button>
+      <input type="file" ref=${fileRef} style="display:none" multiple onChange=${e=>{if(e.target.files.length)hdlFiles(e.target.files);e.target.value='';}}/>
+      <textarea ref=${inputRef} placeholder="talk to ${sideTitle.value}..." rows="1" onKeyDown=${onKey} onInput=${e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,150)+'px';clearTimeout(draftT);draftT=setTimeout(saveDr,2000);}} disabled=${isStreaming.value}/>
+      <button class="voice-btn ${isRec.value?'recording':''}" onClick=${togVoice} title="Voice">${isRec.value?'⏹':'○'}</button>
       <button onClick=${send} disabled=${isStreaming.value}>send</button>
     </div>
-  </div>`;
-}
+  </div>`;}
 
 function ChatMsg({m}){
   if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
@@ -667,7 +710,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ===== INIT =====
-await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan(),checkOrch()]);isLoading.value=false;
+await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan(),checkOrch(),chkConn()]);isLoading.value=false;
 render(html`<${App}/>`,document.body);
 setInterval(()=>{loadAgents();loadActivity();loadPlan();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
 </script>
