@@ -401,7 +401,7 @@ function md(s){
     .replace(/^- (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
     .replace(/^\d+\. (.+)$/gm,'<div style="padding-left:12px">$&</div>')
     .replace(/\n/g,'<br>')
-    .replace(/&lt;delegation id=&quot;([^&]+)&quot; project=&quot;([^&]+)&quot;\/&gt;/g,
+    .replace(/&lt;delegation id="([^"]+)" project="([^"]+)"\/&gt;/g,
       '<div style="margin-top:8px;display:flex;gap:8px">' +
       '<button onclick="approveDel(\'$1\',\'$2\')" style="background:#33d17a;color:#000;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">APPROVE</button>' +
       '<button onclick="rejectDel(\'$1\')" style="background:#D71921;color:#fff;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">REJECT</button></div>');
