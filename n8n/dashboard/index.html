@@ -257,8 +257,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 
 
 /* === CHAT UPGRADE === */
-.ch-inp textarea{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:var(--sp-s) var(--sp-m);font-family:var(--font-body);font-size:var(--fs-chat);outline:none;resize:none;min-height:36px;max-height:150px;line-height:1.4;overflow-y:auto}
-.ch-inp textarea:focus{border-color:var(--accent);box-shadow:0 0 8px var(--glow)}
+.ch-inp textarea{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px 12px;font-family:var(--font-body);font-size:var(--fs-chat);outline:none;resize:none;min-height:36px;max-height:120px;line-height:1.4;overflow-y:auto;box-sizing:border-box}
+.ch-inp textarea:focus{border-color:var(--t3);box-shadow:none}
 .ch-inp textarea::placeholder{color:var(--t3)}
 .m pre{position:relative}
 .m pre .copy-btn{position:absolute;top:4px;right:8px;background:var(--sf2);color:var(--t2);border:1px solid var(--border);padding:2px 8px;font-size:9px;cursor:pointer;font-family:var(--font-mono);opacity:0;transition:opacity .15s}
