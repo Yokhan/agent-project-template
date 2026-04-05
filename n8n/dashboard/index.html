@@ -152,9 +152,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
       </div>
     </div>
 
-    <!-- ORCHESTRATOR CHAT (always visible on right) -->
+    <!-- RIGHT SIDEBAR CHAT (orchestrator or project agent) -->
     <div class="chat-side">
-      <div class="ch-title">orchestrator</div>
+      <div class="ch-title" id="side-chat-title">orchestrator</div>
       <div class="ch-msgs" id="o-msgs"></div>
       <div class="ch-typ" id="o-typ">thinking...</div>
       <div class="ch-inp">
@@ -273,7 +273,8 @@ function showDashboard(){
   document.getElementById('dashboard-view').style.display='block';
   document.getElementById('detail-view').className='detail';
   // Restore orchestrator chat
-  document.querySelector('.ch-title').textContent='orchestrator';
+  document.getElementById('side-chat-title').textContent='orchestrator';
+  document.getElementById('o-ci').placeholder='talk to PA...';
   loadOrchChat();
 }
 
@@ -308,8 +309,9 @@ async function openProject(name){
   }catch{document.getElementById('d-modules').innerHTML='failed';}
 
   // Switch RIGHT sidebar chat to this project's agent
-  document.querySelector('.ch-title').textContent=name + ' agent';
-  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{}
+  document.getElementById('side-chat-title').textContent=name + ' agent';
+  document.getElementById('o-ci').placeholder='talk to ' + name + '...';
+  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{renderChat('o-msgs',[]);}
 
   // Also load detail chat area
   renderChat('d-msgs',[]);
