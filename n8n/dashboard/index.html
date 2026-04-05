@@ -305,14 +305,14 @@ async function openProject(name){
 
   // Load modules
   try{
-    const r=await fetch('/api/modules/'+name);const d=await r.json();
+    const r=await fetch('/api/modules/'+encodeURIComponent(name));const d=await r.json();
     document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--t2)">no modules detected</span>';
   }catch{document.getElementById('d-modules').innerHTML='failed';}
 
   // Switch RIGHT sidebar chat to this project's agent
   document.getElementById('side-chat-title').textContent=name + ' agent';
   document.getElementById('o-ci').placeholder='talk to ' + name + '...';
-  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{renderChat('o-msgs',[]);}
+  try{const r=await fetch('/api/chat/'+encodeURIComponent(name));const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{renderChat('o-msgs',[]);}
 
   // Focus sidebar chat input (project agent)
   document.getElementById('o-ci').focus();
@@ -320,7 +320,7 @@ async function openProject(name){
 
 function renderChat(elId, messages){
   const el=document.getElementById(elId);
-  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='assistant'?md(m.msg):esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
+  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='system'?'<span style="color:var(--t3);font-style:italic;font-size:var(--fs-s)">'+esc(m.msg)+'</span>':m.role==='assistant'?md(m.msg):esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
   el.scrollTop=el.scrollHeight;
 }
 

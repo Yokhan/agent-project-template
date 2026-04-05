@@ -8,6 +8,7 @@ Usage: python n8n/dashboard/serve.py [port]
 """
 import http.server
 import urllib.request
+import urllib.parse
 import subprocess
 import sys
 import os
@@ -217,10 +218,31 @@ def send_chat(project, message):
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': message}) + '\n')
 
-    # Inject orchestrator context if talking to PA (no project selected)
+    # Smart routing: detect project name in orchestrator message
     prompt = message
     if not project:
-        prompt = build_orchestrator_context() + message
+        # Check if user mentions a known project name
+        cached = _scan_cache.get('data') or get_agents()
+        agent_names = [a['name'] for a in cached.get('agents', [])]
+        detected_project = None
+        msg_lower = message.lower()
+        for name in agent_names:
+            if name.lower() in msg_lower:
+                detected_project = name
+                break
+
+        if detected_project:
+            # Route to project directly — don't ask PA to do cross-project work
+            project = detected_project
+            cwd = os.path.join(DOCS_DIR, project)
+            chat_file = os.path.join(CHATS_DIR, f'{project}.jsonl')
+            # Save routing note in orchestrator chat
+            orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
+            ts_route = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+            with open(orch_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'ts': ts_route, 'role': 'system', 'msg': f'→ Routed to {detected_project} agent'}) + '\n')
+        else:
+            prompt = build_orchestrator_context() + message
 
     # Execute via claude -p (temp file for injection safety)
     tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
@@ -370,10 +392,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif self.path == '/api/chats':
             self._json_response(get_chats())
         elif self.path.startswith('/api/chat/'):
-            project = self.path.split('/api/chat/')[1]
+            project = urllib.parse.unquote(self.path.split('/api/chat/')[1])
             self._json_response(get_chat_history(project))
         elif self.path.startswith('/api/modules/'):
-            project = self.path.split('/api/modules/')[1]
+            project = urllib.parse.unquote(self.path.split('/api/modules/')[1])
             self._json_response(get_modules(project))
         elif self.path.startswith('/webhook/'):
             self._proxy('GET')
@@ -403,7 +425,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             message = data.get('message', '')
             self._json_response(send_chat(project, message))
         elif self.path.startswith('/api/modules/'):
-            project = self.path.split('/api/modules/')[1]
+            project = urllib.parse.unquote(self.path.split('/api/modules/')[1])
             self._json_response(get_modules(project))
         elif self.path.startswith('/api/action/'):
             action = self.path.split('/api/action/')[1]
@@ -439,13 +461,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
-        cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
 
-        # Inject context for orchestrator
+        # Smart routing: detect project name in orchestrator message
         prompt = message
         if not project:
-            prompt = build_orchestrator_context() + message
+            cached = _scan_cache.get('data') or get_agents()
+            agent_names = [a['name'] for a in cached.get('agents', [])]
+            msg_lower = message.lower()
+            for name in agent_names:
+                if name.lower() in msg_lower:
+                    project = name
+                    # Log routing in orchestrator chat
+                    orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
+                    with open(orch_file, 'a', encoding='utf-8') as f:
+                        f.write(json.dumps({'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'system', 'msg': f'→ Routed to {name} agent'}) + '\n')
+                    break
+            if not project:
+                prompt = build_orchestrator_context() + message
 
+        cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
         chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
         ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
         with open(chat_file, 'a', encoding='utf-8') as f:
