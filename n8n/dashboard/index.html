@@ -24,8 +24,8 @@
   --chat-w:380px;
 }
 [data-theme="light"]{
-  --bg:#f8f8fc;--sf:#f0f0f6;--sf2:#e8e8f0;--border:#d8d8e0;
-  --text:#000;--t2:#555;--t3:#999;--mute:#ccc;
+  --bg:#f5f5fa;--sf:#eaeaf2;--sf2:#dddde8;--border:#c0c0d0;
+  --text:#111;--t2:#444;--t3:#777;--mute:#aaa;
   --dot:#ccc;--glow:rgba(215,25,33,.08);
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;font-size:var(--fs-m);line-height:var(--lh)}
@@ -50,6 +50,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .stat .n{font-size:var(--fs-2xl);font-weight:200;line-height:1;font-family:var(--font-mono)}
 .stat .l{font-size:var(--fs-xs);color:var(--t3);text-transform:uppercase;letter-spacing:3px;margin-top:var(--sp-xs)}
 
+
+[data-theme="light"] .tile{border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+[data-theme="light"] .tile:hover{box-shadow:0 2px 12px rgba(233,69,96,.12)}
+[data-theme="light"] .stat{border:1px solid var(--border)}
+[data-theme="light"] .seg-title{border-top:1px dashed var(--border)}
+[data-theme="light"] .plan-panel{border:1px solid var(--border)}
+[data-theme="light"] .ch-inp input{border:1px solid var(--border)}
+
 /* === SEGMENT HEADERS === */
 .seg-title{font-size:var(--fs-s);color:var(--t2);text-transform:uppercase;letter-spacing:4px;font-family:var(--font-mono);padding:var(--sp-m) 0 var(--sp-s);border-top:1px solid var(--border);margin-top:var(--sp-l)}
 .seg-title:first-of-type{border-top:none;margin-top:0}
@@ -59,7 +67,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--sp-m);margin-bottom:var(--sp-xl)}
 .tile{background:var(--sf);border:1px solid var(--border);padding:var(--sp-l);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .tile:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--glow),0 0 20px var(--glow)}
-.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) .8px,transparent .8px);background-size:20px 20px;opacity:.4;pointer-events:none;transition:opacity .2s}
+.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:18px 18px;opacity:.5;pointer-events:none;transition:opacity .2s}
 
 .tile .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .tile .name{font-size:var(--fs-l);font-weight:600;display:flex;align-items:center;gap:var(--sp-xs);letter-spacing:-.2px}
@@ -137,7 +145,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .tile.t-sleeping:hover{opacity:.7;filter:saturate(.6)}
 
 /* Micro-text decoration */
-.tile .sys{position:absolute;top:6px;right:10px;font-family:var(--font-mono);font-size:7px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
+.tile .sys{position:absolute;top:8px;right:20px;font-family:var(--font-mono);font-size:7px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
 .tile:hover .sys{opacity:.8}
 
 /* === CYBER ELEMENTS === */
@@ -489,7 +497,7 @@ function Tile({a}){
     ${isActive?html`<div style="font-size:var(--fs-xs);color:var(--green);margin:var(--sp-xs) 0;font-family:var(--font-mono)">⚡ ${act.action}: ${act.detail}</div>`:html`<div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" dangerouslySetInnerHTML=${{__html:a.task?md(a.task.substring(0,80)):'<span style="color:var(--t3)">no active task</span>'}}></div>`}
     <div class="row"><span style="color:${SC[isActive?'working':a.status]||'var(--t3)'}">${isActive?'executing':SL[a.status]||a.status}</span>${(a.uncommitted||0)>10?html`<span style="color:var(--accent)">${a.uncommitted} dirty</span>`:(a.uncommitted||0)>0?html`<span>${a.uncommitted} uncommitted</span>`:''}${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
     <div class="sys">${sysText}</div>
-    <div class="seg">${[0,1,2,3,4].map(i=>{const fill=isActive?5:a.task?3:a.days<7?2:0;const color=i<fill?(isActive?'var(--green)':a.blockers?'var(--accent)':'var(--yellow)'):'var(--mute)';return html`<span style="background:${color}"/>`;})}</div>
+    <div class="seg">${[0,1,2,3,4].map(i=>{const fill=isActive?5:a.blockers?1:a.task?3:a.days<7?2:0;const color=i<fill?(isActive?'var(--green)':a.blockers?'var(--accent)':a.task?'var(--cyan)':'var(--green)'):'var(--mute)';return html`<span style="background:${color}"/>`;})}</div>
   </div>`;
 }
 
