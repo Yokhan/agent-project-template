@@ -132,6 +132,41 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 /* === BADGE === */
 .badge{background:var(--accent);color:#fff;font-size:8px;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);padding:0 4px;margin-left:4px}
 
+
+/* === SEARCH === */
+.search{margin-bottom:var(--sp-m);display:flex;gap:var(--sp-s);align-items:center}
+.search input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:var(--sp-s) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-s);outline:none}
+.search input:focus{border-color:var(--t3)}
+.search input::placeholder{color:var(--t3)}
+
+/* === PLAN PANEL === */
+.plan-panel{border:1px solid var(--border);margin-bottom:var(--sp-l);max-height:200px;overflow-y:auto}
+.plan-panel .plan-hdr{font-size:var(--fs-xs);color:var(--t2);text-transform:uppercase;letter-spacing:2px;padding:var(--sp-s) var(--sp-m);border-bottom:1px solid var(--border);font-family:var(--font-mono);display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:sticky;top:0;background:var(--sf)}
+.plan-item{display:flex;gap:var(--sp-m);padding:var(--sp-xs) var(--sp-m);border-bottom:1px solid var(--border);font-size:var(--fs-s);align-items:center}
+.plan-item:last-child{border-bottom:none}
+.plan-item .pri{font-family:var(--font-mono);font-size:var(--fs-xs);min-width:36px;text-align:center;padding:1px 4px;border:1px solid}
+.plan-item .pri.HIGH{color:var(--accent);border-color:var(--accent)}
+.plan-item .pri.MED{color:var(--yellow);border-color:var(--yellow)}
+.plan-item .pri.LOW{color:var(--t3);border-color:var(--border)}
+.plan-item .proj{color:var(--text);font-weight:500;min-width:120px}
+.plan-item .issue{color:var(--t2);flex:1}
+.plan-item .act{color:var(--t3);font-size:var(--fs-xs);cursor:pointer}
+.plan-item .act:hover{color:var(--accent)}
+
+/* === KEYBOARD HELP === */
+.kb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center}
+.kb-box{background:var(--sf);border:1px solid var(--border);padding:var(--sp-2xl);min-width:400px;max-width:500px}
+.kb-box h2{font-size:var(--fs-l);font-family:var(--font-mono);margin-bottom:var(--sp-l);text-transform:uppercase;letter-spacing:2px}
+.kb-row{display:flex;justify-content:space-between;padding:var(--sp-xs) 0;border-bottom:1px solid var(--border);font-size:var(--fs-s)}
+.kb-row:last-child{border:none}
+.kb-key{font-family:var(--font-mono);color:var(--accent);min-width:80px}
+.kb-desc{color:var(--t2)}
+
+/* === ANALYTICS FOOTER === */
+.analytics-bar{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);display:flex;gap:var(--sp-xl);font-family:var(--font-mono);flex-shrink:0;align-items:center}
+.analytics-bar .metric{display:flex;gap:var(--sp-xs);align-items:center}
+.analytics-bar .metric .v{color:var(--text)}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -159,6 +194,10 @@ const clock=signal(new Date().toLocaleTimeString());
 const segments=signal({});
 const activeFilter=signal('');
 const modules=signal([]);
+const searchQuery=signal('');
+const actionPlan=signal(null);
+const showKbHelp=signal(false);
+const showPlan=signal(true);
 const activities=signal({});  // project → {action, detail, started}
 
 setInterval(()=>clock.value=new Date().toLocaleTimeString(),1000);
@@ -183,6 +222,7 @@ for(const m of msgs){const dm=m.msg?.match(/<delegation id="([^"]+)" project="([
 delegations.value=newDel;
 }catch{sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
+async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){
   try{
@@ -247,7 +287,7 @@ const SC={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blo
 const SL={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
 
 // ===== COMPONENTS =====
-function App(){return html`<div class="app"><${Toasts}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${Feed}/></div>`;}
+function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
@@ -278,8 +318,71 @@ function EmptyState(){return html`<div style="text-align:center;padding:var(--sp
   </div>
 </div>`;}
 
+
+function SearchBar(){
+  return html`<div class="search">
+    <input placeholder="search projects..." value=${searchQuery.value}
+      onInput=${e=>searchQuery.value=e.target.value}
+      onKeyDown=${e=>{if(e.key==='Escape'){searchQuery.value='';e.target.blur();}}}/>
+  </div>`;
+}
+
+
+function PlanPanel(){
+  const p=actionPlan.value;
+  if(!p||!p.plan||!p.plan.length)return null;
+  const items=showPlan.value?p.plan.slice(0,8):[];
+  return html`<div class="plan-panel">
+    <div class="plan-hdr" onClick=${()=>showPlan.value=!showPlan.value}>
+      <span>action plan (${p.plan.length} items, ${p.high_count} high)</span>
+      <span>${showPlan.value?'▾':'▸'}</span>
+    </div>
+    ${items.map(item=>html`<div class="plan-item">
+      <span class="pri ${item.priority}">${item.priority}</span>
+      <span class="proj">${item.project}</span>
+      <span class="issue">${item.issues[0]||''}</span>
+      <span class="act" onClick=${(e)=>{e.stopPropagation();currentProject.value=item.project;}}>→</span>
+    </div>`)}
+  </div>`;
+}
+
+
+function KeyboardHelp(){
+  if(!showKbHelp.value)return null;
+  return html`<div class="kb-overlay" onClick=${()=>showKbHelp.value=false}>
+    <div class="kb-box" onClick=${e=>e.stopPropagation()}>
+      <h2>keyboard shortcuts</h2>
+      <div class="kb-row"><span class="kb-key">/</span><span class="kb-desc">Focus chat input</span></div>
+      <div class="kb-row"><span class="kb-key">Esc</span><span class="kb-desc">Back to dashboard</span></div>
+      <div class="kb-row"><span class="kb-key">D</span><span class="kb-desc">Toggle dark/light theme</span></div>
+      <div class="kb-row"><span class="kb-key">S</span><span class="kb-desc">Focus search</span></div>
+      <div class="kb-row"><span class="kb-key">R</span><span class="kb-desc">Refresh data</span></div>
+      <div class="kb-row"><span class="kb-key">P</span><span class="kb-desc">Toggle action plan</span></div>
+      <div class="kb-row"><span class="kb-key">?</span><span class="kb-desc">Show this help</span></div>
+    </div>
+  </div>`;
+}
+
+
+function AnalyticsBar(){
+  const a=agents.value;
+  const totalDirty=a.reduce((s,x)=>s+(x.uncommitted||0),0);
+  const totalLessons=a.reduce((s,x)=>s+(x.lessons||0),0);
+  const p=actionPlan.value;
+  return html`<div class="analytics-bar">
+    <div class="metric"><span>projects:</span><span class="v">${a.length}</span></div>
+    <div class="metric"><span>uncommitted:</span><span class="v" style="color:${totalDirty>50?'var(--accent)':'var(--text)'}">${totalDirty}</span></div>
+    <div class="metric"><span>lessons:</span><span class="v">${totalLessons}</span></div>
+    ${p?html`<div class="metric"><span>issues:</span><span class="v" style="color:${p.high_count?'var(--accent)':'var(--text)'}">${p.total_issues} (${p.high_count} high)</span></div>`:null}
+    <div style="flex:1"></div>
+    <div class="metric" style="cursor:pointer;color:var(--t3)" onClick=${()=>showKbHelp.value=true}>? shortcuts</div>
+  </div>`;
+}
+
 function DashboardView(){
   const seg=segments.value;let a=agents.value;
+const sq=searchQuery.value.toLowerCase();
+if(sq)a=a.filter(x=>x.name.toLowerCase().includes(sq)||x.task?.toLowerCase().includes(sq)||(x.segment||'').toLowerCase().includes(sq));
 const af=activeFilter.value;
 if(af==='attention')a=a.filter(x=>x.blockers||(x.uncommitted||0)>20);
 if(af==='active')a=a.filter(x=>x.task);
@@ -288,7 +391,7 @@ if(af==='stale')a=a.filter(x=>(x.days||999)>7);const segMap={};const assigned=ne
   const other=a.filter(x=>!assigned.has(x.name));if(other.length)segMap['Other']=other;
   if(!a.length&&!isLoading.value&&!af)return html`<div class="content"><${StatsRow}/><${EmptyState}/></div>`;
   const filterBar=af?html`<div style="font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-s)">Filter: ${af} <span style="cursor:pointer;color:var(--accent)" onClick=${()=>activeFilter.value=''}>clear</span></div>`:null;
-  return html`<div class="content"><${StatsRow}/>${filterBar}
+  return html`<div class="content"><${StatsRow}/><${SearchBar}/><${PlanPanel}/>${filterBar}
     ${Object.entries(segMap).filter(([_,i])=>i.length).map(([name,items])=>html`
       <div class="seg-title">${name} (${items.length})</div>
       <div class="grid">${items.map(ag=>html`<${Tile} a=${ag}/>`)}</div>
@@ -408,12 +511,16 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){currentProject.value=null;return;}
   if(e.key==='/'){e.preventDefault();document.querySelector('.ch-inp input')?.focus();return;}
   if(e.key==='d'||e.key==='D'){theme.value=theme.value==='dark'?'light':'dark';return;}
+  if(e.key==='?'){showKbHelp.value=!showKbHelp.value;return;}
+  if(e.key==='s'||e.key==='S'){e.preventDefault();document.querySelector('.search input')?.focus();return;}
+  if(e.key==='r'||e.key==='R'){loadAgents();loadPlan();loadFeed();showToast('Refreshed','success',2000);return;}
+  if(e.key==='p'||e.key==='P'){showPlan.value=!showPlan.value;return;}
 });
 
 // ===== INIT =====
-await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity()]);isLoading.value=false;
+await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan()]);isLoading.value=false;
 render(html`<${App}/>`,document.body);
-setInterval(()=>{loadAgents();loadActivity();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
+setInterval(()=>{loadAgents();loadActivity();loadPlan();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
 </script>
 
 </body></html>
