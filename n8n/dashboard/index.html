@@ -129,6 +129,7 @@ const feedItems=signal([]);
 const clock=signal(new Date().toLocaleTimeString());
 const segments=signal({});
 const modules=signal([]);
+const activities=signal({});  // project → {action, detail, started}
 
 setInterval(()=>clock.value=new Date().toLocaleTimeString(),1000);
 effect(()=>{
@@ -148,6 +149,7 @@ async function loadSegments(){try{const r=await fetch('/api/segments');const d=a
 async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();sideMessages.value=d.messages||[];}catch{sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
+async function loadActivity(){try{const r=await fetch('/api/activity');const d=await r.json();activities.value=d.activities||{};}catch{}}
 
 async function sendMessage(msg){
   if(!msg.trim())return;
@@ -230,11 +232,15 @@ function DashboardView(){
 }
 
 function Tile({a}){
-  return html`<div class="tile" onClick=${()=>currentProject.value=a.name}>
-    <div class="top"><span class="name"><span class="dot ${a.status}"></span>${a.name}${a.blockers?html` <span style="color:var(--accent);font-size:var(--fs-xs)">· BLOCKED</span>`:''}</span></div>
-    <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" dangerouslySetInnerHTML=${{__html:a.task?md(a.task.substring(0,80)):'<span style="color:var(--t3)">no active task</span>'}}></div>
-    <div class="row"><span style="color:${SC[a.status]||'var(--t3)'}">${SL[a.status]||a.status}</span><span>${a.last_commit||''}</span>${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
-    <div class="bar" style="width:${Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${SC[a.status]||'var(--mute)'}"></div>
+  const act=activities.value[a.name];
+  const isActive=!!act;
+  return html`<div class="tile" onClick=${()=>currentProject.value=a.name} style=${isActive?'border-color:var(--green)':''}>
+    <div class="top">
+      <span class="name"><span class="dot ${isActive?'working':a.status}" style=${isActive?'animation:pulse .8s infinite':''}></span>${a.name}${a.blockers?html` <span style="color:var(--accent);font-size:var(--fs-xs)">· BLOCKED</span>`:''}</span>
+    </div>
+    ${isActive?html`<div style="font-size:var(--fs-xs);color:var(--green);margin:var(--sp-xs) 0;font-family:var(--font-mono)">⚡ ${act.action}: ${act.detail}</div>`:html`<div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" dangerouslySetInnerHTML=${{__html:a.task?md(a.task.substring(0,80)):'<span style="color:var(--t3)">no active task</span>'}}></div>`}
+    <div class="row"><span style="color:${SC[isActive?'working':a.status]||'var(--t3)'}">${isActive?'executing':SL[a.status]||a.status}</span><span>${a.last_commit||''}</span>${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
+    <div class="bar" style="width:${isActive?'100':Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${isActive?'var(--green)':SC[a.status]||'var(--mute)'}${isActive?';animation:pulse 1s infinite':''}"></div>
   </div>`;
 }
 
@@ -317,9 +323,9 @@ document.addEventListener('keydown',e=>{
 });
 
 // ===== INIT =====
-await Promise.all([loadAgents(),loadSegments(),loadFeed()]);
+await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity()]);
 render(html`<${App}/>`,document.body);
-setInterval(()=>{loadAgents();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},30000);
+setInterval(()=>{loadAgents();loadActivity();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
 </script>
 
 </body></html>

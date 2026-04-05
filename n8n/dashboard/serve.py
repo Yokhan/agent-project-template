@@ -165,6 +165,28 @@ def build_orchestrator_context():
 # Pending delegations (in-memory, simple approach)
 _pending_delegations = {}
 
+# Live activity tracking — what's happening right now
+_active_tasks = {}  # project_name → {action, started, detail}
+
+
+def set_activity(project, action, detail=''):
+    """Mark a project as actively doing something."""
+    _active_tasks[project] = {'action': action, 'detail': detail, 'started': time.time()}
+
+
+def clear_activity(project):
+    """Clear active task for project."""
+    _active_tasks.pop(project, None)
+
+
+def get_activities():
+    """Return current activities, auto-expire after 10 min."""
+    now = time.time()
+    expired = [k for k, v in _active_tasks.items() if now - v['started'] > 600]
+    for k in expired:
+        del _active_tasks[k]
+    return dict(_active_tasks)
+
 
 def parse_delegation(pa_response):
     """Parse PA response for delegation markers. Returns (project, task) or None."""
@@ -201,6 +223,7 @@ def execute_delegation(delegation_id):
         return {'status': 'error', 'error': f'Project not found: {target_project}'}
 
     d['status'] = 'running'
+    set_activity(target_project, 'delegation', task_message[:50])
 
     # Write task to project chat as "user"
     chat_file = os.path.join(CHATS_DIR, f'{target_project}.jsonl')
@@ -250,6 +273,7 @@ def execute_delegation(delegation_id):
 
     d['status'] = 'done'
     d['response'] = response
+    clear_activity(target_project)
     return {'status': 'complete', 'project': target_project, 'task': task_message, 'response': response}
 
 
@@ -326,10 +350,12 @@ def send_chat(project, message):
         env['PYTHONIOENCODING'] = 'utf-8'
         env['LANG'] = 'en_US.UTF-8'
         env['CHCP'] = '65001'
+        set_activity(project or '_orchestrator', 'chatting', message[:50])
         result = subprocess.run(
             f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
             shell=True, capture_output=True, timeout=300, cwd=cwd, env=env
         )
+        clear_activity(project or '_orchestrator')
         # Decode with fallback
         try:
             response = result.stdout.decode('utf-8').strip()
@@ -465,7 +491,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path == '/api/segments':
+        if self.path == '/api/activity':
+            self._json_response({'activities': get_activities(), 'delegations': {k: v for k, v in _pending_delegations.items() if v['status'] in ('pending', 'running')}})
+        elif self.path == '/api/segments':
             self._json_response({'segments': SEGMENTS, 'project_segment': PROJECT_SEGMENT})
         elif self.path == '/api/agents':
             self._json_response(get_agents())
@@ -581,6 +609,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
         full_response = ''
+        set_activity(project or '_orchestrator', 'streaming', message[:50])
         try:
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
@@ -629,6 +658,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(event.encode('utf-8'))
                 self.wfile.flush()
 
+        clear_activity(project or '_orchestrator')
         # End SSE
         self.wfile.write(b"data: [DONE]\n\n")
         self.wfile.flush()
