@@ -144,20 +144,87 @@ def build_orchestrator_context():
     try:
         cached = _scan_cache.get('data') or get_agents()
         agents_list = cached.get('agents', [])
+        names = [a['name'] for a in agents_list]
         working = [a['name'] for a in agents_list if a['status'] == 'working']
-        stale = [a['name'] for a in agents_list if a.get('days', 999) > 7]
         blocked = [a['name'] for a in agents_list if a.get('blockers')]
-        total_dirty = sum(a.get('uncommitted', 0) for a in agents_list)
-        ctx = (f"[CONTEXT: You are PA Orchestrator managing {len(agents_list)} projects. "
-               f"Working: {', '.join(working) or 'none'}. "
-               f"Blocked: {', '.join(blocked) or 'none'}. "
-               f"Stale (>7d): {', '.join(stale[:3]) or 'none'}. "
-               f"Total uncommitted: {total_dirty}. "
-               f"User talks from Command Center dashboard. Be concise. "
-               f"If asked to do something in a project, confirm which and do it.]\n\n")
+        ctx = (f"[CONTEXT: You are PA Orchestrator managing {len(agents_list)} projects.\n"
+               f"Projects: {', '.join(names[:10])}\n"
+               f"Working: {', '.join(working) or 'none'}. Blocked: {', '.join(blocked) or 'none'}.\n"
+               f"DELEGATION: When user asks you to do something in a specific project, "
+               f"write your response with this EXACT format at the end:\n"
+               f"[DELEGATE:ProjectName]\n"
+               f"<exact task message for that project's agent, as if from the user>\n"
+               f"[/DELEGATE]\n"
+               f"The dashboard will automatically send this to the project's agent and report back.\n"
+               f"Be concise.]\n\n")
         return ctx
     except:
         return ''
+
+
+def execute_delegation(pa_response):
+    """Parse PA response for delegation markers and execute them."""
+    import re
+    pattern = r'\[DELEGATE:([^\]]+)\]\s*\n(.*?)\n\[/DELEGATE\]'
+    match = re.search(pattern, pa_response, re.DOTALL)
+    if not match:
+        return None
+
+    target_project = match.group(1).strip()
+    task_message = match.group(2).strip()
+
+    # Verify project exists
+    project_dir = os.path.join(DOCS_DIR, target_project)
+    if not os.path.exists(project_dir):
+        return {'status': 'error', 'error': f'Project not found: {target_project}'}
+
+    # Write task to project chat as "user" (PA acting on behalf of user)
+    chat_file = os.path.join(CHATS_DIR, f'{target_project}.jsonl')
+    ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    with open(chat_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': f'[via PA] {task_message}'}) + '\n')
+
+    # Execute claude -p in project directory
+    tmp = os.path.join(tempfile.gettempdir(), f'delegate-{int(time.time()*1000)}.txt')
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(task_message)
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+        result = subprocess.run(
+            f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+            shell=True, capture_output=True, timeout=300, cwd=project_dir, env=env
+        )
+        try:
+            response = result.stdout.decode('utf-8').strip()
+        except:
+            try:
+                response = result.stdout.decode('cp1251').strip()
+            except:
+                response = str(result.stdout).strip()
+        if not response:
+            response = 'No response from agent'
+    except subprocess.TimeoutExpired:
+        response = 'Agent timed out (5 min)'
+    except Exception as e:
+        response = f'Error: {e}'
+    finally:
+        try:
+            os.unlink(tmp)
+        except:
+            pass
+
+    # Save agent response in project chat
+    ts2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    with open(chat_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': response}) + '\n')
+
+    # Log in orchestrator chat
+    orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
+    with open(orch_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {target_project}. Result: {response[:200]}'}) + '\n')
+
+    return {'project': target_project, 'task': task_message, 'response': response}
 
 
 def get_chats():
@@ -218,31 +285,10 @@ def send_chat(project, message):
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': message}) + '\n')
 
-    # Smart routing: detect project name in orchestrator message
+    # PA handles delegation via [DELEGATE:Project] markers in response
     prompt = message
     if not project:
-        # Check if user mentions a known project name
-        cached = _scan_cache.get('data') or get_agents()
-        agent_names = [a['name'] for a in cached.get('agents', [])]
-        detected_project = None
-        msg_lower = message.lower()
-        for name in agent_names:
-            if name.lower() in msg_lower:
-                detected_project = name
-                break
-
-        if detected_project:
-            # Route to project directly — don't ask PA to do cross-project work
-            project = detected_project
-            cwd = os.path.join(DOCS_DIR, project)
-            chat_file = os.path.join(CHATS_DIR, f'{project}.jsonl')
-            # Save routing note in orchestrator chat
-            orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
-            ts_route = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-            with open(orch_file, 'a', encoding='utf-8') as f:
-                f.write(json.dumps({'ts': ts_route, 'role': 'system', 'msg': f'→ Routed to {detected_project} agent'}) + '\n')
-        else:
-            prompt = build_orchestrator_context() + message
+        prompt = build_orchestrator_context() + message
 
     # Execute via claude -p (temp file for injection safety)
     tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
@@ -285,6 +331,16 @@ def send_chat(project, message):
     ts2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': response}) + '\n')
+
+    # Check if PA delegated a task to another project
+    if not project:  # only for orchestrator responses
+        delegation = execute_delegation(response)
+        if delegation:
+            report = f'\n\n---\n**Delegated to {delegation["project"]}:**\n{delegation["task"]}\n\n**Agent response:**\n{delegation["response"][:500]}'
+            response += report
+            # Update the saved response with delegation report
+            with open(chat_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {delegation["project"]}: {delegation["response"][:200]}'}) + '\n')
 
     return {'status': 'complete', 'response': response, 'project': project or '_orchestrator', 'ts': ts2}
 
@@ -462,22 +518,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
 
-        # Smart routing: detect project name in orchestrator message
+        # PA handles delegation via [DELEGATE:Project] markers
         prompt = message
         if not project:
-            cached = _scan_cache.get('data') or get_agents()
-            agent_names = [a['name'] for a in cached.get('agents', [])]
-            msg_lower = message.lower()
-            for name in agent_names:
-                if name.lower() in msg_lower:
-                    project = name
-                    # Log routing in orchestrator chat
-                    orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
-                    with open(orch_file, 'a', encoding='utf-8') as f:
-                        f.write(json.dumps({'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'role': 'system', 'msg': f'→ Routed to {name} agent'}) + '\n')
-                    break
-            if not project:
-                prompt = build_orchestrator_context() + message
+            prompt = build_orchestrator_context() + message
 
         cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
         chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
@@ -533,6 +577,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ts2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
         with open(chat_file, 'a', encoding='utf-8') as f:
             f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': full_response.strip()}) + '\n')
+
+        # Check for delegation in PA response (orchestrator only)
+        if not project:
+            delegation = execute_delegation(full_response)
+            if delegation:
+                report = f'\n\n---\n**Delegated to {delegation["project"]}:**\n{delegation["response"][:500]}'
+                event = f"data: {json.dumps({'text': report})}\n\n"
+                self.wfile.write(event.encode('utf-8'))
+                self.wfile.flush()
+                # Save delegation log
+                with open(chat_file, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {delegation["project"]}: {delegation["response"][:200]}'}) + '\n')
 
         # End SSE
         self.wfile.write(b"data: [DONE]\n\n")
