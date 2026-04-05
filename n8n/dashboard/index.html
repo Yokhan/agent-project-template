@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Command Center</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 /* === DESIGN TOKENS === */
 :root{
@@ -14,7 +14,7 @@
   --fs-chat:15px;--fs-chat-pre:12px;
   --lh:1.6;
   /* Colors — Dark */
-  --bg:#000;--sf:#060606;--sf2:#0e0e0e;--border:#1a1a1a;
+  --bg:#08080c;--sf:#0c0c12;--sf2:#12121a;--border:#1c1c28;
   --text:#fff;--t2:#999;--t3:#555;--mute:#2a2a2a;
   --accent:#D71921;--green:#33d17a;--yellow:#f5c211;
   --dot:#222;--glow:rgba(215,25,33,.1);
@@ -24,16 +24,16 @@
   --chat-w:380px;
 }
 [data-theme="light"]{
-  --bg:#fafafa;--sf:#f5f5f5;--sf2:#ededed;--border:#e0e0e0;
+  --bg:#f8f8fc;--sf:#f0f0f6;--sf2:#e8e8f0;--border:#d8d8e0;
   --text:#000;--t2:#555;--t3:#999;--mute:#ccc;
   --dot:#ccc;--glow:rgba(215,25,33,.08);
 }
-body{background:var(--bg);background-image:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:24px 24px;color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;font-size:var(--fs-m);line-height:var(--lh)}
+body{background:var(--bg);background-image:radial-gradient(circle,var(--dot) .8px,transparent .8px);background-size:24px 24px;color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;font-size:var(--fs-m);line-height:var(--lh)}
 
 /* === LAYOUT === */
 .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .hdr{padding:var(--sp-l) var(--sp-2xl);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0}
-.hdr h1{font-size:var(--fs-l);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:6px;font-weight:400;color:var(--t2)}
+.hdr h1{font-size:var(--fs-l);font-family:'Space Grotesk',var(--font-mono);text-transform:uppercase;letter-spacing:6px;font-weight:400;color:var(--t2)}
 .hdr .r{display:flex;align-items:center;gap:var(--sp-s)}
 .hdr .r span{font-size:var(--fs-s);color:var(--t3);font-family:var(--font-mono)}
 .hdr .r button{background:transparent;color:var(--t2);border:1px solid var(--border);padding:var(--sp-xs) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
@@ -125,6 +125,64 @@ body{background:var(--bg);background-image:radial-gradient(circle,var(--dot) 1px
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+
+/* === CYBER ELEMENTS === */
+.stat::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 4px);pointer-events:none}
+.stat{position:relative;overflow:hidden}
+.stat:hover{background:var(--accent-dim)}
+
+/* Corner cuts on tiles */
+.tile{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
+.tile:hover{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));box-shadow:0 0 30px var(--glow),inset 0 0 30px rgba(233,69,96,.03)}
+
+/* Corner decoration on tiles */
+.tile::after{content:'';position:absolute;top:0;right:0;width:12px;height:12px;border-left:1px solid var(--accent);border-bottom:1px solid var(--accent);opacity:.3;pointer-events:none}
+.tile:hover::after{opacity:.8}
+
+/* Glowing status bar */
+.tile .bar{height:2px;box-shadow:0 0 6px currentColor}
+
+/* Segmented progress (Nothing style) */
+.seg-bar{display:flex;gap:2px;height:3px}
+.seg-bar span{flex:1;background:var(--mute)}
+.seg-bar span.fill{background:var(--green)}
+.seg-bar span.warn{background:var(--yellow)}
+.seg-bar span.err{background:var(--accent)}
+
+/* Micro text decorations */
+.micro{font-family:var(--font-mono);font-size:8px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+
+/* Neon glow text */
+.glow{text-shadow:0 0 8px currentColor,0 0 20px rgba(233,69,96,.3)}
+
+/* Stat card active glow */
+.stat:hover .n{text-shadow:0 0 12px currentColor}
+
+/* Header accent line */
+.hdr{border-bottom:1px solid var(--border);border-image:linear-gradient(90deg,var(--border) 0%,var(--accent) 50%,var(--border) 100%) 1}
+
+/* Chat sidebar subtle gradient */
+.chat-side{background:linear-gradient(180deg,var(--sf) 0%,var(--bg) 100%)}
+
+/* Plan panel cyber border */
+.plan-panel{border:1px solid var(--border);border-left:2px solid var(--accent)}
+.plan-hdr{background:var(--sf2)}
+
+/* Detail back button — accent on hover */
+.back:hover{color:var(--accent) !important}
+
+/* Keyboard help — cyber frame */
+.kb-box{border:1px solid var(--accent);clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px))}
+
+/* Analytics bar — border glow */
+.analytics-bar{border-top:1px solid var(--border);border-image:linear-gradient(90deg,transparent,var(--accent),transparent) 1}
+
+/* Toast — cyber cut */
+.toast{clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+
+/* Search input — accent focus */
+.search input:focus{border-color:var(--accent);box-shadow:0 0 8px var(--glow)}
 
 /* === LOADING === */
 .loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10;font-family:var(--font-mono);color:var(--t3);font-size:var(--fs-s)}
