@@ -55,8 +55,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-s);margin-bottom:var(--sp-xl)}
 .tile{background:var(--sf);border:1px solid var(--border);padding:var(--sp-m) var(--sp-l);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .tile:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--glow),0 0 20px var(--glow)}
-.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:8px 8px;opacity:.2;pointer-events:none;transition:opacity .2s}
-.tile:hover::before{opacity:.4}
+.tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) 1.5px,transparent 1.5px);background-size:10px 10px;opacity:.25;pointer-events:none;transition:opacity .2s}
+.tile:hover::before{opacity:.45}
 .tile .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .tile .name{font-size:var(--fs-m);font-weight:600;display:flex;align-items:center;gap:var(--sp-xs);letter-spacing:-.2px}
 .tile .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
@@ -91,7 +91,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .m{max-width:85%;padding:var(--sp-s) var(--sp-m);font-size:var(--fs-chat);line-height:var(--lh);word-wrap:break-word}
 .m.u{align-self:flex-end;background:var(--sf2);border:1px solid var(--border);color:var(--text)}
 .m.a{align-self:flex-start;color:var(--t2)}
-.m pre{white-space:pre-wrap;font-size:var(--fs-chat-pre);margin-top:var(--sp-xs);font-family:var(--font-body);line-height:1.6}
+.m pre{white-space:pre-wrap;font-size:var(--fs-chat-pre);margin:var(--sp-xs) 0;font-family:var(--font-mono);line-height:1.5;background:var(--sf);padding:var(--sp-s);border:1px solid var(--border);overflow-x:auto}
+.m code{font-family:var(--font-mono);font-size:var(--fs-chat-pre);background:var(--sf);padding:1px 4px;border:1px solid var(--border)}
+.m strong{color:var(--text);font-weight:600}
+.m em{color:var(--t2);font-style:italic}
 .m .ts{font-size:var(--fs-xs);color:var(--mute);margin-top:var(--sp-xs)}
 .ch-typ{padding:var(--sp-s) var(--sp-m);font-size:var(--fs-s);color:var(--t2);display:none;font-family:var(--font-mono)}
 .ch-typ.show{display:block}
@@ -259,7 +262,7 @@ async function openProject(name){
 
 function renderChat(elId, messages){
   const el=document.getElementById(elId);
-  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='assistant'?'<pre>'+esc(m.msg)+'</pre>':esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
+  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='assistant'?md(m.msg):esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
   el.scrollTop=el.scrollHeight;
 }
 
@@ -276,7 +279,7 @@ async function doSend(proj,inputId,btnId,msgsId,typId){
   try{
     const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     const d=await r.json();document.getElementById(typId).classList.remove('show');
-    if(d.status==='complete')ms.innerHTML+=`<div class="m a"><pre>${esc(d.response||'')}</pre><div class="ts">${ft(d.ts)}</div></div>`;
+    if(d.status==='complete')ms.innerHTML+=`<div class="m a">${md(d.response||'')}<div class="ts">${ft(d.ts)}</div></div>`;
     else ms.innerHTML+=`<div class="m a" style="color:var(--accent)">error: ${esc(d.error||'?')}</div>`;
   }catch(e){document.getElementById(typId).classList.remove('show');ms.innerHTML+=`<div class="m a" style="color:var(--accent)">${esc(e.message)}</div>`;}
   document.getElementById(btnId).disabled=false;ms.scrollTop=ms.scrollHeight;loadFeed();
@@ -287,7 +290,29 @@ async function act(n){
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function md(s){
+  if(!s)return'';
+  return esc(s)
+    .replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+    .replace(/^### (.+)$/gm,'<h4 style="margin:8px 0 4px;font-size:var(--fs-m);color:var(--text)">$1</h4>')
+    .replace(/^## (.+)$/gm,'<h3 style="margin:8px 0 4px;font-size:var(--fs-l);color:var(--text)">$1</h3>')
+    .replace(/^- (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
+    .replace(/^\d+\. (.+)$/gm,'<div style="padding-left:12px">$&</div>')
+    .replace(/\n/g,'<br>');
+}
 function ft(t){if(!t)return new Date().toLocaleTimeString();try{return new Date(t).toLocaleTimeString();}catch{return t;}}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return; // don't intercept input fields
+  if(e.key==='Escape'){showDashboard();return;}
+  if(e.key==='/'){e.preventDefault();document.getElementById('o-ci').focus();return;}
+  if(e.key==='d'||e.key==='D'){toggleTheme();return;}
+  if(e.key>='1'&&e.key<='9'){const idx=parseInt(e.key)-1;if(agents[idx])openProject(agents[idx].name);return;}
+});
 
 loadAll();
 setInterval(loadAll,30000);

@@ -171,11 +171,29 @@ def send_chat(project, message):
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': message}) + '\n')
 
+    # Inject orchestrator context if talking to PA (no project selected)
+    prompt = message
+    if not project:
+        try:
+            cached = _scan_cache.get('data') or get_agents()
+            agents_list = cached.get('agents', [])
+            working = [a['name'] for a in agents_list if a['status'] == 'working']
+            stale = [a['name'] for a in agents_list if a.get('days', 999) > 7]
+            total_dirty = sum(a.get('uncommitted', 0) for a in agents_list)
+            ctx = (f"[CONTEXT: You are PA Orchestrator managing {len(agents_list)} projects. "
+                   f"Working: {', '.join(working) or 'none'}. "
+                   f"Stale (>7d): {', '.join(stale[:3]) or 'none'}. "
+                   f"Total uncommitted: {total_dirty}. "
+                   f"User talks from Command Center dashboard. Be concise.]\n\n")
+            prompt = ctx + message
+        except:
+            pass
+
     # Execute via claude -p (temp file for injection safety)
     tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
     try:
         with open(tmp, 'w', encoding='utf-8') as f:
-            f.write(message)
+            f.write(prompt)
         # Force UTF-8 on Windows (otherwise cmd.exe uses cp1251/cp866)
         env = os.environ.copy()
         env['PYTHONIOENCODING'] = 'utf-8'
