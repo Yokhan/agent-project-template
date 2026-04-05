@@ -332,18 +332,17 @@ function SearchBar(){
 
 function PlanPanel(){
   const p=actionPlan.value;
-  if(!p||!p.plan||!p.plan.length)return null;
-  const items=showPlan.value?p.plan.slice(0,8):[];
+  if(!p||!p.high_count)return null;
+  const high=showPlan.value?p.plan.filter(x=>x.priority==='HIGH'):[];
   return html`<div class="plan-panel">
     <div class="plan-hdr" onClick=${()=>showPlan.value=!showPlan.value}>
-      <span>cross-project issues (${p.plan.length} items, ${p.high_count} high)</span>
+      <span style="color:var(--accent)">⚠ ${p.high_count} project(s) need attention</span>
       <span>${showPlan.value?'▾':'▸'}</span>
     </div>
-    ${items.map(item=>html`<div class="plan-item">
-      <span class="pri ${item.priority}">${item.priority}</span>
+    ${high.map(item=>html`<div class="plan-item" style="cursor:pointer" onClick=${()=>currentProject.value=item.project}>
       <span class="proj">${item.project}</span>
-      <span class="issue">${item.issues[0]||''}</span>
-      <span class="act" onClick=${(e)=>{e.stopPropagation();currentProject.value=item.project;}}>→</span>
+      <span class="issue">${item.issues.join(' · ')}</span>
+      <span class="act">→</span>
     </div>`)}
   </div>`;
 }
