@@ -50,6 +50,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .stat .n{font-size:var(--fs-2xl);font-weight:300;line-height:1;font-family:var(--font-mono)}
 .stat .l{font-size:var(--fs-xs);color:var(--t3);text-transform:uppercase;letter-spacing:3px;margin-top:var(--sp-xs)}
 
+/* === SEGMENT HEADERS === */
+.seg-title{font-size:var(--fs-xs);color:var(--t3);text-transform:uppercase;letter-spacing:3px;font-family:var(--font-mono);padding:var(--sp-m) 0 var(--sp-s);border-top:1px solid var(--border);margin-top:var(--sp-l)}
+.seg-title:first-of-type{border-top:none;margin-top:0}
+
 /* === PROJECT GRID === */
 .grid-title{font-size:var(--fs-xs);color:var(--t2);text-transform:uppercase;letter-spacing:2px;margin-bottom:var(--sp-m);font-family:var(--font-mono)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-m);margin-bottom:var(--sp-xl)}
@@ -243,7 +247,7 @@ function DashboardView(){
   const other=a.filter(x=>!assigned.has(x.name));if(other.length)segMap['Other']=other;
   return html`<div class="content"><${StatsRow}/>
     ${Object.entries(segMap).filter(([_,i])=>i.length).map(([name,items])=>html`
-      <div class="seg-title" style="margin-top:var(--sp-m)">${name} (${items.length})</div>
+      <div class="seg-title">${name} (${items.length})</div>
       <div class="grid">${items.map(ag=>html`<${Tile} a=${ag}/>`)}</div>
     `)}
   </div>`;
@@ -257,27 +261,36 @@ function Tile({a}){
       <span class="name"><span class="dot ${isActive?'working':a.status}" style=${isActive?'animation:pulse .8s infinite':''}></span>${a.name}${a.blockers?html` <span style="color:var(--accent);font-size:var(--fs-xs)">· BLOCKED</span>`:''}</span>
     </div>
     ${isActive?html`<div style="font-size:var(--fs-xs);color:var(--green);margin:var(--sp-xs) 0;font-family:var(--font-mono)">⚡ ${act.action}: ${act.detail}</div>`:html`<div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" dangerouslySetInnerHTML=${{__html:a.task?md(a.task.substring(0,80)):'<span style="color:var(--t3)">no active task</span>'}}></div>`}
-    <div class="row"><span style="color:${SC[isActive?'working':a.status]||'var(--t3)'}">${isActive?'executing':SL[a.status]||a.status}</span><span>${a.last_commit||''}</span>${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
+    <div class="row"><span style="color:${SC[isActive?'working':a.status]||'var(--t3)'}">${isActive?'executing':SL[a.status]||a.status}</span>${(a.uncommitted||0)>10?html`<span style="color:var(--accent)">${a.uncommitted} dirty</span>`:(a.uncommitted||0)>0?html`<span>${a.uncommitted} uncommitted</span>`:''}${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
     <div class="bar" style="width:${isActive?'100':Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${isActive?'var(--green)':SC[a.status]||'var(--mute)'}${isActive?';animation:pulse 1s infinite':''}"></div>
   </div>`;
 }
 
 function DetailView(){
   const name=currentProject.value;const ag=agents.value.find(a=>a.name===name)||{};
+  const act=activities.value[name];
   return html`<div class="content">
-    <div class="back" onClick=${()=>currentProject.value=null}>← back</div>
-    <h2 style="font-size:var(--fs-xl);display:flex;align-items:center;gap:var(--sp-s)"><span class="dot ${ag.status}"></span>${name}</h2>
-    <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-s) 0">
-      <span style="color:${SC[ag.status]||'var(--t3)'}">${ag.status||''}</span> · ${ag.branch||''} · ${ag.uncommitted||0} uncommitted
-      ${ag.task?html`<div style="margin-top:var(--sp-xs)" dangerouslySetInnerHTML=${{__html:'Task: '+md(ag.task)}}></div>`:''}
+    <div class="back" onClick=${()=>currentProject.value=null}>← back to dashboard</div>
+    <h2 style="font-size:var(--fs-xl);display:flex;align-items:center;gap:var(--sp-s)"><span class="dot ${act?'working':ag.status}"></span>${name}</h2>
+    <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-s) 0;display:flex;gap:var(--sp-l);flex-wrap:wrap">
+      <span style="color:${SC[act?'working':ag.status]||'var(--t3)'}">${act?'executing':ag.status||''}</span>
+      <span>branch: <code>${ag.branch||'—'}</code></span>
+      <span>${ag.uncommitted||0} uncommitted</span>
+      ${ag.template_version?html`<span>template ${ag.template_version}</span>`:''}
+      <span>${ag.lessons||0} lessons</span>
+      ${ag.blockers?html`<span style="color:var(--accent);font-weight:600">BLOCKED</span>`:''}
     </div>
+    ${act?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--green);font-size:var(--fs-s);color:var(--green);font-family:var(--font-mono)">Running: ${act.action} — ${act.detail}</div>`:''}
+    ${ag.task?html`<div style="padding:var(--sp-s) var(--sp-m);margin:var(--sp-s) 0;background:var(--sf);border-left:2px solid var(--yellow);font-size:var(--fs-s)"><strong>Current task:</strong> <span dangerouslySetInnerHTML=${{__html:md(ag.task)}}></span></div>`:''}
     <div class="panels">
-      <div class="panel"><h3>modules</h3>${modules.value.length?modules.value.map(m=>html`<div class="mod"><span>${m.name}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`):html`<span style="color:var(--t2)">no modules</span>`}</div>
-      <div class="panel"><h3>info</h3><div style="font-size:var(--fs-s);color:var(--t2)">
-        <div>branch: <code>${ag.branch||''}</code></div><div>template: ${ag.template_version||'none'}</div><div>lessons: ${ag.lessons||0}</div><div>segment: ${ag.segment||''}</div>
-        ${ag.blockers?html`<div style="color:var(--accent);font-weight:600;margin-top:var(--sp-xs)">⚠ BLOCKER</div>`:''}
+      <div class="panel"><h3>modules</h3>${modules.value.length?modules.value.map(m=>html`<div class="mod"><span>${m.name}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`):html`<span style="color:var(--t3)">Use chat to scan → agent will detect modules</span>`}</div>
+      <div class="panel"><h3>project info</h3><div style="font-size:var(--fs-s);color:var(--t2)">
+        <div style="margin-bottom:var(--sp-xs)">segment: ${ag.segment||'unassigned'}</div>
+        <div style="margin-bottom:var(--sp-xs)">phase: ${ag.phase||'unknown'}</div>
+        <div>last commit: ${ag.last_commit||'—'}</div>
       </div></div>
     </div>
+    <div style="color:var(--t3);font-size:var(--fs-s);margin-top:var(--sp-m)">Use the chat panel on the right to talk to this project's agent →</div>
   </div>`;
 }
 
@@ -293,7 +306,7 @@ function RunningBanner(){
 
 function ChatSidebar(){
   const inputRef=useRef();const msgsRef=useRef();
-  useEffect(()=>{if(msgsRef.current)msgsRef.current.scrollTop=msgsRef.current.scrollHeight;});
+  const prevCount=useRef(0);useEffect(()=>{const cnt=sideMessages.value.length;const streaming=isStreaming.value;if(msgsRef.current&&(cnt!==prevCount.current||streaming)){msgsRef.current.scrollTop=msgsRef.current.scrollHeight;prevCount.current=cnt;}});
   const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';sendMessage(v);};
   return html`<div class="chat-side">
     <div class="ch-title">${sideTitle}</div>
@@ -311,11 +324,11 @@ function ChatSidebar(){
 
 function ChatMsg({m}){
   if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
-  const cls=m.role==='user'?'u':'a';
+  const isViaPA=(m.msg||'').startsWith('[via PA]');const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
   const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
   const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
   return html`<div class="m ${cls}">
-    <div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(m.msg)}}></div>
+    ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
     <div class="ts">${ft(m.ts)}</div>
   </div>`;
