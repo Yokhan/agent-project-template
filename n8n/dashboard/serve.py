@@ -465,7 +465,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path == '/api/agents':
+        if self.path == '/api/segments':
+            self._json_response({'segments': SEGMENTS, 'project_segment': PROJECT_SEGMENT})
+        elif self.path == '/api/agents':
             self._json_response(get_agents())
         elif self.path == '/api/feed':
             self._json_response(get_feed())
