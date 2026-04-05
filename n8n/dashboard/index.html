@@ -146,14 +146,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
           <div class="panel"><h3>modules</h3><div id="d-modules">Loading...</div></div>
           <div class="panel"><h3>info</h3><div id="d-info"></div></div>
         </div>
-        <div class="chat-area">
-          <div class="ch-title">chat &mdash; <span id="d-chat-name"></span></div>
-          <div class="ch-msgs" id="d-msgs"></div>
-          <div class="ch-typ" id="d-typ">thinking...</div>
-          <div class="ch-inp">
-            <input id="d-ci" placeholder="message..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendDetail();}">
-            <button id="d-cb" onclick="sendDetail()">send</button>
-          </div>
+        <div style="margin-top:var(--sp-m);color:var(--t3);font-size:var(--fs-s)">
+          Use the chat panel on the right to talk to this project's agent →
         </div>
       </div>
     </div>
@@ -225,23 +219,32 @@ function render(){
   const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
   const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 
-  // Group by status
-  const groups=[
-    {key:'blocked',label:'Blocked',items:sorted.filter(a=>a.status==='blocked')},
-    {key:'working',label:'Active',items:sorted.filter(a=>a.status==='working')},
-    {key:'idle',label:'Idle',items:sorted.filter(a=>a.status==='idle')},
-    {key:'sleeping',label:'Sleeping',items:sorted.filter(a=>a.status==='sleeping')},
-  ].filter(g=>g.items.length>0);
+  // Group by segment (business segments, not status)
+  const segMap={};
+  for(const a of sorted){
+    const seg=a.segment||'Other';
+    if(!segMap[seg])segMap[seg]=[];
+    segMap[seg].push(a);
+  }
+  // Sort segments: ones with blockers first
+  const segOrder=Object.keys(segMap).sort((a,b)=>{
+    const aB=segMap[a].some(x=>x.blockers);const bB=segMap[b].some(x=>x.blockers);
+    if(aB&&!bB)return -1;if(!aB&&bB)return 1;return a.localeCompare(b);
+  });
 
   let gridHtml='';
-  for(const g of groups){
-    gridHtml+=`<div class="grid-title" style="grid-column:1/-1;margin-top:var(--sp-s)">${g.label} <span style="color:var(--t3)">(${g.items.length})</span></div>`;
-    gridHtml+=g.items.map(a=>{return renderTile(a);}).join('');
+  for(const seg of segOrder){
+    const items=segMap[seg];
+    const blocked=items.filter(x=>x.blockers).length;
+    const badge=blocked?` <span style="color:var(--accent)">${blocked} blocked</span>`:'';
+    gridHtml+=`<div class="grid-title" style="grid-column:1/-1;margin-top:var(--sp-m)">${esc(seg)} <span style="color:var(--t3)">(${items.length})</span>${badge}</div>`;
+    gridHtml+=items.map(a=>renderTile(a)).join('');
   }
   document.getElementById('grid').innerHTML=gridHtml;
 
   function renderTile(a){
-    const task=a.task?esc(a.task).substring(0,60):'<span style="color:var(--t3)">no active task</span>';
+    const taskRaw=a.task?a.task.substring(0,80):'';
+    const task=taskRaw?md(taskRaw):'<span style="color:var(--t3)">no active task</span>';
     const blocker=a.blockers?'<span style="color:var(--accent);font-size:var(--fs-xs);font-weight:600"> · BLOCKED</span>':'';
     const phase=a.phase?`<span style="color:var(--t3);font-size:var(--fs-xs)">${esc(a.phase).substring(0,25)}</span>`:'';
     const lessonsTag=a.lessons?`<span style="font-size:var(--fs-xs);color:var(--t3)">${a.lessons}L</span>`:'';
@@ -267,27 +270,36 @@ function render(){
 
 function showDashboard(){
   curProj=null;
-  document.getElementById('dashboard-view').classList.add('show');
+  document.getElementById('dashboard-view').style.display='block';
   document.getElementById('detail-view').className='detail';
+  // Restore orchestrator chat
+  document.querySelector('.ch-title').textContent='orchestrator';
+  loadOrchChat();
 }
 
 async function openProject(name){
   curProj=name;
-  document.getElementById('dashboard-view').classList.remove('show');
+  document.getElementById('dashboard-view').style.display='none';
   document.getElementById('detail-view').className='detail show';
 
   const ag=agents.find(a=>a.name===name)||{};
   document.getElementById('d-dot').className='dot '+(ag.status||'');
   document.getElementById('d-name').textContent=name;
-  document.getElementById('d-chat-name').textContent=name;
-  document.getElementById('d-meta').textContent=`${ag.branch||''} · ${ag.uncommitted||0} uncommitted · ${ag.last_commit||''} · ${ag.status||''}`;
+  document.getElementById('d-meta').innerHTML=
+    `<span style="color:${statusColor[ag.status]||'var(--t3)'}">${ag.status||''}</span> · `+
+    `${esc(ag.branch||'')} · ${ag.uncommitted||0} uncommitted · ${esc(ag.last_commit||'')}` +
+    (ag.phase?` · <span style="color:var(--t2)">${esc(ag.phase)}</span>`:'') +
+    (ag.task?`<div style="margin-top:var(--sp-xs);color:var(--t2)">Task: ${md(ag.task)}</div>`:'');
+
   document.getElementById('d-info').innerHTML=
-    `<div style="font-size:11px;color:var(--t2)">`+
-    `<div>branch: ${esc(ag.branch||'')}</div>`+
-    `<div>dirty: ${ag.uncommitted||0}</div>`+
-    `<div>last: ${esc(ag.last_commit||'')}</div>`+
+    `<div style="font-size:var(--fs-s);color:var(--t2)">`+
+    `<div>branch: <code>${esc(ag.branch||'')}</code></div>`+
+    `<div>uncommitted: ${ag.uncommitted||0}</div>`+
     `<div>template: ${esc(ag.template_version||'none')}</div>`+
-    `<div>status: ${ag.status||''}</div></div>`;
+    `<div>lessons: ${ag.lessons||0}</div>`+
+    `<div>segment: ${esc(ag.segment||'')}</div>`+
+    (ag.blockers?'<div style="color:var(--accent);font-weight:600;margin-top:var(--sp-xs)">⚠ BLOCKER ACTIVE</div>':'')+
+    `</div>`;
 
   // Load modules
   try{
@@ -295,8 +307,12 @@ async function openProject(name){
     document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--t2)">no modules detected</span>';
   }catch{document.getElementById('d-modules').innerHTML='failed';}
 
-  // Load chat
-  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('d-msgs',d.messages||[]);}catch{}
+  // Switch RIGHT sidebar chat to this project's agent
+  document.querySelector('.ch-title').textContent=name + ' agent';
+  try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{}
+
+  // Also load detail chat area
+  renderChat('d-msgs',[]);
   document.getElementById('d-ci').focus();
 }
 
@@ -306,8 +322,8 @@ function renderChat(elId, messages){
   el.scrollTop=el.scrollHeight;
 }
 
-async function sendOrch(){await doSend('','o-ci','o-cb','o-msgs','o-typ');}
-async function sendDetail(){if(!curProj)return;await doSend(curProj,'d-ci','d-cb','d-msgs','d-typ');}
+async function sendOrch(){await doSend(curProj||'','o-ci','o-cb','o-msgs','o-typ');}
+// sendDetail removed — right sidebar handles project chat
 
 async function doSend(proj,inputId,btnId,msgsId,typId){
   const inp=document.getElementById(inputId);

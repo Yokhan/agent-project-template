@@ -77,7 +77,8 @@ def get_agents():
                     'last_commit': last, 'uncommitted': int(uncommitted) if uncommitted.isdigit() else 0,
                     'days': days, 'template_version': tpl,
                     'task': current_task, 'blockers': has_blockers,
-                    'phase': phase, 'lessons': lessons
+                    'phase': phase, 'lessons': lessons,
+                    'segment': PROJECT_SEGMENT.get(name, 'Other')
                 })
 
         # Check chat history for recent activity
@@ -118,6 +119,20 @@ def get_feed():
     feed.reverse()
     return {'feed': feed, 'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S')}
 
+
+SEGMENTS_FILE = os.path.join(DIR, 'segments.json')
+SEGMENTS = {}
+if os.path.exists(SEGMENTS_FILE):
+    try:
+        SEGMENTS = json.loads(open(SEGMENTS_FILE, encoding='utf-8').read()).get('segments', {})
+    except:
+        pass
+
+# Build reverse map: project_name → segment
+PROJECT_SEGMENT = {}
+for seg, projects in SEGMENTS.items():
+    for p in projects:
+        PROJECT_SEGMENT[p] = seg
 
 CHATS_DIR = os.path.join(ROOT, 'tasks', 'chats')
 os.makedirs(CHATS_DIR, exist_ok=True)
