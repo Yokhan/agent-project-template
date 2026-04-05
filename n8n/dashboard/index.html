@@ -356,6 +356,26 @@ async function doSend(proj,inputId,btnId,msgsId,typId){
   document.getElementById(btnId).disabled=false;ms.scrollTop=ms.scrollHeight;loadFeed();
 }
 
+async function approveDel(id,project){
+  const ms=document.getElementById('o-msgs');
+  ms.innerHTML+=`<div class="m" style="color:var(--green);font-size:var(--fs-s)">✓ Approved. Running in ${esc(project)}...</div>`;
+  ms.scrollTop=ms.scrollHeight;
+  try{
+    const r=await fetch('/api/approve/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(d.status==='complete'){
+      ms.innerHTML+=`<div class="m a">${md('**'+d.project+' result:**\n'+d.response)}<div class="ts">${ft()}</div></div>`;
+    }else{
+      ms.innerHTML+=`<div class="m a" style="color:var(--accent)">Error: ${esc(d.error||'failed')}</div>`;
+    }
+  }catch(e){ms.innerHTML+=`<div class="m a" style="color:var(--accent)">${esc(e.message)}</div>`;}
+  ms.scrollTop=ms.scrollHeight;
+}
+async function rejectDel(id){
+  await fetch('/api/reject/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  const ms=document.getElementById('o-msgs');
+  ms.innerHTML+=`<div class="m" style="color:var(--accent);font-size:var(--fs-s)">✗ Rejected</div>`;
+}
 async function quickAct(action,project){
   try{
     const r=await fetch('/api/action/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project})});
@@ -380,7 +400,11 @@ function md(s){
     .replace(/^## (.+)$/gm,'<h3 style="margin:8px 0 4px;font-size:var(--fs-l);color:var(--text)">$1</h3>')
     .replace(/^- (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
     .replace(/^\d+\. (.+)$/gm,'<div style="padding-left:12px">$&</div>')
-    .replace(/\n/g,'<br>');
+    .replace(/\n/g,'<br>')
+    .replace(/&lt;delegation id=&quot;([^&]+)&quot; project=&quot;([^&]+)&quot;\/&gt;/g,
+      '<div style="margin-top:8px;display:flex;gap:8px">' +
+      '<button onclick="approveDel(\'$1\',\'$2\')" style="background:#33d17a;color:#000;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">APPROVE</button>' +
+      '<button onclick="rejectDel(\'$1\')" style="background:#D71921;color:#fff;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">REJECT</button></div>');
 }
 function ft(t){if(!t)return new Date().toLocaleTimeString();try{return new Date(t).toLocaleTimeString();}catch{return t;}}
 

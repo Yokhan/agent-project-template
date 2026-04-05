@@ -162,29 +162,53 @@ def build_orchestrator_context():
         return ''
 
 
-def execute_delegation(pa_response):
-    """Parse PA response for delegation markers and execute them."""
-    import re
-    pattern = r'\[DELEGATE:([^\]]+)\]\s*\n(.*?)\n\[/DELEGATE\]'
+# Pending delegations (in-memory, simple approach)
+_pending_delegations = {}
+
+
+def parse_delegation(pa_response):
+    """Parse PA response for delegation markers. Returns (project, task) or None."""
+    pattern = r'\[DELEGATE:([^\]]+)\]\s*\n?(.*?)\n?\[/DELEGATE\]'
     match = re.search(pattern, pa_response, re.DOTALL)
     if not match:
         return None
+    return match.group(1).strip(), match.group(2).strip()
 
-    target_project = match.group(1).strip()
-    task_message = match.group(2).strip()
 
-    # Verify project exists
+def queue_delegation(target_project, task_message):
+    """Queue a delegation for user approval."""
+    delegation_id = str(int(time.time() * 1000))
+    _pending_delegations[delegation_id] = {
+        'id': delegation_id,
+        'project': target_project,
+        'task': task_message,
+        'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'status': 'pending'
+    }
+    return delegation_id
+
+
+def execute_delegation(delegation_id):
+    """Execute an approved delegation."""
+    d = _pending_delegations.get(delegation_id)
+    if not d or d['status'] != 'pending':
+        return {'status': 'error', 'error': 'Delegation not found or already executed'}
+
+    target_project = d['project']
+    task_message = d['task']
     project_dir = os.path.join(DOCS_DIR, target_project)
     if not os.path.exists(project_dir):
         return {'status': 'error', 'error': f'Project not found: {target_project}'}
 
-    # Write task to project chat as "user" (PA acting on behalf of user)
+    d['status'] = 'running'
+
+    # Write task to project chat as "user"
     chat_file = os.path.join(CHATS_DIR, f'{target_project}.jsonl')
     ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': f'[via PA] {task_message}'}) + '\n')
 
-    # Execute claude -p in project directory
+    # Execute with --dangerously-skip-permissions (user approved)
     tmp = os.path.join(tempfile.gettempdir(), f'delegate-{int(time.time()*1000)}.txt')
     try:
         with open(tmp, 'w', encoding='utf-8') as f:
@@ -192,7 +216,7 @@ def execute_delegation(pa_response):
         env = os.environ.copy()
         env['PYTHONIOENCODING'] = 'utf-8'
         result = subprocess.run(
-            f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+            f'chcp 65001 >nul 2>&1 & claude --dangerously-skip-permissions -p < "{tmp}"',
             shell=True, capture_output=True, timeout=300, cwd=project_dir, env=env
         )
         try:
@@ -222,9 +246,11 @@ def execute_delegation(pa_response):
     # Log in orchestrator chat
     orch_file = os.path.join(CHATS_DIR, '_orchestrator.jsonl')
     with open(orch_file, 'a', encoding='utf-8') as f:
-        f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {target_project}. Result: {response[:200]}'}) + '\n')
+        f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'✓ Executed in {target_project}: {response[:200]}'}) + '\n')
 
-    return {'project': target_project, 'task': task_message, 'response': response}
+    d['status'] = 'done'
+    d['response'] = response
+    return {'status': 'complete', 'project': target_project, 'task': task_message, 'response': response}
 
 
 def get_chats():
@@ -332,15 +358,13 @@ def send_chat(project, message):
     with open(chat_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': response}) + '\n')
 
-    # Check if PA delegated a task to another project
-    if not project:  # only for orchestrator responses
-        delegation = execute_delegation(response)
-        if delegation:
-            report = f'\n\n---\n**Delegated to {delegation["project"]}:**\n{delegation["task"]}\n\n**Agent response:**\n{delegation["response"][:500]}'
-            response += report
-            # Update the saved response with delegation report
-            with open(chat_file, 'a', encoding='utf-8') as f:
-                f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {delegation["project"]}: {delegation["response"][:200]}'}) + '\n')
+    # Check if PA wants to delegate a task
+    if not project:
+        parsed = parse_delegation(response)
+        if parsed:
+            target, task = parsed
+            did = queue_delegation(target, task)
+            response += f'\n\n---\n**⏳ Awaiting approval to run in {target}:**\n{task}\n\n<delegation id="{did}" project="{target}"/>'
 
     return {'status': 'complete', 'response': response, 'project': project or '_orchestrator', 'ts': ts2}
 
@@ -483,6 +507,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif self.path.startswith('/api/modules/'):
             project = urllib.parse.unquote(self.path.split('/api/modules/')[1])
             self._json_response(get_modules(project))
+        elif self.path == '/api/delegations':
+            self._json_response({'delegations': [d for d in _pending_delegations.values() if d['status'] == 'pending']})
+        elif self.path.startswith('/api/approve/'):
+            did = urllib.parse.unquote(self.path.split('/api/approve/')[1])
+            result = execute_delegation(did)
+            self._json_response(result)
+        elif self.path.startswith('/api/reject/'):
+            did = urllib.parse.unquote(self.path.split('/api/reject/')[1])
+            d = _pending_delegations.get(did)
+            if d:
+                d['status'] = 'rejected'
+                self._json_response({'status': 'rejected'})
+            else:
+                self._json_response({'status': 'error', 'error': 'Not found'})
         elif self.path.startswith('/api/action/'):
             action = self.path.split('/api/action/')[1]
             self._json_response(run_action(action, data))
@@ -580,15 +618,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         # Check for delegation in PA response (orchestrator only)
         if not project:
-            delegation = execute_delegation(full_response)
-            if delegation:
-                report = f'\n\n---\n**Delegated to {delegation["project"]}:**\n{delegation["response"][:500]}'
+            parsed = parse_delegation(full_response)
+            if parsed:
+                target, task = parsed
+                did = queue_delegation(target, task)
+                report = f'\n\n---\n**⏳ Awaiting approval to run in {target}:**\n{task}\n\n<delegation id="{did}" project="{target}"/>'
                 event = f"data: {json.dumps({'text': report})}\n\n"
                 self.wfile.write(event.encode('utf-8'))
                 self.wfile.flush()
-                # Save delegation log
-                with open(chat_file, 'a', encoding='utf-8') as f:
-                    f.write(json.dumps({'ts': ts2, 'role': 'system', 'msg': f'→ Delegated to {delegation["project"]}: {delegation["response"][:200]}'}) + '\n')
 
         # End SSE
         self.wfile.write(b"data: [DONE]\n\n")
