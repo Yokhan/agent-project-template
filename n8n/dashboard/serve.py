@@ -19,6 +19,7 @@ import re
 from pathlib import Path
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3333
+_server_start = time.time()
 N8N = os.environ.get('N8N_URL', 'http://localhost:5678')
 DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = str(Path(DIR).parent.parent)
@@ -434,8 +435,13 @@ def send_chat(project, message):
     if not message:
         return {'status': 'error', 'error': 'Empty message'}
 
-    # Orchestrator chat runs in PersonalAssistant, not template root
-    PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+    # Orchestrator: prefer configured project, fallback to template root
+    orch_name = 'PersonalAssistant'
+    try:
+        cfg = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
+        orch_name = cfg.get('orchestrator_project', orch_name)
+    except: pass
+    PA_DIR = os.path.join(DOCS_DIR, orch_name)
     cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
     if project and not os.path.exists(cwd):
         return {'status': 'error', 'error': f'Project not found: {cwd}'}
@@ -603,7 +609,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path == '/api/activity':
+        if self.path == '/api/health':
+            try:
+                PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+                agent_count = len((get_agents() or {}).get('agents', []))
+                self._json_response({
+                    'status': 'ok',
+                    'uptime': int(time.time() - _server_start),
+                    'projects': agent_count,
+                    'orchestrator': os.path.basename(PA_DIR) if os.path.exists(PA_DIR) else None,
+                    'documents_dir': DOCS_DIR,
+                })
+            except Exception as e:
+                self._json_response({'status': 'error', 'error': str(e)})
+        elif self.path == '/api/activity':
             self._json_response({'activities': get_activities(), 'delegations': {k: v for k, v in _pending_delegations.items() if v['status'] in ('pending', 'running')}})
         elif self.path == '/api/segments':
             self._json_response({'segments': SEGMENTS, 'project_segment': PROJECT_SEGMENT})

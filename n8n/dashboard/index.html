@@ -113,6 +113,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .ch-inp button:hover{border-color:var(--accent);color:var(--accent)}
 .ch-inp button:disabled{opacity:.2}
 
+
+/* === TOASTS === */
+.toasts{position:fixed;bottom:60px;right:var(--sp-2xl);z-index:999;display:flex;flex-direction:column;gap:var(--sp-xs)}
+.toast{padding:var(--sp-s) var(--sp-l);font-size:var(--fs-s);font-family:var(--font-mono);border:1px solid var(--border);background:var(--sf);color:var(--text);animation:slideIn .2s;max-width:360px}
+.toast.error{border-color:var(--accent);color:var(--accent)}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.info{border-color:var(--yellow);color:var(--yellow)}
+
+/* === ANIMATIONS === */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* === LOADING === */
+.loading-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10;font-family:var(--font-mono);color:var(--t3);font-size:var(--fs-s)}
+
+/* === BADGE === */
+.badge{background:var(--accent);color:#fff;font-size:8px;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);padding:0 4px;margin-left:4px}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -130,8 +149,15 @@ const isStreaming=signal(false);
 const delegations=signal({});
 const theme=signal(localStorage.getItem('theme')||'dark');
 const feedItems=signal([]);
+
+const toasts=signal([]);
+const isLoading=signal(true);
+let toastId=0;
+function showToast(msg,type='info',ttl=4000){const id=++toastId;toasts.value=[...toasts.value,{id,msg,type}];setTimeout(()=>{toasts.value=toasts.value.filter(t=>t.id!==id);},ttl);}
+
 const clock=signal(new Date().toLocaleTimeString());
 const segments=signal({});
+const activeFilter=signal('');
 const modules=signal([]);
 const activities=signal({});  // project → {action, detail, started}
 
@@ -148,7 +174,7 @@ effect(()=>{
 });
 
 // ===== API =====
-async function loadAgents(){try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents.value=d.agents;}catch{}}
+async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
 async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=d.messages||[];sideMessages.value=msgs;
 // Restore delegation state from history
@@ -216,15 +242,15 @@ async function rejectDel(id){
 // ===== HELPERS =====
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function md(s){if(!s)return'';return esc(s).replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/^- (.+)$/gm,'• $1').replace(/\n/g,'<br>');}
-const ft=t=>{try{return new Date(t||Date.now()).toLocaleTimeString();}catch{return'';}};
+const ft=t=>{try{const d=new Date(t||Date.now());const s=Math.floor((Date.now()-d.getTime())/1000);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}catch{return'';}};
 const SC={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 const SL={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
 
 // ===== COMPONENTS =====
-function App(){return html`<div class="app"><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${Feed}/></div>`;}
+function App(){return html`<div class="app"><${Toasts}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${Feed}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
-  <button onClick=${()=>fetch('/api/action/briefing',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()).then(d=>alert(d.text||JSON.stringify(d)))}>briefing</button>
+  ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/action/briefing',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()).then(d=>showToast(d.text||JSON.stringify(d),'info',6000))}>briefing</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
   <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
   <span>${clock}</span>
@@ -233,19 +259,35 @@ function Header(){return html`<div class="hdr"><h1>command center</h1><div class
 function StatsRow(){
   const a=agents.value;const na=a.filter(x=>x.blockers||(x.uncommitted||0)>20).length;const act=a.filter(x=>x.task).length;const h=a.filter(x=>!x.blockers&&x.status!=='sleeping').length;const st=a.filter(x=>(x.days||999)>7).length;
   return html`<div class="stats">
-    <div class="stat"><div class="n" style="color:${na?'var(--accent)':'var(--green)'}">${na}</div><div class="l">need attention</div></div>
-    <div class="stat"><div class="n" style="color:var(--green)">${act}</div><div class="l">in progress</div></div>
+    <div class="stat" style="cursor:pointer" onClick=${()=>activeFilter.value=activeFilter.value==='attention'?'':'attention'}><div class="n" style="color:${na?'var(--accent)':'var(--green)'}">${na}</div><div class="l">need attention</div></div>
+    <div class="stat" style="cursor:pointer" onClick=${()=>activeFilter.value=activeFilter.value==='active'?'':'active'}><div class="n" style="color:var(--green)">${act}</div><div class="l">in progress</div></div>
     <div class="stat"><div class="n">${h}</div><div class="l">healthy</div></div>
-    <div class="stat"><div class="n" style="color:var(--mute)">${st}</div><div class="l">stale</div></div>
+    <div class="stat" style="cursor:pointer" onClick=${()=>activeFilter.value=activeFilter.value==='stale'?'':'stale'}><div class="n" style="color:var(--mute)">${st}</div><div class="l">stale</div></div>
     <div class="stat"><div class="n">${a.length}</div><div class="l">total</div></div>
   </div>`;
 }
 
+
+function EmptyState(){return html`<div style="text-align:center;padding:var(--sp-2xl);color:var(--t2)">
+  <div style="font-size:var(--fs-xl);margin-bottom:var(--sp-l)">No projects found</div>
+  <div style="font-size:var(--fs-m);max-width:500px;margin:0 auto;line-height:1.8">
+    <p>The dashboard scans your Documents folder for projects with <code>.template-manifest.json</code>.</p>
+    <p style="margin-top:var(--sp-m)"><strong>To add your first project:</strong></p>
+    <pre style="text-align:left;padding:var(--sp-m);background:var(--sf);border:1px solid var(--border);margin:var(--sp-m) 0">bash setup.sh my-project-name</pre>
+    <p style="margin-top:var(--sp-m)">Or configure scan directory in <code>n8n/config.json</code></p>
+  </div>
+</div>`;}
+
 function DashboardView(){
-  const seg=segments.value;const a=agents.value;const segMap={};const assigned=new Set();
+  const seg=segments.value;let a=agents.value;
+const af=activeFilter.value;
+if(af==='attention')a=a.filter(x=>x.blockers||(x.uncommitted||0)>20);
+if(af==='active')a=a.filter(x=>x.task);
+if(af==='stale')a=a.filter(x=>(x.days||999)>7);const segMap={};const assigned=new Set();
   for(const[name,projects]of Object.entries(seg)){segMap[name]=a.filter(x=>projects.includes(x.name));projects.forEach(p=>assigned.add(p));}
   const other=a.filter(x=>!assigned.has(x.name));if(other.length)segMap['Other']=other;
-  return html`<div class="content"><${StatsRow}/>
+  if(!a.length&&!isLoading.value&&!af)return html`<div class="content"><${StatsRow}/><${EmptyState}/></div>`;
+return html`<div class="content"><${StatsRow}/>${af?html`<div style="font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-s)">Filter: ${af} <span style="cursor:pointer;color:var(--accent)" onClick=${()=>activeFilter.value=''}>clear</span></div>`:''}`
     ${Object.entries(segMap).filter(([_,i])=>i.length).map(([name,items])=>html`
       <div class="seg-title">${name} (${items.length})</div>
       <div class="grid">${items.map(ag=>html`<${Tile} a=${ag}/>`)}</div>
@@ -354,6 +396,9 @@ function DelegBtn({id,project}){
   return null;
 }
 
+
+function Toasts(){return html`<div class="toasts">${toasts.value.map(t=>html`<div class="toast ${t.type}" key=${t.id}>${t.msg}</div>`)}</div>`;}
+
 function Feed(){return html`<div class="feed">${feedItems.value.length?feedItems.value.map(e=>html`<span>${ft(e.time)} [${e.type}] <b>${e.project||''}</b> ${(e.message||'').substring(0,40)}${'  '}</span>`):'no activity'}</div>`;}
 
 // ===== KEYBOARD =====
@@ -365,7 +410,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ===== INIT =====
-await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity()]);
+await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity()]);isLoading.value=false;
 render(html`<${App}/>`,document.body);
 setInterval(()=>{loadAgents();loadActivity();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
 </script>
