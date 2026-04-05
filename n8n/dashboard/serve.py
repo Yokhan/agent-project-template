@@ -138,6 +138,27 @@ CHATS_DIR = os.path.join(ROOT, 'tasks', 'chats')
 os.makedirs(CHATS_DIR, exist_ok=True)
 
 
+def build_orchestrator_context():
+    """Build context prefix for PA orchestrator. Uses cached scan data."""
+    try:
+        cached = _scan_cache.get('data') or get_agents()
+        agents_list = cached.get('agents', [])
+        working = [a['name'] for a in agents_list if a['status'] == 'working']
+        stale = [a['name'] for a in agents_list if a.get('days', 999) > 7]
+        blocked = [a['name'] for a in agents_list if a.get('blockers')]
+        total_dirty = sum(a.get('uncommitted', 0) for a in agents_list)
+        ctx = (f"[CONTEXT: You are PA Orchestrator managing {len(agents_list)} projects. "
+               f"Working: {', '.join(working) or 'none'}. "
+               f"Blocked: {', '.join(blocked) or 'none'}. "
+               f"Stale (>7d): {', '.join(stale[:3]) or 'none'}. "
+               f"Total uncommitted: {total_dirty}. "
+               f"User talks from Command Center dashboard. Be concise. "
+               f"If asked to do something in a project, confirm which and do it.]\n\n")
+        return ctx
+    except:
+        return ''
+
+
 def get_chats():
     """List all project chats with last message."""
     chats = []
@@ -199,20 +220,7 @@ def send_chat(project, message):
     # Inject orchestrator context if talking to PA (no project selected)
     prompt = message
     if not project:
-        try:
-            cached = _scan_cache.get('data') or get_agents()
-            agents_list = cached.get('agents', [])
-            working = [a['name'] for a in agents_list if a['status'] == 'working']
-            stale = [a['name'] for a in agents_list if a.get('days', 999) > 7]
-            total_dirty = sum(a.get('uncommitted', 0) for a in agents_list)
-            ctx = (f"[CONTEXT: You are PA Orchestrator managing {len(agents_list)} projects. "
-                   f"Working: {', '.join(working) or 'none'}. "
-                   f"Stale (>7d): {', '.join(stale[:3]) or 'none'}. "
-                   f"Total uncommitted: {total_dirty}. "
-                   f"User talks from Command Center dashboard. Be concise.]\n\n")
-            prompt = ctx + message
-        except:
-            pass
+        prompt = build_orchestrator_context() + message
 
     # Execute via claude -p (temp file for injection safety)
     tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
@@ -346,6 +354,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIR, **kwargs)
 
+    def end_headers(self):
+        # No-cache for HTML (prevent stale dashboard)
+        if hasattr(self, '_headers_buffer'):
+            path = self.path if hasattr(self, 'path') else ''
+            if path.endswith('.html') or path == '/':
+                self.send_header('Cache-Control', 'no-store, must-revalidate')
+        super().end_headers()
+
     def do_GET(self):
         if self.path == '/api/agents':
             self._json_response(get_agents())
@@ -428,14 +444,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Inject context for orchestrator
         prompt = message
         if not project:
-            try:
-                cached = _scan_cache.get('data') or get_agents()
-                agents_list = cached.get('agents', [])
-                working = [a['name'] for a in agents_list if a['status'] == 'working']
-                ctx = f"[CONTEXT: PA Orchestrator, {len(agents_list)} projects, working: {', '.join(working) or 'none'}. Be concise.]\n\n"
-                prompt = ctx + message
-            except:
-                pass
+            prompt = build_orchestrator_context() + message
 
         chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
         ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())

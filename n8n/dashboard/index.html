@@ -313,9 +313,8 @@ async function openProject(name){
   document.getElementById('o-ci').placeholder='talk to ' + name + '...';
   try{const r=await fetch('/api/chat/'+name);const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{renderChat('o-msgs',[]);}
 
-  // Also load detail chat area
-  renderChat('d-msgs',[]);
-  document.getElementById('d-ci').focus();
+  // Focus sidebar chat input (project agent)
+  document.getElementById('o-ci').focus();
 }
 
 function renderChat(elId, messages){
