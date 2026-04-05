@@ -113,237 +113,50 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
 <body>
-<div class="app">
-  <div class="hdr">
-    <h1>Command Center</h1>
-    <div class="r">
-      <button onclick="act('briefing')">briefing</button>
-      <button onclick="act('drift')">drift</button>
-      <button onclick="act('weekly')">weekly</button>
-      <button onclick="loadAll()">refresh</button>
-      <button onclick="toggleTheme()" id="theme-btn">light</button>
-      <span id="ts"></span>
-    </div>
-  </div>
+<script type="module">
+import{render,html,signal,effect,useRef,useEffect}from'/vendor/preact-bundle.mjs';
 
-  <div class="main">
-    <!-- DASHBOARD VIEW -->
-    <div class="content" id="dashboard-view">
-      <div class="stats" id="stats"></div>
-      <div class="grid-title">projects</div>
-      <div class="grid" id="grid"></div>
-    </div>
+// ===== STATE (signals — reactive, global) =====
+const agents=signal([]);
+const currentProject=signal(null);
+const sideMessages=signal([]);
+const sideTitle=signal('orchestrator');
+const streamText=signal('');
+const isStreaming=signal(false);
+const delegations=signal({});
+const theme=signal(localStorage.getItem('theme')||'dark');
+const feedItems=signal([]);
+const clock=signal(new Date().toLocaleTimeString());
+const segments=signal({});
+const modules=signal([]);
 
-    <!-- PROJECT DETAIL VIEW (hidden by default) -->
-    <div class="detail" id="detail-view">
-      <div style="padding:20px 24px;flex:1;display:flex;flex-direction:column;overflow:hidden">
-        <div class="back" onclick="showDashboard()">&larr; back to dashboard</div>
-        <div class="proj-hdr">
-          <h2><span class="dot" id="d-dot"></span> <span id="d-name"></span></h2>
-          <div class="meta" id="d-meta"></div>
-        </div>
-        <div class="panels">
-          <div class="panel"><h3>modules</h3><div id="d-modules">Loading...</div></div>
-          <div class="panel"><h3>info</h3><div id="d-info"></div></div>
-        </div>
-        <div style="margin-top:var(--sp-m);color:var(--t3);font-size:var(--fs-s)">
-          Use the chat panel on the right to talk to this project's agent →
-        </div>
-      </div>
-    </div>
+setInterval(()=>clock.value=new Date().toLocaleTimeString(),1000);
+effect(()=>{
+  document.documentElement.setAttribute('data-theme',theme.value==='light'?'light':'');
+  localStorage.setItem('theme',theme.value);
+});
+effect(()=>{
+  const p=currentProject.value;
+  sideTitle.value=p?p+' agent':'orchestrator';
+  loadChat(p||'_orchestrator');
+  if(p)loadModules(p);
+});
 
-    <!-- RIGHT SIDEBAR CHAT (orchestrator or project agent) -->
-    <div class="chat-side">
-      <div class="ch-title" id="side-chat-title">orchestrator</div>
-      <div class="ch-msgs" id="o-msgs"></div>
-      <div class="ch-typ" id="o-typ">thinking...</div>
-      <div class="ch-inp">
-        <input id="o-ci" placeholder="talk to PA..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendOrch();}">
-        <button id="o-cb" onclick="sendOrch()">send</button>
-      </div>
-    </div>
-  </div>
+// ===== API =====
+async function loadAgents(){try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents.value=d.agents;}catch{}}
+async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
+async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();sideMessages.value=d.messages||[];}catch{sideMessages.value=[];}}
+async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
+async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 
-  <div class="feed" id="feed"></div>
-</div>
-
-<script>
-// Theme
-function toggleTheme(){
-  const cur=document.documentElement.getAttribute('data-theme');
-  const next=cur==='light'?'dark':'light';
-  document.documentElement.setAttribute('data-theme',next==='dark'?'':next);
-  localStorage.setItem('theme',next);
-  document.getElementById('theme-btn').textContent=next==='dark'?'light':'dark';
-}
-(function(){const t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');
-document.getElementById('theme-btn').textContent=(t==='light')?'dark':'light';})();
-
-let agents=[],curProj=null;
-const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
-const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
-
-async function loadAll(){
-  await Promise.all([loadAgents(),loadFeed()]);
-  // Only load orchestrator chat when NOT in project drill-down
-  if(!curProj) await loadOrchChat();
-  render();
-}
-
-async function loadAgents(){
-  try{const r=await fetch('/api/agents');const d=await r.json();if(d.agents)agents=d.agents;document.getElementById('ts').textContent=new Date().toLocaleTimeString();}catch{}
-}
-async function loadFeed(){
-  try{const r=await fetch('/api/feed');const d=await r.json();document.getElementById('feed').innerHTML=(d.feed||[]).map(e=>`${ft(e.time)} [${e.type}] ${e.project||''} ${(e.message||'').substring(0,40)} &nbsp; `).join('')||'no activity';}catch{}
-}
-async function loadOrchChat(){
-  try{const r=await fetch('/api/chat/_orchestrator');const d=await r.json();renderChat('o-msgs',(d.messages||[]));}catch{}
-}
-
-function render(){
-  const blocked=agents.filter(a=>a.blockers).length;
-  const active=agents.filter(a=>a.task).length;
-  const healthy=agents.filter(a=>!a.blockers&&a.status!=='sleeping').length;
-  const stale=agents.filter(a=>(a.days||999)>7).length;
-  const needsAttn=agents.filter(a=>a.blockers||(a.uncommitted||0)>20).length;
-  document.getElementById('stats').innerHTML=
-    `<div class="stat"><div class="n" style="color:${needsAttn?'var(--accent)':'var(--green)'}">${needsAttn}</div><div class="l">need attention</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--green)">${active}</div><div class="l">in progress</div></div>`+
-    `<div class="stat"><div class="n">${healthy}</div><div class="l">healthy</div></div>`+
-    `<div class="stat"><div class="n" style="color:var(--mute)">${stale}</div><div class="l">stale</div></div>`+
-    `<div class="stat"><div class="n">${agents.length}</div><div class="l">total</div></div>`;
-
-  // Sort: blocked first, then by activity
-  const sorted=[...agents].sort((a,b)=>{
-    if(a.blockers&&!b.blockers)return -1;if(!a.blockers&&b.blockers)return 1;
-    if(a.task&&!b.task)return -1;if(!a.task&&b.task)return 1;
-    return(a.days||999)-(b.days||999);
-  });
-
-  // Group by segment (business segments, not status)
-  const segMap={};
-  for(const a of sorted){
-    const seg=a.segment||'Other';
-    if(!segMap[seg])segMap[seg]=[];
-    segMap[seg].push(a);
-  }
-  // Sort segments: ones with blockers first
-  const segOrder=Object.keys(segMap).sort((a,b)=>{
-    const aB=segMap[a].some(x=>x.blockers);const bB=segMap[b].some(x=>x.blockers);
-    if(aB&&!bB)return -1;if(!aB&&bB)return 1;return a.localeCompare(b);
-  });
-
-  let gridHtml='';
-  for(const seg of segOrder){
-    const items=segMap[seg];
-    const blocked=items.filter(x=>x.blockers).length;
-    const badge=blocked?` <span style="color:var(--accent)">${blocked} blocked</span>`:'';
-    gridHtml+=`<div class="grid-title" style="grid-column:1/-1;margin-top:var(--sp-m)">${esc(seg)} <span style="color:var(--t3)">(${items.length})</span>${badge}</div>`;
-    gridHtml+=items.map(a=>renderTile(a)).join('');
-  }
-  document.getElementById('grid').innerHTML=gridHtml;
-
-  function renderTile(a){
-    const taskRaw=a.task?a.task.substring(0,80):'';
-    const task=taskRaw?md(taskRaw):'<span style="color:var(--t3)">no active task</span>';
-    const blocker=a.blockers?'<span style="color:var(--accent);font-size:var(--fs-xs);font-weight:600"> · BLOCKED</span>':'';
-    const phase=a.phase?`<span style="color:var(--t3);font-size:var(--fs-xs)">${esc(a.phase).substring(0,25)}</span>`:'';
-    const lessonsTag=a.lessons?`<span style="font-size:var(--fs-xs);color:var(--t3)">${a.lessons}L</span>`:'';
-    return`<div class="tile" onclick="openProject('${esc(a.name)}')">
-      <div class="actions">
-        <button onclick="event.stopPropagation();quickAct('sync','${esc(a.name)}')" title="Sync">↻</button>
-        <button onclick="event.stopPropagation();openProject('${esc(a.name)}')" title="Open">→</button>
-      </div>
-      <div class="top">
-        <span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}${blocker}</span>
-      </div>
-      <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task}</div>
-      <div class="row">
-        <span style="color:${statusColor[a.status]||'var(--t3)'}">${statusLabel[a.status]||a.status}</span>
-        ${phase}
-        <span>${a.last_commit||''}</span>
-        ${lessonsTag}
-      </div>
-      <div class="bar" style="width:${Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${statusColor[a.status]||'var(--mute)'}"></div>
-    </div>`;
-  }
-}
-
-function showDashboard(){
-  curProj=null;
-  document.getElementById('dashboard-view').style.display='block';
-  document.getElementById('detail-view').className='detail';
-  // Restore orchestrator chat
-  document.getElementById('side-chat-title').textContent='orchestrator';
-  document.getElementById('o-ci').placeholder='talk to PA...';
-  loadOrchChat();
-}
-
-async function openProject(name){
-  curProj=name;
-  document.getElementById('dashboard-view').style.display='none';
-  document.getElementById('detail-view').className='detail show';
-
-  const ag=agents.find(a=>a.name===name)||{};
-  document.getElementById('d-dot').className='dot '+(ag.status||'');
-  document.getElementById('d-name').textContent=name;
-  document.getElementById('d-meta').innerHTML=
-    `<span style="color:${statusColor[ag.status]||'var(--t3)'}">${ag.status||''}</span> · `+
-    `${esc(ag.branch||'')} · ${ag.uncommitted||0} uncommitted · ${esc(ag.last_commit||'')}` +
-    (ag.phase?` · <span style="color:var(--t2)">${esc(ag.phase)}</span>`:'') +
-    (ag.task?`<div style="margin-top:var(--sp-xs);color:var(--t2)">Task: ${md(ag.task)}</div>`:'');
-
-  document.getElementById('d-info').innerHTML=
-    `<div style="font-size:var(--fs-s);color:var(--t2)">`+
-    `<div>branch: <code>${esc(ag.branch||'')}</code></div>`+
-    `<div>uncommitted: ${ag.uncommitted||0}</div>`+
-    `<div>template: ${esc(ag.template_version||'none')}</div>`+
-    `<div>lessons: ${ag.lessons||0}</div>`+
-    `<div>segment: ${esc(ag.segment||'')}</div>`+
-    (ag.blockers?'<div style="color:var(--accent);font-weight:600;margin-top:var(--sp-xs)">⚠ BLOCKER ACTIVE</div>':'')+
-    `</div>`;
-
-  // Load modules
-  try{
-    const r=await fetch('/api/modules/'+encodeURIComponent(name));const d=await r.json();
-    document.getElementById('d-modules').innerHTML=(d.modules||[]).map(m=>`<div class="mod"><span>${esc(m.name)}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`).join('')||'<span style="color:var(--t2)">no modules detected</span>';
-  }catch{document.getElementById('d-modules').innerHTML='failed';}
-
-  // Switch RIGHT sidebar chat to this project's agent
-  document.getElementById('side-chat-title').textContent=name + ' agent';
-  document.getElementById('o-ci').placeholder='talk to ' + name + '...';
-  try{const r=await fetch('/api/chat/'+encodeURIComponent(name));const d=await r.json();renderChat('o-msgs',d.messages||[]);}catch{renderChat('o-msgs',[]);}
-
-  // Focus sidebar chat input (project agent)
-  document.getElementById('o-ci').focus();
-}
-
-function renderChat(elId, messages){
-  const el=document.getElementById(elId);
-  el.innerHTML=messages.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${m.role==='system'?'<span style="color:var(--t3);font-style:italic;font-size:var(--fs-s)">'+esc(m.msg)+'</span>':m.role==='assistant'?md(m.msg):esc(m.msg)}<div class="ts">${ft(m.ts)}</div></div>`).join('');
-  el.scrollTop=el.scrollHeight;
-}
-
-async function sendOrch(){await doSend(curProj||'','o-ci','o-cb','o-msgs','o-typ');}
-// sendDetail removed — right sidebar handles project chat
-
-async function doSend(proj,inputId,btnId,msgsId,typId){
-  const inp=document.getElementById(inputId);
-  const msg=inp.value.trim();if(!msg)return;
-  const ms=document.getElementById(msgsId);
-  ms.innerHTML+=`<div class="m u">${esc(msg)}<div class="ts">${ft()}</div></div>`;
-  inp.value='';document.getElementById(btnId).disabled=true;
-  document.getElementById(typId).classList.add('show');ms.scrollTop=ms.scrollHeight;
-  // Create separate divs: text (re-rendered on stream) + delegation (rendered once)
-  const respDiv=document.createElement('div');respDiv.className='m a';
-  const textDiv=document.createElement('div');respDiv.appendChild(textDiv);
-  const delegDiv=document.createElement('div');respDiv.appendChild(delegDiv);
-  ms.appendChild(respDiv);
-  let fullText='',delegRendered=false;
+async function sendMessage(msg){
+  if(!msg.trim())return;
+  const proj=currentProject.value||'';
+  sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
+  isStreaming.value=true;streamText.value='';
   try{
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
-    document.getElementById(typId).classList.remove('show');
-    const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
+    const reader=r.body.getReader();const dec=new TextDecoder();let buf='',full='';
     while(true){
       const{done,value}=await reader.read();if(done)break;
       buf+=dec.decode(value,{stream:true});
@@ -351,102 +164,162 @@ async function doSend(proj,inputId,btnId,msgsId,typId){
       for(const ln of lines){
         if(!ln.startsWith('data: '))continue;
         const p=ln.slice(6);if(p==='[DONE]')break;
-        try{
-          const d=JSON.parse(p);
-          if(d.text){
-            fullText+=d.text;
-            // Render delegation buttons ONCE in separate div
-            if(!delegRendered){
-              const dm=fullText.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
-              if(dm){
-                delegRendered=true;
-                delegDiv.innerHTML=
-                  '<div style="margin:8px 0;padding:8px;border:1px solid var(--border);background:var(--sf)">'+
-                  '<div style="font-size:var(--fs-s);color:var(--t2);margin-bottom:6px">Delegation pending approval</div>'+
-                  '<div style="display:flex;gap:8px">'+
-                  '<button onclick="approveDel(\''+dm[1]+'\',\''+dm[2]+'\')" style="background:var(--green);color:#000;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">APPROVE</button>'+
-                  '<button onclick="rejectDel(\''+dm[1]+'\')" style="background:var(--accent);color:#fff;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">REJECT</button>'+
-                  '</div></div>';
-              }
-            }
-            // Update text div only — delegation div untouched
-            textDiv.innerHTML=md(fullText.replace(/<delegation[^>]*\/>/g,''));
-            ms.scrollTop=ms.scrollHeight;
-          }
-        }catch{}
+        try{const d=JSON.parse(p);if(d.text){full+=d.text;streamText.value=full;}}catch{}
       }
     }
-    if(!fullText)textDiv.innerHTML='<span style="color:var(--t3)">No response</span>';
-    const tsDiv=document.createElement('div');tsDiv.className='ts';tsDiv.textContent=ft();
-    respDiv.appendChild(tsDiv);
-  }catch(e){document.getElementById(typId).classList.remove('show');textDiv.innerHTML=`<span style="color:var(--accent)">${esc(e.message)}</span>`;}
-  document.getElementById(btnId).disabled=false;ms.scrollTop=ms.scrollHeight;loadFeed();
+    isStreaming.value=false;
+    const dm=full.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
+    if(dm){delegations.value={...delegations.value,[dm[1]]:{project:dm[2],status:'pending'}};}
+    sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full}];
+    streamText.value='';loadFeed();
+  }catch(e){isStreaming.value=false;sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:'Error: '+e.message}];}
 }
 
-async function approveDel(id,project){
-  const ms=document.getElementById('o-msgs');
-  ms.innerHTML+=`<div class="m" style="color:var(--green);font-size:var(--fs-s)">✓ Approved. Running in ${esc(project)}...</div>`;
-  ms.scrollTop=ms.scrollHeight;
+async function approveDel(id){
+  const d={...delegations.value};d[id]={...d[id],status:'running'};delegations.value=d;
   try{
     const r=await fetch('/api/approve/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const d=await r.json();
-    if(d.status==='complete'){
-      ms.innerHTML+=`<div class="m a">${md('**'+d.project+' result:**\n'+d.response)}<div class="ts">${ft()}</div></div>`;
-    }else{
-      ms.innerHTML+=`<div class="m a" style="color:var(--accent)">Error: ${esc(d.error||'failed')}</div>`;
-    }
-  }catch(e){ms.innerHTML+=`<div class="m a" style="color:var(--accent)">${esc(e.message)}</div>`;}
-  ms.scrollTop=ms.scrollHeight;
+    const res=await r.json();
+    const d2={...delegations.value};d2[id]={...d2[id],status:'done'};delegations.value=d2;
+    sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'system',msg:'✓ '+res.project+': '+(res.response||'').substring(0,200)}];
+  }catch{const d2={...delegations.value};d2[id]={...d2[id],status:'error'};delegations.value=d2;}
 }
 async function rejectDel(id){
-  await fetch('/api/reject/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-  const ms=document.getElementById('o-msgs');
-  ms.innerHTML+=`<div class="m" style="color:var(--accent);font-size:var(--fs-s)">✗ Rejected</div>`;
-}
-async function quickAct(action,project){
-  try{
-    const r=await fetch('/api/action/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project})});
-    const d=await r.json();
-    alert(`${project} → ${action}: ${d.text||d.status||'done'}`);
-    loadAll();
-  }catch(e){alert(`${action} failed: ${e.message}`);}
-}
-async function act(n){
-  try{const r=await fetch('/api/action/'+n,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const d=await r.json();alert(d.text||JSON.stringify(d).substring(0,300));loadAll();}catch(e){alert(e.message);}
+  const d={...delegations.value};d[id]={...d[id],status:'rejected'};delegations.value=d;
+  fetch('/api/reject/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
 }
 
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function md(s){
-  if(!s)return'';
-  return esc(s)
-    .replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g,'<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
-    .replace(/^### (.+)$/gm,'<h4 style="margin:8px 0 4px;font-size:var(--fs-m);color:var(--text)">$1</h4>')
-    .replace(/^## (.+)$/gm,'<h3 style="margin:8px 0 4px;font-size:var(--fs-l);color:var(--text)">$1</h3>')
-    .replace(/^- (.+)$/gm,'<div style="padding-left:12px">• $1</div>')
-    .replace(/^\d+\. (.+)$/gm,'<div style="padding-left:12px">$&</div>')
-    .replace(/\n/g,'<br>')
-    .replace(/&lt;delegation id="([^"]+)" project="([^"]+)"\/&gt;/g,
-      '<div style="margin-top:8px;display:flex;gap:8px">' +
-      '<button onclick="approveDel(\'$1\',\'$2\')" style="background:#33d17a;color:#000;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">APPROVE</button>' +
-      '<button onclick="rejectDel(\'$1\')" style="background:#D71921;color:#fff;border:none;padding:4px 12px;cursor:pointer;font-family:var(--font-mono);font-size:10px">REJECT</button></div>');
-}
-function ft(t){if(!t)return new Date().toLocaleTimeString();try{return new Date(t).toLocaleTimeString();}catch{return t;}}
+// ===== HELPERS =====
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function md(s){if(!s)return'';return esc(s).replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/^- (.+)$/gm,'• $1').replace(/\n/g,'<br>');}
+const ft=t=>{try{return new Date(t||Date.now()).toLocaleTimeString();}catch{return'';}};
+const SC={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
+const SL={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
 
-// Keyboard shortcuts
+// ===== COMPONENTS =====
+function App(){return html`<div class="app"><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${Feed}/></div>`;}
+
+function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
+  <button onClick=${()=>fetch('/api/action/briefing',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()).then(d=>alert(d.text||JSON.stringify(d)))}>briefing</button>
+  <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
+  <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
+  <span>${clock}</span>
+</div></div>`;}
+
+function StatsRow(){
+  const a=agents.value;const na=a.filter(x=>x.blockers||(x.uncommitted||0)>20).length;const act=a.filter(x=>x.task).length;const h=a.filter(x=>!x.blockers&&x.status!=='sleeping').length;const st=a.filter(x=>(x.days||999)>7).length;
+  return html`<div class="stats">
+    <div class="stat"><div class="n" style="color:${na?'var(--accent)':'var(--green)'}">${na}</div><div class="l">need attention</div></div>
+    <div class="stat"><div class="n" style="color:var(--green)">${act}</div><div class="l">in progress</div></div>
+    <div class="stat"><div class="n">${h}</div><div class="l">healthy</div></div>
+    <div class="stat"><div class="n" style="color:var(--mute)">${st}</div><div class="l">stale</div></div>
+    <div class="stat"><div class="n">${a.length}</div><div class="l">total</div></div>
+  </div>`;
+}
+
+function DashboardView(){
+  const seg=segments.value;const a=agents.value;const segMap={};const assigned=new Set();
+  for(const[name,projects]of Object.entries(seg)){segMap[name]=a.filter(x=>projects.includes(x.name));projects.forEach(p=>assigned.add(p));}
+  const other=a.filter(x=>!assigned.has(x.name));if(other.length)segMap['Other']=other;
+  return html`<div class="content"><${StatsRow}/>
+    ${Object.entries(segMap).filter(([_,i])=>i.length).map(([name,items])=>html`
+      <div class="seg-title" style="margin-top:var(--sp-m)">${name} (${items.length})</div>
+      <div class="grid">${items.map(ag=>html`<${Tile} a=${ag}/>`)}</div>
+    `)}
+  </div>`;
+}
+
+function Tile({a}){
+  return html`<div class="tile" onClick=${()=>currentProject.value=a.name}>
+    <div class="top"><span class="name"><span class="dot ${a.status}"></span>${a.name}${a.blockers?html` <span style="color:var(--accent);font-size:var(--fs-xs)">· BLOCKED</span>`:''}</span></div>
+    <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" dangerouslySetInnerHTML=${{__html:a.task?md(a.task.substring(0,80)):'<span style="color:var(--t3)">no active task</span>'}}></div>
+    <div class="row"><span style="color:${SC[a.status]||'var(--t3)'}">${SL[a.status]||a.status}</span><span>${a.last_commit||''}</span>${a.lessons?html`<span>${a.lessons}L</span>`:''}</div>
+    <div class="bar" style="width:${Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${SC[a.status]||'var(--mute)'}"></div>
+  </div>`;
+}
+
+function DetailView(){
+  const name=currentProject.value;const ag=agents.value.find(a=>a.name===name)||{};
+  return html`<div class="content">
+    <div class="back" onClick=${()=>currentProject.value=null}>← back</div>
+    <h2 style="font-size:var(--fs-xl);display:flex;align-items:center;gap:var(--sp-s)"><span class="dot ${ag.status}"></span>${name}</h2>
+    <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-s) 0">
+      <span style="color:${SC[ag.status]||'var(--t3)'}">${ag.status||''}</span> · ${ag.branch||''} · ${ag.uncommitted||0} uncommitted
+      ${ag.task?html`<div style="margin-top:var(--sp-xs)" dangerouslySetInnerHTML=${{__html:'Task: '+md(ag.task)}}></div>`:''}
+    </div>
+    <div class="panels">
+      <div class="panel"><h3>modules</h3>${modules.value.length?modules.value.map(m=>html`<div class="mod"><span>${m.name}</span><span class="${m.status}">${m.status} ${m.files}f/${m.lines}L</span></div>`):html`<span style="color:var(--t2)">no modules</span>`}</div>
+      <div class="panel"><h3>info</h3><div style="font-size:var(--fs-s);color:var(--t2)">
+        <div>branch: <code>${ag.branch||''}</code></div><div>template: ${ag.template_version||'none'}</div><div>lessons: ${ag.lessons||0}</div><div>segment: ${ag.segment||''}</div>
+        ${ag.blockers?html`<div style="color:var(--accent);font-weight:600;margin-top:var(--sp-xs)">⚠ BLOCKER</div>`:''}
+      </div></div>
+    </div>
+  </div>`;
+}
+
+function ChatSidebar(){
+  const inputRef=useRef();const msgsRef=useRef();
+  useEffect(()=>{if(msgsRef.current)msgsRef.current.scrollTop=msgsRef.current.scrollHeight;});
+  const send=()=>{const v=inputRef.current?.value;if(!v?.trim())return;inputRef.current.value='';sendMessage(v);};
+  return html`<div class="chat-side">
+    <div class="ch-title">${sideTitle}</div>
+    <div class="ch-msgs" ref=${msgsRef}>
+      ${sideMessages.value.map((m,i)=>html`<${ChatMsg} key=${i} m=${m}/>`)}
+      <${StreamBubble}/>
+    </div>
+    <div class="ch-inp">
+      <input ref=${inputRef} placeholder="talk to ${sideTitle.value}..." onKeyDown=${e=>{if(e.key==='Enter'){e.preventDefault();send();}}} disabled=${isStreaming.value}/>
+      <button onClick=${send} disabled=${isStreaming.value}>send</button>
+    </div>
+  </div>`;
+}
+
+function ChatMsg({m}){
+  if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
+  const cls=m.role==='user'?'u':'a';
+  const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
+  const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
+  return html`<div class="m ${cls}">
+    <div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(m.msg)}}></div>
+    ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
+    <div class="ts">${ft(m.ts)}</div>
+  </div>`;
+}
+
+function StreamBubble(){
+  if(!isStreaming.value&&!streamText.value)return null;
+  if(!streamText.value)return html`<div class="m a" style="color:var(--t3)">thinking...</div>`;
+  return html`<div class="m a"><div dangerouslySetInnerHTML=${{__html:md(streamText.value.replace(/<delegation[^>]*\/>/g,''))}}></div></div>`;
+}
+
+function DelegBtn({id,project}){
+  const d=delegations.value[id];
+  if(!d||d.status==='pending')return html`<div style="margin:8px 0;padding:8px;border:1px solid var(--border);background:var(--sf)">
+    <div style="font-size:var(--fs-s);color:var(--t2);margin-bottom:6px">Approve task for ${project}?</div>
+    <div style="display:flex;gap:8px">
+      <button onClick=${()=>approveDel(id)} style="background:var(--green);color:#000;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">APPROVE</button>
+      <button onClick=${()=>rejectDel(id)} style="background:var(--accent);color:#fff;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">REJECT</button>
+    </div></div>`;
+  if(d.status==='running')return html`<div style="color:var(--yellow);font-size:var(--fs-s);padding:4px 0">⏳ executing...</div>`;
+  if(d.status==='done')return html`<div style="color:var(--green);font-size:var(--fs-s);padding:4px 0">✓ done</div>`;
+  if(d.status==='rejected')return html`<div style="color:var(--accent);font-size:var(--fs-s);padding:4px 0">✗ rejected</div>`;
+  return null;
+}
+
+function Feed(){return html`<div class="feed">${feedItems.value.length?feedItems.value.map(e=>html`<span>${ft(e.time)} [${e.type}] <b>${e.project||''}</b> ${(e.message||'').substring(0,40)}${'  '}</span>`):'no activity'}</div>`;}
+
+// ===== KEYBOARD =====
 document.addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT')return; // don't intercept input fields
-  if(e.key==='Escape'){showDashboard();return;}
-  if(e.key==='/'){e.preventDefault();document.getElementById('o-ci').focus();return;}
-  if(e.key==='d'||e.key==='D'){toggleTheme();return;}
-  if(e.key>='1'&&e.key<='9'){const idx=parseInt(e.key)-1;if(agents[idx])openProject(agents[idx].name);return;}
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='Escape'){currentProject.value=null;return;}
+  if(e.key==='/'){e.preventDefault();document.querySelector('.ch-inp input')?.focus();return;}
+  if(e.key==='d'||e.key==='D'){theme.value=theme.value==='dark'?'light':'dark';return;}
 });
 
-loadAll();
-setInterval(loadAll,30000);
-// Ticking clock
-setInterval(()=>{document.getElementById('ts').textContent=new Date().toLocaleTimeString();},1000);
+// ===== INIT =====
+await Promise.all([loadAgents(),loadSegments(),loadFeed()]);
+render(html`<${App}/>`,document.body);
+setInterval(()=>{loadAgents();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},30000);
 </script>
+
 </body></html>
