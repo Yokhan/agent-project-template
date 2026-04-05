@@ -4,6 +4,14 @@
 
 set -euo pipefail
 
+# Check flags
+IS_ORCHESTRATOR=false
+for arg in "$@"; do
+  case "$arg" in
+    --orchestrator) IS_ORCHESTRATOR=true; shift ;;
+  esac
+done
+
 # Check dependencies
 if ! command -v git >/dev/null 2>&1; then
     echo "ERROR: git is not installed. Please install git first."
@@ -192,6 +200,18 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
 fi
 
 # Auto-bootstrap MCP servers (context-router, engram, n8n if docker available)
+# If orchestrator — replace CLAUDE.md with orchestrator template
+if [ "$IS_ORCHESTRATOR" = true ]; then
+  echo "Setting up as ORCHESTRATOR project..."
+  ORCH_TEMPLATE="$SCRIPT_DIR/templates/orchestrator/CLAUDE.md"
+  if [ -f "$ORCH_TEMPLATE" ]; then
+    cp "$ORCH_TEMPLATE" CLAUDE.md
+    echo "Orchestrator CLAUDE.md installed"
+  fi
+  mkdir -p tasks/chats brain
+  echo "Orchestrator directories created"
+fi
+
 echo ""
 echo "--- Auto-bootstrapping MCP servers ---"
 if [ -f scripts/bootstrap-mcp.sh ]; then
@@ -201,9 +221,16 @@ fi
 echo ""
 echo "✅ Project '$PROJECT_DIR' created successfully!"
 echo ""
-echo "Next steps:"
-echo "  1. cd $PROJECT_DIR"
-echo "  2. Open in Claude Code or Zed"
-echo "  3. Run /setup-project to configure for your stack"
+if [ "$IS_ORCHESTRATOR" = true ]; then
+  echo "Next steps:"
+  echo "  1. cd $PROJECT_DIR"
+  echo "  2. Open Command Center: cd .. && bash start.sh"
+  echo "  3. Dashboard will use this project as orchestrator"
+else
+  echo "Next steps:"
+  echo "  1. cd $PROJECT_DIR"
+  echo "  2. Open in Claude Code or Zed"
+  echo "  3. Run /setup-project to configure for your stack"
+fi
 echo ""
 echo "Included: 18 library rules, 10 agents, 29 skills, 23 commands, 9 MCP tools"

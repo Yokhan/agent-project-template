@@ -283,6 +283,7 @@ const searchQuery=signal('');
 const actionPlan=signal(null);
 const showKbHelp=signal(false);
 const showPlan=signal(true);
+const orchOk=signal(true);
 const projectPlan=signal(null);
 const activities=signal({});  // project → {action, detail, started}
 
@@ -300,6 +301,7 @@ effect(()=>{
 
 // ===== API =====
 async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
+async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch{}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
 async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=d.messages||[];sideMessages.value=msgs;
 // Restore delegation state from history
@@ -374,7 +376,15 @@ const SC={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blo
 const SL={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
 
 // ===== COMPONENTS =====
-function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
+
+function OrchWarning(){
+  if(orchOk.value)return null;
+  return html`<div style="padding:var(--sp-s) var(--sp-l);background:var(--accent-dim);border-bottom:1px solid var(--accent);font-size:var(--fs-s);color:var(--accent);font-family:var(--font-mono);display:flex;align-items:center;gap:var(--sp-s)">
+    <span>WARNING:</span> No orchestrator project found. Chat will run in template context.
+    <span style="color:var(--t2)">Fix: bash setup.sh my-pa --orchestrator</span>
+  </div>`;
+}
+function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
@@ -395,13 +405,22 @@ function StatsRow(){
 }
 
 
-function EmptyState(){return html`<div style="text-align:center;padding:var(--sp-2xl);color:var(--t2)">
-  <div style="font-size:var(--fs-xl);margin-bottom:var(--sp-l)">No projects found</div>
-  <div style="font-size:var(--fs-m);max-width:500px;margin:0 auto;line-height:1.8">
-    <p>The dashboard scans your Documents folder for projects with <code>.template-manifest.json</code>.</p>
-    <p style="margin-top:var(--sp-m)"><strong>To add your first project:</strong></p>
-    <pre style="text-align:left;padding:var(--sp-m);background:var(--sf);border:1px solid var(--border);margin:var(--sp-m) 0">bash setup.sh my-project-name</pre>
-    <p style="margin-top:var(--sp-m)">Or configure scan directory in <code>n8n/config.json</code></p>
+function EmptyState(){return html`<div style="padding:var(--sp-2xl);max-width:600px;margin:0 auto">
+  <div style="font-size:var(--fs-xl);margin-bottom:var(--sp-xl);font-family:var(--font-mono);letter-spacing:2px">SETUP REQUIRED</div>
+  <div style="border:1px solid var(--border);padding:var(--sp-l);margin-bottom:var(--sp-l)">
+    <div style="font-size:var(--fs-s);color:var(--accent);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:var(--sp-m)">STEP 1 — CREATE ORCHESTRATOR</div>
+    <p style="color:var(--t2);margin-bottom:var(--sp-m)">The orchestrator is your central project manager. It delegates tasks to other project agents.</p>
+    <pre style="padding:var(--sp-m);background:var(--sf);border:1px solid var(--border);font-size:var(--fs-s);overflow-x:auto">bash setup.sh my-assistant --orchestrator</pre>
+  </div>
+  <div style="border:1px solid var(--border);padding:var(--sp-l);margin-bottom:var(--sp-l)">
+    <div style="font-size:var(--fs-s);color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:var(--sp-m)">STEP 2 — CREATE PROJECTS</div>
+    <p style="color:var(--t2);margin-bottom:var(--sp-m)">Each project gets its own agent with rules, memory, and tools.</p>
+    <pre style="padding:var(--sp-m);background:var(--sf);border:1px solid var(--border);font-size:var(--fs-s);overflow-x:auto">bash setup.sh my-app</pre>
+  </div>
+  <div style="border:1px solid var(--border);padding:var(--sp-l)">
+    <div style="font-size:var(--fs-s);color:var(--t2);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:var(--sp-m)">STEP 3 — RESTART DASHBOARD</div>
+    <p style="color:var(--t2)">After creating projects, restart: <code>bash start.sh</code></p>
+    <p style="color:var(--t3);margin-top:var(--sp-s);font-size:var(--fs-s)">Projects must be in your Documents folder (or configure <code>n8n/config.json</code>)</p>
   </div>
 </div>`;}
 
@@ -614,7 +633,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ===== INIT =====
-await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan()]);isLoading.value=false;
+await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan(),checkOrch()]);isLoading.value=false;
 render(html`<${App}/>`,document.body);
 setInterval(()=>{loadAgents();loadActivity();loadPlan();if(!currentProject.value){loadChat('_orchestrator');}loadFeed();},5000);
 </script>

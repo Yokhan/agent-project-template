@@ -1020,7 +1020,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/health':
             try:
-                PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+                orch_name_h = 'PersonalAssistant'
+                try:
+                    cfg_h = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
+                    orch_name_h = cfg_h.get('orchestrator_project', orch_name_h) or orch_name_h
+                except: pass
+                PA_DIR = os.path.join(DOCS_DIR, orch_name_h)
                 agent_count = len((get_agents() or {}).get('agents', []))
                 self._json_response({
                     'status': 'ok',
@@ -1146,9 +1151,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response({'status': 'error', 'error': 'Empty message'})
             return
 
-        PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+        # Determine orchestrator directory
+        orch_name = 'PersonalAssistant'
+        try:
+            cfg2 = json.loads(open(os.path.join(ROOT, 'n8n', 'config.json'), encoding='utf-8').read())
+            orch_name = cfg2.get('orchestrator_project', orch_name) or orch_name
+        except: pass
+        PA_DIR = os.path.join(DOCS_DIR, orch_name)
 
-        # PA handles delegation via [DELEGATE:Project] markers
         prompt = message
         if not project:
             prompt = build_orchestrator_context() + message

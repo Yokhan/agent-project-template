@@ -63,12 +63,26 @@ fi
 
 # 6. Check config
 if [ ! -f "n8n/config.json" ]; then
-  echo "Creating default config.json..."
+  echo "Creating config.json..."
   DOCS_DIR="$(cd ~ && pwd)/Documents"
+  # Auto-detect orchestrator: look for project with orchestrator CLAUDE.md
+  ORCH_NAME=""
+  for d in "$DOCS_DIR"/*/; do
+    if [ -f "${d}CLAUDE.md" ] && grep -q "Orchestrator Agent" "${d}CLAUDE.md" 2>/dev/null; then
+      ORCH_NAME=$(basename "$d")
+      break
+    fi
+  done
+  if [ -z "$ORCH_NAME" ]; then
+    echo "  No orchestrator project found. Create one: bash setup.sh my-pa --orchestrator"
+    ORCH_NAME=""
+  else
+    echo "  Found orchestrator: $ORCH_NAME"
+  fi
   cat > n8n/config.json << EOCFG
 {
   "documents_dir": "$DOCS_DIR",
-  "orchestrator_project": "PersonalAssistant"
+  "orchestrator_project": "$ORCH_NAME"
 }
 EOCFG
 fi
