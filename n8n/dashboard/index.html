@@ -52,8 +52,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 
 /* === PROJECT GRID === */
 .grid-title{font-size:var(--fs-xs);color:var(--t2);text-transform:uppercase;letter-spacing:2px;margin-bottom:var(--sp-m);font-family:var(--font-mono)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--sp-s);margin-bottom:var(--sp-xl)}
-.tile{background:var(--sf);border:1px solid var(--border);padding:var(--sp-m) var(--sp-l);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--sp-m);margin-bottom:var(--sp-xl)}
+.tile{background:var(--sf);border:1px solid var(--border);padding:var(--sp-l);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
 .tile:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--glow),0 0 20px var(--glow)}
 .tile::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--dot) 1.5px,transparent 1.5px);background-size:10px 10px;opacity:.25;pointer-events:none;transition:opacity .2s}
 .tile:hover::before{opacity:.45}
@@ -225,31 +225,44 @@ function render(){
   const statusLabel={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
   const statusColor={working:'var(--green)',idle:'var(--yellow)',sleeping:'var(--mute)',blocked:'var(--accent)'};
 
-  document.getElementById('grid').innerHTML=sorted.map(a=>{
-    const task=a.task?esc(a.task):'<span style="color:var(--t3)">no active task</span>';
-    const blocker=a.blockers?'<div style="color:var(--accent);font-size:var(--fs-xs);margin-top:var(--sp-xs)">⚠ BLOCKER</div>':'';
-    const phase=a.phase?`<span style="color:var(--t3);font-size:var(--fs-xs)">${esc(a.phase)}</span>`:'';
-    const lessons=a.lessons?`<span style="font-size:var(--fs-xs);color:var(--t3)">${a.lessons} lessons</span>`:'';
+  // Group by status
+  const groups=[
+    {key:'blocked',label:'Blocked',items:sorted.filter(a=>a.status==='blocked')},
+    {key:'working',label:'Active',items:sorted.filter(a=>a.status==='working')},
+    {key:'idle',label:'Idle',items:sorted.filter(a=>a.status==='idle')},
+    {key:'sleeping',label:'Sleeping',items:sorted.filter(a=>a.status==='sleeping')},
+  ].filter(g=>g.items.length>0);
+
+  let gridHtml='';
+  for(const g of groups){
+    gridHtml+=`<div class="grid-title" style="grid-column:1/-1;margin-top:var(--sp-s)">${g.label} <span style="color:var(--t3)">(${g.items.length})</span></div>`;
+    gridHtml+=g.items.map(a=>{return renderTile(a);}).join('');
+  }
+  document.getElementById('grid').innerHTML=gridHtml;
+
+  function renderTile(a){
+    const task=a.task?esc(a.task).substring(0,60):'<span style="color:var(--t3)">no active task</span>';
+    const blocker=a.blockers?'<span style="color:var(--accent);font-size:var(--fs-xs);font-weight:600"> · BLOCKED</span>':'';
+    const phase=a.phase?`<span style="color:var(--t3);font-size:var(--fs-xs)">${esc(a.phase).substring(0,25)}</span>`:'';
+    const lessonsTag=a.lessons?`<span style="font-size:var(--fs-xs);color:var(--t3)">${a.lessons}L</span>`:'';
     return`<div class="tile" onclick="openProject('${esc(a.name)}')">
       <div class="actions">
-        <button onclick="event.stopPropagation();quickAct('sync','${esc(a.name)}')" title="Sync template">↻</button>
-        <button onclick="event.stopPropagation();quickAct('health','${esc(a.name)}')" title="Health check">♥</button>
-        <button onclick="event.stopPropagation();openProject('${esc(a.name)}')" title="Open chat">→</button>
+        <button onclick="event.stopPropagation();quickAct('sync','${esc(a.name)}')" title="Sync">↻</button>
+        <button onclick="event.stopPropagation();openProject('${esc(a.name)}')" title="Open">→</button>
       </div>
       <div class="top">
-        <span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}</span>
-        ${phase}
+        <span class="name"><span class="dot ${a.status}"></span>${esc(a.name)}${blocker}</span>
       </div>
-      <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0">${task}</div>
-      ${blocker}
+      <div style="font-size:var(--fs-s);color:var(--t2);margin:var(--sp-xs) 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${task}</div>
       <div class="row">
         <span style="color:${statusColor[a.status]||'var(--t3)'}">${statusLabel[a.status]||a.status}</span>
+        ${phase}
         <span>${a.last_commit||''}</span>
-        ${lessons}
+        ${lessonsTag}
       </div>
       <div class="bar" style="width:${Math.min(100,Math.max(5,a.task?60:a.days<7?40:10))}%;background:${statusColor[a.status]||'var(--mute)'}"></div>
     </div>`;
-  }).join('');
+  }
 }
 
 function showDashboard(){

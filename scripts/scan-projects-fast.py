@@ -86,7 +86,10 @@ def scan_repo(path: Path) -> str | None:
                     if line and not line.startswith('#') and not line.startswith('---'):
                         current_task = line[:80]
                         break
-                has_blockers = '## blocker' in content.lower() or '## blocked' in content.lower()
+                # Only match actual blocker section with content after it
+                import re
+                blocker_match = re.search(r'^## [Bb]locker.*\n+\S', content, re.MULTILINE)
+                has_blockers = blocker_match is not None
             except:
                 pass
 
