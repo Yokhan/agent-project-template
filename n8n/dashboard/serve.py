@@ -353,6 +353,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response(get_agents())
         elif self.path == '/api/feed':
             self._json_response(get_feed())
+        elif self.path == '/api/chat-stream':
+            project = data.get('project', '')
+            message = data.get('message', '')
+            self._stream_chat(project, message)
         elif self.path == '/api/chat':
             project = data.get('project', '')
             message = data.get('message', '')
@@ -386,6 +390,85 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(body)
+
+    def _stream_chat(self, project, message):
+        """SSE streaming: run claude -p and stream stdout line by line."""
+        if not message:
+            self._json_response({'status': 'error', 'error': 'Empty message'})
+            return
+
+        PA_DIR = os.path.join(DOCS_DIR, 'PersonalAssistant')
+        cwd = os.path.join(DOCS_DIR, project) if project else (PA_DIR if os.path.exists(PA_DIR) else ROOT)
+
+        # Inject context for orchestrator
+        prompt = message
+        if not project:
+            try:
+                cached = _scan_cache.get('data') or get_agents()
+                agents_list = cached.get('agents', [])
+                working = [a['name'] for a in agents_list if a['status'] == 'working']
+                ctx = f"[CONTEXT: PA Orchestrator, {len(agents_list)} projects, working: {', '.join(working) or 'none'}. Be concise.]\n\n"
+                prompt = ctx + message
+            except:
+                pass
+
+        chat_file = os.path.join(CHATS_DIR, f'{project or "_orchestrator"}.jsonl')
+        ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        with open(chat_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts, 'role': 'user', 'msg': message}) + '\n')
+
+        tmp = os.path.join(tempfile.gettempdir(), f'chat-{int(time.time()*1000)}.txt')
+        with open(tmp, 'w', encoding='utf-8') as f:
+            f.write(prompt)
+
+        # SSE headers
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/event-stream')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+        full_response = ''
+        try:
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            proc = subprocess.Popen(
+                f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=cwd, env=env
+            )
+            # Read stdout line by line
+            for raw_line in iter(proc.stdout.readline, b''):
+                try:
+                    line = raw_line.decode('utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        line = raw_line.decode('cp1251')
+                    except:
+                        line = str(raw_line)
+                full_response += line
+                event = f"data: {json.dumps({'text': line})}\n\n"
+                self.wfile.write(event.encode('utf-8'))
+                self.wfile.flush()
+            proc.wait()
+        except Exception as e:
+            err = f"data: {json.dumps({'error': str(e)})}\n\n"
+            self.wfile.write(err.encode('utf-8'))
+            self.wfile.flush()
+        finally:
+            try:
+                os.unlink(tmp)
+            except:
+                pass
+
+        # Save full response
+        ts2 = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        with open(chat_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': ts2, 'role': 'assistant', 'msg': full_response.strip()}) + '\n')
+
+        # End SSE
+        self.wfile.write(b"data: [DONE]\n\n")
+        self.wfile.flush()
 
     def _proxy(self, method, body=None):
         url = N8N + self.path
