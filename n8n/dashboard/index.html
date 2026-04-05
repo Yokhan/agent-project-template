@@ -250,7 +250,7 @@ const SL={working:'active',idle:'idle',sleeping:'sleeping',blocked:'blocked'};
 function App(){return html`<div class="app"><${Toasts}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${Feed}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
-  ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/action/briefing',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(r=>r.json()).then(d=>showToast(d.text||JSON.stringify(d),'info',6000))}>briefing</button>
+  ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
   <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
   <span>${clock}</span>

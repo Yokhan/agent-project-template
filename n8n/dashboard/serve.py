@@ -278,6 +278,7 @@ def execute_delegation(delegation_id):
         return {'status': 'error', 'error': f'Project not found: {target_project}'}
 
     d['status'] = 'running'
+    d['_start'] = time.time()
     set_activity(target_project, 'delegation', task_message[:50])
 
     # Write task to project chat as "user"
@@ -329,6 +330,7 @@ def execute_delegation(delegation_id):
     d['status'] = 'done'
     d['response'] = response
     clear_activity(target_project)
+    log_delegation(target_project, task_message, 'success' if 'error' not in response.lower()[:50] else 'error', int(time.time() - d.get('_start', time.time())), d.get('retries', 0))
 
     # PA Review Loop: let PA evaluate the result
     review_result = None
@@ -596,6 +598,308 @@ def run_action(name, params=None):
     return {'status': 'error', 'error': f'Unknown action: {name}'}
 
 
+
+# ==========================================
+# IMPROVEMENT 1: Proactive Plan Generation
+# ==========================================
+def generate_action_plan():
+    """Scan all projects and generate prioritized action plan. Pure data."""
+    agents_data = get_agents().get('agents', [])
+    plan = []
+
+    for a in agents_data:
+        name = a['name']
+        issues = []
+        priority = 'LOW'
+
+        uncommitted = a.get('uncommitted', 0)
+        if uncommitted > 20:
+            issues.append(f'{uncommitted} uncommitted files — needs commit')
+            priority = 'HIGH'
+        elif uncommitted > 5:
+            issues.append(f'{uncommitted} uncommitted files')
+            if priority == 'LOW':
+                priority = 'MED'
+
+        days = a.get('days', 999)
+        if days > 14:
+            issues.append(f'no activity for {days} days')
+            if priority == 'LOW':
+                priority = 'MED'
+
+        if a.get('blockers'):
+            issues.append('has BLOCKERS in tasks/current.md')
+            priority = 'HIGH'
+
+        if not a.get('task') and a.get('status') != 'sleeping':
+            issues.append('no active task — needs direction')
+
+        lessons = a.get('lessons', 0)
+        if lessons > 50:
+            issues.append(f'{lessons} lessons — run /weekly')
+            if priority == 'LOW':
+                priority = 'MED'
+
+        if issues:
+            suggested = 'Review project'
+            if 'commit' in str(issues):
+                suggested = f'Review and commit changes'
+            elif 'BLOCKERS' in str(issues):
+                suggested = f'Investigate and resolve blocker'
+            elif 'no activity' in str(issues):
+                suggested = f'Check status, update tasks/current.md'
+            plan.append({
+                'project': name, 'priority': priority,
+                'issues': issues, 'suggested_action': suggested,
+                'status': a.get('status', 'unknown')
+            })
+
+    order = {'HIGH': 0, 'MED': 1, 'LOW': 2}
+    plan.sort(key=lambda x: order.get(x['priority'], 3))
+    return {
+        'plan': plan,
+        'total_issues': sum(len(p['issues']) for p in plan),
+        'high_count': len([p for p in plan if p['priority'] == 'HIGH']),
+        'generated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    }
+
+
+# ==========================================
+# IMPROVEMENT 2: Cross-Project Impact Analysis
+# ==========================================
+def analyze_impact(project_name):
+    """Check ecosystem.md for cross-project dependencies."""
+    impacts = {'project': project_name, 'downstream': [], 'upstream': [], 'shared': []}
+    ecosystem_path = os.path.join(DOCS_DIR, project_name, 'ecosystem.md')
+    if not os.path.exists(ecosystem_path):
+        ecosystem_path = os.path.join(ROOT, 'ecosystem.md')
+
+    if os.path.exists(ecosystem_path):
+        try:
+            content = open(ecosystem_path, encoding='utf-8').read()
+            section = ''
+            for line in content.split('\n'):
+                if 'Downstream' in line:
+                    section = 'down'
+                elif 'Upstream' in line:
+                    section = 'up'
+                elif 'Shared' in line:
+                    section = 'shared'
+                elif line.startswith('##'):
+                    section = ''
+                elif '|' in line and section:
+                    parts = [p.strip() for p in line.split('|') if p.strip()]
+                    if len(parts) >= 2 and parts[0] not in ('Project', 'Resource', '---'):
+                        if section == 'down':
+                            impacts['downstream'].append(parts[0])
+                        elif section == 'up':
+                            impacts['upstream'].append(parts[0])
+                        elif section == 'shared':
+                            impacts['shared'].append(parts[0])
+        except:
+            pass
+
+    agents_data = get_agents().get('agents', [])
+    for a in agents_data:
+        if a['name'] == project_name:
+            continue
+        eco = os.path.join(DOCS_DIR, a['name'], 'ecosystem.md')
+        if os.path.exists(eco):
+            try:
+                if project_name in open(eco, encoding='utf-8').read():
+                    if a['name'] not in impacts['downstream']:
+                        impacts['downstream'].append(a['name'])
+            except:
+                pass
+
+    impacts['has_dependencies'] = bool(impacts['downstream'] or impacts['upstream'] or impacts['shared'])
+    return impacts
+
+
+# ==========================================
+# IMPROVEMENT 3: Smart Daily Digest
+# ==========================================
+def generate_digest():
+    """Daily intelligence briefing from all project data."""
+    agents_data = get_agents().get('agents', [])
+    plan = generate_action_plan()
+
+    working = [a for a in agents_data if a['status'] == 'working']
+    blocked = [a for a in agents_data if a.get('blockers')]
+    stale = [a for a in agents_data if (a.get('days', 999)) > 7]
+    dirty = [a for a in agents_data if (a.get('uncommitted', 0)) > 10]
+
+    lines = [f"Daily Digest — {time.strftime('%Y-%m-%d')}\n"]
+    lines.append(f"Projects: {len(agents_data)} total, {len(working)} active, {len(stale)} stale\n")
+
+    if blocked:
+        lines.append("BLOCKED:")
+        for a in blocked:
+            lines.append(f"  - {a['name']}: {a.get('task', 'no task info')[:60]}")
+
+    if dirty:
+        lines.append(f"\nDIRTY ({len(dirty)}):")
+        for a in sorted(dirty, key=lambda x: x.get('uncommitted', 0), reverse=True)[:5]:
+            lines.append(f"  - {a['name']}: {a.get('uncommitted', 0)} files")
+
+    if plan['high_count'] > 0:
+        lines.append(f"\nACTION ITEMS ({plan['high_count']} high priority):")
+        for p in plan['plan'][:5]:
+            if p['priority'] == 'HIGH':
+                lines.append(f"  [{p['priority']}] {p['project']}: {p['issues'][0]}")
+
+    delegation_log = os.path.join(ROOT, 'tasks', '.delegation-log.jsonl')
+    recent_delegations = 0
+    if os.path.exists(delegation_log):
+        try:
+            today = time.strftime('%Y-%m-%dT00:00:00Z', time.gmtime())
+            for line in open(delegation_log, encoding='utf-8').readlines()[-20:]:
+                entry = json.loads(line.strip())
+                if entry.get('ts', '') > today:
+                    recent_delegations += 1
+        except:
+            pass
+
+    if recent_delegations:
+        lines.append(f"\nDELEGATIONS today: {recent_delegations}")
+
+    return {
+        'text': '\n'.join(lines),
+        'stats': {
+            'total': len(agents_data), 'working': len(working),
+            'blocked': len(blocked), 'stale': len(stale),
+            'dirty': len(dirty), 'high_priority': plan['high_count'],
+        },
+        'plan': plan['plan'][:10],
+        'generated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    }
+
+
+# ==========================================
+# IMPROVEMENT 4: Health Monitoring
+# ==========================================
+_health_history = []
+_monitoring_active = False
+
+
+def start_health_monitoring(interval_minutes=30):
+    """Background thread for periodic health checks."""
+    global _monitoring_active
+    if _monitoring_active:
+        return {'status': 'already_running'}
+    _monitoring_active = True
+
+    def monitor_loop():
+        while _monitoring_active:
+            try:
+                agents_data = get_agents().get('agents', [])
+                active = [a for a in agents_data if a['status'] in ('working', 'idle')]
+                for a in active[:8]:
+                    path = os.path.join(DOCS_DIR, a['name'])
+                    script = os.path.join(path, 'scripts', 'check-drift.sh')
+                    if not os.path.exists(script):
+                        continue
+                    try:
+                        r = subprocess.run(
+                            ['bash', script], capture_output=True, text=True,
+                            timeout=15, cwd=path
+                        )
+                        wm = re.search(r'(\d+) warnings', r.stdout)
+                        em = re.search(r'(\d+) errors', r.stdout)
+                        w = int(wm.group(1)) if wm else 0
+                        e = int(em.group(1)) if em else 0
+                        _health_history.append({
+                            'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                            'project': a['name'], 'warnings': w, 'errors': e
+                        })
+                        if len(_health_history) > 200:
+                            _health_history.pop(0)
+                    except:
+                        pass
+            except:
+                pass
+            for _ in range(interval_minutes * 60):
+                if not _monitoring_active:
+                    break
+                time.sleep(1)
+
+    thread = threading.Thread(target=monitor_loop, daemon=True)
+    thread.start()
+    return {'status': 'started', 'interval': interval_minutes}
+
+
+def stop_health_monitoring():
+    global _monitoring_active
+    _monitoring_active = False
+    return {'status': 'stopped'}
+
+
+def get_health_history(project=None):
+    history = _health_history
+    if project:
+        history = [h for h in history if h['project'] == project]
+    return {'history': history[-50:], 'monitoring_active': _monitoring_active}
+
+
+# ==========================================
+# IMPROVEMENT 5: Delegation Analytics
+# ==========================================
+DELEGATION_LOG = os.path.join(ROOT, 'tasks', '.delegation-log.jsonl')
+
+
+def log_delegation(project, task, status, duration_s=0, retries=0):
+    """Log delegation event for analytics."""
+    entry = {
+        'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'project': project, 'task': task[:100],
+        'status': status, 'duration_s': duration_s, 'retries': retries
+    }
+    try:
+        with open(DELEGATION_LOG, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry) + '\n')
+    except:
+        pass
+    return entry
+
+
+def get_delegation_analytics():
+    """Analyze delegation patterns."""
+    if not os.path.exists(DELEGATION_LOG):
+        return {'total': 0, 'by_project': {}, 'by_status': {}, 'patterns': []}
+
+    entries = []
+    try:
+        for line in open(DELEGATION_LOG, encoding='utf-8'):
+            entries.append(json.loads(line.strip()))
+    except:
+        pass
+
+    by_project = {}
+    by_status = {}
+    for e in entries:
+        p = e.get('project', 'unknown')
+        s = e.get('status', 'unknown')
+        by_project.setdefault(p, {'total': 0, 'success': 0, 'error': 0, 'durations': []})
+        by_project[p]['total'] += 1
+        by_project[p][s] = by_project[p].get(s, 0) + 1
+        by_project[p]['durations'].append(e.get('duration_s', 0))
+        by_status[s] = by_status.get(s, 0) + 1
+
+    patterns = []
+    for p, stats in by_project.items():
+        if stats['durations']:
+            stats['avg_duration'] = round(sum(stats['durations']) / len(stats['durations']), 1)
+            del stats['durations']
+        if stats['total'] > 2 and stats.get('error', 0) / stats['total'] > 0.5:
+            patterns.append(f'{p}: high failure rate ({stats["error"]}/{stats["total"]})')
+        if stats.get('avg_duration', 0) > 60:
+            patterns.append(f'{p}: slow avg {stats["avg_duration"]}s')
+
+    return {
+        'total': len(entries), 'by_project': by_project,
+        'by_status': by_status, 'patterns': patterns
+    }
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIR, **kwargs)
@@ -626,6 +930,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response({'activities': get_activities(), 'delegations': {k: v for k, v in _pending_delegations.items() if v['status'] in ('pending', 'running')}})
         elif self.path == '/api/segments':
             self._json_response({'segments': SEGMENTS, 'project_segment': PROJECT_SEGMENT})
+        elif self.path == '/api/plan':
+            self._json_response(generate_action_plan())
+        elif self.path == '/api/digest':
+            self._json_response(generate_digest())
+        elif self.path == '/api/health-history':
+            self._json_response(get_health_history())
+        elif self.path.startswith('/api/health-history/'):
+            project = urllib.parse.unquote(self.path.split('/api/health-history/')[1])
+            self._json_response(get_health_history(project))
+        elif self.path.startswith('/api/impact/'):
+            project = urllib.parse.unquote(self.path.split('/api/impact/')[1])
+            self._json_response(analyze_impact(project))
+        elif self.path == '/api/analytics':
+            self._json_response(get_delegation_analytics())
         elif self.path == '/api/agents':
             self._json_response(get_agents())
         elif self.path == '/api/feed':
@@ -682,6 +1000,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({'status': 'rejected'})
             else:
                 self._json_response({'status': 'error', 'error': 'Not found'})
+        elif self.path == '/api/monitoring/start':
+            interval = data.get('interval', 30)
+            self._json_response(start_health_monitoring(interval))
+        elif self.path == '/api/monitoring/stop':
+            self._json_response(stop_health_monitoring())
         elif self.path.startswith('/api/action/'):
             action = self.path.split('/api/action/')[1]
             self._json_response(run_action(action, data))
@@ -841,6 +1164,8 @@ if __name__ == '__main__':
                 self.finish_request(request, client_address)
             except: pass
             self.shutdown_request(request)
+    # Auto-start health monitoring
+    start_health_monitoring(30)
     server = ThreadedServer(('127.0.0.1', PORT), Handler)
     try:
         server.serve_forever()
