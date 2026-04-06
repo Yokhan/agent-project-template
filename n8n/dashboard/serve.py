@@ -498,7 +498,7 @@ def send_chat(project, message):
         env['CHCP'] = '65001'
         set_activity(project or '_orchestrator', 'chatting', message[:50])
         result = subprocess.run(
-            f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+            f'chcp 65001 >nul 2>&1 & claude --continue --dangerously-skip-permissions -p < "{tmp}"',
             shell=True, capture_output=True, timeout=300, cwd=cwd, env=env
         )
         clear_activity(project or '_orchestrator')
@@ -1201,7 +1201,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
             proc = subprocess.Popen(
-                f'chcp 65001 >nul 2>&1 & claude -p < "{tmp}"',
+                f'chcp 65001 >nul 2>&1 & claude --continue --dangerously-skip-permissions -p --output-format stream-json --verbose --include-partial-messages < "{tmp}"',
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 cwd=cwd, env=env
             )
