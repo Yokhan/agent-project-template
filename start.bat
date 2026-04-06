@@ -46,18 +46,31 @@ if %errorlevel% equ 0 (
     echo n8n not found — dashboard works without it
 )
 
-REM Start dashboard
-echo Starting dashboard...
-start /B python n8n\dashboard\serve.py
-timeout /t 2 /nobreak >nul
+REM Check for updates (watchdog)
+echo Checking for updates...
+powershell -ExecutionPolicy Bypass -File "%~dp0desktop\watchdog.ps1" -Check 2>nul
+if %errorlevel% equ 0 (
+    echo Update available! Run: powershell desktop\watchdog.ps1
+)
+
+REM Start desktop app if built, otherwise fallback to browser dashboard
+if exist "desktop\src-tauri\target\release\Agent OS.exe" (
+    echo Starting desktop app...
+    start "" "desktop\src-tauri\target\release\Agent OS.exe"
+) else (
+    REM Fallback: start serve.py dashboard
+    echo Starting dashboard (browser mode)...
+    start /B python n8n\dashboard\serve.py
+    timeout /t 2 /nobreak >nul
+    start http://localhost:3333
+)
 
 echo.
 echo ========================================
-echo   Agent Command Center — RUNNING
+echo   Agent OS — RUNNING
 echo ========================================
-echo   Dashboard:  http://localhost:3333
-echo   Open in browser to start working!
+echo   Desktop app or http://localhost:3333
+echo   Watchdog: powershell desktop\watchdog.ps1 -Install
 echo ========================================
 echo.
-start http://localhost:3333
 pause

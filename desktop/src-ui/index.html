@@ -671,6 +671,7 @@ function Header(){return html`<div class="hdr"><h1>command center</h1><div class
   <button onClick=${()=>showNewProject.value=true}>+ new</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
   <button onClick=${()=>{showSettings.value=!showSettings.value;if(showSettings.value)loadPerms();}}>settings</button>
+    <button onClick=${async()=>{if(!__IS_TAURI)return showToast('Update check only in desktop app','info');showToast('Checking for updates...','info');try{const{check}=await window.__TAURI__.updater;const update=await check();if(update?.available){if(confirm('Update '+update.version+' available. Install?')){await update.downloadAndInstall();showToast('Restarting...','success');await window.__TAURI__.process.relaunch();}}else{showToast('Up to date','success');}}catch(e){showToast('Update check failed: '+e,'error');}}} title="Check for updates">update</button>
     <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
   <span>${clock}</span>
 </div></div>`;}
