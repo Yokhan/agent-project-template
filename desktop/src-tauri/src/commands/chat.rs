@@ -125,8 +125,9 @@ pub fn get_permission_path_pub(state: &AppState, project: &str) -> String {
 }
 
 fn get_permission_path(state: &AppState, project: &str) -> String {
+    let valid_profiles = ["restrictive", "balanced", "permissive"];
     let profile = if let Ok(content) = std::fs::read_to_string(&state.config_path) {
-        serde_json::from_str::<Value>(&content)
+        let raw = serde_json::from_str::<Value>(&content)
             .ok()
             .and_then(|cfg| {
                 cfg.get("project_permissions")
@@ -134,7 +135,9 @@ fn get_permission_path(state: &AppState, project: &str) -> String {
                     .and_then(|v| v.as_str())
                     .map(String::from)
             })
-            .unwrap_or_else(|| "balanced".to_string())
+            .unwrap_or_else(|| "balanced".to_string());
+        // Whitelist validation — prevent path traversal via config manipulation
+        if valid_profiles.contains(&raw.as_str()) { raw } else { "balanced".to_string() }
     } else {
         "balanced".to_string()
     };
@@ -246,14 +249,13 @@ pub async fn send_chat(state: State<'_, AppState>, project: String, message: Str
 
     let (_, pa_dir) = state.get_orch_dir();
     let cwd = if !project.is_empty() {
-        state.docs_dir.join(&project)
+        match state.validate_project(&project) {
+            Ok(p) => p,
+            Err(e) => return Ok(json!({"status": "error", "error": e})),
+        }
     } else {
         pa_dir
     };
-
-    if !project.is_empty() && !cwd.exists() {
-        return Ok(json!({"status": "error", "error": format!("Project not found: {}", project)}));
-    }
 
     let chat_key = if project.is_empty() { "_orchestrator".to_string() } else { project.clone() };
     let chat_file = state.chats_dir.join(format!("{}.jsonl", chat_key));
@@ -291,27 +293,35 @@ pub async fn send_chat(state: State<'_, AppState>, project: String, message: Str
             writeln!(f, "{}", serde_json::to_string(&asst_entry).unwrap_or_default())
         });
 
-    // Check for delegation in PA response
+    // Check for delegation in PA response — validate project name against known list
     let mut final_response = response.clone();
     if project.is_empty() {
         if let Some((target, task)) = parse_delegation(&response) {
-            let did = crate::commands::delegation::queue_delegation_internal(&state, &target, &task);
-            final_response += &format!(
-                "\n\n---\n**⏳ Awaiting approval to run in {}:**\n{}\n\n<delegation id=\"{}\" project=\"{}\"/>",
-                target, task, did, target
-            );
+            if let Some(valid_name) = state.validate_project_name_from_llm(&target) {
+                let did = crate::commands::delegation::queue_delegation_internal(&state, &valid_name, &task);
+                final_response += &format!(
+                    "\n\n---\n**⏳ Awaiting approval to run in {}:**\n{}\n\n<delegation id=\"{}\" project=\"{}\"/>",
+                    valid_name, task, did, valid_name
+                );
+            } else {
+                final_response += &format!("\n\n---\n**⚠ Unknown project in delegation: {}**", target);
+            }
         }
     }
 
-    // Check for DEPLOY command
+    // Check for DEPLOY/HEALTH_CHECK — validate project names
     if project.is_empty() {
         if let Some(target) = parse_deploy(&response) {
-            let result = crate::commands::ops::execute_deploy_inline(&state.root, &state.docs_dir, &target);
-            final_response += &format!("\n\n---\n**Deploy {}:** {}", target, result);
+            if state.validate_project(&target).is_ok() {
+                let result = crate::commands::ops::execute_deploy_inline(&state.root, &state.docs_dir, &target);
+                final_response += &format!("\n\n---\n**Deploy {}:** {}", target, result);
+            }
         }
         if let Some(target) = parse_health_check(&response) {
-            let result = crate::commands::ops::execute_health_inline(&state.docs_dir, &target);
-            final_response += &format!("\n\n---\n**Health Check:**\n{}", result);
+            if target == "all" || state.validate_project(&target).is_ok() {
+                let result = crate::commands::ops::execute_health_inline(&state.docs_dir, &target);
+                final_response += &format!("\n\n---\n**Health Check:**\n{}", result);
+            }
         }
     }
 
@@ -336,14 +346,13 @@ pub async fn stream_chat(
 
     let (_, pa_dir) = state.get_orch_dir();
     let cwd = if !project.is_empty() {
-        state.docs_dir.join(&project)
+        match state.validate_project(&project) {
+            Ok(p) => p,
+            Err(e) => return Ok(json!({"status": "error", "error": e})),
+        }
     } else {
         pa_dir
     };
-
-    if !project.is_empty() && !cwd.exists() {
-        return Ok(json!({"status": "error", "error": format!("Project not found: {}", project)}));
-    }
 
     let chat_key = if project.is_empty() { "_orchestrator".to_string() } else { project.clone() };
     let chat_file = state.chats_dir.join(format!("{}.jsonl", chat_key));

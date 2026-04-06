@@ -473,6 +473,11 @@ const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);cons
 const curActivity=signal("");const lastStats=signal(null);
 const showSettings=signal(false);
 const showNewProject=signal(false);
+const showStrategy=signal(false);
+const goals=signal([]);
+const strategies=signal([]);
+const activeStrategy=signal(null);
+const strategyLoading=signal(false);
 const permData=signal(null);
 const slashOpen=signal(false);const slashItems=signal([]);const pastedImg=signal(null);
 const SLASH_CMDS=[{cmd:'/clear',desc:'Clear chat'},{cmd:'/mode-code',desc:'Code mode'},{cmd:'/mode-design',desc:'Design mode'},{cmd:'/mode-review',desc:'Review mode'},{cmd:'/mode-fix',desc:'Fix mode'},{cmd:'/status',desc:'Status'},{cmd:'/health',desc:'Health check'},{cmd:'/briefing',desc:'Briefing'},{cmd:'/help',desc:'Commands list'}];
@@ -539,6 +544,28 @@ delegations.value=newDel;
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
 async function loadQueue(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_queue');queueTasks.value=r.tasks||[];}else{queueTasks.value=[];}}catch{}}
+async function loadGoals(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_goals');goals.value=r.goals||[];}}catch{}}
+async function loadStrategies(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_strategies');strategies.value=r.strategies||[];}}catch{}}
+async function generateStrategy(goalText,ctx){
+  strategyLoading.value=true;
+  try{
+    const r=await __TAURI__.core.invoke('generate_strategy',{goal:goalText,context:ctx||null});
+    if(r.status==='ok'&&r.strategy){strategies.value=[...strategies.value,r.strategy];activeStrategy.value=r.strategy;showToast('Strategy generated','success');}
+    else{showToast('Error: '+(r.error||r.raw||'unknown'),'error',8000);}
+  }catch(e){showToast('Error: '+e,'error');}
+  strategyLoading.value=false;
+}
+async function approveSteps(stratId,stepIds){
+  try{await __TAURI__.core.invoke('approve_strategy_steps',{strategyId:stratId,approvedSteps:stepIds});showToast('Steps approved','success');loadStrategies();}catch(e){showToast('Error: '+e,'error');}
+}
+async function executeNextStep(stratId){
+  try{
+    const r=await __TAURI__.core.invoke('execute_strategy_step',{strategyId:stratId});
+    if(r.status==='complete'){showToast('Strategy complete!','success');}
+    else if(r.status==='step_done'){showToast(`${r.project}: done`,'success');loadStrategies();}
+    else{showToast('Error: '+(r.error||''),'error');}
+  }catch(e){showToast('Error: '+e,'error');}
+}
 async function loadProjectPlan(p){try{const r=await fetch("/api/project-plan/"+encodeURIComponent(p));projectPlan.value=await r.json();}catch{projectPlan.value=null;}}
 async function loadPerms(){try{const [r,c]=await Promise.all([fetch('/api/permissions'),__TAURI__?.core?.invoke('get_config').catch(()=>({}))]);const pd=await r.json();pd.config=c||{};permData.value=pd;}catch{}}
 async function setPermission(proj,profile){try{await fetch('/api/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,profile})});showToast(proj+' -> '+profile,'success');loadPerms();}catch{showToast('Error setting permission','error');}}
@@ -636,10 +663,11 @@ function OrchWarning(){
     <span style="color:var(--t2)">Fix: bash setup.sh my-pa --orchestrator</span>
   </div>`;
 }
-function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${NewProjectModal}/><${Header}/><div class="main">${showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
+function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${NewProjectModal}/><${Header}/><div class="main">${showStrategy.value?html`<${StrategyView}/>`:showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
+  <button onClick=${()=>{showStrategy.value=!showStrategy.value;if(showStrategy.value){loadGoals();loadStrategies();}}}>strategy</button>
   <button onClick=${()=>showNewProject.value=true}>+ new</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
   <button onClick=${()=>{showSettings.value=!showSettings.value;if(showSettings.value)loadPerms();}}>settings</button>
@@ -789,6 +817,66 @@ function AnalyticsBar(){
     ${p?html`<div class="metric"><span>issues:</span><span class="v${p.high_count?' alert':''}">${p.total_issues} (${p.high_count} high)</span></div>`:null}
     <div style="flex:1"></div>
     <div class="metric" style="cursor:pointer;color:var(--t3)" onClick=${()=>showKbHelp.value=true}>? shortcuts</div>
+  </div>`;
+}
+
+function StrategyView(){
+  const goalRef=useRef();const ctxRef=useRef();
+  const strats=strategies.value;const g=goals.value;const as_=activeStrategy.value;
+  const SC_={'HIGH':'var(--accent)','MED':'var(--yellow)','LOW':'var(--t3)'};
+  return html`<div class="content" style="max-width:900px">
+    <div class="back" onClick=${()=>showStrategy.value=false}>← back to dashboard</div>
+    <h2 style="font-size:var(--fs-xl);margin:var(--sp-m) 0;letter-spacing:2px;font-family:var(--font-mono)">STRATEGY</h2>
+
+    <div class="panel" style="margin-bottom:var(--sp-l)">
+      <h3>set goal</h3>
+      <input ref=${goalRef} style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--t1);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-m);margin-bottom:var(--sp-s)" placeholder="What do you want to achieve?"/>
+      <textarea ref=${ctxRef} rows="2" style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--t2);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s);margin-bottom:var(--sp-s);resize:vertical" placeholder="Context: constraints, deadline, priorities (optional)"/>
+      <button style="background:var(--green);color:#000;border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);cursor:pointer" onClick=${()=>{const g=goalRef.current?.value;if(!g?.trim()){showToast('Enter a goal','error');return;}generateStrategy(g,ctxRef.current?.value);}} disabled=${strategyLoading.value}>${strategyLoading.value?'generating...':'generate strategy'}</button>
+    </div>
+
+    ${g.length?html`<div class="panel" style="margin-bottom:var(--sp-l)">
+      <h3>active goals</h3>
+      ${g.filter(x=>x.status==='active').map(gl=>html`<div style="padding:var(--sp-xs) 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${gl.title}</strong><span style="color:var(--t3);margin-left:var(--sp-s);font-size:var(--fs-s)">${gl.deadline||''}</span></div>
+        <div style="font-size:var(--fs-xs);color:var(--t3)">${gl.projects.join(', ')}</div>
+      </div>`)}
+    </div>`:''}
+
+    ${strats.length?html`<div class="panel">
+      <h3>strategies</h3>
+      ${strats.map(s=>html`<div style="margin-bottom:var(--sp-l);border:1px solid var(--border);padding:var(--sp-m)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-s)">
+          <strong style="font-size:var(--fs-m)">${s.title}</strong>
+          <span style="font-size:var(--fs-xs);padding:2px 8px;border:1px solid;color:${s.status==='done'?'var(--green)':s.status==='executing'?'var(--yellow)':'var(--t3)'}">${s.status}</span>
+        </div>
+
+        ${s.plans.map(plan=>html`<div style="margin:var(--sp-s) 0;padding:var(--sp-s);background:var(--sf)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-xs)">
+            <span style="font-family:var(--font-mono);font-weight:600">${plan.project}</span>
+            <span style="font-size:var(--fs-xs);color:${SC_[plan.priority]||'var(--t3)'}">${plan.priority}</span>
+          </div>
+          ${plan.depends_on.length?html`<div style="font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-xs)">depends on: ${plan.depends_on.join(', ')}</div>`:''}
+          ${plan.steps.map(step=>html`<div style="display:flex;align-items:center;gap:var(--sp-s);padding:var(--sp-xs) 0;font-size:var(--fs-s)">
+            <input type="checkbox"
+              checked=${step.status==='approved'||step.status==='done'||step.status==='running'}
+              disabled=${step.status==='done'||step.status==='running'||step.status==='failed'}
+              onChange=${e=>{
+                const ids=s.plans.flatMap(p=>p.steps.filter(st=>st.status==='approved'||st.status==='done').map(st=>st.id));
+                if(e.target.checked)ids.push(step.id);else{const i=ids.indexOf(step.id);if(i>=0)ids.splice(i,1);}
+                approveSteps(s.id,ids);
+              }}/>
+            <span style="color:${step.status==='done'?'var(--green)':step.status==='running'?'var(--yellow)':step.status==='failed'?'var(--accent)':'var(--t2)'}">${step.task}</span>
+            ${step.status==='done'?html`<span style="color:var(--green);font-size:var(--fs-xs)">✓</span>`:''}
+            ${step.status==='running'?html`<span style="color:var(--yellow);font-size:var(--fs-xs)">⏳</span>`:''}
+            ${step.status==='failed'?html`<span style="color:var(--accent);font-size:var(--fs-xs)">✗</span>`:''}
+          </div>`)}
+        </div>`)}
+
+        ${s.status==='approved'||s.status==='executing'?html`<button class="action-btn" style="margin-top:var(--sp-s);border-color:var(--green);color:var(--green)" onClick=${()=>executeNextStep(s.id)}>execute next step</button>`:''}
+        ${s.status==='draft'?html`<button class="action-btn" style="margin-top:var(--sp-s);border-color:var(--yellow);color:var(--yellow)" onClick=${()=>{const allIds=s.plans.flatMap(p=>p.steps.map(st=>st.id));approveSteps(s.id,allIds);}}>approve all steps</button>`:''}
+      </div>`)}
+    </div>`:''}
   </div>`;
 }
 

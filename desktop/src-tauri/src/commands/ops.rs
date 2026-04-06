@@ -4,23 +4,19 @@ use tauri::State;
 use crate::state::AppState;
 use std::process::Command as Cmd;
 
-/// Deploy template to a project via sync-template.sh
+/// Deploy template to a project via sync-template.sh — direct bash, no shell wrapper
 #[tauri::command]
 pub fn deploy_template(state: State<AppState>, project: String) -> Value {
+    let project_dir = match state.validate_project(&project) {
+        Ok(p) => p,
+        Err(e) => return json!({"status": "error", "error": e}),
+    };
     let script = state.root.join("scripts").join("sync-template.sh");
     if !script.exists() {
         return json!({"status": "error", "error": "sync-template.sh not found"});
     }
-    let project_dir = state.docs_dir.join(&project);
-    if !project_dir.exists() {
-        return json!({"status": "error", "error": format!("Project not found: {}", project)});
-    }
 
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-    let cmd = format!("bash \"{}\" --from-git", script.display());
-
-    match Cmd::new(shell).args([flag, &cmd]).current_dir(&project_dir).output() {
+    match Cmd::new("bash").arg(&script).arg("--from-git").current_dir(&project_dir).output() {
         Ok(out) => {
             let stdout = String::from_utf8_lossy(&out.stdout).trim().to_string();
             let stderr = String::from_utf8_lossy(&out.stderr).trim().to_string();
@@ -52,9 +48,6 @@ pub fn health_check(state: State<AppState>, project: String) -> Value {
         vec![project]
     };
 
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-
     let mut results = vec![];
     for proj in &projects {
         let project_dir = state.docs_dir.join(proj);
@@ -63,11 +56,7 @@ pub fn health_check(state: State<AppState>, project: String) -> Value {
             results.push(json!({"project": proj, "status": "skip", "message": "no check-drift.sh"}));
             continue;
         }
-        match Cmd::new(shell)
-            .args([flag, &format!("bash \"{}\"", script.display())])
-            .current_dir(&project_dir)
-            .output()
-        {
+        match Cmd::new("bash").arg(&script).current_dir(&project_dir).output() {
             Ok(out) => {
                 let stdout = String::from_utf8_lossy(&out.stdout);
                 let warnings = stdout.lines()
@@ -95,16 +84,16 @@ pub fn create_project(state: State<AppState>, name: String, orchestrator: bool) 
         return json!({"status": "error", "error": "setup.sh not found"});
     }
 
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-    let cmd = if orchestrator {
-        format!("bash \"{}\" \"{}\" --orchestrator", setup.display(), name)
-    } else {
-        format!("bash \"{}\" \"{}\"", setup.display(), name)
-    };
+    // Validate project name — no traversal
+    if name.contains("..") || name.contains('/') || name.contains('\\') || name.contains(':') {
+        return json!({"status": "error", "error": "Invalid project name"});
+    }
 
-    match Cmd::new(shell)
-        .args([flag, &cmd])
+    let mut args = vec![setup.as_os_str().to_os_string(), std::ffi::OsString::from(&name)];
+    if orchestrator { args.push(std::ffi::OsString::from("--orchestrator")); }
+
+    match Cmd::new("bash")
+        .args(&args)
         .current_dir(&state.docs_dir)
         .output()
     {
@@ -127,12 +116,8 @@ pub fn execute_deploy_inline(root: &std::path::Path, docs_dir: &std::path::Path,
     if !script.exists() { return "sync-template.sh not found".to_string(); }
     let project_dir = docs_dir.join(project);
     if !project_dir.exists() { return format!("Project dir not found: {}", project); }
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-    match std::process::Command::new(shell)
-        .args([flag, &format!("bash \"{}\" --from-git", script.display())])
-        .current_dir(&project_dir)
-        .output()
+    match std::process::Command::new("bash").arg(&script).arg("--from-git")
+        .current_dir(&project_dir).output()
     {
         Ok(out) => {
             let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
@@ -155,17 +140,12 @@ pub fn execute_health_inline(docs_dir: &std::path::Path, project: &str) -> Strin
     } else {
         vec![project.to_string()]
     };
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
     let mut results = vec![];
     for proj in &projects {
         let pd = docs_dir.join(proj);
         let script = pd.join("scripts").join("check-drift.sh");
         if !script.exists() { results.push(format!("{}: skip", proj)); continue; }
-        match std::process::Command::new(shell)
-            .args([flag, &format!("bash \"{}\"", script.display())])
-            .current_dir(&pd).output()
-        {
+        match std::process::Command::new("bash").arg(&script).current_dir(&pd).output() {
             Ok(out) => {
                 let s = String::from_utf8_lossy(&out.stdout);
                 let summary = s.lines().find(|l| l.contains("warnings") || l.contains("errors"))
@@ -245,7 +225,7 @@ pub fn save_attachment(state: State<AppState>, name: String, data: Vec<u8>) -> V
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    let safe_name = name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    let safe_name = name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_").replace("..", "_");
     let filename = format!("{}-{}", nanos, safe_name);
     let path = att_dir.join(&filename);
 

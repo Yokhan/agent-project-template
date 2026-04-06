@@ -149,6 +149,32 @@ impl AppState {
         HashMap::new()
     }
 
+    /// Validate project name — no path traversal, must exist under docs_dir
+    pub fn validate_project(&self, project: &str) -> Result<std::path::PathBuf, String> {
+        // Block path traversal
+        if project.contains("..") || project.contains('/') || project.contains('\\')
+            || project.contains(':') || project.contains('\0') {
+            return Err(format!("Invalid project name: {}", project));
+        }
+        let path = self.docs_dir.join(project);
+        if !path.exists() {
+            return Err(format!("Project not found: {}", project));
+        }
+        // Canonicalize and verify containment
+        let canon = path.canonicalize().map_err(|e| e.to_string())?;
+        let docs_canon = self.docs_dir.canonicalize().map_err(|e| e.to_string())?;
+        if !canon.starts_with(&docs_canon) {
+            return Err(format!("Project path escapes documents dir: {}", project));
+        }
+        Ok(canon)
+    }
+
+    /// Validate project name from LLM output against known project list
+    pub fn validate_project_name_from_llm(&self, name: &str) -> Option<String> {
+        let projects = crate::scanner::scan_projects(&self.docs_dir, &self.project_segment);
+        projects.iter().find(|p| p.name.eq_ignore_ascii_case(name)).map(|p| p.name.clone())
+    }
+
     pub fn save_delegations(&self) {
         if let Ok(delegations) = self.delegations.lock() {
             let _ = std::fs::write(

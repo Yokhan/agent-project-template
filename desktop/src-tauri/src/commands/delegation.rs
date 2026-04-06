@@ -4,11 +4,12 @@ use tauri::State;
 
 pub fn queue_delegation_internal(state: &AppState, project: &str, task: &str) -> String {
     let id = format!(
-        "{}",
+        "{}-{}",
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis())
-            .unwrap_or(0)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0),
+        std::process::id()
     );
 
     let delegation = crate::state::Delegation {
@@ -55,10 +56,10 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
         _ => return json!({"status": "error", "error": "Delegation not found or already executed"}),
     };
 
-    let project_dir = state.docs_dir.join(&d.project);
-    if !project_dir.exists() {
-        return json!({"status": "error", "error": format!("Project not found: {}", d.project)});
-    }
+    let project_dir = match state.validate_project(&d.project) {
+        Ok(p) => p,
+        Err(e) => return json!({"status": "error", "error": e}),
+    };
 
     // Mark as running
     if let Ok(mut delegations) = state.delegations.lock() {

@@ -391,7 +391,7 @@ pub fn execute_strategy_step(state: State<AppState>, strategy_id: String) -> Val
         for plan in &mut s.plans {
             for step in &mut plan.steps {
                 if step.id == step_id {
-                    step.status = if response.contains("Error") { "failed".to_string() } else { "done".to_string() };
+                    step.status = if response.starts_with("Error:") || response.starts_with("Error running") { "failed".to_string() } else { "done".to_string() };
                     step.response = Some(response[..response.len().min(500)].to_string());
                 }
             }
