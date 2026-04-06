@@ -196,3 +196,32 @@ pub fn get_modules(state: State<AppState>, project: String) -> Value {
         Err(e) => json!({"status": "error", "error": e.to_string()}),
     }
 }
+
+#[tauri::command]
+pub fn get_config(state: State<AppState>) -> Value {
+    std::fs::read_to_string(&state.config_path)
+        .ok()
+        .and_then(|c| serde_json::from_str(&c).ok())
+        .unwrap_or(json!({}))
+}
+
+#[tauri::command]
+pub fn set_config(state: State<AppState>, key: String, value: String) -> Value {
+    let mut cfg: Value = std::fs::read_to_string(&state.config_path)
+        .ok()
+        .and_then(|c| serde_json::from_str(&c).ok())
+        .unwrap_or(json!({}));
+
+    cfg[&key] = json!(value);
+
+    match serde_json::to_string_pretty(&cfg) {
+        Ok(content) => {
+            if std::fs::write(&state.config_path, content).is_ok() {
+                json!({"status": "ok", "key": key, "value": value})
+            } else {
+                json!({"status": "error", "error": "Failed to write config"})
+            }
+        }
+        Err(e) => json!({"status": "error", "error": e.to_string()}),
+    }
+}

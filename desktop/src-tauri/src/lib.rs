@@ -84,6 +84,8 @@ pub fn run() {
             commands::config::get_impact,
             commands::config::run_action,
             commands::config::get_modules,
+            commands::config::get_config,
+            commands::config::set_config,
             // Operations
             commands::ops::deploy_template,
             commands::ops::health_check,

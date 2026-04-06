@@ -122,6 +122,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .ch-inp button.send-btn{background:var(--accent);color:#fff;border:none;padding:0;width:42px;font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer;text-transform:uppercase;letter-spacing:2px;flex-shrink:0;height:42px;transition:opacity .15s}
 .ch-inp button.send-btn:hover{opacity:.85}
 .ch-inp button.send-btn:disabled{opacity:.3;cursor:default}
+.action-btn{background:transparent;color:var(--t2);border:1px solid var(--border);padding:var(--sp-xs) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.action-btn:hover{background:var(--sf);color:var(--t1);border-color:var(--green)}
 
 
 
@@ -535,7 +537,7 @@ delegations.value=newDel;
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
 async function loadProjectPlan(p){try{const r=await fetch("/api/project-plan/"+encodeURIComponent(p));projectPlan.value=await r.json();}catch{projectPlan.value=null;}}
-async function loadPerms(){try{const r=await fetch('/api/permissions');permData.value=await r.json();}catch{}}
+async function loadPerms(){try{const [r,c]=await Promise.all([fetch('/api/permissions'),__TAURI__?.core?.invoke('get_config').catch(()=>({}))]);const pd=await r.json();pd.config=c||{};permData.value=pd;}catch{}}
 async function setPermission(proj,profile){try{await fetch('/api/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,profile})});showToast(proj+' -> '+profile,'success');loadPerms();}catch{showToast('Error setting permission','error');}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){
@@ -662,6 +664,22 @@ function SettingsPage(){
         <div class="perm-card"><h4 style="color:var(--accent)">Restrictive</h4><div class="tools">${pd?.profiles?.restrictive?.permissions?.allow?.map(t=>html`<span>${t}</span>`)}</div></div>
         <div class="perm-card"><h4 style="color:var(--yellow)">Balanced</h4><div class="tools">${pd?.profiles?.balanced?.permissions?.allow?.slice(0,10).map(t=>html`<span>${t}</span>`)}${pd?.profiles?.balanced?.permissions?.allow?.length>10?html`<span>+${pd.profiles.balanced.permissions.allow.length-10} more</span>`:''}</div></div>
         <div class="perm-card"><h4 style="color:var(--green)">Permissive</h4><div class="tools">${pd?.profiles?.permissive?.permissions?.allow?.map(t=>html`<span>${t}</span>`)}</div></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>General</h3>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-s)">
+        <div style="display:flex;align-items:center;gap:var(--sp-m)">
+          <label style="min-width:120px;font-family:var(--font-mono);font-size:var(--fs-s);color:var(--t3)">documents dir</label>
+          <input id="docs-dir-inp" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--t1);padding:var(--sp-xs) var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" value="${pd?.config?.documents_dir||''}" onChange=${e=>{__TAURI__.core.invoke('set_config',{key:'documents_dir',value:e.target.value}).then(()=>showToast('Saved. Restart to apply.','info'));}}/>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--sp-m)">
+          <label style="min-width:120px;font-family:var(--font-mono);font-size:var(--fs-s);color:var(--t3)">orchestrator</label>
+          <select style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--t1);padding:var(--sp-xs) var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" onChange=${e=>{__TAURI__.core.invoke('set_config',{key:'orchestrator_project',value:e.target.value}).then(()=>showToast('Orchestrator set. Restart to apply.','info'));}}>
+            <option value="">-- none --</option>
+            ${a.map(ag=>html`<option value=${ag.name} selected=${ag.name===(pd?.config?.orchestrator_project||'')}>${ag.name}</option>`)}
+          </select>
+        </div>
       </div>
     </div>
     <div class="settings-section">
@@ -824,6 +842,15 @@ function DetailView(){
         <div style="margin-bottom:var(--sp-xs)">segment: ${ag.segment||'unassigned'}</div>
         ${pp?.context?.recent_commits?html`<div style="margin-top:var(--sp-s)"><strong>Recent:</strong>${pp.context.recent_commits.map(cm=>html`<div style="color:var(--t3);font-family:var(--font-mono);font-size:var(--fs-xs);margin:2px 0">${cm}</div>`)}</div>`:''}
       </div></div>
+    </div>
+    <div class="panels" style="margin-top:var(--sp-m)">
+      <div class="panel"><h3>actions</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--sp-s)">
+          <button class="action-btn" onClick=${()=>{showToast('Deploying template...','info',3000);__TAURI__.core.invoke('deploy_template',{project:name}).then(r=>{showToast(r.status==='ok'?'Deploy complete':'Deploy failed: '+(r.error||''),'success',5000);}).catch(e=>showToast('Deploy error: '+e,'error'));}}>sync template</button>
+          <button class="action-btn" onClick=${()=>{showToast('Running health check...','info',3000);__TAURI__.core.invoke('health_check',{project:name}).then(r=>{showToast(r.result||'No result','info',8000);}).catch(e=>showToast('Error: '+e,'error'));}}>health check</button>
+          <button class="action-btn" onClick=${()=>{window.__TAURI__?.shell?.open('cmd /C start zed "'+ag.path+'"');}}>open in Zed</button>
+        </div>
+      </div>
     </div>
   </div>`;
 }
