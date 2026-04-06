@@ -24,8 +24,8 @@
   --chat-w:520px;
 }
 [data-theme="light"]{
-  --bg:#f5f5fa;--sf:#eaeaf2;--sf2:#dddde8;--border:#c0c0d0;
-  --text:#111;--t2:#444;--t3:#777;--mute:#aaa;
+  --bg:#f0f0f5;--sf:#e2e2ea;--sf2:#d5d5e0;--border:#a0a0b8;
+  --text:#0a0a0a;--t2:#333;--t3:#666;--mute:#999;
   --dot:#ccc;--glow:rgba(215,25,33,.08);
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;font-size:var(--fs-m);line-height:var(--lh)}
@@ -472,6 +472,7 @@ const lastUserMsg=signal('');
 const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
 const curActivity=signal("");const lastStats=signal(null);
 const showSettings=signal(false);
+const showNewProject=signal(false);
 const permData=signal(null);
 const slashOpen=signal(false);const slashItems=signal([]);const pastedImg=signal(null);
 const SLASH_CMDS=[{cmd:'/clear',desc:'Clear chat'},{cmd:'/mode-code',desc:'Code mode'},{cmd:'/mode-design',desc:'Design mode'},{cmd:'/mode-review',desc:'Review mode'},{cmd:'/mode-fix',desc:'Fix mode'},{cmd:'/status',desc:'Status'},{cmd:'/health',desc:'Health check'},{cmd:'/briefing',desc:'Briefing'},{cmd:'/help',desc:'Commands list'}];
@@ -573,7 +574,11 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
           const d=e.payload;if(d.text){full+=d.text;streamText.value=full;}
           if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}
         }).then(u=>{unData=u;});
-        window.__TAURI_INTERNALS__.event.listen('chat-stream-done',()=>{cleanup();}).then(u=>{unDone=u;});
+        let unAct;
+        window.__TAURI_INTERNALS__.event.listen('chat-activity',e=>{
+          const d=e.payload;if(d.text)curActivity.value=d.text;
+        }).then(u=>{unAct=u;});
+        window.__TAURI_INTERNALS__.event.listen('chat-stream-done',()=>{if(unAct)unAct();cleanup();}).then(u=>{unDone=u;});
         // Safety timeout
         setTimeout(cleanup,300000);
       });
@@ -629,10 +634,11 @@ function OrchWarning(){
     <span style="color:var(--t2)">Fix: bash setup.sh my-pa --orchestrator</span>
   </div>`;
 }
-function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${Header}/><div class="main">${showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
+function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${NewProjectModal}/><${Header}/><div class="main">${showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
+  <button onClick=${()=>showNewProject.value=true}>+ new</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
   <button onClick=${()=>{showSettings.value=!showSettings.value;if(showSettings.value)loadPerms();}}>settings</button>
     <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
@@ -927,6 +933,37 @@ function DelegBtn({id,project}){
   return null;
 }
 
+
+function NewProjectModal(){
+  if(!showNewProject.value)return null;
+  const nameRef=useRef();const orchRef=useRef();
+  const create=async()=>{
+    const name=nameRef.current?.value?.trim();if(!name){showToast('Enter project name','error');return;}
+    const isOrch=orchRef.current?.checked;
+    try{
+      const r=await __TAURI__.core.invoke('create_project',{name,orchestrator:isOrch||false});
+      if(r.status==='ok'){showToast('Project created: '+name,'success');showNewProject.value=false;loadAgents();}
+      else{showToast('Error: '+(r.error||'unknown'),'error');}
+    }catch(e){showToast('Error: '+e,'error');}
+  };
+  return html`<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center" onClick=${e=>{if(e.target===e.currentTarget)showNewProject.value=false;}}>
+    <div style="background:var(--bg);border:1px solid var(--border);padding:var(--sp-xl);min-width:400px;max-width:500px">
+      <h3 style="margin:0 0 var(--sp-l);font-family:var(--font-mono);letter-spacing:2px">NEW PROJECT</h3>
+      <div style="margin-bottom:var(--sp-m)">
+        <label style="display:block;font-size:var(--fs-s);color:var(--t3);margin-bottom:var(--sp-xs);font-family:var(--font-mono)">project name</label>
+        <input ref=${nameRef} style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--t1);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-m)" placeholder="my-awesome-project" onKeyDown=${e=>{if(e.key==='Enter')create();}}/>
+      </div>
+      <div style="margin-bottom:var(--sp-l);display:flex;align-items:center;gap:var(--sp-s)">
+        <input type="checkbox" ref=${orchRef} id="orch-check"/>
+        <label for="orch-check" style="font-size:var(--fs-s);color:var(--t2);font-family:var(--font-mono)">set as orchestrator</label>
+      </div>
+      <div style="display:flex;gap:var(--sp-s);justify-content:flex-end">
+        <button class="action-btn" onClick=${()=>showNewProject.value=false}>cancel</button>
+        <button style="background:var(--green);color:#000;border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);font-size:var(--fs-s);cursor:pointer" onClick=${create}>create</button>
+      </div>
+    </div>
+  </div>`;
+}
 
 function Toasts(){return html`<div class="toasts">${toasts.value.map(t=>html`<div class="toast ${t.type}" key=${t.id}>${t.msg}</div>`)}</div>`;}
 

@@ -177,3 +177,46 @@ pub fn execute_health_inline(docs_dir: &std::path::Path, project: &str) -> Strin
     }
     results.join("\n")
 }
+
+/// Get task queue from tasks/queue.md
+#[tauri::command]
+pub fn get_queue(state: State<AppState>) -> Value {
+    let queue_path = state.root.join("tasks").join("queue.md");
+    let mut tasks = Vec::new();
+
+    if let Ok(content) = std::fs::read_to_string(&queue_path) {
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("- [ ] ") {
+                tasks.push(json!({
+                    "text": &trimmed[6..],
+                    "done": false,
+                }));
+            } else if trimmed.starts_with("- [x] ") {
+                tasks.push(json!({
+                    "text": &trimmed[6..],
+                    "done": true,
+                }));
+            }
+        }
+    }
+
+    json!({"tasks": tasks, "total": tasks.len()})
+}
+
+/// Add task to queue
+#[tauri::command]
+pub fn add_to_queue(state: State<AppState>, task: String) -> Value {
+    let queue_path = state.root.join("tasks").join("queue.md");
+    let entry = format!("- [ ] {}\n", task);
+
+    match std::fs::OpenOptions::new()
+        .create(true).append(true).open(&queue_path)
+        .and_then(|mut f| {
+            use std::io::Write;
+            write!(f, "{}", entry)
+        }) {
+        Ok(_) => json!({"status": "ok"}),
+        Err(e) => json!({"status": "error", "error": e.to_string()}),
+    }
+}

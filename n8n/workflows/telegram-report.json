@@ -1,0 +1,54 @@
+{
+  "name": "Agent OS — Telegram Reports",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tg-report",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "name": "Report Webhook"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TG_CHAT_ID }}",
+        "text": "=📊 **Agent OS Report**\n\n{{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [500, 300],
+      "name": "Send TG",
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "{\"status\": \"sent\"}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [750, 300],
+      "name": "Respond"
+    }
+  ],
+  "connections": {
+    "Report Webhook": {
+      "main": [[{"node": "Send TG", "type": "main", "index": 0}]]
+    },
+    "Send TG": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  }
+}

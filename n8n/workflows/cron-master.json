@@ -1,0 +1,69 @@
+{
+  "name": "Agent OS — Cron Master",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 9 * * *"}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "name": "Daily 9AM"
+    },
+    {
+      "parameters": {
+        "command": "cd \"{{ $env.AGENT_OS_ROOT }}\" && bash scripts/check-drift.sh 2>&1 | tail -5"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 200],
+      "name": "Drift Check"
+    },
+    {
+      "parameters": {
+        "command": "cd \"{{ $env.AGENT_OS_ROOT }}\" && bash scripts/session-metrics.sh 2>&1"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 400],
+      "name": "Session Metrics"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 */6 * * *"}]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 600],
+      "name": "Every 6h"
+    },
+    {
+      "parameters": {
+        "command": "cd \"{{ $env.AGENT_OS_ROOT }}\" && python n8n/dashboard/scan-projects-fast.py 2>&1 | tail -3"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 600],
+      "name": "Project Scan"
+    }
+  ],
+  "connections": {
+    "Daily 9AM": {
+      "main": [
+        [
+          {"node": "Drift Check", "type": "main", "index": 0},
+          {"node": "Session Metrics", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Every 6h": {
+      "main": [
+        [{"node": "Project Scan", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

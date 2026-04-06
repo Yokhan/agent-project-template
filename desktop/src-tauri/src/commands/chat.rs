@@ -388,6 +388,21 @@ pub async fn stream_chat(
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let reader = std::io::BufReader::new(stdout);
 
+    // Spawn thread to read stderr → emit activity events
+    let stderr = child.stderr.take();
+    let app2 = app.clone();
+    let _stderr_thread = std::thread::spawn(move || {
+        if let Some(se) = stderr {
+            let reader = std::io::BufReader::new(se);
+            for line in reader.lines().flatten() {
+                let trimmed = line.trim();
+                if !trimmed.is_empty() {
+                    let _ = app2.emit("chat-activity", json!({"text": trimmed}));
+                }
+            }
+        }
+    });
+
     let mut full_response = String::new();
     for line in reader.lines() {
         match line {

@@ -90,6 +90,8 @@ pub fn run() {
             commands::ops::deploy_template,
             commands::ops::health_check,
             commands::ops::create_project,
+            commands::ops::get_queue,
+            commands::ops::add_to_queue,
             // Proxy
             commands::proxy::proxy_webhook,
         ])
