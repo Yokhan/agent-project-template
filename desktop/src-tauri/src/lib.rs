@@ -92,6 +92,8 @@ pub fn run() {
             commands::ops::create_project,
             commands::ops::get_queue,
             commands::ops::add_to_queue,
+            commands::ops::save_attachment,
+            commands::ops::send_telegram,
             // Proxy
             commands::proxy::proxy_webhook,
         ])

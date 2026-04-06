@@ -204,6 +204,57 @@ pub fn get_queue(state: State<AppState>) -> Value {
     json!({"tasks": tasks, "total": tasks.len()})
 }
 
+/// Send message to Telegram bot
+#[tauri::command]
+pub async fn send_telegram(state: State<'_, AppState>, text: String) -> Result<Value, String> {
+    let cfg: Value = std::fs::read_to_string(&state.config_path)
+        .ok()
+        .and_then(|c| serde_json::from_str(&c).ok())
+        .unwrap_or(json!({}));
+
+    let token = cfg.get("tg_bot_token").and_then(|v| v.as_str()).unwrap_or("");
+    let chat_id = cfg.get("tg_chat_id").and_then(|v| v.as_str()).unwrap_or("");
+
+    if token.is_empty() || chat_id.is_empty() {
+        return Ok(json!({"status": "error", "error": "Telegram not configured. Set tg_bot_token and tg_chat_id in settings."}));
+    }
+
+    let url = format!("https://api.telegram.org/bot{}/sendMessage", token);
+    let client = reqwest::Client::new();
+    let res = client.post(&url)
+        .json(&json!({
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "Markdown",
+        }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let status = res.status().is_success();
+    Ok(json!({"status": if status { "ok" } else { "error" }, "sent": status}))
+}
+
+/// Save attached file for chat context (returns local path for claude)
+#[tauri::command]
+pub fn save_attachment(state: State<AppState>, name: String, data: Vec<u8>) -> Value {
+    let att_dir = state.root.join("tasks").join("attachments");
+    let _ = std::fs::create_dir_all(&att_dir);
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let safe_name = name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    let filename = format!("{}-{}", nanos, safe_name);
+    let path = att_dir.join(&filename);
+
+    match std::fs::write(&path, &data) {
+        Ok(_) => json!({"status": "ok", "path": path.to_string_lossy(), "size": data.len()}),
+        Err(e) => json!({"status": "error", "error": e.to_string()}),
+    }
+}
+
 /// Add task to queue
 #[tauri::command]
 pub fn add_to_queue(state: State<AppState>, task: String) -> Value {
