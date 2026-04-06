@@ -25,7 +25,24 @@
       "Bash(head*)",
       "Bash(tail*)",
       "Bash(find*)",
-      "Bash(grep*)"
+      "Bash(grep*)",
+      "Bash(git fetch*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)",
+      "Bash(git merge*)",
+      "Bash(bash *)",
+      "Bash(mkdir*)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(echo *)",
+      "Bash(curl *)",
+      "Bash(which *)",
+      "Bash(command *)",
+      "Bash(type *)",
+      "Bash(pip *)",
+      "Bash(npm install*)",
+      "Bash(npm ci*)"
     ]
   }
 }
