@@ -317,6 +317,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .paste-preview img{max-height:60px;border:1px solid var(--border)}
 .paste-preview .rm{cursor:pointer;color:var(--accent);font-size:var(--fs-xs)}
 
+
+/* === SETTINGS PAGE === */
+.settings-page{padding:var(--sp-xl) var(--sp-2xl);max-width:900px}
+.settings-page h2{font-size:var(--fs-xl);font-family:var(--font-mono);letter-spacing:2px;margin-bottom:var(--sp-xl)}
+.settings-section{border:1px solid var(--border);margin-bottom:var(--sp-l);padding:var(--sp-l)}
+.settings-section h3{font-size:var(--fs-s);color:var(--t2);text-transform:uppercase;letter-spacing:2px;font-family:var(--font-mono);margin-bottom:var(--sp-m)}
+.perm-row{display:flex;justify-content:space-between;align-items:center;padding:var(--sp-s) 0;border-bottom:1px solid var(--border);font-size:var(--fs-m)}
+.perm-row:last-child{border:none}
+.perm-row .proj-name{font-weight:500;min-width:200px}
+.perm-row .perm-btns{display:flex;gap:4px}
+.perm-btn{padding:4px 12px;font-size:var(--fs-xs);font-family:var(--font-mono);cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--t2);text-transform:uppercase;letter-spacing:1px;transition:all .15s}
+.perm-btn:hover{border-color:var(--t2);color:var(--text)}
+.perm-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.perm-btn.active-green{border-color:var(--green);color:var(--green);background:rgba(51,209,122,.1)}
+.perm-btn.active-yellow{border-color:var(--yellow);color:var(--yellow);background:rgba(229,160,13,.1)}
+.perm-profile{display:flex;gap:var(--sp-l);margin-top:var(--sp-m)}
+.perm-card{border:1px solid var(--border);padding:var(--sp-m);flex:1}
+.perm-card h4{font-size:var(--fs-s);font-family:var(--font-mono);margin-bottom:var(--sp-s);text-transform:uppercase;letter-spacing:1px}
+.perm-card .tools{font-size:var(--fs-xs);color:var(--t3);line-height:1.8}
+.perm-card .tools span{display:inline-block;padding:1px 6px;border:1px solid var(--border);margin:2px;font-family:var(--font-mono)}
+
 /* === FEED === */
 .feed{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-2xl);font-size:var(--fs-xs);color:var(--t3);max-height:50px;overflow-y:auto;flex-shrink:0;font-family:var(--font-mono)}
 </style></head>
@@ -335,6 +356,8 @@ const thinkStart=signal(0);
 const lastUserMsg=signal('');
 const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
 const curActivity=signal("");const lastStats=signal(null);
+const showSettings=signal(false);
+const permData=signal(null);
 const slashOpen=signal(false);const slashItems=signal([]);const pastedImg=signal(null);
 const SLASH_CMDS=[{cmd:'/clear',desc:'Clear chat'},{cmd:'/mode-code',desc:'Code mode'},{cmd:'/mode-design',desc:'Design mode'},{cmd:'/mode-review',desc:'Review mode'},{cmd:'/mode-fix',desc:'Fix mode'},{cmd:'/status',desc:'Status'},{cmd:'/health',desc:'Health check'},{cmd:'/briefing',desc:'Briefing'},{cmd:'/help',desc:'Commands list'}];
 const delegations=signal({});
@@ -399,6 +422,8 @@ delegations.value=newDel;
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
 async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
 async function loadProjectPlan(p){try{const r=await fetch("/api/project-plan/"+encodeURIComponent(p));projectPlan.value=await r.json();}catch{projectPlan.value=null;}}
+async function loadPerms(){try{const r=await fetch('/api/permissions');permData.value=await r.json();}catch{}}
+async function setPermission(proj,profile){try{await fetch('/api/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,profile})});showToast(proj+' -> '+profile,'success');loadPerms();}catch{showToast('Error setting permission','error');}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){
   try{
@@ -472,12 +497,13 @@ function OrchWarning(){
     <span style="color:var(--t2)">Fix: bash setup.sh my-pa --orchestrator</span>
   </div>`;
 }
-function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${Header}/><div class="main">${currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
+function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${Header}/><div class="main">${showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
 function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
   <button onClick=${()=>{loadAgents();loadFeed();}}>refresh</button>
-  <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
+  <button onClick=${()=>{showSettings.value=!showSettings.value;if(showSettings.value)loadPerms();}}>settings</button>
+    <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
   <span>${clock}</span>
 </div></div>`;}
 
@@ -492,6 +518,35 @@ function StatsRow(){
   </div>`;
 }
 
+
+
+function SettingsPage(){
+  const pd=permData.value;
+  const a=agents.value;
+  return html`<div class="settings-page">
+    <div class="back" onClick=${()=>showSettings.value=false}>back to dashboard</div>
+    <h2>SETTINGS</h2>
+    <div class="settings-section">
+      <h3>Permission Profiles</h3>
+      <div class="perm-profile">
+        <div class="perm-card"><h4 style="color:var(--accent)">Restrictive</h4><div class="tools">${pd?.profiles?.restrictive?.permissions?.allow?.map(t=>html`<span>${t}</span>`)}</div></div>
+        <div class="perm-card"><h4 style="color:var(--yellow)">Balanced</h4><div class="tools">${pd?.profiles?.balanced?.permissions?.allow?.slice(0,10).map(t=>html`<span>${t}</span>`)}${pd?.profiles?.balanced?.permissions?.allow?.length>10?html`<span>+${pd.profiles.balanced.permissions.allow.length-10} more</span>`:''}</div></div>
+        <div class="perm-card"><h4 style="color:var(--green)">Permissive</h4><div class="tools">${pd?.profiles?.permissive?.permissions?.allow?.map(t=>html`<span>${t}</span>`)}</div></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Per-Project Permissions</h3>
+      ${a.map(ag=>{const cur=pd?.project_permissions?.[ag.name]||'balanced';return html`<div class="perm-row">
+        <span class="proj-name"><span class="dot ${ag.status}" style="margin-right:8px"></span>${ag.name}</span>
+        <div class="perm-btns">
+          <button class="perm-btn ${cur==='restrictive'?'active':''}" onClick=${()=>setPermission(ag.name,'restrictive')}>restrictive</button>
+          <button class="perm-btn ${cur==='balanced'?'active-yellow':''}" onClick=${()=>setPermission(ag.name,'balanced')}>balanced</button>
+          <button class="perm-btn ${cur==='permissive'?'active-green':''}" onClick=${()=>setPermission(ag.name,'permissive')}>permissive</button>
+        </div>
+      </div>`;})}
+    </div>
+  </div>`;
+}
 
 function EmptyState(){return html`<div style="padding:var(--sp-2xl);max-width:600px;margin:0 auto">
   <div style="font-size:var(--fs-xl);margin-bottom:var(--sp-xl);font-family:var(--font-mono);letter-spacing:2px">SETUP REQUIRED</div>
@@ -723,7 +778,7 @@ function Feed(){return html`<div class="feed">${feedItems.value.length?feedItems
 // ===== KEYBOARD =====
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
-  if(e.key==='Escape'){currentProject.value=null;return;}
+  if(e.key==='Escape'){if(showSettings.value){showSettings.value=false;}else{currentProject.value=null;}return;}
   if(e.key==='/'){e.preventDefault();document.querySelector('.ch-inp input')?.focus();return;}
   if(e.key==='d'||e.key==='D'){theme.value=theme.value==='dark'?'light':'dark';return;}
   if(e.key==='?'){showKbHelp.value=!showKbHelp.value;return;}

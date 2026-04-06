@@ -65,6 +65,44 @@ def get_orch_dir():
     _orch_cache['time'] = now
     return orch_name, orch_dir
 
+
+# Permission profiles
+PERMS_DIR = os.path.join(DIR, 'permissions')
+_project_permissions = {}  # project → profile name
+
+def _load_project_permissions():
+    """Load per-project permission settings from config."""
+    global _project_permissions
+    try:
+        cfg = json.loads(open(config_path, encoding='utf-8').read())
+        _project_permissions = cfg.get('project_permissions', {})
+    except:
+        pass
+
+def get_permission_profile(project_name):
+    """Get permission profile path for a project."""
+    if not _project_permissions:
+        _load_project_permissions()
+    profile = _project_permissions.get(project_name, 'balanced')
+    path = os.path.join(PERMS_DIR, f'{profile}.json')
+    if os.path.exists(path):
+        return path, profile
+    # Fallback to balanced
+    return os.path.join(PERMS_DIR, 'balanced.json'), 'balanced'
+
+def set_permission_profile(project_name, profile):
+    """Set permission profile for a project. Saves to config."""
+    _load_project_permissions()
+    _project_permissions[project_name] = profile
+    try:
+        cfg = json.loads(open(config_path, encoding='utf-8').read())
+    except:
+        cfg = {}
+    cfg['project_permissions'] = _project_permissions
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+    return {'status': 'ok', 'project': project_name, 'profile': profile}
+
 # Cache for scan results
 _scan_cache = {'data': None, 'time': 0}
 CACHE_TTL = 30  # seconds
@@ -498,7 +536,7 @@ def send_chat(project, message):
         env['CHCP'] = '65001'
         set_activity(project or '_orchestrator', 'chatting', message[:50])
         result = subprocess.run(
-            f'chcp 65001 >nul 2>&1 & claude --continue --dangerously-skip-permissions -p < "{tmp}"',
+            f'chcp 65001 >nul 2>&1 & claude --continue -p --settings "{perm_path}" < "{tmp}"',
             shell=True, capture_output=True, timeout=300, cwd=cwd, env=env
         )
         clear_activity(project or '_orchestrator')
@@ -1078,6 +1116,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json_response(analyze_impact(project))
         elif self.path == '/api/analytics':
             self._json_response(get_delegation_analytics())
+        elif self.path == '/api/permissions':
+            _load_project_permissions()
+            profiles = {}
+            for pf in ['restrictive', 'balanced', 'permissive']:
+                pf_path = os.path.join(PERMS_DIR, f'{pf}.json')
+                if os.path.exists(pf_path):
+                    profiles[pf] = json.loads(open(pf_path, encoding='utf-8').read())
+            self._json_response({'profiles': profiles, 'project_permissions': _project_permissions})
         elif self.path == '/api/agents':
             self._json_response(get_agents())
         elif self.path == '/api/feed':
@@ -1134,6 +1180,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._json_response({'status': 'rejected'})
             else:
                 self._json_response({'status': 'error', 'error': 'Not found'})
+        elif self.path == '/api/permissions':
+            project = data.get('project', '')
+            profile = data.get('profile', 'balanced')
+            if project and profile in ('restrictive', 'balanced', 'permissive'):
+                self._json_response(set_permission_profile(project, profile))
+            else:
+                self._json_response({'status': 'error', 'error': 'Invalid project or profile'})
         elif self.path == '/api/monitoring/start':
             interval = data.get('interval', 30)
             self._json_response(start_health_monitoring(interval))
@@ -1201,7 +1254,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
             proc = subprocess.Popen(
-                f'chcp 65001 >nul 2>&1 & claude --continue --dangerously-skip-permissions -p --output-format stream-json --verbose --include-partial-messages < "{tmp}"',
+                f'chcp 65001 >nul 2>&1 & claude --continue -p --output-format stream-json --verbose --include-partial-messages --settings "{perm_path}" < "{tmp}"',
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 cwd=cwd, env=env
             )

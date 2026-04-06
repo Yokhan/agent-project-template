@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Edit",
+      "Write",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(npm test*)",
+      "Bash(npm run*)",
+      "Bash(python*)",
+      "Bash(bash scripts/*)",
+      "Bash(node*)",
+      "Bash(npx*)",
+      "Bash(cat*)",
+      "Bash(ls*)",
+      "Bash(wc*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(find*)",
+      "Bash(grep*)"
+    ]
+  }
+}
