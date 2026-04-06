@@ -346,23 +346,115 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 import{render,html,signal,effect,useRef,useEffect}from'/vendor/preact-bundle.mjs';
 
 // ===== TAURI BRIDGE =====
-// When running inside Tauri (production build with custom-protocol),
-// API calls to /api/* need to be redirected to the Python sidecar.
-// In dev mode (http://localhost:3333), this is a no-op.
-let __TAURI_API_BASE = '';
-if (window.__TAURI_INTERNALS__) {
-  try {
-    const port = await window.__TAURI_INTERNALS__.invoke('get_sidecar_port');
-    __TAURI_API_BASE = `http://localhost:${port}`;
-  } catch { __TAURI_API_BASE = 'http://localhost:3333'; }
+// Maps fetch('/api/...') calls to Tauri invoke() commands.
+// In browser mode (no Tauri), fetch works normally against Python server.
+const __IS_TAURI = !!window.__TAURI_INTERNALS__;
+const __invoke = __IS_TAURI ? window.__TAURI_INTERNALS__.invoke : null;
+const __listen = __IS_TAURI ? window.__TAURI_INTERNALS__.event?.listen : null;
+
+// Route map: URL pattern → { command, extract(url, opts) → args }
+const __API_ROUTES = __IS_TAURI ? {
+  'GET /api/health': { cmd: 'get_health' },
+  'GET /api/agents': { cmd: 'get_agents' },
+  'POST /api/agents': { cmd: 'get_agents' },
+  'GET /api/feed': { cmd: 'get_feed' },
+  'POST /api/feed': { cmd: 'get_feed' },
+  'GET /api/activity': { cmd: 'get_activity' },
+  'GET /api/segments': { cmd: 'get_segments' },
+  'GET /api/plan': { cmd: 'get_plan' },
+  'GET /api/digest': { cmd: 'get_digest' },
+  'GET /api/permissions': { cmd: 'get_permissions' },
+  'GET /api/chats': { cmd: 'get_chats' },
+  'GET /api/analytics': { cmd: 'get_analytics' },
+  'GET /api/health-history': { cmd: 'get_health_history' },
+} : null;
+
+// Fake Response wrapper for invoke results
+function __fakeResponse(data) {
+  const json = JSON.stringify(data);
+  return { ok: true, status: 200, json: () => Promise.resolve(data), text: () => Promise.resolve(json) };
 }
 
-// Patch fetch for API calls when inside Tauri
 const _origFetch = window.fetch;
-window.fetch = function(url, opts) {
-  if (typeof url === 'string' && url.startsWith('/api') && __TAURI_API_BASE) {
-    url = __TAURI_API_BASE + url;
+window.fetch = function(url, opts = {}) {
+  if (!__IS_TAURI || typeof url !== 'string' || !url.startsWith('/api')) {
+    return _origFetch.call(this, url, opts);
   }
+
+  const method = (opts.method || 'GET').toUpperCase();
+  let body = {};
+  if (opts.body) { try { body = JSON.parse(opts.body); } catch {} }
+
+  // Exact route match
+  const key = `${method} ${url.split('?')[0]}`;
+  if (__API_ROUTES[key]) {
+    return __invoke(__API_ROUTES[key].cmd, body).then(__fakeResponse).catch(e => __fakeResponse({error: String(e)}));
+  }
+
+  // Parameterized routes
+  const path = url.split('?')[0];
+  if (path.startsWith('/api/chat/') && method === 'GET') {
+    const project = decodeURIComponent(path.split('/api/chat/')[1]);
+    return __invoke('get_chat_history', { project }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/modules/')) {
+    const project = decodeURIComponent(path.split('/api/modules/')[1]);
+    return __invoke('get_modules', { project }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/project-plan/')) {
+    const project = decodeURIComponent(path.split('/api/project-plan/')[1]);
+    return __invoke('get_project_plan', { project }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/impact/')) {
+    const project = decodeURIComponent(path.split('/api/impact/')[1]);
+    return __invoke('get_impact', { project }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/health-history/')) {
+    const project = decodeURIComponent(path.split('/api/health-history/')[1]);
+    return __invoke('get_health_history', { project }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/approve/') && method === 'POST') {
+    const id = decodeURIComponent(path.split('/api/approve/')[1]);
+    return __invoke('approve_delegation', { id }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/reject/') && method === 'POST') {
+    const id = decodeURIComponent(path.split('/api/reject/')[1]);
+    return __invoke('reject_delegation', { id }).then(__fakeResponse);
+  }
+  if (path.startsWith('/api/action/')) {
+    const name = path.split('/api/action/')[1];
+    return __invoke('run_action', { name }).then(__fakeResponse);
+  }
+
+  // POST routes with body
+  if (path === '/api/chat' && method === 'POST') {
+    return __invoke('send_chat', body).then(__fakeResponse);
+  }
+  if (path === '/api/permissions' && method === 'POST') {
+    return __invoke('set_permission', body).then(__fakeResponse);
+  }
+  if (path === '/api/delegations' && method === 'POST') {
+    return __invoke('get_delegations', {}).then(__fakeResponse);
+  }
+
+  // SSE streaming — handled specially by callers via Tauri events
+  if (path === '/api/chat-stream' && method === 'POST') {
+    // Start the stream command (fire-and-forget), return a fake SSE response
+    __invoke('stream_chat', body).catch(() => {});
+    // Return a mock response — actual data comes via 'chat-stream' events
+    return Promise.resolve({
+      ok: true, status: 200,
+      body: { getReader: () => ({ read: () => new Promise(() => {}) }) },
+      _tauriStream: true,
+    });
+  }
+
+  // Webhook proxy
+  if (path.startsWith('/webhook/')) {
+    return __invoke('proxy_webhook', { path, method, body: opts.body || null }).then(r => __fakeResponse(r.data || r));
+  }
+
+  // Fallback to real fetch
   return _origFetch.call(this, url, opts);
 };
 
@@ -469,15 +561,32 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
   isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
-    const reader=r.body.getReader();const dec=new TextDecoder();let buf='',full='';
-    while(true){
-      const{done,value}=await reader.read();if(done)break;
-      buf+=dec.decode(value,{stream:true});
-      const lines=buf.split('\n');buf=lines.pop()||'';
-      for(const ln of lines){
-        if(!ln.startsWith('data: '))continue;
-        const p=ln.slice(6);if(p==='[DONE]')break;
-        try{const d=JSON.parse(p);if(d.text){full+=d.text;streamText.value=full;}if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}}catch{}
+    let full='';
+    if(r._tauriStream&&__IS_TAURI){
+      // Tauri mode: listen for events instead of reading stream
+      await new Promise((resolve)=>{
+        let unData,unDone;
+        const cleanup=()=>{if(unData)unData();if(unDone)unDone();resolve();};
+        window.__TAURI_INTERNALS__.event.listen('chat-stream',e=>{
+          const d=e.payload;if(d.text){full+=d.text;streamText.value=full;}
+          if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}
+        }).then(u=>{unData=u;});
+        window.__TAURI_INTERNALS__.event.listen('chat-stream-done',()=>{cleanup();}).then(u=>{unDone=u;});
+        // Safety timeout
+        setTimeout(cleanup,300000);
+      });
+    }else{
+      // Browser mode: read SSE stream
+      const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
+      while(true){
+        const{done,value}=await reader.read();if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop()||'';
+        for(const ln of lines){
+          if(!ln.startsWith('data: '))continue;
+          const p=ln.slice(6);if(p==='[DONE]')break;
+          try{const d=JSON.parse(p);if(d.text){full+=d.text;streamText.value=full;}if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}}catch{}
+        }
       }
     }
     isStreaming.value=false;
