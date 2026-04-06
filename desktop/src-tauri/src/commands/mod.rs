@@ -5,3 +5,4 @@ pub mod delegation;
 pub mod feed;
 pub mod proxy;
 pub mod ops;
+pub mod strategy;

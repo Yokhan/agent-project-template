@@ -94,6 +94,13 @@ pub fn run() {
             commands::ops::add_to_queue,
             commands::ops::save_attachment,
             commands::ops::send_telegram,
+            // Strategy
+            commands::strategy::get_goals,
+            commands::strategy::save_goal,
+            commands::strategy::get_strategies,
+            commands::strategy::generate_strategy,
+            commands::strategy::approve_strategy_steps,
+            commands::strategy::execute_strategy_step,
             // Proxy
             commands::proxy::proxy_webhook,
         ])

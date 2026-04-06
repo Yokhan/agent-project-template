@@ -180,6 +180,10 @@ fn clear_activity(root: &std::path::Path, project: &str) {
     }
 }
 
+/// Public wrapper for strategy.rs
+pub fn unique_tmp_pub(prefix: &str) -> std::path::PathBuf { unique_tmp(prefix) }
+pub fn run_claude_pub(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> String { run_claude(cwd, prompt, perm_path) }
+
 /// Generate unique temp file path (nanos + pid, no collisions)
 fn unique_tmp(prefix: &str) -> std::path::PathBuf {
     let nanos = std::time::SystemTime::now()
