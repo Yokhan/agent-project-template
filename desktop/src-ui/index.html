@@ -349,14 +349,13 @@ import{render,html,signal,effect,useRef,useEffect}from'/vendor/preact-bundle.mjs
 // When running inside Tauri (production build with custom-protocol),
 // API calls to /api/* need to be redirected to the Python sidecar.
 // In dev mode (http://localhost:3333), this is a no-op.
-const __TAURI_API_BASE = (() => {
-  if (window.__TAURI_INTERNALS__) {
-    // Running inside Tauri — sidecar is on localhost:3333
-    const port = 3333;
-    return `http://localhost:${port}`;
-  }
-  return ''; // Browser mode — relative URLs work fine
-})();
+let __TAURI_API_BASE = '';
+if (window.__TAURI_INTERNALS__) {
+  try {
+    const port = await window.__TAURI_INTERNALS__.invoke('get_sidecar_port');
+    __TAURI_API_BASE = `http://localhost:${port}`;
+  } catch { __TAURI_API_BASE = 'http://localhost:3333'; }
+}
 
 // Patch fetch for API calls when inside Tauri
 const _origFetch = window.fetch;

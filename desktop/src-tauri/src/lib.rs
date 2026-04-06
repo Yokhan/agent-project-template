@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::process::Command as StdCommand;
 use std::sync::Mutex;
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager, RunEvent, WindowEvent,
+    Manager, RunEvent, WindowEvent,
 };
 
 mod commands;
@@ -13,24 +13,42 @@ mod commands;
 pub struct SidecarState {
     pub process: Mutex<Option<std::process::Child>>,
     pub port: u16,
+    pub root: PathBuf,
 }
 
-/// Find the project root (two levels up from desktop/src-tauri/)
-fn project_root() -> PathBuf {
-    let exe_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."));
+impl Drop for SidecarState {
+    fn drop(&mut self) {
+        if let Ok(mut proc) = self.process.lock() {
+            if let Some(ref mut child) = *proc {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+        }
+    }
+}
 
-    // In dev mode, we're in desktop/src-tauri/
-    // Try to find the project root by looking for CLAUDE.md
-    for ancestor in exe_dir.ancestors() {
-        if ancestor.join("CLAUDE.md").exists() {
-            return ancestor.to_path_buf();
+/// Find the project root.
+/// Priority: AGENT_OS_ROOT env → walk up from exe → walk up from cwd.
+fn project_root() -> PathBuf {
+    // 1. Explicit env var — most reliable for installed apps
+    if let Ok(root) = std::env::var("AGENT_OS_ROOT") {
+        let p = PathBuf::from(&root);
+        if p.join("n8n").join("dashboard").join("serve.py").exists() {
+            return p;
+        }
+        eprintln!("AGENT_OS_ROOT={} but serve.py not found there, falling back", root);
+    }
+
+    // 2. Walk up from executable location
+    if let Ok(exe) = std::env::current_exe() {
+        for ancestor in exe.ancestors().skip(1) {
+            if ancestor.join("CLAUDE.md").exists() {
+                return ancestor.to_path_buf();
+            }
         }
     }
 
-    // Fallback: look relative to current working directory
+    // 3. Walk up from current working directory
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     for ancestor in cwd.ancestors() {
         if ancestor.join("CLAUDE.md").exists() {
@@ -38,11 +56,13 @@ fn project_root() -> PathBuf {
         }
     }
 
+    eprintln!("Warning: could not find project root (no CLAUDE.md found). Using cwd: {:?}", cwd);
     cwd
 }
 
-/// Start the Python sidecar (serve.py) on the given port
-fn start_sidecar(root: &PathBuf, port: u16) -> Option<std::process::Child> {
+/// Spawn the Python sidecar (serve.py) on the given port.
+/// Returns None if Python is not found or serve.py doesn't exist.
+pub fn spawn_sidecar(root: &PathBuf, port: u16) -> Option<std::process::Child> {
     let serve_py = root.join("n8n").join("dashboard").join("serve.py");
     if !serve_py.exists() {
         eprintln!("serve.py not found at {:?}", serve_py);
@@ -55,8 +75,8 @@ fn start_sidecar(root: &PathBuf, port: u16) -> Option<std::process::Child> {
             .arg(&serve_py)
             .arg(port.to_string())
             .current_dir(root)
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::inherit())
             .spawn()
         {
             Ok(child) => {
@@ -71,7 +91,6 @@ fn start_sidecar(root: &PathBuf, port: u16) -> Option<std::process::Child> {
     None
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let port: u16 = std::env::var("AGENT_OS_PORT")
         .ok()
@@ -82,11 +101,12 @@ pub fn run() {
     println!("Agent OS starting — root: {:?}, port: {}", root, port);
 
     // Start the Python sidecar
-    let sidecar_process = start_sidecar(&root, port);
+    let sidecar_process = spawn_sidecar(&root, port);
 
     let sidecar_state = SidecarState {
         process: Mutex::new(sidecar_process),
         port,
+        root,
     };
 
     tauri::Builder::default()
@@ -103,7 +123,7 @@ pub fn run() {
             // === System Tray ===
             let open_i = MenuItem::with_id(app, "open", "Open Dashboard", true, None::<&str>)?;
             let status_i = MenuItem::with_id(app, "status", "Status", true, None::<&str>)?;
-            let sep = MenuItem::with_id(app, "sep", "────────────", false, None::<&str>)?;
+            let sep = PredefinedMenuItem::separator(app)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit Agent OS", true, None::<&str>)?;
 
             let menu = Menu::with_items(app, &[&open_i, &status_i, &sep, &quit_i])?;
@@ -119,8 +139,23 @@ pub fn run() {
                         }
                     }
                     "status" => {
+                        // Show status via notification
+                        let state = app.state::<SidecarState>();
+                        let status = match state.process.lock() {
+                            Ok(mut proc) => match *proc {
+                                Some(ref mut child) => match child.try_wait() {
+                                    Ok(Some(s)) => format!("Sidecar exited: {}", s),
+                                    Ok(None) => format!("Running on port {}", state.port),
+                                    Err(e) => format!("Error: {}", e),
+                                },
+                                None => "Sidecar not started".to_string(),
+                            },
+                            Err(_) => "State lock error".to_string(),
+                        };
+                        eprintln!("Status: {}", status);
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("tray-status-request", ());
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
                     "quit" => {
@@ -129,6 +164,7 @@ pub fn run() {
                         if let Ok(mut proc) = state.process.lock() {
                             if let Some(ref mut child) = *proc {
                                 let _ = child.kill();
+                                let _ = child.wait();
                             }
                         }
                         app.exit(0);
@@ -151,10 +187,6 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // === Main Window — load dashboard from sidecar ===
-            // The window is configured in tauri.conf.json to load the local UI files
-            // In Phase 1 we proxy to the Python sidecar
-
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -170,10 +202,6 @@ pub fn run() {
                 if let Some(window) = app_handle.get_webview_window("main") {
                     let _ = window.hide();
                 }
-            }
-            RunEvent::ExitRequested { api, .. } => {
-                // Allow exit only from tray quit
-                let _ = api;
             }
             _ => {}
         });
