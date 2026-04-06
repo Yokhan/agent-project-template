@@ -41,33 +41,23 @@ pub struct Delegation {
     pub retries: u32,
 }
 
-/// Health history entry
-#[derive(Clone, Serialize, Deserialize)]
-pub struct HealthEntry {
-    pub ts: String,
-    pub project: String,
-    pub warnings: u32,
-    pub errors: u32,
-}
-
 /// Shared application state
 pub struct AppState {
     pub root: PathBuf,
     pub docs_dir: PathBuf,
     pub config_path: PathBuf,
     pub chats_dir: PathBuf,
+    pub delegations_path: PathBuf,
     pub n8n_url: String,
     pub start_time: Instant,
 
     // Caches
     pub scan_cache: Mutex<ScanCache>,
-    pub segments: HashMap<String, Vec<String>>,
+    pub segments: Mutex<HashMap<String, Vec<String>>>,
     pub project_segment: HashMap<String, String>,
 
     // Runtime state
     pub delegations: Mutex<HashMap<String, Delegation>>,
-    pub health_history: Mutex<Vec<HealthEntry>>,
-    pub monitoring_active: Mutex<bool>,
 }
 
 impl AppState {
@@ -85,19 +75,23 @@ impl AppState {
         // Ensure chats dir exists
         let _ = std::fs::create_dir_all(&chats_dir);
 
+        let delegations_path = root.join("tasks").join(".delegations.json");
+
+        // Load persisted delegations, reset "running" to "pending"
+        let delegations = Self::load_delegations(&delegations_path);
+
         Self {
             root,
             docs_dir,
             config_path,
             chats_dir,
+            delegations_path,
             n8n_url,
             start_time: Instant::now(),
             scan_cache: Mutex::new(ScanCache::default()),
-            segments,
+            segments: Mutex::new(segments),
             project_segment,
-            delegations: Mutex::new(HashMap::new()),
-            health_history: Mutex::new(Vec::new()),
-            monitoring_active: Mutex::new(false),
+            delegations: Mutex::new(delegations),
         }
     }
 
@@ -138,6 +132,30 @@ impl AppState {
         }
 
         (segments, project_segment)
+    }
+
+    fn load_delegations(path: &PathBuf) -> HashMap<String, Delegation> {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            if let Ok(mut map) = serde_json::from_str::<HashMap<String, Delegation>>(&content) {
+                // Reset "running" to "pending" on restart
+                for d in map.values_mut() {
+                    if d.status == "running" {
+                        d.status = "pending".to_string();
+                    }
+                }
+                return map;
+            }
+        }
+        HashMap::new()
+    }
+
+    pub fn save_delegations(&self) {
+        if let Ok(delegations) = self.delegations.lock() {
+            let _ = std::fs::write(
+                &self.delegations_path,
+                serde_json::to_string_pretty(&*delegations).unwrap_or_default(),
+            );
+        }
     }
 
     pub fn get_orch_dir(&self) -> (String, PathBuf) {

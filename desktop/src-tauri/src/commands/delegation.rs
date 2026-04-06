@@ -24,6 +24,7 @@ pub fn queue_delegation_internal(state: &AppState, project: &str, task: &str) ->
     if let Ok(mut delegations) = state.delegations.lock() {
         delegations.insert(id.clone(), delegation);
     }
+    state.save_delegations();
 
     id
 }
@@ -77,21 +78,27 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
             writeln!(f, "{}", serde_json::to_string(&user_entry).unwrap_or_default())
         });
 
-    // Execute
-    let tmp = std::env::temp_dir().join(format!("delegate-{}.txt", std::process::id()));
+    // Execute — use permission profiles, no --dangerously-skip-permissions
+    let perm_path = crate::commands::chat::get_permission_path_pub(&state, &d.project);
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let tmp = std::env::temp_dir().join(format!("delegate-{}-{}.txt", nanos, std::process::id()));
+
     let response = if std::fs::write(&tmp, &d.task).is_ok() {
-        let cmd = if cfg!(target_os = "windows") {
-            format!("chcp 65001 >nul 2>&1 & claude --dangerously-skip-permissions -p < \"{}\"", tmp.to_string_lossy())
-        } else {
-            format!("claude --dangerously-skip-permissions -p < '{}'", tmp.to_string_lossy())
+        let stdin_file = match std::fs::File::open(&tmp) {
+            Ok(f) => f,
+            Err(e) => {
+                let _ = std::fs::remove_file(&tmp);
+                return json!({"status": "error", "error": format!("Cannot open temp file: {}", e)});
+            }
         };
 
-        let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-        let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-
-        let result = std::process::Command::new(shell)
-            .args([flag, &cmd])
+        let result = std::process::Command::new("claude")
+            .args(["-p", "--settings", &perm_path])
             .current_dir(&project_dir)
+            .stdin(std::process::Stdio::from(stdin_file))
             .env("PYTHONIOENCODING", "utf-8")
             .output();
 
@@ -99,10 +106,15 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
 
         match result {
             Ok(output) => {
-                let r = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if r.is_empty() { "No response from agent".to_string() } else { r }
+                let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                if stdout.is_empty() {
+                    if stderr.is_empty() { "Agent returned empty response".to_string() } else { format!("Error: {}", stderr) }
+                } else {
+                    stdout
+                }
             }
-            Err(e) => format!("Error: {}", e),
+            Err(e) => format!("Error running claude: {}", e),
         }
     } else {
         "Error: could not write temp file".to_string()
@@ -135,6 +147,7 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
             del.response = Some(response.clone());
         }
     }
+    state.save_delegations();
 
     // Log delegation
     log_delegation(&state.root, &d.project, &d.task, "success");
@@ -152,6 +165,8 @@ pub fn reject_delegation(state: State<AppState>, id: String) -> Value {
     if let Ok(mut delegations) = state.delegations.lock() {
         if let Some(del) = delegations.get_mut(&id) {
             del.status = "rejected".to_string();
+            drop(delegations);
+            state.save_delegations();
             return json!({"status": "rejected"});
         }
     }

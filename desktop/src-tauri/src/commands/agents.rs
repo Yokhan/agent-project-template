@@ -68,7 +68,7 @@ pub fn get_agents(state: State<AppState>) -> Value {
 #[tauri::command]
 pub fn get_segments(state: State<AppState>) -> Value {
     json!({
-        "segments": state.segments,
+        "segments": *state.segments.lock().unwrap_or_else(|e| e.into_inner()),
         "project_segment": state.project_segment,
     })
 }

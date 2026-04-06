@@ -74,24 +74,44 @@ pub fn get_chat_history(state: State<AppState>, project: String) -> Value {
     json!({"project": project, "messages": messages})
 }
 
-/// Build orchestrator context prefix for PA
+/// Build orchestrator context prefix for PA — uses scan cache instead of re-scanning
 fn build_orchestrator_context(state: &AppState) -> String {
-    let projects = crate::scanner::scan_projects(&state.docs_dir, &state.project_segment);
-    let names: Vec<&str> = projects.iter().map(|p| p.name.as_str()).take(10).collect();
-    let working: Vec<&str> = projects.iter().filter(|p| p.status == "working").map(|p| p.name.as_str()).collect();
-    let blocked: Vec<&str> = projects.iter().filter(|p| p.blockers).map(|p| p.name.as_str()).collect();
+    // Use cached scan data (refreshed every 30s by frontend polling)
+    let projects = {
+        let cache = state.scan_cache.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(data) = &cache.data {
+            if let Some(arr) = data.as_array() {
+                arr.iter()
+                    .filter_map(|v| {
+                        let name = v.get("name")?.as_str()?;
+                        let status = v.get("status")?.as_str().unwrap_or("idle");
+                        let blockers = v.get("blockers")?.as_bool().unwrap_or(false);
+                        Some((name.to_string(), status.to_string(), blockers))
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            }
+        } else {
+            // Cache empty — do a fresh scan
+            let scanned = crate::scanner::scan_projects(&state.docs_dir, &state.project_segment);
+            scanned.iter().map(|p| (p.name.clone(), p.status.clone(), p.blockers)).collect()
+        }
+    };
+
+    let names: Vec<&str> = projects.iter().map(|p| p.0.as_str()).take(10).collect();
+    let working: Vec<&str> = projects.iter().filter(|p| p.1 == "working").map(|p| p.0.as_str()).collect();
+    let blocked: Vec<&str> = projects.iter().filter(|p| p.2).map(|p| p.0.as_str()).collect();
 
     format!(
         "[CONTEXT: You are PA Orchestrator managing {} projects.\n\
          Projects: {}\n\
          Working: {}. Blocked: {}.\n\
-         DELEGATION: When user asks you to do something in a specific project, \
-         write your response with this EXACT format at the end:\n\
-         [DELEGATE:ProjectName]\n\
-         <exact task message for that project's agent, as if from the user>\n\
-         [/DELEGATE]\n\
-         The dashboard will automatically send this to the project's agent and report back.\n\
-         Be concise.]\n\n",
+         COMMANDS:\n\
+         - [DELEGATE:ProjectName]\\ntask\\n[/DELEGATE] — send task to project agent\n\
+         - [DEPLOY:ProjectName] — sync template to project\n\
+         - [HEALTH_CHECK:ProjectName] or [HEALTH_CHECK:all] — run health check\n\
+         Be concise. Formulate clear tasks when delegating.]\n\n",
         projects.len(),
         names.join(", "),
         if working.is_empty() { "none".to_string() } else { working.join(", ") },
@@ -99,7 +119,11 @@ fn build_orchestrator_context(state: &AppState) -> String {
     )
 }
 
-/// Get permission settings path for a project
+/// Get permission settings path for a project (pub for delegation.rs)
+pub fn get_permission_path_pub(state: &AppState, project: &str) -> String {
+    get_permission_path(state, project)
+}
+
 fn get_permission_path(state: &AppState, project: &str) -> String {
     let profile = if let Ok(content) = std::fs::read_to_string(&state.config_path) {
         serde_json::from_str::<Value>(&content)
@@ -156,33 +180,34 @@ fn clear_activity(root: &std::path::Path, project: &str) {
     }
 }
 
-/// Run claude -p via subprocess and return result
+/// Generate unique temp file path (nanos + pid, no collisions)
+fn unique_tmp(prefix: &str) -> std::path::PathBuf {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    std::env::temp_dir().join(format!("{}-{}-{}.txt", prefix, nanos, std::process::id()))
+}
+
+/// Run claude -p via subprocess — no shell wrapper, direct Command::new("claude")
 fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> String {
-    let tmp = std::env::temp_dir().join(format!("chat-{}.txt", std::process::id()));
+    let tmp = unique_tmp("chat");
     if std::fs::write(&tmp, prompt).is_err() {
         return "Error: could not write temp file".to_string();
     }
 
-    let cmd = if cfg!(target_os = "windows") {
-        format!(
-            "chcp 65001 >nul 2>&1 & claude --continue -p --settings \"{}\" < \"{}\"",
-            perm_path,
-            tmp.to_string_lossy()
-        )
-    } else {
-        format!(
-            "claude --continue -p --settings '{}' < '{}'",
-            perm_path,
-            tmp.to_string_lossy()
-        )
+    let stdin_file = match std::fs::File::open(&tmp) {
+        Ok(f) => f,
+        Err(e) => {
+            let _ = std::fs::remove_file(&tmp);
+            return format!("Error opening temp file: {}", e);
+        }
     };
 
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-
-    let result = std::process::Command::new(shell)
-        .args([flag, &cmd])
+    let result = std::process::Command::new("claude")
+        .args(["--continue", "-p", "--settings", perm_path])
         .current_dir(cwd)
+        .stdin(std::process::Stdio::from(stdin_file))
         .env("PYTHONIOENCODING", "utf-8")
         .env("LANG", "en_US.UTF-8")
         .output();
@@ -193,21 +218,26 @@ fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> String {
         Ok(output) => {
             let text = String::from_utf8(output.stdout)
                 .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).to_string());
+            let stderr = String::from_utf8_lossy(&output.stderr);
             let trimmed = text.trim();
             if trimmed.is_empty() {
-                String::from_utf8_lossy(&output.stderr).trim().to_string()
+                if stderr.trim().is_empty() {
+                    "Agent returned empty response".to_string()
+                } else {
+                    stderr.trim().to_string()
+                }
             } else {
                 trimmed.to_string()
             }
         }
-        Err(e) => format!("Error: {}", e),
+        Err(e) => format!("Error running claude: {}", e),
     }
 }
 
 #[tauri::command]
-pub fn send_chat(state: State<AppState>, project: String, message: String) -> Value {
+pub async fn send_chat(state: State<'_, AppState>, project: String, message: String) -> Result<Value, String> {
     if message.is_empty() {
-        return json!({"status": "error", "error": "Empty message"});
+        return Ok(json!({"status": "error", "error": "Empty message"}));
     }
 
     let (_, pa_dir) = state.get_orch_dir();
@@ -218,10 +248,10 @@ pub fn send_chat(state: State<AppState>, project: String, message: String) -> Va
     };
 
     if !project.is_empty() && !cwd.exists() {
-        return json!({"status": "error", "error": format!("Project not found: {}", project)});
+        return Ok(json!({"status": "error", "error": format!("Project not found: {}", project)}));
     }
 
-    let chat_key = if project.is_empty() { "_orchestrator" } else { &project };
+    let chat_key = if project.is_empty() { "_orchestrator".to_string() } else { project.clone() };
     let chat_file = state.chats_dir.join(format!("{}.jsonl", chat_key));
     let ts = state.now_iso();
 
@@ -240,12 +270,12 @@ pub fn send_chat(state: State<AppState>, project: String, message: String) -> Va
         message.clone()
     };
 
-    let perm_path = get_permission_path(&state, chat_key);
-    set_activity(&state.root, chat_key, "chatting", &message[..message.len().min(50)]);
+    let perm_path = get_permission_path(&state, &chat_key);
+    set_activity(&state.root, &chat_key, "chatting", &message[..message.len().min(50)]);
 
     let response = run_claude(&cwd, &prompt, &perm_path);
 
-    clear_activity(&state.root, chat_key);
+    clear_activity(&state.root, &chat_key);
 
     // Save assistant response
     let ts2 = state.now_iso();
@@ -273,27 +303,20 @@ pub fn send_chat(state: State<AppState>, project: String, message: String) -> Va
     if project.is_empty() {
         if let Some(target) = parse_deploy(&response) {
             let result = crate::commands::ops::execute_deploy_inline(&state.root, &state.docs_dir, &target);
-            final_response += &format!("
-
----
-**Deploy {}:** {}", target, result);
+            final_response += &format!("\n\n---\n**Deploy {}:** {}", target, result);
         }
         if let Some(target) = parse_health_check(&response) {
             let result = crate::commands::ops::execute_health_inline(&state.docs_dir, &target);
-            final_response += &format!("
-
----
-**Health Check:**
-{}", result);
+            final_response += &format!("\n\n---\n**Health Check:**\n{}", result);
         }
     }
 
-    json!({
+    Ok(json!({
         "status": "complete",
         "response": final_response,
         "project": chat_key,
         "ts": ts2,
-    })
+    }))
 }
 
 #[tauri::command]
@@ -341,31 +364,24 @@ pub async fn stream_chat(
     set_activity(&state.root, &chat_key, "streaming", &message[..message.len().min(50)]);
 
     // Write prompt to temp file
-    let tmp = std::env::temp_dir().join(format!("stream-{}.txt", std::process::id()));
+    let tmp = unique_tmp("stream");
     std::fs::write(&tmp, &prompt).map_err(|e| e.to_string())?;
 
-    let cmd = if cfg!(target_os = "windows") {
-        format!(
-            "chcp 65001 >nul 2>&1 & claude --continue -p --output-format stream-json --verbose --include-partial-messages --settings \"{}\" < \"{}\"",
-            perm_path, tmp.to_string_lossy()
-        )
-    } else {
-        format!(
-            "claude --continue -p --output-format stream-json --verbose --include-partial-messages --settings '{}' < '{}'",
-            perm_path, tmp.to_string_lossy()
-        )
-    };
+    let stdin_file = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
 
-    let shell = if cfg!(target_os = "windows") { "cmd" } else { "sh" };
-    let flag = if cfg!(target_os = "windows") { "/C" } else { "-c" };
-
-    // Spawn process and stream
-    let mut child = std::process::Command::new(shell)
-        .args([flag, &cmd])
+    // Spawn claude directly — no shell wrapper
+    let mut child = std::process::Command::new("claude")
+        .args([
+            "--continue", "-p",
+            "--output-format", "stream-json",
+            "--verbose",
+            "--settings", &perm_path,
+        ])
         .current_dir(&cwd)
+        .stdin(std::process::Stdio::from(stdin_file))
         .env("PYTHONIOENCODING", "utf-8")
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
+        .stderr(std::process::Stdio::piped())
         .spawn()
         .map_err(|e| e.to_string())?;
 

@@ -55,27 +55,11 @@ pub fn set_permission(state: State<AppState>, project: String, profile: String) 
     json!({"status": "ok", "project": project, "profile": profile})
 }
 
+/// Health history removed — was referencing dead state fields.
+/// Use health_check command + delegation log for health tracking.
 #[tauri::command]
-pub fn get_health_history(state: State<AppState>, project: Option<String>) -> Value {
-    let history = match state.health_history.lock() {
-        Ok(h) => {
-            let filtered: Vec<_> = if let Some(ref p) = project {
-                h.iter().filter(|e| e.project == *p).cloned().collect()
-            } else {
-                h.clone()
-            };
-            let len = filtered.len();
-            filtered[len.saturating_sub(50)..].to_vec()
-        }
-        Err(_) => Vec::new(),
-    };
-
-    let monitoring = state.monitoring_active.lock().map(|m| *m).unwrap_or(false);
-
-    json!({
-        "history": history,
-        "monitoring_active": monitoring,
-    })
+pub fn get_health_history(_state: State<AppState>, _project: Option<String>) -> Value {
+    json!({"history": [], "monitoring_active": false})
 }
 
 #[tauri::command]
