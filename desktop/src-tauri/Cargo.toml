@@ -1,0 +1,28 @@
+[package]
+name = "agent-os"
+version = "0.1.0"
+description = "Agent OS — Desktop command center for AI agents"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "agent_os_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-process = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["process", "fs", "io-util", "macros"] }
+reqwest = { version = "0.12", features = ["json"] }
+walkdir = "2"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

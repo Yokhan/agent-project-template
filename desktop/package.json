@@ -1,0 +1,11 @@
+{
+  "name": "agent-os",
+  "version": "0.1.0",
+  "description": "Agent OS — Desktop command center for AI agents",
+  "private": true,
+  "scripts": {
+    "tauri": "cargo tauri",
+    "dev": "cargo tauri dev",
+    "build": "cargo tauri build"
+  }
+}
