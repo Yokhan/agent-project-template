@@ -334,6 +334,7 @@ const isStreaming=signal(false);
 const thinkStart=signal(0);
 const lastUserMsg=signal('');
 const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
+const curActivity=signal("");const lastStats=signal(null);
 const slashOpen=signal(false);const slashItems=signal([]);const pastedImg=signal(null);
 const SLASH_CMDS=[{cmd:'/clear',desc:'Clear chat'},{cmd:'/mode-code',desc:'Code mode'},{cmd:'/mode-design',desc:'Design mode'},{cmd:'/mode-review',desc:'Review mode'},{cmd:'/mode-fix',desc:'Fix mode'},{cmd:'/status',desc:'Status'},{cmd:'/health',desc:'Health check'},{cmd:'/briefing',desc:'Briefing'},{cmd:'/help',desc:'Commands list'}];
 const delegations=signal({});
@@ -430,13 +431,13 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
       for(const ln of lines){
         if(!ln.startsWith('data: '))continue;
         const p=ln.slice(6);if(p==='[DONE]')break;
-        try{const d=JSON.parse(p);if(d.text){full+=d.text;streamText.value=full;}}catch{}
+        try{const d=JSON.parse(p);if(d.text){full+=d.text;streamText.value=full;}if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}}catch{}
       }
     }
     isStreaming.value=false;
     const dm=full.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
     if(dm){delegations.value={...delegations.value,[dm[1]]:{project:dm[2],status:'pending'}};}
-    beep();sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full}];
+    beep();const st=lastStats.value;const meta=st?` [${st.tokens}t ${Math.round(st.duration_ms/1000)}s $${st.cost}]`:"";sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full,meta}];curActivity.value="";lastStats.value=null;
     streamText.value='';loadFeed();
   }catch(e){isStreaming.value=false;sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:'Error: '+e.message}];}
 }
@@ -690,13 +691,13 @@ function ChatMsg({m}){
     ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
     ${canCopy?html`<button class="msg-copy" onClick=${()=>{navigator.clipboard.writeText(m.msg||'');showToast('Copied','success',1500);}}>copy</button>`:''}
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
-    <div class="ts">${ft(m.ts)}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>
+    <div class="ts">${ft(m.ts)}${m.meta||""}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>
   </div>`;
 }
 
 function StreamBubble(){
   if(!isStreaming.value&&!streamText.value)return null;
-  if(!streamText.value){const el=thinkStart.value?Math.round((Date.now()-thinkStart.value)/1000):0;return html`<div class="thinking"><div class="dots"><span/><span/><span/></div> thinking${el>2?'... '+el+'s':''}</div>`;}
+  if(!streamText.value){const el=thinkStart.value?Math.round((Date.now()-thinkStart.value)/1000):0;const act=curActivity.value;return html`<div class="thinking"><div class="dots"><span/><span/><span/></div> ${act||"thinking"}${el>2?" ("+el+"s)":""}</div>`;}
   return html`<div class="m a"><div dangerouslySetInnerHTML=${{__html:md(streamText.value.replace(/<delegation[^>]*\/>/g,''))}}></div></div>`;
 }
 
