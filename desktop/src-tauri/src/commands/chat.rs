@@ -269,6 +269,25 @@ pub fn send_chat(state: State<AppState>, project: String, message: String) -> Va
         }
     }
 
+    // Check for DEPLOY command
+    if project.is_empty() {
+        if let Some(target) = parse_deploy(&response) {
+            let result = crate::commands::ops::execute_deploy_inline(&state.root, &state.docs_dir, &target);
+            final_response += &format!("
+
+---
+**Deploy {}:** {}", target, result);
+        }
+        if let Some(target) = parse_health_check(&response) {
+            let result = crate::commands::ops::execute_health_inline(&state.docs_dir, &target);
+            final_response += &format!("
+
+---
+**Health Check:**
+{}", result);
+        }
+    }
+
     json!({
         "status": "complete",
         "response": final_response,
@@ -404,4 +423,15 @@ fn parse_delegation(response: &str) -> Option<(String, String)> {
         caps.get(1)?.as_str().trim().to_string(),
         caps.get(2)?.as_str().trim().to_string(),
     ))
+}
+
+
+fn parse_deploy(response: &str) -> Option<String> {
+    let re = regex::Regex::new(r"\[DEPLOY:([^\]]+)\]").ok()?;
+    Some(re.captures(response)?.get(1)?.as_str().trim().to_string())
+}
+
+fn parse_health_check(response: &str) -> Option<String> {
+    let re = regex::Regex::new(r"\[HEALTH_CHECK:([^\]]+)\]").ok()?;
+    Some(re.captures(response)?.get(1)?.as_str().trim().to_string())
 }

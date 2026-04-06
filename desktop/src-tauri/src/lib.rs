@@ -84,6 +84,10 @@ pub fn run() {
             commands::config::get_impact,
             commands::config::run_action,
             commands::config::get_modules,
+            // Operations
+            commands::ops::deploy_template,
+            commands::ops::health_check,
+            commands::ops::create_project,
             // Proxy
             commands::proxy::proxy_webhook,
         ])

@@ -4,3 +4,4 @@ pub mod config;
 pub mod delegation;
 pub mod feed;
 pub mod proxy;
+pub mod ops;
