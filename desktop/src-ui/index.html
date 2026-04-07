@@ -38,6 +38,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .hdr .r span{font-size:var(--fs-s);color:var(--t3);font-family:var(--font-mono)}
 .hdr .r button{background:transparent;color:var(--t2);border:1px solid var(--border);padding:var(--sp-xs) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-xs);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s}
 .hdr .r button:hover{color:var(--text);border-color:var(--t3);background:var(--sf2)}
+.win-btns{display:flex;gap:0;margin-left:var(--sp-m)}
+.wb{background:transparent!important;border:none!important;color:var(--t2)!important;font-size:16px;width:36px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0!important;letter-spacing:0!important}
+.wb:hover{background:var(--sf2)!important;color:var(--text)!important}
+.wb-close:hover{background:var(--accent)!important;color:#fff!important}
 
 /* === MAIN: dashboard view === */
 .main{flex:1;display:flex;overflow:hidden;min-height:0}
@@ -442,7 +446,7 @@ window.fetch = function(url, opts = {}) {
   // SSE streaming — handled specially by callers via Tauri events
   if (path === '/api/chat-stream' && method === 'POST') {
     // Start the stream command (fire-and-forget), return a fake SSE response
-    __invoke('stream_chat', body).catch(() => {});
+    __invoke('stream_chat', body).catch(e => { console.error('stream_chat error:', e); window.__streamError = e; });
     // Return a mock response — actual data comes via 'chat-stream' events
     return Promise.resolve({
       ok: true, status: 200,
@@ -665,7 +669,7 @@ function OrchWarning(){
 }
 function App(){return html`<div class="app"><${Toasts}/><${KeyboardHelp}/><${OrchWarning}/><${NewProjectModal}/><${Header}/><div class="main">${showStrategy.value?html`<${StrategyView}/>`:showSettings.value?html`<${SettingsPage}/>`:currentProject.value?html`<${DetailView}/>`:html`<${DashboardView}/>`}<${ChatSidebar}/></div><${AnalyticsBar}/></div>`;}
 
-function Header(){return html`<div class="hdr"><h1>command center</h1><div class="r">
+function Header(){return html`<div class="hdr" data-tauri-drag-region><h1 data-tauri-drag-region>command center</h1><div class="r">
   ${(()=>{const pending=Object.values(delegations.value).filter(d=>d.status==="pending").length;return pending?html`<span class="badge">${pending}</span>`:null;})()}<button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>{const plan=d.plan||[];const hi=plan.filter(p=>p.priority==='HIGH');showToast(d.text||'No data','info',10000);})}>briefing</button>
   <button onClick=${()=>{showStrategy.value=!showStrategy.value;if(showStrategy.value){loadGoals();loadStrategies();}}}>strategy</button>
   <button onClick=${()=>showNewProject.value=true}>+ new</button>
@@ -674,6 +678,11 @@ function Header(){return html`<div class="hdr"><h1>command center</h1><div class
     <button onClick=${async()=>{if(!__IS_TAURI)return showToast('Update check only in desktop app','info');showToast('Checking for updates...','info');try{const{check}=await window.__TAURI__.updater;const update=await check();if(update?.available){if(confirm('Update '+update.version+' available. Install?')){await update.downloadAndInstall();showToast('Restarting...','success');await window.__TAURI__.process.relaunch();}}else{showToast('Up to date','success');}}catch(e){showToast('Update check failed: '+e,'error');}}} title="Check for updates">update</button>
     <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'light':'dark'}</button>
   <span>${clock}</span>
+  ${__IS_TAURI?html`<div class="win-btns">
+    <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().minimize()} class="wb">−</button>
+    <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().toggleMaximize()} class="wb">□</button>
+    <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().close()} class="wb wb-close">×</button>
+  </div>`:''}
 </div></div>`;}
 
 function StatsRow(){
