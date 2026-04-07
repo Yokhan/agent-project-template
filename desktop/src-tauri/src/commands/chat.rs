@@ -266,125 +266,93 @@ pub async fn stream_chat(
     let perm_path = get_permission_path(&state, &chat_key);
     set_activity(&state.root, &chat_key, "streaming", &message[..message.len().min(50)]);
 
-    // Write prompt to temp file
+    // Stream buffer file — frontend polls this
+    let stream_buf = state.root.join("tasks").join(".stream-buffer.jsonl");
+    let _ = std::fs::write(&stream_buf, ""); // Clear buffer
+
     let tmp = unique_tmp("stream");
     std::fs::write(&tmp, &prompt).map_err(|e| e.to_string())?;
-
     let stdin_file = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
 
-    // Spawn claude directly — no shell wrapper
     let claude_bin = super::claude_runner::find_claude();
     let mut child = std::process::Command::new(&claude_bin)
-        .args([
-            "--continue", "-p",
-            "--output-format", "stream-json",
-            "--verbose",
-            "--settings", &perm_path,
-        ])
+        .args(["--continue", "-p", "--output-format", "stream-json", "--verbose", "--settings", &perm_path])
         .current_dir(&cwd)
         .stdin(std::process::Stdio::from(stdin_file))
         .env("PYTHONIOENCODING", "utf-8")
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
         .spawn()
         .map_err(|e| e.to_string())?;
 
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let reader = std::io::BufReader::new(stdout);
 
-    // Spawn thread to read stderr → emit activity events
-    let stderr = child.stderr.take();
-    let app2 = app.clone();
-    let _stderr_thread = std::thread::spawn(move || {
-        if let Some(se) = stderr {
-            let reader = std::io::BufReader::new(se);
-            for line in reader.lines().flatten() {
-                let trimmed = line.trim();
-                if !trimmed.is_empty() {
-                    let _ = app2.emit("chat-activity", json!({"text": trimmed}));
-                }
-            }
-        }
-    });
-
     let mut full_text = String::new();
     let mut tool_blocks: Vec<Value> = Vec::new();
 
-    for line in reader.lines() {
-        let Ok(raw) = line else { break };
-        let trimmed = raw.trim_end_matches('\r');
-        if trimmed.is_empty() { continue; }
+    // Read stdout line by line, parse stream-json, write to buffer file
+    {
+        let mut buf_file = std::fs::OpenOptions::new()
+            .create(true).append(true).open(&stream_buf)
+            .map_err(|e| e.to_string())?;
 
-        // Try parse as JSON (stream-json format)
-        if let Ok(evt) = serde_json::from_str::<Value>(trimmed) {
-            match evt.get("type").and_then(|t| t.as_str()) {
-                Some("system") => {
-                    let msg = evt.get("message").and_then(|m| m.as_str()).unwrap_or("");
-                    if !msg.is_empty() {
-                        let _ = app.emit("chat-system", json!({"text": msg}));
-                    }
-                }
-                Some("assistant") => {
-                    // Complete message — extract text + tool_use blocks
+        for line in reader.lines() {
+            let Ok(raw) = line else { break };
+            let trimmed = raw.trim_end_matches('\r');
+            if trimmed.is_empty() { continue; }
+
+            if let Ok(evt) = serde_json::from_str::<Value>(trimmed) {
+                let etype = evt.get("type").and_then(|t| t.as_str()).unwrap_or("");
+
+                // Extract text and tools from assistant messages
+                if etype == "assistant" {
                     if let Some(content) = evt.pointer("/message/content").and_then(|c| c.as_array()) {
                         for block in content {
                             match block.get("type").and_then(|t| t.as_str()) {
                                 Some("text") => {
-                                    let txt = block.get("text").and_then(|t| t.as_str()).unwrap_or("");
-                                    full_text = txt.to_string();
-                                    let _ = app.emit("chat-text", json!({"text": txt}));
+                                    full_text = block.get("text").and_then(|t| t.as_str()).unwrap_or("").to_string();
                                 }
                                 Some("tool_use") => {
                                     let tool = block.get("name").and_then(|n| n.as_str()).unwrap_or("?");
                                     let input = block.get("input").cloned().unwrap_or(json!({}));
                                     tool_blocks.push(json!({"tool": tool, "input": input}));
-                                    let _ = app.emit("chat-tool", json!({"tool": tool, "input": input}));
                                 }
                                 _ => {}
                             }
                         }
                     }
                 }
-                Some("result") => {
-                    // Final result with stats
-                    let result_text = evt.get("result").and_then(|r| r.as_str()).unwrap_or("");
-                    if !result_text.is_empty() && full_text.is_empty() {
-                        full_text = result_text.to_string();
-                    }
-                    let duration = evt.get("duration_ms").and_then(|d| d.as_u64()).unwrap_or(0);
-                    let cost = evt.get("total_cost_usd").and_then(|c| c.as_f64());
-                    let _ = app.emit("chat-done", json!({
-                        "text": full_text,
-                        "tools": tool_blocks,
-                        "duration_ms": duration,
-                        "cost": cost,
-                    }));
+                if etype == "result" {
+                    let rt = evt.get("result").and_then(|r| r.as_str()).unwrap_or("");
+                    if !rt.is_empty() && full_text.is_empty() { full_text = rt.to_string(); }
                 }
-                _ => {
-                    // Forward raw for debugging
-                    let _ = app.emit("chat-raw", json!({"raw": trimmed}));
-                }
+
+                // Write parsed event to buffer (frontend reads this)
+                let buf_evt = json!({
+                    "type": etype,
+                    "text": if etype == "assistant" { full_text.clone() } else { String::new() },
+                    "tools": if etype == "assistant" { json!(tool_blocks.clone()) } else { json!([]) },
+                    "system": if etype == "system" {
+                        evt.get("subtype").and_then(|s| s.as_str()).unwrap_or("").to_string()
+                    } else { String::new() },
+                    "result": if etype == "result" { evt.get("total_cost_usd").cloned() } else { None::<Value> },
+                    "duration_ms": if etype == "result" { evt.get("duration_ms").cloned() } else { None::<Value> },
+                });
+                use std::io::Write;
+                let _ = writeln!(buf_file, "{}", serde_json::to_string(&buf_evt).unwrap_or_default());
+                let _ = buf_file.flush();
             }
-        } else {
-            // Non-JSON line — treat as plain text
-            full_text.push_str(trimmed);
-            full_text.push('\n');
-            let _ = app.emit("chat-text", json!({"text": trimmed}));
         }
     }
 
     let _ = child.wait();
     let _ = std::fs::remove_file(&tmp);
-
     clear_activity(&state.root, &chat_key);
 
-    // Save full response with tool blocks
+    // Save full response
     let ts2 = state.now_iso();
-    let asst_entry = json!({
-        "ts": ts2, "role": "assistant",
-        "msg": full_text.trim(),
-        "tools": tool_blocks,
-    });
+    let asst_entry = json!({"ts": ts2, "role": "assistant", "msg": full_text.trim(), "tools": tool_blocks});
     let _ = std::fs::OpenOptions::new()
         .create(true).append(true).open(&chat_file)
         .and_then(|mut f| {
@@ -392,19 +360,27 @@ pub async fn stream_chat(
             writeln!(f, "{}", serde_json::to_string(&asst_entry).unwrap_or_default())
         });
 
-    // Check for delegation
+    // Check delegation
     if project.is_empty() {
         if let Some((target, task)) = parse_delegation(&full_text) {
-            let did = crate::commands::delegation::queue_delegation_internal(&state, &target, &task);
-            let report = format!(
-                "\n\n---\n**⏳ Awaiting approval to run in {}:**\n{}\n\n<delegation id=\"{}\" project=\"{}\"/>",
-                target, task, did, target
-            );
-            let _ = app.emit("chat-stream", json!({"text": report}));
+            if let Some(valid_name) = state.validate_project_name_from_llm(&target) {
+                let did = crate::commands::delegation::queue_delegation_internal(&state, &valid_name, &task);
+                // Append delegation marker to buffer
+                let _ = std::fs::OpenOptions::new().append(true).open(&stream_buf)
+                    .and_then(|mut f| {
+                        use std::io::Write;
+                        writeln!(f, "{}", serde_json::to_string(&json!({"type":"delegation","project":valid_name,"task":task,"id":did})).unwrap_or_default())
+                    });
+            }
         }
     }
 
-    let _ = app.emit("chat-stream-done", json!({}));
+    // Write "done" marker
+    let _ = std::fs::OpenOptions::new().append(true).open(&stream_buf)
+        .and_then(|mut f| {
+            use std::io::Write;
+            writeln!(f, "{}", serde_json::to_string(&json!({"type":"done","text":full_text.trim(),"tools":tool_blocks})).unwrap_or_default())
+        });
 
     Ok(json!({"status": "complete"}))
 }
@@ -418,6 +394,33 @@ fn parse_delegation(response: &str) -> Option<(String, String)> {
     ))
 }
 
+
+/// Poll stream buffer — frontend calls this every 300ms during streaming
+#[tauri::command]
+pub fn poll_stream(state: State<AppState>, offset: usize) -> Value {
+    let buf_path = state.root.join("tasks").join(".stream-buffer.jsonl");
+    let content = std::fs::read_to_string(&buf_path).unwrap_or_default();
+    let lines: Vec<&str> = content.lines().collect();
+
+    if offset >= lines.len() {
+        return json!({"events": [], "offset": offset, "done": false});
+    }
+
+    let new_lines = &lines[offset..];
+    let mut events: Vec<Value> = Vec::new();
+    let mut done = false;
+
+    for line in new_lines {
+        if let Ok(evt) = serde_json::from_str::<Value>(line) {
+            if evt.get("type").and_then(|t| t.as_str()) == Some("done") {
+                done = true;
+            }
+            events.push(evt);
+        }
+    }
+
+    json!({"events": events, "offset": lines.len(), "done": done})
+}
 
 fn parse_deploy(response: &str) -> Option<String> {
     let re = regex::Regex::new(r"\[DEPLOY:([^\]]+)\]").ok()?;

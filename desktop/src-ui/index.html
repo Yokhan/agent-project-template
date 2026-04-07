@@ -634,43 +634,27 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     let full='';
     if(r._tauriStream&&__IS_TAURI){
-      // Tauri 2: stream_chat with typed events + fallback to send_chat
-      const tools=[];let stats=null;
-      const tl=(evt,cb)=>{
-        const hid=window.__TAURI_INTERNALS__.transformCallback(cb);
-        return __invoke('plugin:event|listen',{event:evt,target:{kind:'Any'},handler:hid})
-          .then(eid=>()=>__invoke('plugin:event|unlisten',{event:evt,eventId:eid}).catch(()=>{}))
-          .catch(()=>null);
-      };
-      // Try streaming first
-      let streamOk=false;
-      try{
-        const unText=await tl('chat-text',e=>{const d=e.payload;if(d?.text){full+=(typeof d.text==='string'?d.text:JSON.stringify(d.text));streamText.value=full;}});
-        const unTool=await tl('chat-tool',e=>{const d=e.payload;if(d?.tool){tools.push(d);curActivity.value='🔧 '+d.tool;}});
-        const unSys=await tl('chat-system',e=>{const d=e.payload;if(d?.text)curActivity.value=d.text;});
-        const unDone=await tl('chat-done',e=>{const d=e.payload;if(d?.text&&!full)full=d.text;stats=d;});
-        if(unText){
-          streamOk=true;
-          // Fire stream_chat (async, emits events)
-          __invoke('stream_chat',{project:proj,message:msg}).catch(e=>console.error('stream_chat:',e));
-          // Wait for done event or timeout
-          await new Promise(resolve=>{
-            const check=setInterval(()=>{if(stats){clearInterval(check);resolve();}},200);
-            setTimeout(()=>{clearInterval(check);resolve();},300000);
-          });
-          if(unText)unText();if(unTool)unTool();if(unSys)unSys();if(unDone)unDone();
-        }
-      }catch(e){console.warn('Stream failed, fallback to send_chat:',e);}
-      // Fallback if streaming didn't work
-      if(!streamOk||(!full&&!stats)){
+      // File-based polling: stream_chat writes to .stream-buffer.jsonl, we poll it
+      __invoke('stream_chat',{project:proj,message:msg}).catch(e=>console.error('stream_chat:',e));
+      let offset=0;let done=false;const tools=[];
+      while(!done){
+        await new Promise(r=>setTimeout(r,300));
         try{
-          const res=await __invoke('send_chat',{project:proj,message:msg,model:selectedModel.value||null,reasoningEffort:selectedEffort.value||null});
-          if(res.response)full=res.response;
-          else if(res.error)full='Error: '+res.error;
-        }catch(e){full='Error: '+e;}
+          const poll=await __invoke('poll_stream',{offset});
+          if(poll.events){
+            for(const evt of poll.events){
+              if(evt.type==='assistant'&&evt.text){full=evt.text;streamText.value=full;}
+              if(evt.type==='assistant'&&evt.tools?.length){for(const t of evt.tools)tools.push(t);}
+              if(evt.type==='system'&&evt.system){curActivity.value=evt.system;}
+              if(evt.type==='result'){lastStats.value={duration_ms:evt.duration_ms,cost:evt.result};}
+              if(evt.type==='delegation'){full+='\n\n<delegation id="'+evt.id+'" project="'+evt.project+'"/>';}
+              if(evt.type==='done'){done=true;if(evt.text&&!full)full=evt.text;if(evt.tools?.length)for(const t of evt.tools)tools.push(t);}
+            }
+            offset=poll.offset;
+          }
+        }catch(e){console.warn('poll_stream:',e);done=true;}
       }
-      streamText.value=full;
-      if(stats){lastStats.value=stats;curActivity.value='';}
+      streamText.value=full;curActivity.value='';
     }else{
       // Browser mode: read SSE stream
       const reader=r.body.getReader();const dec=new TextDecoder();let buf='';

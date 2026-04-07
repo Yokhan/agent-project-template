@@ -73,6 +73,7 @@ pub fn run() {
             commands::chat::get_chat_history,
             commands::chat::send_chat,
             commands::chat::stream_chat,
+            commands::chat::poll_stream,
             // Delegation
             commands::delegation::get_delegations,
             commands::delegation::approve_delegation,
