@@ -562,7 +562,7 @@ effect(()=>{
 
 let recog=null;
 function togVoice(){if(!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){showToast("No speech API","error");return;}if(isRec.value){recog?.stop();isRec.value=false;return;}const S=window.SpeechRecognition||window.webkitSpeechRecognition;recog=new S();recog.continuous=false;recog.interimResults=false;recog.lang=navigator.language||"ru-RU";recog.onresult=e=>{const t=e.results[0][0].transcript;const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=(ta.value?ta.value+" ":"")+t;ta.dispatchEvent(new Event("input"));}};recog.onend=()=>isRec.value=false;recog.onerror=e=>{isRec.value=false;};recog.start();isRec.value=true;}
-async function hdlFiles(fl){const nf=[...attFiles.value];for(const f of fl){if(__IS_TAURI){try{const buf=await f.arrayBuffer();const data=Array.from(new Uint8Array(buf));const r=await __TAURI__.core.invoke('save_attachment',{name:f.name,data});nf.push({name:f.name,size:f.size,path:r.path||''});}catch(e){showToast('Attach error: '+e,'error');}}else{nf.push({name:f.name,size:f.size,path:''});}}attFiles.value=nf;}
+async function hdlFiles(fl){const nf=[...attFiles.value];for(const f of fl){if(__IS_TAURI){try{const buf=await f.arrayBuffer();const data=Array.from(new Uint8Array(buf));const r=await __invoke('save_attachment',{name:f.name,data});nf.push({name:f.name,size:f.size,path:r.path||''});}catch(e){showToast('Attach error: '+e,'error');}}else{nf.push({name:f.name,size:f.size,path:''});}}attFiles.value=nf;}
 function rmFile(i){attFiles.value=attFiles.value.filter((_,j)=>j!==i);}
 async function chkConn(){try{const r=await fetch("/api/health");isOn.value=r.ok;}catch{isOn.value=false;}}
 setInterval(chkConn,15000);
@@ -585,31 +585,31 @@ delegations.value=newDel;
 }catch(e){console.warn('loadChat:',e);sideMessages.value=[];}}
 async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch(e){console.warn('loadModules:',e);modules.value=[];}}
 async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch(e){console.warn('loadPlan:',e);}}
-async function loadQueue(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_queue');queueTasks.value=r.tasks||[];}}catch(e){console.warn('loadQueue:',e);}}
-async function loadGoals(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_goals');goals.value=r.goals||[];}}catch(e){console.warn('loadGoals:',e);}}
-async function loadStrategies(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_strategies');strategies.value=r.strategies||[];}}catch(e){console.warn('loadStrategies:',e);}}
+async function loadQueue(){try{if(__IS_TAURI){const r=await __invoke('get_queue');queueTasks.value=r.tasks||[];}}catch(e){console.warn('loadQueue:',e);}}
+async function loadGoals(){try{if(__IS_TAURI){const r=await __invoke('get_goals');goals.value=r.goals||[];}}catch(e){console.warn('loadGoals:',e);}}
+async function loadStrategies(){try{if(__IS_TAURI){const r=await __invoke('get_strategies');strategies.value=r.strategies||[];}}catch(e){console.warn('loadStrategies:',e);}}
 async function generateStrategy(goalText,ctx){
   strategyLoading.value=true;
   try{
-    const r=await __TAURI__.core.invoke('generate_strategy',{goal:goalText,context:ctx||null});
+    const r=await __invoke('generate_strategy',{goal:goalText,context:ctx||null});
     if(r.status==='ok'&&r.strategy){strategies.value=[...strategies.value,r.strategy];activeStrategy.value=r.strategy;showToast('Strategy generated','success');}
     else{showToast('Error: '+(r.error||r.raw||'unknown'),'error',8000);}
   }catch(e){showToast('Error: '+e,'error');}
   strategyLoading.value=false;
 }
 async function approveSteps(stratId,stepIds){
-  try{await __TAURI__.core.invoke('approve_strategy_steps',{strategyId:stratId,approvedSteps:stepIds});showToast('Steps approved','success');loadStrategies();}catch(e){showToast('Error: '+e,'error');}
+  try{await __invoke('approve_strategy_steps',{strategyId:stratId,approvedSteps:stepIds});showToast('Steps approved','success');loadStrategies();}catch(e){showToast('Error: '+e,'error');}
 }
 async function executeNextStep(stratId){
   try{
-    const r=await __TAURI__.core.invoke('execute_strategy_step',{strategyId:stratId});
+    const r=await __invoke('execute_strategy_step',{strategyId:stratId});
     if(r.status==='complete'){showToast('Strategy complete!','success');}
     else if(r.status==='step_done'){showToast(`${r.project}: done`,'success');loadStrategies();}
     else{showToast('Error: '+(r.error||''),'error');}
   }catch(e){showToast('Error: '+e,'error');}
 }
 async function loadProjectPlan(p){try{const r=await fetch("/api/project-plan/"+encodeURIComponent(p));projectPlan.value=await r.json();}catch{projectPlan.value=null;}}
-async function loadPerms(){try{const [r,c]=await Promise.all([fetch('/api/permissions'),__TAURI__?.core?.invoke('get_config').catch(()=>({}))]);const pd=await r.json();pd.config=c||{};permData.value=pd;}catch{}}
+async function loadPerms(){try{const [r,c]=await Promise.all([fetch('/api/permissions'),__IS_TAURI?__invoke('get_config').catch(()=>({})):Promise.resolve({})]);const pd=await r.json();pd.config=c||{};permData.value=pd;}catch(e){console.warn('loadPerms:',e);}}
 async function setPermission(proj,profile){try{await fetch('/api/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,profile})});showToast(proj+' -> '+profile,'success');loadPerms();}catch{showToast('Error setting permission','error');}}
 async function loadFeed(){try{const r=await fetch('/api/feed');const d=await r.json();feedItems.value=d.feed||[];}catch{}}
 async function loadActivity(){
@@ -723,9 +723,9 @@ function Header(){
       <button style="font-size:var(--fs-l)" onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'◐':'◑'}</button>
       <span style="font-size:var(--fs-xs);color:var(--t3)">${clock}</span>
       ${__IS_TAURI?html`<span style="color:var(--border)">│</span><div class="win-btns">
-        <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().minimize()} class="wb">−</button>
-        <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().toggleMaximize()} class="wb">□</button>
-        <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().close()} class="wb wb-close">×</button>
+        <button onClick=${()=>{try{window.__TAURI_INTERNALS__.invoke('plugin:window|minimize',{label:'main'})}catch(e){console.error(e)}}} class="wb">−</button>
+        <button onClick=${()=>{try{window.__TAURI_INTERNALS__.invoke('plugin:window|toggle_maximize',{label:'main'})}catch(e){console.error(e)}}} class="wb">□</button>
+        <button onClick=${()=>{try{window.__TAURI_INTERNALS__.invoke('plugin:window|close',{label:'main'})}catch(e){console.error(e)}}} class="wb wb-close">×</button>
       </div>`:''}
     </div>
   </div>`;
@@ -758,11 +758,11 @@ function SettingsPage(){
         <div style="display:flex;flex-direction:column;gap:var(--sp-m)">
           <div>
             <label style="display:block;font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-xs);text-transform:uppercase;letter-spacing:1px">documents directory</label>
-            <input style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--text);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" value="${pd?.config?.documents_dir||''}" onChange=${e=>{__TAURI__.core.invoke('set_config',{key:'documents_dir',value:e.target.value}).then(()=>showToast('Saved. Restart to apply.','info'));}}/>
+            <input style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--text);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" value="${pd?.config?.documents_dir||''}" onChange=${e=>{__invoke('set_config',{key:'documents_dir',value:e.target.value}).then(()=>showToast('Saved. Restart to apply.','info'));}}/>
           </div>
           <div>
             <label style="display:block;font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--t3);margin-bottom:var(--sp-xs);text-transform:uppercase;letter-spacing:1px">orchestrator project</label>
-            <select style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--text);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" onChange=${e=>{__TAURI__.core.invoke('set_config',{key:'orchestrator_project',value:e.target.value}).then(()=>showToast('Set. Restart to apply.','info'));}}>
+            <select style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--text);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s)" onChange=${e=>{__invoke('set_config',{key:'orchestrator_project',value:e.target.value}).then(()=>showToast('Set. Restart to apply.','info'));}}>
               <option value="">-- select --</option>
               ${a.map(ag=>html`<option value=${ag.name} selected=${ag.name===(pd?.config?.orchestrator_project||'')}>${ag.name}</option>`)}
             </select>
@@ -1030,9 +1030,9 @@ function DetailView(){
     <div class="panels" style="margin-top:var(--sp-m)">
       <div class="panel"><h3>actions</h3>
         <div style="display:flex;flex-wrap:wrap;gap:var(--sp-s)">
-          <button class="action-btn" onClick=${()=>{showToast('Deploying template...','info',3000);__TAURI__.core.invoke('deploy_template',{project:name}).then(r=>{showToast(r.status==='ok'?'Deploy complete':'Deploy failed: '+(r.error||''),'success',5000);}).catch(e=>showToast('Deploy error: '+e,'error'));}}>sync template</button>
-          <button class="action-btn" onClick=${()=>{showToast('Running health check...','info',3000);__TAURI__.core.invoke('health_check',{project:name}).then(r=>{showToast(r.result||'No result','info',8000);}).catch(e=>showToast('Error: '+e,'error'));}}>health check</button>
-          <button class="action-btn" onClick=${()=>{window.__TAURI__?.shell?.open('cmd /C start zed "'+ag.path+'"');}}>open in Zed</button>
+          <button class="action-btn" onClick=${()=>{showToast('Deploying template...','info',3000);__invoke('deploy_template',{project:name}).then(r=>{showToast(r.status==='ok'?'Deploy complete':'Deploy failed: '+(r.error||''),'success',5000);}).catch(e=>showToast('Deploy error: '+e,'error'));}}>sync template</button>
+          <button class="action-btn" onClick=${()=>{showToast('Running health check...','info',3000);__invoke('health_check',{project:name}).then(r=>{showToast(r.result||'No result','info',8000);}).catch(e=>showToast('Error: '+e,'error'));}}>health check</button>
+          <button class="action-btn" onClick=${()=>{if(__IS_TAURI)__invoke('plugin:shell|open',{path:'zed://'+ag.path}).catch(()=>showToast('Cannot open Zed','error'));}}>open in Zed</button>
         </div>
       </div>
     </div>
@@ -1120,7 +1120,7 @@ function NewProjectModal(){
     const name=nameRef.current?.value?.trim();if(!name){showToast('Enter project name','error');return;}
     const isOrch=orchRef.current?.checked;
     try{
-      const r=await __TAURI__.core.invoke('create_project',{name,orchestrator:isOrch||false});
+      const r=await __invoke('create_project',{name,orchestrator:isOrch||false});
       if(r.status==='ok'){showToast('Project created: '+name,'success');showNewProject.value=false;loadAgents();}
       else{showToast('Error: '+(r.error||'unknown'),'error');}
     }catch(e){showToast('Error: '+e,'error');}
