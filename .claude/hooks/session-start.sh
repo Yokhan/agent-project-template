@@ -1,33 +1,26 @@
 #!/bin/bash
 # Session Start Hook — creates session log, shows reminders, checks template
 
-# Python detection (Windows: python, Linux/Mac: python3)
-if command -v python3 &>/dev/null; then PYTHON="python3"
-elif command -v python &>/dev/null; then PYTHON="python"
-else PYTHON=""; fi
+# Node.js detection (required for JSON parsing)
+if command -v node &>/dev/null; then NODE="node"
+else NODE=""; fi
 
-# CRITICAL: Python is required for template infrastructure (JSON parsing, manifest sync)
-if [ -z "$PYTHON" ]; then
+# CRITICAL: Node.js is required for template infrastructure
+if [ -z "$NODE" ]; then
   echo ""
   echo "============================================="
-  echo "  STOP: Python not found"
+  echo "  WARNING: Node.js not found"
   echo "============================================="
   echo ""
-  echo "  This agent template requires Python for:"
+  echo "  This agent template uses Node.js for:"
   echo "  - Template sync (manifest JSON parsing)"
   echo "  - Drift detection (hash verification)"
-  echo "  - MCP bootstrap"
+  echo "  - MCP servers"
   echo ""
-  echo "  Install Python 3:"
-  echo "    Windows:  winget install Python.Python.3"
-  echo "    macOS:    brew install python3"
-  echo "    Ubuntu:   sudo apt install python3"
-  echo ""
-  echo "  After installing, restart this session."
+  echo "  Install Node.js: https://nodejs.org/"
   echo "============================================="
   echo ""
   # Don't exit 1 — that would block Claude Code entirely.
-  # Instead, print the warning and let the session continue
   # with degraded functionality.
 fi
 
@@ -108,7 +101,7 @@ fi
 
 # Template version check
 if [ -f ".template-manifest.json" ] && [ -f "scripts/check-drift.sh" ]; then
-  proj_ver=$($PYTHON -c "import json; print(json.load(open('.template-manifest.json'))['template_version'])" 2>/dev/null || true)
+  proj_ver=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.template-manifest.json','utf8')).template_version)" 2>/dev/null || true)
   script_ver=$(grep -o 'TEMPLATE_VERSION="[^"]*"' scripts/check-drift.sh 2>/dev/null | head -1 | cut -d'"' -f2 || true)
   if [ -n "$proj_ver" ] && [ -n "$script_ver" ] && [ "$proj_ver" != "$script_ver" ]; then
     echo "WARNING: Template outdated ($proj_ver vs $script_ver). Run /update-template."
@@ -175,9 +168,9 @@ fi
 
 # MCP health check: verify Engram is reachable
 if [ -f ".mcp.json" ]; then
-  HAS_ENGRAM=$($PYTHON -c "import json; d=json.load(open('.mcp.json')); print('yes' if 'engram' in d.get('mcpServers',{}) and not d['mcpServers']['engram'].get('disabled') else 'no')" 2>/dev/null || echo "no")
+  HAS_ENGRAM=$(node -e "const d=JSON.parse(require('fs').readFileSync('.mcp.json','utf8'));console.log(d.mcpServers?.engram&&!d.mcpServers.engram.disabled?'yes':'no')" 2>/dev/null || echo "no")
   if [ "$HAS_ENGRAM" = "yes" ]; then
-    ENGRAM_CMD=$($PYTHON -c "import json; print(json.load(open('.mcp.json'))['mcpServers']['engram']['command'])" 2>/dev/null || echo "")
+    ENGRAM_CMD=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.mcp.json','utf8')).mcpServers.engram.command)" 2>/dev/null || echo "")
     if [ -n "$ENGRAM_CMD" ] && ! command -v "$ENGRAM_CMD" &>/dev/null 2>&1; then
       echo "WARNING: Engram configured but binary not found ($ENGRAM_CMD). Memory will use file fallback."
       echo "  Fix: bash scripts/bootstrap-mcp.sh --install"

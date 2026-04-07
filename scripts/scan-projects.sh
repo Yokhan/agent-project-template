@@ -23,10 +23,8 @@ for dir in */; do
   tpl_ver=none
   if [ -f .template-manifest.json ]; then
     has_manifest=true
-    if command -v python &>/dev/null; then
-      tpl_ver=$(python -c "import json; print(json.load(open('.template-manifest.json')).get('template_version','?'))" 2>/dev/null || echo "?")
-    elif command -v python3 &>/dev/null; then
-      tpl_ver=$(python3 -c "import json; print(json.load(open('.template-manifest.json')).get('template_version','?'))" 2>/dev/null || echo "?")
+    if command -v node &>/dev/null; then
+      tpl_ver=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.template-manifest.json','utf8')).template_version||'?')" 2>/dev/null || echo "?")
     fi
   fi
 

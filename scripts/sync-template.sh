@@ -11,11 +11,9 @@ set -euo pipefail
 # --- Platform helpers ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
-# Fallback python detection if platform.sh not available
-if [ -z "${PYTHON:-}" ]; then
-  if command -v "$PYTHON" &>/dev/null; then PYTHON="python3"
-  elif command -v python &>/dev/null; then PYTHON="python"
-  else PYTHON=""; fi
+# Fallback node detection if platform.sh not available
+if [ -z "${NODE:-}" ]; then
+  command -v node &>/dev/null && NODE="node" || NODE=""
 fi
 
 # --- Config ---
@@ -57,7 +55,7 @@ if [ "$FROM_GIT" = true ]; then
     if [ -z "$TEMPLATE_REMOTE" ]; then
         # Try reading from manifest
         MANIFEST_PATH=".template-manifest.json"
-        TEMPLATE_REMOTE=$(MANIFEST_PATH="$MANIFEST_PATH" $PYTHON -c "import json,os; print(json.load(open(os.environ['MANIFEST_PATH'])).get('template_remote',''))" 2>/dev/null || true)
+        TEMPLATE_REMOTE=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('$MANIFEST_PATH','utf8')).template_remote||'')" 2>/dev/null || true)
         if [ -n "$TEMPLATE_REMOTE" ]; then
             git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || true
         fi
@@ -112,8 +110,8 @@ if [ "$FROM_GIT" = true ]; then
 fi
 
 # --- L1: Dependency check ---
-if [ -z "$PYTHON" ]; then
-    echo "Error: Python is required for sync. Neither python3 nor python found."
+if ! command -v node &>/dev/null; then
+    echo "Error: Node.js is required for sync. Install: https://nodejs.org/"
     exit 1
 fi
 
@@ -154,7 +152,7 @@ if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
 fi
 
 # Warn if manifest version is unknown
-manifest_ver=$($PYTHON -c "import json; print(json.load(open('.template-manifest.json')).get('template_version','unknown'))" 2>/dev/null || echo "unknown")
+manifest_ver=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('.template-manifest.json','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
 if [ "$manifest_ver" = "unknown" ] || [ -z "$manifest_ver" ]; then
   echo "WARNING: Manifest version is '$manifest_ver'. Will be updated after sync."
 fi
@@ -245,11 +243,8 @@ if [ ! -f "$MANIFEST" ]; then
   fi
 fi
 
-# Get current and new template versions (C1: use env vars for Python)
-CURRENT_VER=$(MANIFEST_PATH="$MANIFEST" $PYTHON -c "
-import json, os
-print(json.load(open(os.environ['MANIFEST_PATH']))['template_version'])
-" 2>/dev/null || echo "unknown")
+# Get current and new template versions
+CURRENT_VER=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('$MANIFEST','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
 NEW_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$TEMPLATE_PATH/CLAUDE.md" 2>/dev/null || echo "unknown")
 
 echo "=== Template Sync ==="
@@ -276,15 +271,12 @@ UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0
 # --- Phase A: Update template files in manifest ---
 echo "--- Phase A: Updating template files ---"
 
-# Read manifest files using python (portable JSON parsing)
-# M1: Don't suppress manifest parsing errors
-manifest_files=$(MANIFEST_PATH="$MANIFEST" $PYTHON -c "
-import json, os
-m = json.load(open(os.environ['MANIFEST_PATH']))
-for path, info in m.get('files', {}).items():
-    if info.get('category') != 'project':
-        print(f\"{path}|{info.get('hash', '')}|{info.get('category', 'template')}\")
-" 2>&1)
+# Read manifest files using node (portable JSON parsing)
+manifest_files=$(_node -e "
+const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+for(const[p,i]of Object.entries(m.files||{})){
+  if(i.category!=='project')console.log(p+'|'+(i.hash||'')+'|'+(i.category||'template'));
+}" 2>&1)
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to parse $MANIFEST: $manifest_files"
     exit 1
@@ -379,10 +371,9 @@ for pattern in ".claude/settings.json" ".claude/rules/*.md" ".claude/library/pro
     esac
 
     # Check if already in manifest (C1: use env vars for Python)
-    in_manifest=$(MANIFEST_PATH="$MANIFEST" REL_PATH="$rel_path" $PYTHON -c "
-import json, os
-m = json.load(open(os.environ['MANIFEST_PATH']))
-print('yes' if os.environ['REL_PATH'] in m.get('files', {}) else 'no')
+    in_manifest=$(_node -e "
+const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+console.log((m.files||{})['$rel_path']?'yes':'no');
 " 2>/dev/null)
 
     if [ "$in_manifest" = "no" ] && [ ! -f "$rel_path" ]; then
@@ -420,86 +411,59 @@ done
 # --- Update manifest ---
 if [ "$DRY_RUN" = false ] && [ $((UPDATED + NEW_FILES)) -gt 0 ]; then
   echo "--- Updating manifest ---"
-  # C1: Pass all variables via environment; C2: certutil fallback; C3: skills scanning
-  MANIFEST_PATH="$MANIFEST" TEMPLATE_DIR="$TEMPLATE_PATH" NEW_VERSION="$NEW_VER" SYNC_DATE="$(date +%Y-%m-%d)" $PYTHON -c "
-import json, subprocess, os
+  _node -e "
+const fs=require('fs'),path=require('path'),{execSync}=require('child_process');
+const manifestPath='$MANIFEST',newVer='$NEW_VER',syncDate=new Date().toISOString().slice(0,10);
+const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+m.template_version=newVer;m.updated=syncDate;
 
-manifest_path = os.environ['MANIFEST_PATH']
-template_path = os.environ['TEMPLATE_DIR']
-new_version = os.environ['NEW_VERSION']
-sync_date = os.environ['SYNC_DATE']
+function getHash(fp){
+  try{return execSync('sha256sum \"'+fp+'\"',{encoding:'utf8'}).split(' ')[0];}catch{}
+  try{return execSync('shasum -a 256 \"'+fp+'\"',{encoding:'utf8'}).split(' ')[0];}catch{}
+  try{const r=execSync('certutil -hashfile \"'+fp+'\" SHA256',{encoding:'utf8'});return r.split('\\n')[1].trim().replace(/ /g,'').toLowerCase();}catch{}
+  return null;
+}
 
-with open(manifest_path) as f:
-    manifest = json.load(f)
+// Rehash template files
+for(const[fp,info]of Object.entries(m.files||{})){
+  if(info.category==='project'||!fs.existsSync(fp))continue;
+  const h=getHash(fp);if(h)info.hash=h;
+}
 
-# Update version
-manifest['template_version'] = new_version
-manifest['updated'] = sync_date
+// Add new files from standard dirs
+const dirs=['.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','_reference'];
+for(const d of dirs){
+  if(!fs.existsSync(d))continue;
+  for(const f of fs.readdirSync(d)){
+    const fp=path.join(d,f).replace(/\\\\\\\\/g,'/');
+    if(!m.files[fp]&&!f.startsWith('project-')&&fs.statSync(path.join(d,f)).isFile()){
+      const h=getHash(fp);if(h)m.files[fp]={category:'template',hash:h};
+    }
+  }
+}
 
-def get_hash(filepath):
-    \"\"\"Cross-platform hash: sha256sum -> shasum -> certutil\"\"\"
-    result = subprocess.run(['sha256sum', filepath], capture_output=True, text=True)
-    if result.returncode == 0:
-        return result.stdout.split()[0]
-    result = subprocess.run(['shasum', '-a', '256', filepath], capture_output=True, text=True)
-    if result.returncode == 0:
-        return result.stdout.split()[0]
-    # C2: Windows certutil fallback
-    result = subprocess.run(['certutil', '-hashfile', filepath, 'SHA256'], capture_output=True, text=True)
-    if result.returncode == 0:
-        lines = result.stdout.strip().split('\n')
-        if len(lines) >= 2:
-            hash_val = lines[1].strip().replace(' ', '').lower()
-            return hash_val
-    return None
+// Skills scanning
+const sd='.claude/skills';
+if(fs.existsSync(sd)){
+  for(const sn of fs.readdirSync(sd)){
+    if(sn.startsWith('project-'))continue;
+    const sf=path.join(sd,sn,'SKILL.md').replace(/\\\\\\\\/g,'/');
+    if(fs.existsSync(sf)){
+      const h=getHash(sf);
+      if(h){if(!m.files[sf])m.files[sf]={category:'template',hash:h};else m.files[sf].hash=h;}
+    }
+  }
+}
 
-# Rehash all template files
-for filepath, info in list(manifest['files'].items()):
-    if info.get('category') == 'project':
-        continue
-    if os.path.isfile(filepath):
-        h = get_hash(filepath)
-        if h:
-            info['hash'] = h
-
-# Add new files from standard directories
-for pattern_dir in ['.claude/rules', '.claude/library/process', '.claude/library/technical', '.claude/library/meta', '.claude/library/domain', '.claude/library/conflict', '.claude/agents', '.claude/commands', '.claude/hooks', '.claude/pipelines', 'scripts', 'scripts/lib', 'mcp-servers/context-router/src', 'tests/rules', '_reference']:
-    if not os.path.isdir(pattern_dir):
-        continue
-    for fname in os.listdir(pattern_dir):
-        fpath = os.path.join(pattern_dir, fname)
-        if fpath not in manifest['files'] and not fname.startswith('project-') and os.path.isfile(fpath):
-            h = get_hash(fpath)
-            if h:
-                manifest['files'][fpath] = {'category': 'template', 'hash': h}
-
-# C3: Skills directory scanning (.claude/skills/[name]/SKILL.md)
-skills_dir = '.claude/skills'
-if os.path.isdir(skills_dir):
-    for skill_name in os.listdir(skills_dir):
-        skill_file = os.path.join(skills_dir, skill_name, 'SKILL.md')
-        if os.path.isfile(skill_file) and not skill_name.startswith('project-'):
-            if skill_file not in manifest['files']:
-                h = get_hash(skill_file)
-                if h:
-                    manifest['files'][skill_file] = {'category': 'template', 'hash': h}
-            else:
-                # Rehash existing skill entries
-                h = get_hash(skill_file)
-                if h:
-                    manifest['files'][skill_file]['hash'] = h
-
-with open(manifest_path, 'w') as f:
-    json.dump(manifest, f, indent=2)
-
-print('Manifest updated.')
+fs.writeFileSync(manifestPath,JSON.stringify(m,null,2));
+console.log('Manifest updated.');
 " 2>/dev/null || echo "WARNING: Could not update manifest automatically. Update manually."
 fi
 
-# --- Validation (M2: already inside DRY_RUN=false check) ---
+# --- Validation ---
 if [ "$DRY_RUN" = false ]; then
   echo "--- Validation ---"
-  $PYTHON -m json.tool .claude/settings.json > /dev/null 2>&1 && echo "  settings.json: valid JSON" || echo "  settings.json: invalid JSON"
+  _json_valid .claude/settings.json && echo "  settings.json: valid JSON" || echo "  settings.json: invalid JSON"
   for script in scripts/*.sh; do
     bash -n "$script" 2>/dev/null && echo "  $script: valid bash" || echo "  $script: syntax error"
   done

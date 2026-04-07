@@ -58,8 +58,7 @@ for f in $ALL_CHANGED; do
   [ -f "$f" ] || continue
   case "$f" in
     *.sh) bash -n "$f" 2>/dev/null && check "bash syntax: $f" "PASS" || check "bash syntax: $f" "FAIL" ;;
-    *.json) python3 -m json.tool "$f" > /dev/null 2>&1 && check "JSON: $f" "PASS" || python -m json.tool "$f" > /dev/null 2>&1 && check "JSON: $f" "PASS" || check "JSON: $f" "FAIL" ;;
-    *.py) python3 -c "import ast; ast.parse(open('$f').read())" 2>/dev/null && check "Python syntax: $f" "PASS" || true ;;
+    *.json) node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" 2>/dev/null && check "JSON: $f" "PASS" || check "JSON: $f" "FAIL" ;;
   esac
 done
 

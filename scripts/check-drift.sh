@@ -6,10 +6,9 @@
 # shellcheck source=lib/platform.sh
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
-if [ -z "${PYTHON:-}" ]; then
-  if command -v python3 &>/dev/null; then PYTHON="python3"
-  elif command -v python &>/dev/null; then PYTHON="python"
-  else PYTHON=""; fi
+# Node.js is used for JSON parsing (Python removed)
+if [ -z "${NODE:-}" ]; then
+  command -v node &>/dev/null && NODE="node" || NODE=""
 fi
 
 # Template version check
@@ -126,7 +125,7 @@ echo "[8/10] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
-  if $PYTHON -m json.tool "$MANIFEST" > /dev/null 2>&1; then
+  if _json_valid "$MANIFEST"; then
     echo "  ✅ $MANIFEST: valid JSON"
   else
     echo "  ❌ $MANIFEST: invalid JSON"
@@ -134,7 +133,7 @@ if [ -f "$MANIFEST" ]; then
   fi
 
   # Report template version
-  tpl_ver=$($PYTHON -c "import json; print(json.load(open('$MANIFEST')).get('template_version', 'unknown'))" 2>/dev/null || echo "unknown")
+  tpl_ver=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('$MANIFEST','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
   echo "  Template version (manifest): $tpl_ver"
 
   # Count drifted template files
@@ -163,12 +162,9 @@ if [ -f "$MANIFEST" ]; then
     else
       drift_count=$((drift_count + 1))
     fi
-  done < <($PYTHON -c "
-import json
-m = json.load(open('$MANIFEST'))
-for path, info in m.get('files', {}).items():
-    if info.get('category') != 'project':
-        print(f\"{path}|{info.get('hash', '')}\")
+  done < <(_node -e "
+const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+for(const[p,i]of Object.entries(m.files||{})){if(i.category!=='project')console.log(p+'|'+(i.hash||''));}
 " 2>/dev/null)
 
   if [ "$drift_count" -gt 0 ]; then
@@ -191,11 +187,9 @@ if [ -f "$MANIFEST" ]; then
     basename_f=$(basename "$rule_file")
     case "$basename_f" in project-*) continue ;; esac
     # Check if file is in manifest and hash matches
-    EXPECTED_HASH=$($PYTHON -c "
-import json, os
-m = json.load(open('$MANIFEST'))
-info = m.get('files', {}).get('$rule_file', {})
-print(info.get('hash', ''))
+    EXPECTED_HASH=$(_node -e "
+const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+const h=(m.files||{})['$rule_file']?.hash||'';console.log(h);
 " 2>/dev/null || echo "")
     if [ -n "$EXPECTED_HASH" ]; then
       ACTUAL_HASH=$(_get_hash "$rule_file")

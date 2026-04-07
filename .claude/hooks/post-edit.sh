@@ -33,20 +33,11 @@ esac
 
 # Syntax validation
 case "$FILE_PATH" in
-  *.py)
-    python -m py_compile "$FILE_PATH" 2>&1 || true
-    ;;
   *.json)
-    python -m json.tool "$FILE_PATH" >/dev/null 2>&1 || echo "WARNING: Invalid JSON in $FILE_PATH"
+    node -e "JSON.parse(require('fs').readFileSync('$FILE_PATH','utf8'))" 2>/dev/null || echo "WARNING: Invalid JSON in $FILE_PATH"
     ;;
   *.sh)
     bash -n "$FILE_PATH" 2>&1 || true
-    ;;
-  *.yml|*.yaml)
-    python -c "import sys,yaml; yaml.safe_load(open(sys.argv[1]))" "$FILE_PATH" 2>&1 || true
-    ;;
-  *.toml)
-    python -c "import sys,tomllib; tomllib.load(open(sys.argv[1],'rb'))" "$FILE_PATH" 2>&1 || true
     ;;
 esac
 
