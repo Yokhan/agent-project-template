@@ -637,20 +637,19 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     let full='';
     if(r._tauriStream&&__IS_TAURI){
-      // Tauri mode: listen for events instead of reading stream
+      // Tauri 2 mode: listen for events via transformCallback
+      const tl=(event,cb)=>{const id=window.__TAURI_INTERNALS__.transformCallback(cb);return __invoke('plugin:event|listen',{event,handler:id}).then(()=>()=>__invoke('plugin:event|unlisten',{event,eventId:id}).catch(()=>{}));};
       await new Promise((resolve)=>{
-        let unData,unDone;
-        const cleanup=()=>{if(unData)unData();if(unDone)unDone();resolve();};
-        window.__TAURI_INTERNALS__.event.listen('chat-stream',e=>{
+        let unData,unDone,unAct;
+        const cleanup=()=>{if(unData)unData();if(unDone)unDone();if(unAct)unAct();resolve();};
+        tl('chat-stream',e=>{
           const d=e.payload;if(d.text){full+=d.text;streamText.value=full;}
           if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}
-        }).then(u=>{unData=u;});
-        let unAct;
-        window.__TAURI_INTERNALS__.event.listen('chat-activity',e=>{
+        }).then(u=>{unData=u;}).catch(e=>console.error('listen chat-stream:',e));
+        tl('chat-activity',e=>{
           const d=e.payload;if(d.text)curActivity.value=d.text;
-        }).then(u=>{unAct=u;});
-        window.__TAURI_INTERNALS__.event.listen('chat-stream-done',()=>{if(unAct)unAct();cleanup();}).then(u=>{unDone=u;});
-        // Safety timeout
+        }).then(u=>{unAct=u;}).catch(e=>console.error('listen chat-activity:',e));
+        tl('chat-stream-done',()=>{cleanup();}).then(u=>{unDone=u;}).catch(e=>{console.error('listen done:',e);cleanup();});
         setTimeout(cleanup,300000);
       });
     }else{
