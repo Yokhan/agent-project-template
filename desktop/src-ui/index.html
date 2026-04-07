@@ -634,14 +634,43 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     let full='';
     if(r._tauriStream&&__IS_TAURI){
-      // Tauri 2: use send_chat (blocking, returns full response) instead of stream_chat events
-      // Events API requires complex setup. send_chat is reliable.
+      // Tauri 2: stream_chat with typed events + fallback to send_chat
+      const tools=[];let stats=null;
+      const tl=(evt,cb)=>{
+        const hid=window.__TAURI_INTERNALS__.transformCallback(cb);
+        return __invoke('plugin:event|listen',{event:evt,target:{kind:'Any'},handler:hid})
+          .then(eid=>()=>__invoke('plugin:event|unlisten',{event:evt,eventId:eid}).catch(()=>{}))
+          .catch(()=>null);
+      };
+      // Try streaming first
+      let streamOk=false;
       try{
-        const res=await __invoke('send_chat',{project:proj,message:msg,model:selectedModel.value||null,reasoningEffort:selectedEffort.value||null});
-        if(res.response)full=res.response;
-        else if(res.error)full='Error: '+res.error;
-      }catch(e){full='Error: '+e;}
+        const unText=await tl('chat-text',e=>{const d=e.payload;if(d?.text){full+=(typeof d.text==='string'?d.text:JSON.stringify(d.text));streamText.value=full;}});
+        const unTool=await tl('chat-tool',e=>{const d=e.payload;if(d?.tool){tools.push(d);curActivity.value='🔧 '+d.tool;}});
+        const unSys=await tl('chat-system',e=>{const d=e.payload;if(d?.text)curActivity.value=d.text;});
+        const unDone=await tl('chat-done',e=>{const d=e.payload;if(d?.text&&!full)full=d.text;stats=d;});
+        if(unText){
+          streamOk=true;
+          // Fire stream_chat (async, emits events)
+          __invoke('stream_chat',{project:proj,message:msg}).catch(e=>console.error('stream_chat:',e));
+          // Wait for done event or timeout
+          await new Promise(resolve=>{
+            const check=setInterval(()=>{if(stats){clearInterval(check);resolve();}},200);
+            setTimeout(()=>{clearInterval(check);resolve();},300000);
+          });
+          if(unText)unText();if(unTool)unTool();if(unSys)unSys();if(unDone)unDone();
+        }
+      }catch(e){console.warn('Stream failed, fallback to send_chat:',e);}
+      // Fallback if streaming didn't work
+      if(!streamOk||(!full&&!stats)){
+        try{
+          const res=await __invoke('send_chat',{project:proj,message:msg,model:selectedModel.value||null,reasoningEffort:selectedEffort.value||null});
+          if(res.response)full=res.response;
+          else if(res.error)full='Error: '+res.error;
+        }catch(e){full='Error: '+e;}
+      }
       streamText.value=full;
+      if(stats){lastStats.value=stats;curActivity.value='';}
     }else{
       // Browser mode: read SSE stream
       const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
@@ -1050,10 +1079,10 @@ function ChatSidebar(){
     <div class="ch-title" style="display:flex;justify-content:space-between;align-items:center">
       <span><span class="conn-dot ${isOn.value?'on':'off'}"/>${sideTitle}</span>
       <span style="display:flex;gap:var(--sp-xs);align-items:center">
-        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>selectedModel.value=e.target.value}>
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>{selectedModel.value=e.target.value;showToast('Model: '+(e.target.value||'auto'),'success',1500);}}>
           <option value="">auto</option><option value="opus">opus</option><option value="sonnet">sonnet</option><option value="haiku">haiku</option>
         </select>
-        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>selectedEffort.value=e.target.value}>
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>{selectedEffort.value=e.target.value;showToast('Effort: '+(e.target.value||'default'),'success',1500);}}>
           <option value="">effort</option><option value="low">low</option><option value="medium">med</option><option value="high">high</option><option value="max">max</option>
         </select>
       </span>
@@ -1083,8 +1112,15 @@ function ChatMsg({m}){
   const canCopy=m.role==='assistant';const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
   const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
   const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
+  const mtools=m.tools||[];
   return html`<div class="m ${cls}">
     ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
+    ${mtools.length?html`<div style="margin:var(--sp-xs) 0;font-size:var(--fs-xs);font-family:var(--font-mono)">
+      ${mtools.map(t=>html`<details style="margin:var(--sp-2xs) 0;color:var(--t3)">
+        <summary style="cursor:pointer;color:var(--cyan)">🔧 ${t.tool}${t.input?.command?' — '+t.input.command.substring(0,60):t.input?.file_path?' — '+t.input.file_path:''}</summary>
+        <pre style="font-size:var(--fs-2xs);color:var(--t3);margin:var(--sp-2xs) 0;white-space:pre-wrap;max-height:150px;overflow:auto">${JSON.stringify(t.input,null,2)}</pre>
+      </details>`)}
+    </div>`:''}
     ${canCopy?html`<button class="msg-copy" onClick=${()=>{navigator.clipboard.writeText(m.msg||'');showToast('Copied','success',1500);}}>copy</button>`:''}
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
     <div class="ts">${ft(m.ts)}${m.meta||""}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>

@@ -307,15 +307,69 @@ pub async fn stream_chat(
         }
     });
 
-    let mut full_response = String::new();
+    let mut full_text = String::new();
+    let mut tool_blocks: Vec<Value> = Vec::new();
+
     for line in reader.lines() {
-        match line {
-            Ok(text) => {
-                full_response.push_str(&text);
-                full_response.push('\n');
-                let _ = app.emit("chat-stream", json!({"text": text}));
+        let Ok(raw) = line else { break };
+        let trimmed = raw.trim_end_matches('\r');
+        if trimmed.is_empty() { continue; }
+
+        // Try parse as JSON (stream-json format)
+        if let Ok(evt) = serde_json::from_str::<Value>(trimmed) {
+            match evt.get("type").and_then(|t| t.as_str()) {
+                Some("system") => {
+                    let msg = evt.get("message").and_then(|m| m.as_str()).unwrap_or("");
+                    if !msg.is_empty() {
+                        let _ = app.emit("chat-system", json!({"text": msg}));
+                    }
+                }
+                Some("assistant") => {
+                    // Complete message — extract text + tool_use blocks
+                    if let Some(content) = evt.pointer("/message/content").and_then(|c| c.as_array()) {
+                        for block in content {
+                            match block.get("type").and_then(|t| t.as_str()) {
+                                Some("text") => {
+                                    let txt = block.get("text").and_then(|t| t.as_str()).unwrap_or("");
+                                    full_text = txt.to_string();
+                                    let _ = app.emit("chat-text", json!({"text": txt}));
+                                }
+                                Some("tool_use") => {
+                                    let tool = block.get("name").and_then(|n| n.as_str()).unwrap_or("?");
+                                    let input = block.get("input").cloned().unwrap_or(json!({}));
+                                    tool_blocks.push(json!({"tool": tool, "input": input}));
+                                    let _ = app.emit("chat-tool", json!({"tool": tool, "input": input}));
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                Some("result") => {
+                    // Final result with stats
+                    let result_text = evt.get("result").and_then(|r| r.as_str()).unwrap_or("");
+                    if !result_text.is_empty() && full_text.is_empty() {
+                        full_text = result_text.to_string();
+                    }
+                    let duration = evt.get("duration_ms").and_then(|d| d.as_u64()).unwrap_or(0);
+                    let cost = evt.get("total_cost_usd").and_then(|c| c.as_f64());
+                    let _ = app.emit("chat-done", json!({
+                        "text": full_text,
+                        "tools": tool_blocks,
+                        "duration_ms": duration,
+                        "cost": cost,
+                    }));
+                }
+                _ => {
+                    // Forward raw for debugging
+                    let _ = app.emit("chat-raw", json!({"raw": trimmed}));
+                }
             }
-            Err(_) => break,
+        } else {
+            // Non-JSON line — treat as plain text
+            full_text.push_str(trimmed);
+            full_text.push('\n');
+            let _ = app.emit("chat-text", json!({"text": trimmed}));
         }
     }
 
@@ -324,9 +378,13 @@ pub async fn stream_chat(
 
     clear_activity(&state.root, &chat_key);
 
-    // Save full response
+    // Save full response with tool blocks
     let ts2 = state.now_iso();
-    let asst_entry = json!({"ts": ts2, "role": "assistant", "msg": full_response.trim()});
+    let asst_entry = json!({
+        "ts": ts2, "role": "assistant",
+        "msg": full_text.trim(),
+        "tools": tool_blocks,
+    });
     let _ = std::fs::OpenOptions::new()
         .create(true).append(true).open(&chat_file)
         .and_then(|mut f| {
@@ -336,7 +394,7 @@ pub async fn stream_chat(
 
     // Check for delegation
     if project.is_empty() {
-        if let Some((target, task)) = parse_delegation(&full_response) {
+        if let Some((target, task)) = parse_delegation(&full_text) {
             let did = crate::commands::delegation::queue_delegation_internal(&state, &target, &task);
             let report = format!(
                 "\n\n---\n**⏳ Awaiting approval to run in {}:**\n{}\n\n<delegation id=\"{}\" project=\"{}\"/>",
