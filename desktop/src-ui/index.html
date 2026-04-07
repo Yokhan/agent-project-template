@@ -292,7 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .kb-desc{color:var(--t2)}
 
 /* === ANALYTICS FOOTER === */
-.analytics-bar{border-top:1px solid var(--border);border-image:linear-gradient(90deg,transparent,var(--accent),transparent) 1;padding:var(--sp-xs) var(--sp-l);font-size:var(--fs-s);color:var(--t2);display:flex;gap:0;font-family:var(--font-mono);flex-shrink:0;align-items:center}
+.analytics-bar{border-top:1px solid var(--border);padding:var(--sp-xs) var(--sp-l);max-width:calc(100% - var(--chat-w));font-size:var(--fs-s);color:var(--t2);display:flex;gap:0;font-family:var(--font-mono);flex-shrink:0;align-items:center}
 .analytics-bar .metric{display:flex;gap:var(--sp-xs);align-items:center;padding:0 var(--sp-m);border-right:1px solid var(--border)}
 .analytics-bar .metric:last-child{border-right:none}
 .analytics-bar .metric .v{color:var(--text);font-weight:500}
@@ -716,11 +716,11 @@ function Header(){
       ${pending?html`<span class="badge">${pending}</span>`:''}
       <button class=${isStrat?'hdr-active':''} onClick=${()=>{showStrategy.value=!showStrategy.value;showSettings.value=false;if(showStrategy.value){loadGoals();loadStrategies();}}}>strategy</button>
       <button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>showToast(d.text||'No data','info',10000))}>briefing</button>
-      <button onClick=${()=>showNewProject.value=true}>+</button>
-      <button onClick=${()=>{loadAgents();loadFeed();}}>↻</button>
-      <span style="color:var(--border)">│</span>
-      <button class=${isSet?'hdr-active':''} onClick=${()=>{showSettings.value=!showSettings.value;showStrategy.value=false;if(showSettings.value)loadPerms();}}>⚙</button>
-      <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'◐':'◑'}</button>
+      <button style="font-size:var(--fs-l)" onClick=${()=>showNewProject.value=true}>+</button>
+      <button style="font-size:var(--fs-l)" onClick=${()=>{loadAgents();loadFeed();}}>↻</button>
+      <span style="color:var(--border);font-size:var(--fs-xs)">│</span>
+      <button class=${isSet?'hdr-active':''} style="font-size:var(--fs-l)" onClick=${()=>{showSettings.value=!showSettings.value;showStrategy.value=false;if(showSettings.value)loadPerms();}}>⚙</button>
+      <button style="font-size:var(--fs-l)" onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'◐':'◑'}</button>
       <span style="font-size:var(--fs-xs);color:var(--t3)">${clock}</span>
       ${__IS_TAURI?html`<span style="color:var(--border)">│</span><div class="win-btns">
         <button onClick=${()=>window.__TAURI__.window.getCurrentWindow().minimize()} class="wb">−</button>
