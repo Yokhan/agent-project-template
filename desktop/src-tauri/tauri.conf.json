@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:3333 http://localhost:5678; img-src 'self' data: blob:"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://api.telegram.org https://api.github.com; img-src 'self' data: blob:; font-src 'self' data:"
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",

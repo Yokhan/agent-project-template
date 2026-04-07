@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Agent OS — Command Center</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap');
+/* Fonts: system stack — no CDN dependency for offline Tauri app.
+   Space Grotesk/Mono via system if installed, otherwise fallback to system fonts */
 *{box-sizing:border-box;margin:0;padding:0}
 /* === DESIGN TOKENS === */
 :root{
   /* Spacing */
   --sp-xs:4px;--sp-s:8px;--sp-m:16px;--sp-l:24px;--sp-xl:32px;--sp-2xl:48px;
   /* Typography */
-  --font-body:'Inter',system-ui,sans-serif;
-  --font-mono:'Space Mono',monospace;
+  --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'Space Mono','Cascadia Code','Consolas','SF Mono',monospace;
   --fs-xs:10px;--fs-s:12px;--fs-m:14px;--fs-l:16px;--fs-xl:22px;--fs-2xl:36px;
   --fs-chat:15px;--fs-chat-pre:12px;
   --lh:1.6;
@@ -19,9 +20,9 @@
   --accent:#D71921;--green:#33d17a;--yellow:#f5c211;
   --dot:#222;--glow:rgba(215,25,33,.1);
   /* Radii */
-  --r:0px;
+  --r:2px;
   /* Chat sidebar */
-  --chat-w:520px;
+  --chat-w:min(520px, 35vw);
 }
 [data-theme="light"]{
   --bg:#f0f0f5;--sf:#e2e2ea;--sf2:#d5d5e0;--border:#a0a0b8;
