@@ -29,11 +29,18 @@
   --chat-w:min(520px, 35vw);
 }
 [data-theme="light"]{
-  --bg:#f0f0f5;--sf:#e2e2ea;--sf2:#d5d5e0;--border:#a0a0b8;
-  --text:#0a0a0a;--t2:#333;--t3:#666;--mute:#999;
-  --dot:#ccc;--glow:rgba(215,25,33,.08);
+  --bg:#f4f4f8;--sf:#e8e8f0;--sf2:#dddde8;--border:#b0b0c0;
+  --text:#0a0a0a;--t2:#2a2a2a;--t3:#555;--mute:#888;
+  --accent-dim:rgba(215,25,33,.08);
+  --dot:#bbb;--glow:rgba(215,25,33,.06);
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;font-size:var(--fs-m);line-height:var(--lh)}
+/* Custom scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+::-webkit-scrollbar-corner{background:transparent}
 
 /* === LAYOUT === */
 .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -233,8 +240,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 
 
 /* === SEARCH === */
-.search{margin-bottom:var(--sp-m);display:flex;gap:var(--sp-s);align-items:center}
-.search input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:var(--sp-s) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-s);outline:none}
+.search{margin-bottom:var(--sp-s);display:flex;gap:var(--sp-s);align-items:center}
+.search input{flex:1;background:var(--sf);color:var(--text);border:1px solid var(--border);padding:var(--sp-xs) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-xs);outline:none}
 .search input:focus{border-color:var(--t3)}
 .search input::placeholder{color:var(--t3)}
 
