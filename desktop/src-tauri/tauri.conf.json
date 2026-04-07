@@ -5,7 +5,6 @@
   "identifier": "com.agent-os.desktop",
   "build": {
     "frontendDist": "../src-ui",
-    "devUrl": "",
     "beforeDevCommand": "",
     "beforeBuildCommand": ""
   },
