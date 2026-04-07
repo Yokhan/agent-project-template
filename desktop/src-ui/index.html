@@ -14,7 +14,7 @@
   /* Typography */
   --font-body:'Inter','Segoe UI',system-ui,sans-serif;
   --font-mono:'Space Mono','Cascadia Code','Consolas',monospace;
-  --fs-3xs:7px;--fs-2xs:8px;--fs-xs:10px;--fs-s:12px;--fs-m:14px;--fs-l:16px;--fs-xl:22px;--fs-2xl:36px;
+  --fs-micro:7px;--fs-2xs:8px;--fs-xs:10px;--fs-s:12px;--fs-m:14px;--fs-l:16px;--fs-xl:20px;--fs-2xl:28px;
   --fs-chat:15px;--fs-chat-pre:12px;
   --lh:1.6;
   /* Z-index layers */
@@ -45,7 +45,7 @@
 [data-theme="light"] .plan-panel{border:1px solid var(--border)}
 [data-theme="light"] .panel{border:1px solid var(--border);background:var(--sf)}
 [data-theme="light"] .panel .mod{border-bottom:1px solid var(--border)}
-[data-theme="light"] .badge{background:var(--accent);color:#fff}
+[data-theme="light"] .badge{background:var(--accent);color:var(--text)}
 [data-theme="light"] .toast{border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.1)}
 [data-theme="light"] .kb-box{background:var(--bg);border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,.15)}
 [data-theme="light"] .ch-inp{background:var(--bg);border-top:1px solid var(--border)}
@@ -67,7 +67,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 
 /* === LAYOUT === */
 .app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.hdr{padding:var(--sp-l) var(--sp-2xl);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0}
+.hdr{padding:var(--sp-s) var(--sp-m);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0}
 .hdr h1{font-size:var(--fs-l);font-family:'Space Grotesk',var(--font-mono);text-transform:uppercase;letter-spacing:6px;font-weight:400;color:var(--t2)}
 .hdr .r{display:flex;align-items:center;gap:var(--sp-s)}
 .hdr .r span{font-size:var(--fs-s);color:var(--t3);font-family:var(--font-mono)}
@@ -77,11 +77,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .win-btns{display:flex;gap:0;margin-left:var(--sp-m)}
 .wb{background:transparent!important;border:none!important;color:var(--t2)!important;font-size:var(--fs-l);width:36px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0!important;letter-spacing:0!important}
 .wb:hover{background:var(--sf2)!important;color:var(--text)!important}
-.wb-close:hover{background:var(--accent)!important;color:#fff!important}
+.wb-close:hover{background:var(--accent)!important;color:var(--text)!important}
 
 /* === MAIN: dashboard view === */
 .main{flex:1;display:flex;overflow:hidden;min-height:0}
-.content{flex:1;padding:var(--sp-xl) var(--sp-2xl);overflow-y:auto}
+.content{flex:1;padding:var(--sp-m) var(--sp-l);overflow-y:auto}
 .chat-side{width:var(--chat-w);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 
 /* === STATS ROW === */
@@ -191,7 +191,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .tile.t-unmanaged .sys{color:var(--yellow)}
 
 /* Micro-text decoration */
-.tile .sys{position:absolute;top:var(--sp-s);right:20px;font-family:var(--font-mono);font-size:var(--fs-3xs);color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
+.tile .sys{position:absolute;top:var(--sp-s);right:20px;font-family:var(--font-mono);font-size:var(--fs-micro);color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
 .tile:hover .sys{opacity:.8}
 
 /* === CYBER ELEMENTS === */
@@ -291,7 +291,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .kb-desc{color:var(--t2)}
 
 /* === ANALYTICS FOOTER === */
-.analytics-bar{border-top:1px solid var(--border);border-image:linear-gradient(90deg,transparent,var(--accent),transparent) 1;padding:var(--sp-s) var(--sp-2xl);font-size:var(--fs-s);color:var(--t2);display:flex;gap:0;font-family:var(--font-mono);flex-shrink:0;align-items:center}
+.analytics-bar{border-top:1px solid var(--border);border-image:linear-gradient(90deg,transparent,var(--accent),transparent) 1;padding:var(--sp-xs) var(--sp-m);font-size:var(--fs-s);color:var(--t2);display:flex;gap:0;font-family:var(--font-mono);flex-shrink:0;align-items:center}
 .analytics-bar .metric{display:flex;gap:var(--sp-xs);align-items:center;padding:0 var(--sp-m);border-right:1px solid var(--border)}
 .analytics-bar .metric:last-child{border-right:none}
 .analytics-bar .metric .v{color:var(--text);font-weight:500}
@@ -903,7 +903,7 @@ function StrategyView(){
       <h3>set goal</h3>
       <input ref=${goalRef} style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--text);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-m);margin-bottom:var(--sp-s)" placeholder="e.g., Launch fitness bot MVP by Friday"/>
       <textarea ref=${ctxRef} rows="2" style="width:100%;background:var(--sf);border:1px solid var(--border);color:var(--t2);padding:var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s);margin-bottom:var(--sp-s);resize:vertical" placeholder="Context: constraints, deadline, priorities (optional)"/>
-      <button style="background:var(--green);color:#000;border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);cursor:pointer" onClick=${()=>{const g=goalRef.current?.value;if(!g?.trim()){showToast('Enter a goal','error');return;}generateStrategy(g,ctxRef.current?.value);}} disabled=${strategyLoading.value}>${strategyLoading.value?'generating...':'generate strategy'}</button>
+      <button style="background:var(--green);color:var(--bg);border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);cursor:pointer" onClick=${()=>{const g=goalRef.current?.value;if(!g?.trim()){showToast('Enter a goal','error');return;}generateStrategy(g,ctxRef.current?.value);}} disabled=${strategyLoading.value}>${strategyLoading.value?'generating...':'generate strategy'}</button>
     </div>
 
     ${g.length?html`<div class="panel" style="margin-bottom:var(--sp-l)">
@@ -1099,11 +1099,11 @@ function StreamBubble(){
 
 function DelegBtn({id,project}){
   const d=delegations.value[id];
-  if(!d||d.status==='pending')return html`<div style="margin:8px 0;padding:8px;border:1px solid var(--border);background:var(--sf)">
-    <div style="font-size:var(--fs-s);color:var(--t2);margin-bottom:6px">Approve task for ${project}?</div>
-    <div style="display:flex;gap:8px">
-      <button onClick=${()=>approveDel(id)} style="background:var(--green);color:#000;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">APPROVE</button>
-      <button onClick=${()=>rejectDel(id)} style="background:var(--accent);color:#fff;border:none;padding:6px 16px;cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">REJECT</button>
+  if(!d||d.status==='pending')return html`<div style="margin:var(--sp-s) 0;padding:var(--sp-s);border:1px solid var(--border);background:var(--sf)">
+    <div style="font-size:var(--fs-s);color:var(--t2);margin-bottom:var(--sp-xs)">Approve task for ${project}?</div>
+    <div style="display:flex;gap:var(--sp-s)">
+      <button onClick=${()=>approveDel(id)} style="background:var(--green);color:var(--bg);border:none;padding:var(--sp-xs) var(--sp-m);cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">APPROVE</button>
+      <button onClick=${()=>rejectDel(id)} style="background:var(--accent);color:var(--bg);border:none;padding:var(--sp-xs) var(--sp-m);cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-s)">REJECT</button>
     </div></div>`;
   if(d.status==='running')return html`<div style="color:var(--yellow);font-size:var(--fs-s);padding:4px 0">⏳ executing...</div>`;
   if(d.status==='done')return html`<div style="color:var(--green);font-size:var(--fs-s);padding:4px 0">✓ done</div>`;
@@ -1137,7 +1137,7 @@ function NewProjectModal(){
       </div>
       <div style="display:flex;gap:var(--sp-s);justify-content:flex-end">
         <button class="action-btn" onClick=${()=>showNewProject.value=false}>cancel</button>
-        <button style="background:var(--green);color:#000;border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);font-size:var(--fs-s);cursor:pointer" onClick=${create}>create</button>
+        <button style="background:var(--green);color:var(--bg);border:none;padding:var(--sp-xs) var(--sp-l);font-family:var(--font-mono);font-size:var(--fs-s);cursor:pointer" onClick=${create}>create</button>
       </div>
     </div>
   </div>`;
