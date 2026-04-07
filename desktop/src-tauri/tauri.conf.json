@@ -5,7 +5,7 @@
   "identifier": "com.agent-os.desktop",
   "build": {
     "frontendDist": "../src-ui",
-    "devUrl": "http://localhost:3333",
+    "devUrl": "",
     "beforeDevCommand": "",
     "beforeBuildCommand": ""
   },
@@ -57,7 +57,7 @@
       "endpoints": [
         "https://github.com/Yokhan/agent-project-template/releases/latest/download/latest.json"
       ],
-      "pubkey": ""
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhBMDFDNDZDNjAxQTdFOApSV1RvcHdIR1JoeWdDRjhobzNiZXVoemlCRWR3dnd4dWN5R2lKK0RacjhpYUVuNHlDSjE3dlA2TQo="
     }
   }
 }

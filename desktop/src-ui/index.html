@@ -764,7 +764,7 @@ function EmptyState(){return html`<div style="padding:var(--sp-2xl);max-width:60
 
 function SearchBar(){
   return html`<div class="search">
-    <input placeholder="search projects..." value=${searchQuery.value}
+    <input name="search" placeholder="search projects..." value=${searchQuery.value}
       onInput=${e=>searchQuery.value=e.target.value}
       onKeyDown=${e=>{if(e.key==='Escape'){searchQuery.value='';e.target.blur();}}}/>
   </div>`;
