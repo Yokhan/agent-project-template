@@ -80,7 +80,7 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
         });
 
     // Execute — use permission profiles, no --dangerously-skip-permissions
-    let perm_path = crate::commands::chat::get_permission_path_pub(&state, &d.project);
+    let perm_path = super::claude_runner::get_permission_path(&state, &d.project);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos())

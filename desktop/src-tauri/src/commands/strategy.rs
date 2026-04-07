@@ -197,8 +197,8 @@ Rules:
         project_list.join("\n"),
     );
 
-    let perm_path = crate::commands::chat::get_permission_path_pub(&state, "_orchestrator");
-    let tmp = crate::commands::chat::unique_tmp_pub("strategy");
+    let perm_path = super::claude_runner::get_permission_path(&state, "_orchestrator");
+    let tmp = super::claude_runner::unique_tmp("strategy");
     std::fs::write(&tmp, &prompt).map_err(|e| e.to_string())?;
 
     let stdin_file = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
@@ -392,8 +392,8 @@ pub fn execute_strategy_step(state: State<AppState>, strategy_id: String) -> Val
                 prev_context.join("\n"), task)
     };
 
-    let perm_path = crate::commands::chat::get_permission_path_pub(&state, &project);
-    let response = crate::commands::chat::run_claude_pub(&project_dir, &prompt, &perm_path);
+    let perm_path = super::claude_runner::get_permission_path(&state, &project);
+    let response = super::claude_runner::run_claude(&project_dir, &prompt, &perm_path);
 
     // Save to project chat
     let chat_file = state.chats_dir.join(format!("{}.jsonl", project));
