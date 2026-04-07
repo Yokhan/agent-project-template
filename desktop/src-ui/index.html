@@ -72,11 +72,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 .hdr h1{font-size:var(--fs-s);font-family:'Space Grotesk',var(--font-mono);text-transform:uppercase;letter-spacing:4px;font-weight:400;color:var(--t3)}
 .hdr .r{display:flex;align-items:center;gap:var(--sp-xs)}
 .hdr .r span{font-size:var(--fs-s);color:var(--t3);font-family:var(--font-mono)}
-.hdr .r button{background:transparent;color:var(--t2);border:1px solid var(--border);padding:var(--sp-s) var(--sp-m);font-family:var(--font-mono);font-size:var(--fs-s);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s;min-height:32px}
+.hdr .r button{background:transparent;color:var(--t2);border:1px solid var(--border);padding:var(--sp-xs) var(--sp-s);font-family:var(--font-mono);font-size:var(--fs-s);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s;min-height:28px}
 .hdr .r button:hover{color:var(--text);border-color:var(--t3);background:var(--sf2)}
 .hdr .r button.hdr-active{border-color:var(--accent);color:var(--accent)}
 .win-btns{display:flex;gap:0;margin-left:var(--sp-m)}
-.wb{background:transparent!important;border:none!important;color:var(--t2)!important;font-size:var(--fs-xl);width:40px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0!important;letter-spacing:0!important}
+.wb{background:transparent!important;border:none!important;color:var(--t2)!important;font-size:var(--fs-m);width:32px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0!important;letter-spacing:0!important}
 .wb:hover{background:var(--sf2)!important;color:var(--text)!important}
 .wb-close:hover{background:var(--accent)!important;color:var(--text)!important}
 
@@ -482,11 +482,8 @@ window.fetch = function(url, opts = {}) {
     return __invoke('get_delegations', {}).then(__fakeResponse);
   }
 
-  // SSE streaming — handled specially by callers via Tauri events
+  // Chat: use send_chat directly (blocking but reliable)
   if (path === '/api/chat-stream' && method === 'POST') {
-    // Start the stream command (fire-and-forget), return a fake SSE response
-    __invoke('stream_chat', body).catch(e => { console.error('stream_chat error:', e); window.__streamError = e; });
-    // Return a mock response — actual data comes via 'chat-stream' events
     return Promise.resolve({
       ok: true, status: 200,
       body: { getReader: () => ({ read: () => new Promise(() => {}) }) },
@@ -637,21 +634,14 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
     let full='';
     if(r._tauriStream&&__IS_TAURI){
-      // Tauri 2 mode: listen for events via transformCallback
-      const tl=(event,cb)=>{const id=window.__TAURI_INTERNALS__.transformCallback(cb);return __invoke('plugin:event|listen',{event,handler:id}).then(()=>()=>__invoke('plugin:event|unlisten',{event,eventId:id}).catch(()=>{}));};
-      await new Promise((resolve)=>{
-        let unData,unDone,unAct;
-        const cleanup=()=>{if(unData)unData();if(unDone)unDone();if(unAct)unAct();resolve();};
-        tl('chat-stream',e=>{
-          const d=e.payload;if(d.text){full+=d.text;streamText.value=full;}
-          if(d.activity)curActivity.value=d.activity;if(d.stats){lastStats.value=d.stats;curActivity.value='';}
-        }).then(u=>{unData=u;}).catch(e=>console.error('listen chat-stream:',e));
-        tl('chat-activity',e=>{
-          const d=e.payload;if(d.text)curActivity.value=d.text;
-        }).then(u=>{unAct=u;}).catch(e=>console.error('listen chat-activity:',e));
-        tl('chat-stream-done',()=>{cleanup();}).then(u=>{unDone=u;}).catch(e=>{console.error('listen done:',e);cleanup();});
-        setTimeout(cleanup,300000);
-      });
+      // Tauri 2: use send_chat (blocking, returns full response) instead of stream_chat events
+      // Events API requires complex setup. send_chat is reliable.
+      try{
+        const res=await __invoke('send_chat',{project:proj,message:msg});
+        if(res.response)full=res.response;
+        else if(res.error)full='Error: '+res.error;
+      }catch(e){full='Error: '+e;}
+      streamText.value=full;
     }else{
       // Browser mode: read SSE stream
       const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
@@ -715,11 +705,11 @@ function Header(){
       ${pending?html`<span class="badge">${pending}</span>`:''}
       <button class=${isStrat?'hdr-active':''} onClick=${()=>{showStrategy.value=!showStrategy.value;showSettings.value=false;if(showStrategy.value){loadGoals();loadStrategies();}}}>strategy</button>
       <button onClick=${()=>fetch('/api/digest').then(r=>r.json()).then(d=>showToast(d.text||'No data','info',10000))}>briefing</button>
-      <button style="font-size:var(--fs-l)" onClick=${()=>showNewProject.value=true}>+</button>
-      <button style="font-size:var(--fs-l)" onClick=${()=>{loadAgents();loadFeed();}}>↻</button>
-      <span style="color:var(--border);font-size:var(--fs-xs)">│</span>
-      <button class=${isSet?'hdr-active':''} style="font-size:var(--fs-l)" onClick=${()=>{showSettings.value=!showSettings.value;showStrategy.value=false;if(showSettings.value)loadPerms();}}>⚙</button>
-      <button style="font-size:var(--fs-l)" onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'◐':'◑'}</button>
+      <button onClick=${()=>showNewProject.value=true}>+</button>
+      <button onClick=${()=>{loadAgents();loadFeed();}}>↻</button>
+      <span style="color:var(--border)">│</span>
+      <button class=${isSet?'hdr-active':''} onClick=${()=>{showSettings.value=!showSettings.value;showStrategy.value=false;if(showSettings.value)loadPerms();}}>⚙</button>
+      <button onClick=${()=>theme.value=theme.value==='dark'?'light':'dark'}>${theme.value==='dark'?'◐':'◑'}</button>
       <span style="font-size:var(--fs-xs);color:var(--t3)">${clock}</span>
       ${__IS_TAURI?html`<span style="color:var(--border)">│</span><div class="win-btns">
         <button onClick=${()=>{try{window.__TAURI_INTERNALS__.invoke('plugin:window|minimize',{label:'main'})}catch(e){console.error(e)}}} class="wb">−</button>
