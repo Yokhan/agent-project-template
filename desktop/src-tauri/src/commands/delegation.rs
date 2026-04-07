@@ -96,7 +96,8 @@ pub fn approve_delegation(state: State<AppState>, id: String) -> Value {
             }
         };
 
-        let result = std::process::Command::new("claude")
+        let claude_bin = super::claude_runner::find_claude();
+        let result = std::process::Command::new(&claude_bin)
             .args(["-p", "--settings", &perm_path])
             .current_dir(&project_dir)
             .stdin(std::process::Stdio::from(stdin_file))

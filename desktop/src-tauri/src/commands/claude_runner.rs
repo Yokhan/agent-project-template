@@ -15,6 +15,29 @@ pub fn unique_tmp(prefix: &str) -> std::path::PathBuf {
 
 /// Run claude -p via subprocess — no shell wrapper, direct Command::new("claude")
 /// Returns stdout text or error message.
+/// Find claude binary — check PATH first, then common locations
+pub fn find_claude() -> String {
+    // Try PATH first
+    if let Ok(output) = std::process::Command::new("claude").arg("--version").output() {
+        if output.status.success() {
+            return "claude".to_string();
+        }
+    }
+    // Common locations on Windows
+    for path in &[
+        dirs::data_dir().map(|d| d.join("npm").join("claude.cmd")),
+        dirs::home_dir().map(|d| d.join("AppData").join("Roaming").join("npm").join("claude.cmd")),
+        dirs::home_dir().map(|d| d.join(".npm-global").join("bin").join("claude")),
+    ] {
+        if let Some(p) = path {
+            if p.exists() {
+                return p.to_string_lossy().to_string();
+            }
+        }
+    }
+    "claude".to_string() // fallback
+}
+
 pub fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> String {
     let tmp = unique_tmp("chat");
     if std::fs::write(&tmp, prompt).is_err() {
@@ -29,7 +52,8 @@ pub fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> Strin
         }
     };
 
-    let result = std::process::Command::new("claude")
+    let claude_bin = find_claude();
+    let result = std::process::Command::new(&claude_bin)
         .args(["--continue", "-p", "--settings", perm_path])
         .current_dir(cwd)
         .stdin(std::process::Stdio::from(stdin_file))

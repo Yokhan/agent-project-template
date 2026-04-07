@@ -145,7 +145,8 @@ Rules:
     std::fs::write(&tmp, &prompt).map_err(|e| e.to_string())?;
 
     let stdin_file = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
-    let output = std::process::Command::new("claude")
+    let claude_bin = super::claude_runner::find_claude();
+    let output = std::process::Command::new(&claude_bin)
         .args(["-p", "--settings", &perm_path])
         .current_dir(&pa_dir)
         .stdin(std::process::Stdio::from(stdin_file))

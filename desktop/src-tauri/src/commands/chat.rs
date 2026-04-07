@@ -264,7 +264,8 @@ pub async fn stream_chat(
     let stdin_file = std::fs::File::open(&tmp).map_err(|e| e.to_string())?;
 
     // Spawn claude directly — no shell wrapper
-    let mut child = std::process::Command::new("claude")
+    let claude_bin = super::claude_runner::find_claude();
+    let mut child = std::process::Command::new(&claude_bin)
         .args([
             "--continue", "-p",
             "--output-format", "stream-json",
