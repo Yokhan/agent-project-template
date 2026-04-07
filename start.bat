@@ -53,16 +53,18 @@ if %errorlevel% equ 0 (
     echo Update available! Run: powershell desktop\watchdog.ps1
 )
 
-REM Start desktop app if built, otherwise fallback to browser dashboard
-if exist "desktop\src-tauri\target\release\Agent OS.exe" (
-    echo Starting desktop app...
+REM Start desktop app (required — build with: cd desktop && cargo tauri build)
+if exist "desktop\src-tauri\target\release\agent-os.exe" (
+    echo Starting Agent OS...
+    start "" "desktop\src-tauri\target\release\agent-os.exe"
+) else if exist "desktop\src-tauri\target\release\Agent OS.exe" (
+    echo Starting Agent OS...
     start "" "desktop\src-tauri\target\release\Agent OS.exe"
 ) else (
-    REM Fallback: start serve.py dashboard
-    echo Starting dashboard (browser mode)...
-    start /B python n8n\dashboard\serve.py
-    timeout /t 2 /nobreak >nul
-    start http://localhost:3333
+    echo ERROR: Desktop app not built. Run: cd desktop ^&^& cargo tauri build
+    echo For dev mode: cd desktop ^&^& cargo tauri dev
+    pause
+    exit /b 1
 )
 
 echo.

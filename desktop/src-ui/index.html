@@ -20,7 +20,8 @@
   /* Colors — Dark */
   --bg:#08080c;--sf:#0c0c12;--sf2:#12121a;--border:#1c1c28;
   --text:#fff;--t2:#999;--t3:#555;--mute:#2a2a2a;
-  --accent:#D71921;--green:#33d17a;--yellow:#f5c211;
+  --accent:#D71921;--green:#33d17a;--yellow:#f5c211;--cyan:#4af;
+  --accent-dim:rgba(215,25,33,.1);
   --dot:#222;--glow:rgba(215,25,33,.1);
   /* Radii */
   --r:2px;
@@ -526,8 +527,8 @@ effect(()=>{
 // ===== API =====
 
 let recog=null;
-function togVoice(){if(!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){showToast("No speech API","error");return;}if(isRec.value){recog?.stop();isRec.value=false;return;}const S=window.SpeechRecognition||window.webkitSpeechRecognition;recog=new S();recog.continuous=false;recog.interimResults=false;recog.lang="ru-RU";recog.onresult=e=>{const t=e.results[0][0].transcript;const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=(ta.value?ta.value+" ":"")+t;ta.dispatchEvent(new Event("input"));}};recog.onend=()=>isRec.value=false;recog.onerror=e=>{isRec.value=false;};recog.start();isRec.value=true;}
-function hdlFiles(fl){const nf=[...attFiles.value];for(const f of fl)nf.push({name:f.name,size:f.size});attFiles.value=nf;}
+function togVoice(){if(!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){showToast("No speech API","error");return;}if(isRec.value){recog?.stop();isRec.value=false;return;}const S=window.SpeechRecognition||window.webkitSpeechRecognition;recog=new S();recog.continuous=false;recog.interimResults=false;recog.lang=navigator.language||"ru-RU";recog.onresult=e=>{const t=e.results[0][0].transcript;const ta=document.querySelector(".ch-inp textarea");if(ta){ta.value=(ta.value?ta.value+" ":"")+t;ta.dispatchEvent(new Event("input"));}};recog.onend=()=>isRec.value=false;recog.onerror=e=>{isRec.value=false;};recog.start();isRec.value=true;}
+async function hdlFiles(fl){const nf=[...attFiles.value];for(const f of fl){if(__IS_TAURI){try{const buf=await f.arrayBuffer();const data=Array.from(new Uint8Array(buf));const r=await __TAURI__.core.invoke('save_attachment',{name:f.name,data});nf.push({name:f.name,size:f.size,path:r.path||''});}catch(e){showToast('Attach error: '+e,'error');}}else{nf.push({name:f.name,size:f.size,path:''});}}attFiles.value=nf;}
 function rmFile(i){attFiles.value=attFiles.value.filter((_,j)=>j!==i);}
 async function chkConn(){try{const r=await fetch("/api/health");isOn.value=r.ok;}catch{isOn.value=false;}}
 setInterval(chkConn,15000);
@@ -541,19 +542,18 @@ function handleSlash(val){if(val.startsWith('/')){const q=val.slice(1).toLowerCa
 function execSlash(cmd){slashOpen.value=false;if(cmd==='/clear'){sideMessages.value=[];showToast('Cleared','success');return true;}if(cmd==='/help'){showToast(SLASH_CMDS.map(c=>c.cmd+' - '+c.desc).join(', '),'info',8000);return true;}if(cmd==='/briefing'){fetch('/api/digest').then(r=>r.json()).then(d=>showToast(d.text,'info',8000));return true;}return false;}
 function handlePaste(e){const items=e.clipboardData?.items;if(!items)return;for(const item of items){if(item.type.startsWith('image/')){e.preventDefault();const blob=item.getAsFile();const r=new FileReader();r.onload=()=>{pastedImg.value={data:r.result,name:'screenshot.png'};};r.readAsDataURL(blob);}}}
 async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
-async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch{}}
-async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch{}}
+async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch(e){console.warn('checkOrch:',e);}}
+async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch(e){console.warn('loadSegments:',e);}}
 async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=d.messages||[];sideMessages.value=msgs;
-// Restore delegation state from history
 const newDel={...delegations.value};
 for(const m of msgs){const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);if(dm&&!newDel[dm[1]]){newDel[dm[1]]={project:dm[2],status:m.msg.includes('✓')?'done':'pending'};}}
 delegations.value=newDel;
-}catch{sideMessages.value=[];}}
-async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch{modules.value=[];}}
-async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch{}}
-async function loadQueue(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_queue');queueTasks.value=r.tasks||[];}else{queueTasks.value=[];}}catch{}}
-async function loadGoals(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_goals');goals.value=r.goals||[];}}catch{}}
-async function loadStrategies(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_strategies');strategies.value=r.strategies||[];}}catch{}}
+}catch(e){console.warn('loadChat:',e);sideMessages.value=[];}}
+async function loadModules(p){try{const r=await fetch('/api/modules/'+encodeURIComponent(p));const d=await r.json();modules.value=d.modules||[];}catch(e){console.warn('loadModules:',e);modules.value=[];}}
+async function loadPlan(){try{const r=await fetch('/api/plan');const d=await r.json();actionPlan.value=d;}catch(e){console.warn('loadPlan:',e);}}
+async function loadQueue(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_queue');queueTasks.value=r.tasks||[];}}catch(e){console.warn('loadQueue:',e);}}
+async function loadGoals(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_goals');goals.value=r.goals||[];}}catch(e){console.warn('loadGoals:',e);}}
+async function loadStrategies(){try{if(__IS_TAURI){const r=await __TAURI__.core.invoke('get_strategies');strategies.value=r.strategies||[];}}catch(e){console.warn('loadStrategies:',e);}}
 async function generateStrategy(goalText,ctx){
   strategyLoading.value=true;
   try{
@@ -596,7 +596,7 @@ async function loadActivity(){
 async function sendMessage(msg){
   if(!msg.trim())return;
   const proj=currentProject.value||'';
-  lastUserMsg.value=msg;if(attFiles.value.length){msg+=' | Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
+  lastUserMsg.value=msg;if(attFiles.value.length){const paths=attFiles.value.filter(f=>f.path).map(f=>'[file: '+f.path+']');if(paths.length)msg+='\n\nAttached files:\n'+paths.join('\n');else msg+=' | Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
   isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{

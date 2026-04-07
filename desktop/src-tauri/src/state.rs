@@ -19,14 +19,6 @@ impl Default for ScanCache {
     }
 }
 
-/// Running task info
-#[derive(Clone, Serialize, Deserialize)]
-pub struct RunningTask {
-    pub action: String,
-    pub detail: String,
-    pub started: f64,
-}
-
 /// Pending delegation
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Delegation {

@@ -102,24 +102,27 @@ if [ "$NO_N8N" = false ]; then
   fi
 fi
 
-# Start dashboard
-if curl -s --connect-timeout 1 http://localhost:3333/ >/dev/null 2>&1; then
-  echo "✓ Dashboard already running"
+# Start desktop app
+APP_EXE="desktop/src-tauri/target/release/agent-os"
+if [ -f "$APP_EXE" ]; then
+  echo "Starting Agent OS..."
+  "$APP_EXE" &
+elif command -v cargo &>/dev/null; then
+  echo "Desktop app not built. Building..."
+  (cd desktop && cargo tauri build) || { echo "Build failed. Run: cd desktop && cargo tauri dev"; exit 1; }
+  "$APP_EXE" &
 else
-  echo "Starting dashboard..."
-  $PYTHON n8n/dashboard/serve.py &
-  sleep 1
+  echo "ERROR: Desktop app not built and cargo not found."
+  echo "Build: cd desktop && cargo tauri build"
+  exit 1
 fi
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   Agent Command Center — RUNNING     ║"
+echo "║       Agent OS — RUNNING             ║"
 echo "╠══════════════════════════════════════╣"
-echo "║  Dashboard:  http://localhost:3333    ║"
-[ "$NO_N8N" = false ] && echo "║  n8n:        http://localhost:5678    ║"
-echo "║                                      ║"
-echo "║  Shortcuts: / = chat, D = theme      ║"
-echo "║  Esc = back, 1-9 = project           ║"
+[ "$NO_N8N" = false ] && echo "║  n8n:  http://localhost:5678          ║"
+echo "║  Desktop app launched                 ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 echo "Press Ctrl+C to stop"
