@@ -38,7 +38,18 @@ pub fn find_claude() -> String {
     "claude".to_string() // fallback
 }
 
+/// Run claude with optional model and reasoning effort
 pub fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> String {
+    run_claude_with_opts(cwd, prompt, perm_path, None, None)
+}
+
+pub fn run_claude_with_opts(
+    cwd: &std::path::Path,
+    prompt: &str,
+    perm_path: &str,
+    model: Option<&str>,
+    reasoning_effort: Option<&str>,
+) -> String {
     let tmp = unique_tmp("chat");
     if std::fs::write(&tmp, prompt).is_err() {
         return "Error: could not write temp file".to_string();
@@ -53,8 +64,21 @@ pub fn run_claude(cwd: &std::path::Path, prompt: &str, perm_path: &str) -> Strin
     };
 
     let claude_bin = find_claude();
-    let result = std::process::Command::new(&claude_bin)
-        .args(["--continue", "-p", "--settings", perm_path])
+    let mut cmd = std::process::Command::new(&claude_bin);
+    cmd.args(["--continue", "-p", "--settings", perm_path]);
+
+    if let Some(m) = model {
+        if !m.is_empty() && ["opus", "sonnet", "haiku"].contains(&m) {
+            cmd.args(["--model", m]);
+        }
+    }
+    if let Some(re) = reasoning_effort {
+        if !re.is_empty() && ["low", "medium", "high"].contains(&re) {
+            cmd.args(["--reasoning-effort", re]);
+        }
+    }
+
+    let result = cmd
         .current_dir(cwd)
         .stdin(std::process::Stdio::from(stdin_file))
         .env("PYTHONIOENCODING", "utf-8")

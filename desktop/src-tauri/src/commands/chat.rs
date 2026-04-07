@@ -120,10 +120,16 @@ fn build_orchestrator_context(state: &AppState) -> String {
 }
 
 
-use super::claude_runner::{unique_tmp, run_claude, get_permission_path, set_activity, clear_activity};
+use super::claude_runner::{unique_tmp, run_claude, run_claude_with_opts, get_permission_path, set_activity, clear_activity};
 
 #[tauri::command]
-pub async fn send_chat(state: State<'_, AppState>, project: String, message: String) -> Result<Value, String> {
+pub async fn send_chat(
+    state: State<'_, AppState>,
+    project: String,
+    message: String,
+    model: Option<String>,
+    reasoning_effort: Option<String>,
+) -> Result<Value, String> {
     if message.is_empty() {
         return Ok(json!({"status": "error", "error": "Empty message"}));
     }
@@ -160,7 +166,10 @@ pub async fn send_chat(state: State<'_, AppState>, project: String, message: Str
     let perm_path = get_permission_path(&state, &chat_key);
     set_activity(&state.root, &chat_key, "chatting", &message[..message.len().min(50)]);
 
-    let response = run_claude(&cwd, &prompt, &perm_path);
+    let response = run_claude_with_opts(
+        &cwd, &prompt, &perm_path,
+        model.as_deref(), reasoning_effort.as_deref(),
+    );
 
     clear_activity(&state.root, &chat_key);
 

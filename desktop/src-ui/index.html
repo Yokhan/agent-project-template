@@ -509,6 +509,9 @@ const streamText=signal('');
 const isStreaming=signal(false);
 const thinkStart=signal(0);
 const lastUserMsg=signal('');
+const selectedModel=signal('');  // '', 'opus', 'sonnet', 'haiku'
+const selectedEffort=signal(''); // '', 'low', 'medium', 'high'
+const subModel=signal('sonnet'); // model for orchestrator's sub-project calls
 const isRec=signal(false);const attFiles=signal([]);const isOn=signal(true);const isDrag=signal(false);const inpHist=[];let hIdx=-1;const hasDraft=signal(false);
 const curActivity=signal("");const lastStats=signal(null);
 const showSettings=signal(false);
@@ -637,7 +640,7 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
       // Tauri 2: use send_chat (blocking, returns full response) instead of stream_chat events
       // Events API requires complex setup. send_chat is reliable.
       try{
-        const res=await __invoke('send_chat',{project:proj,message:msg});
+        const res=await __invoke('send_chat',{project:proj,message:msg,model:selectedModel.value||null,reasoningEffort:selectedEffort.value||null});
         if(res.response)full=res.response;
         else if(res.error)full='Error: '+res.error;
       }catch(e){full='Error: '+e;}
@@ -1047,7 +1050,17 @@ function ChatSidebar(){
   const onKey=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}if(e.key==='ArrowUp'&&!inputRef.current?.value&&inpHist.length){hIdx=Math.min(hIdx+1,inpHist.length-1);inputRef.current.value=inpHist[hIdx];}if(e.key==='ArrowDown'&&hIdx>=0){hIdx--;inputRef.current.value=hIdx>=0?inpHist[hIdx]:'';}};
   const onDrop=e=>{e.preventDefault();isDrag.value=false;if(e.dataTransfer?.files?.length)hdlFiles(e.dataTransfer.files);};
   return html`<div class="chat-side" onDragOver=${e=>{e.preventDefault();isDrag.value=true;}} onDragLeave=${()=>isDrag.value=false} onDrop=${onDrop}>
-    <div class="ch-title"><span class="conn-dot ${isOn.value?'on':'off'}"/>${sideTitle}</div>
+    <div class="ch-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span><span class="conn-dot ${isOn.value?'on':'off'}"/>${sideTitle}</span>
+      <span style="display:flex;gap:var(--sp-2xs);align-items:center">
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-2xs);padding:var(--sp-2xs)" onChange=${e=>selectedModel.value=e.target.value}>
+          <option value="">auto</option><option value="opus">opus</option><option value="sonnet">sonnet</option><option value="haiku">haiku</option>
+        </select>
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-2xs);padding:var(--sp-2xs)" onChange=${e=>selectedEffort.value=e.target.value}>
+          <option value="">effort</option><option value="low">low</option><option value="medium">med</option><option value="high">high</option>
+        </select>
+      </span>
+    </div>
     ${isDrag.value?html`<div class="drop-zone">Drop files here</div>`:null}
     <${RunningBanner}/>
     <div class="ch-msgs" ref=${msgsRef}>
