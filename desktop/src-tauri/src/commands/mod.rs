@@ -6,4 +6,5 @@ pub mod feed;
 pub mod proxy;
 pub mod ops;
 pub mod strategy;
+pub mod strategy_models;
 pub mod claude_runner;

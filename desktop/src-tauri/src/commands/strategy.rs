@@ -1,68 +1,11 @@
 //! Strategy engine: goals → strategies → plans → steps
-//! PA thinks strategically about user's goals, treats projects as tools.
+//! Models in strategy_models.rs. This file = Tauri commands only.
 
 use crate::state::AppState;
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::State;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Goal {
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub deadline: Option<String>,
-    pub status: String, // active, achieved, paused
-    pub projects: Vec<String>, // contributing projects
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Strategy {
-    pub id: String,
-    pub goal_id: String,
-    pub title: String,
-    pub plans: Vec<Plan>,
-    pub status: String, // draft, approved, executing, done, failed
-    pub created: String,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Plan {
-    pub project: String,
-    pub steps: Vec<Step>,
-    pub priority: String, // HIGH, MED, LOW
-    pub depends_on: Vec<String>, // other project names that must complete first
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Step {
-    pub id: String,
-    pub task: String,
-    pub status: String, // pending, approved, running, done, failed, skipped
-    pub response: Option<String>,
-    pub depends_on: Vec<String>, // step IDs within same project
-}
-
-fn strategies_path(state: &AppState) -> std::path::PathBuf {
-    state.root.join("tasks").join(".strategies.json")
-}
-
-fn goals_path(state: &AppState) -> std::path::PathBuf {
-    state.root.join("tasks").join("goals.md")
-}
-
-fn load_strategies(state: &AppState) -> Vec<Strategy> {
-    let path = strategies_path(state);
-    std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|c| serde_json::from_str(&c).ok())
-        .unwrap_or_default()
-}
-
-fn save_strategies(state: &AppState, strategies: &[Strategy]) {
-    let path = strategies_path(state);
-    let _ = std::fs::write(&path, serde_json::to_string_pretty(strategies).unwrap_or_default());
-}
+use super::strategy_models::*;
 
 /// Get all goals from goals.md
 #[tauri::command]

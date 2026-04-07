@@ -378,6 +378,10 @@ const __API_ROUTES = __IS_TAURI ? {
   'GET /api/chats': { cmd: 'get_chats' },
   'GET /api/analytics': { cmd: 'get_analytics' },
   'GET /api/health-history': { cmd: 'get_health_history' },
+  'GET /api/queue': { cmd: 'get_queue' },
+  'GET /api/goals': { cmd: 'get_goals' },
+  'GET /api/strategies': { cmd: 'get_strategies' },
+  'GET /api/config': { cmd: 'get_config' },
 } : null;
 
 // Fake Response wrapper for invoke results

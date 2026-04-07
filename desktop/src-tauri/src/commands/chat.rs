@@ -120,9 +120,6 @@ fn build_orchestrator_context(state: &AppState) -> String {
 }
 
 
-// Re-export from claude_runner for backward compat
-pub use super::claude_runner::{unique_tmp as unique_tmp_pub, run_claude as run_claude_pub, get_permission_path as get_permission_path_pub};
-
 use super::claude_runner::{unique_tmp, run_claude, get_permission_path, set_activity, clear_activity};
 
 #[tauri::command]
