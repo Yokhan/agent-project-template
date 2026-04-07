@@ -73,8 +73,8 @@ pub fn run_claude_with_opts(
         }
     }
     if let Some(re) = reasoning_effort {
-        if !re.is_empty() && ["low", "medium", "high"].contains(&re) {
-            cmd.args(["--reasoning-effort", re]);
+        if !re.is_empty() && ["low", "medium", "high", "max"].contains(&re) {
+            cmd.args(["--effort", re]);
         }
     }
 

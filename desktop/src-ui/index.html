@@ -247,9 +247,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);overflo
 /* Keyboard help — cyber frame */
 .kb-box{border:1px solid var(--accent);clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px))}
 
-/* Analytics bar — border glow */
-.analytics-bar{border-top:1px solid var(--border);border-image:linear-gradient(90deg,transparent,var(--accent),transparent) 1}
-
 /* Toast — cyber cut */
 .toast{clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
 
@@ -1052,12 +1049,12 @@ function ChatSidebar(){
   return html`<div class="chat-side" onDragOver=${e=>{e.preventDefault();isDrag.value=true;}} onDragLeave=${()=>isDrag.value=false} onDrop=${onDrop}>
     <div class="ch-title" style="display:flex;justify-content:space-between;align-items:center">
       <span><span class="conn-dot ${isOn.value?'on':'off'}"/>${sideTitle}</span>
-      <span style="display:flex;gap:var(--sp-2xs);align-items:center">
-        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-2xs);padding:var(--sp-2xs)" onChange=${e=>selectedModel.value=e.target.value}>
+      <span style="display:flex;gap:var(--sp-xs);align-items:center">
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>selectedModel.value=e.target.value}>
           <option value="">auto</option><option value="opus">opus</option><option value="sonnet">sonnet</option><option value="haiku">haiku</option>
         </select>
-        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-2xs);padding:var(--sp-2xs)" onChange=${e=>selectedEffort.value=e.target.value}>
-          <option value="">effort</option><option value="low">low</option><option value="medium">med</option><option value="high">high</option>
+        <select style="background:var(--sf);color:var(--t2);border:1px solid var(--border);font-family:var(--font-mono);font-size:var(--fs-xs);padding:var(--sp-xs)" onChange=${e=>selectedEffort.value=e.target.value}>
+          <option value="">effort</option><option value="low">low</option><option value="medium">med</option><option value="high">high</option><option value="max">max</option>
         </select>
       </span>
     </div>
