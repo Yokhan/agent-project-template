@@ -186,9 +186,11 @@ Generate a JSON strategy with this EXACT format (nothing else, just JSON):
 Rules:
 - Only include projects that contribute to this goal
 - Order by dependency: if Project A needs API from Project B, B goes first
-- Each step must be a concrete, executable task (not vague)
+- Each step must be a SINGLE atomic task (one file change or one command)
 - Maximum 5 steps per project
+- Steps will execute in separate fresh sessions — include enough context in each step
 - Think about what ACTUALLY moves the needle toward the goal
+- Be token-efficient: don't add unnecessary research steps, trust project's CLAUDE.md
 "#,
         goal,
         context.as_deref().unwrap_or(""),
@@ -353,6 +355,15 @@ pub fn execute_strategy_step(state: State<AppState>, strategy_id: String) -> Val
         }
     };
 
+    // Build context from completed steps BEFORE marking as running (borrow checker)
+    let prev_context: Vec<String> = s.plans.iter()
+        .filter(|p| p.project == project)
+        .flat_map(|p| p.steps.iter())
+        .filter(|st| st.status == "done" && st.response.is_some())
+        .map(|st| format!("Previously: {} → Result: {}", st.task, st.response.as_deref().unwrap_or("")
+            .chars().take(150).collect::<String>()))
+        .collect();
+
     // Mark step as running
     for plan in &mut s.plans {
         for step in &mut plan.steps {
@@ -363,14 +374,26 @@ pub fn execute_strategy_step(state: State<AppState>, strategy_id: String) -> Val
     }
     save_strategies(&state, &strategies);
 
-    // Execute via claude -p
-    let project_dir = state.docs_dir.join(&project);
-    if !project_dir.exists() {
-        return json!({"status": "error", "error": format!("Project dir not found: {}", project)});
-    }
+    // Execute via claude -p (FRESH context — no --continue)
+    let project_dir = match state.validate_project(&project) {
+        Ok(p) => p,
+        Err(e) => return json!({"status": "error", "error": e}),
+    };
+
+    // Compose prompt: context + task + token policy
+    let prompt = if prev_context.is_empty() {
+        format!("[TASK] {}\n\n[RULES] Be concise. One task only. No unnecessary file reads. \
+                 Output result, not process. If done, say DONE + what changed.", task)
+    } else {
+        format!("[CONTEXT FROM PREVIOUS STEPS]\n{}\n\n[TASK] {}\n\n\
+                 [RULES] Be concise. One task only. No unnecessary file reads. \
+                 Don't re-read files mentioned in context unless you need to modify them. \
+                 Output result, not process. If done, say DONE + what changed.",
+                prev_context.join("\n"), task)
+    };
 
     let perm_path = crate::commands::chat::get_permission_path_pub(&state, &project);
-    let response = crate::commands::chat::run_claude_pub(&project_dir, &task, &perm_path);
+    let response = crate::commands::chat::run_claude_pub(&project_dir, &prompt, &perm_path);
 
     // Save to project chat
     let chat_file = state.chats_dir.join(format!("{}.jsonl", project));

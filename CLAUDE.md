@@ -87,6 +87,15 @@ After each correction: classify (BUG/KNOWLEDGE_GAP/STYLE/DESIGN/MISUNDERSTANDING
 BUG or KNOWLEDGE_GAP → log to tasks/lessons.md (Error → Root cause → Rule).
 When >50 entries → promote via `/weekly`.
 
+## Token Economy
+- Trust skills/memory over re-reading files. If you read it this session — don't read again.
+- Kill speculative tool calls. Only read files you WILL use.
+- Parallelize independent tool calls (don't serialize).
+- Route outputs >20 lines to subagents to keep main context clean.
+- After 2 failed corrections → /clear and restart with fresh context.
+- For task switching → write HANDOFF.md (status + files + next steps), start fresh session.
+- One task per subprocess. Don't chain multiple tasks in one claude -p call.
+
 ## DON'T
 - Code files > 375 lines — split them
 - No `any` — use `unknown` + type guards
