@@ -320,7 +320,8 @@ pub async fn stream_chat(
             match etype {
                 // stream_event: real-time content blocks (tool_use start, text deltas, etc.)
                 "stream_event" => {
-                    let inner = evt.get("event").unwrap_or(&json!({}));
+                    let empty_obj = json!({});
+                    let inner = evt.get("event").unwrap_or(&empty_obj);
                     let inner_type = inner.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
                     match inner_type {
