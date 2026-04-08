@@ -68,6 +68,15 @@ If this project is configured as orchestrator (see `n8n/config.json`):
 - **Chat files**: `tasks/chats/{project}.jsonl` — shared between orchestrator and project agents
 - **MCP**: context-router runs automatically via `.mcp.json` when Claude Code/Zed opens project
 
+## Self-Modification Safety (CRITICAL)
+When PA modifies Agent OS itself (template, desktop app, scripts):
+1. **NEVER edit master directly.** Create feature branch → modify → test → merge.
+2. **UI changes (index.html) are safe** — hot-reload on F5, no rebuild needed.
+3. **Rust changes require `cargo check`** — if it fails, DO NOT merge. Fix on branch.
+4. **Always `cargo check` before commit** for any .rs file change.
+5. **Watchdog restarts app** on crash — but fix the root cause, don't rely on restart.
+6. **Before modifying running app code**: backup current state with `git stash`.
+
 ## Design Work — HARD RULES (Figma, CSS, UI)
 1. **NEVER hardcode visual values.** Use tokens/variables. Create tokens FIRST if missing.
 2. **NEVER build from raw shapes.** Use components. Create components FIRST if missing.

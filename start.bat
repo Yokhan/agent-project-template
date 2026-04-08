@@ -1,24 +1,23 @@
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
-REM Start Agent Command Center — double-click to launch
-echo === Agent Command Center — Preflight ===
+REM Start Agent OS — double-click to launch
+echo === Agent OS — Preflight ===
 
-REM Check Python
-where python >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Python not found. Install Python 3.8+
-    pause & exit /b 1
-)
-for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo + Python: %%v
-
-REM Check Node.js
+REM Check Node.js (only required runtime)
 where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: Node.js not found. Install Node.js 18+
+    echo ERROR: Node.js not found. Install from https://nodejs.org/
     pause & exit /b 1
 )
 for /f "tokens=*" %%v in ('node --version') do echo + Node: %%v
+
+REM Check Claude CLI
+where claude >nul 2>&1
+if %errorlevel% neq 0 (
+    echo WARNING: Claude CLI not found. Chat will not work.
+    echo Install: https://docs.anthropic.com/claude-code
+)
 
 REM Install MCP deps if missing
 if not exist "mcp-servers\context-router\node_modules" (
@@ -30,49 +29,51 @@ if not exist "mcp-servers\context-router\node_modules" (
 
 REM Create config if missing
 if not exist "n8n\config.json" (
-    echo {"documents_dir": "%USERPROFILE%\\Documents", "orchestrator_project": "PersonalAssistant"} > n8n\config.json
+    echo {"documents_dir": "%USERPROFILE%\\Documents", "orchestrator_project": ""} > n8n\config.json
 )
 
 echo.
-echo === Starting Services ===
+echo === Starting Agent OS ===
 
-REM Start n8n (optional, skip if not installed)
-where n8n >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Starting n8n...
-    start /B cmd /C "set NODE_FUNCTION_ALLOW_BUILTIN=child_process,fs,path && n8n start"
-    timeout /t 3 /nobreak >nul
-) else (
-    echo n8n not found — dashboard works without it
-)
-
-REM Check for updates (watchdog)
-echo Checking for updates...
-powershell -ExecutionPolicy Bypass -File "%~dp0desktop\watchdog.ps1" -Check 2>nul
-if %errorlevel% equ 0 (
-    echo Update available! Run: powershell desktop\watchdog.ps1
-)
-
-REM Start desktop app (required — build with: cd desktop && cargo tauri build)
+REM Find the binary
+set "APP_EXE="
 if exist "desktop\src-tauri\target\release\agent-os.exe" (
-    echo Starting Agent OS...
-    start "" "desktop\src-tauri\target\release\agent-os.exe"
+    set "APP_EXE=desktop\src-tauri\target\release\agent-os.exe"
 ) else if exist "desktop\src-tauri\target\release\Agent OS.exe" (
-    echo Starting Agent OS...
-    start "" "desktop\src-tauri\target\release\Agent OS.exe"
-) else (
-    echo ERROR: Desktop app not built. Run: cd desktop ^&^& cargo tauri build
-    echo For dev mode: cd desktop ^&^& cargo tauri dev
-    pause
-    exit /b 1
+    set "APP_EXE=desktop\src-tauri\target\release\Agent OS.exe"
+)
+
+if "%APP_EXE%"=="" (
+    echo ERROR: Desktop app not built.
+    echo Run: cd desktop ^&^& cargo tauri build
+    pause & exit /b 1
+)
+
+REM Watchdog loop — restart if crashed
+:watchdog
+echo Starting: %APP_EXE%
+start /WAIT "" "%APP_EXE%"
+set "EXIT_CODE=%errorlevel%"
+
+if %EXIT_CODE% equ 0 (
+    echo Agent OS exited normally.
+    goto :end
 )
 
 echo.
-echo ========================================
-echo   Agent OS — RUNNING
-echo ========================================
-echo   Desktop app or http://localhost:3333
-echo   Watchdog: powershell desktop\watchdog.ps1 -Install
-echo ========================================
+echo Agent OS crashed (exit code: %EXIT_CODE%). Restarting in 3s...
+echo Press Ctrl+C to stop.
+timeout /t 3 /nobreak >nul
+
+REM Check if source was modified — try quick rebuild
+git diff --quiet desktop\src-ui\index.html 2>nul
+if %errorlevel% neq 0 (
+    echo UI changed — no rebuild needed (hot reload on restart).
+)
+
+goto :watchdog
+
+:end
 echo.
+echo Agent OS stopped.
 pause
