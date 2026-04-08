@@ -290,12 +290,16 @@ pub async fn stream_chat(
 
     let mut full_text = String::new();
     let mut tool_blocks: Vec<Value> = Vec::new();
+    // Track content blocks seen to emit individual events in order
+    let mut last_emitted_text = String::new();
 
-    // Read stdout line by line, parse stream-json, write to buffer file
+    // Read stdout line by line, parse stream-json, write individual events to buffer
     {
         let mut buf_file = std::fs::OpenOptions::new()
             .create(true).append(true).open(&stream_buf)
             .map_err(|e| e.to_string())?;
+
+        use std::io::Write;
 
         for line in reader.lines() {
             let Ok(raw) = line else { break };
@@ -305,43 +309,69 @@ pub async fn stream_chat(
             if let Ok(evt) = serde_json::from_str::<Value>(trimmed) {
                 let etype = evt.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
-                // Extract text and tools from assistant messages
                 if etype == "assistant" {
                     if let Some(content) = evt.pointer("/message/content").and_then(|c| c.as_array()) {
+                        // Emit each content block as a SEPARATE event (text, tool_use, tool_result)
                         for block in content {
                             match block.get("type").and_then(|t| t.as_str()) {
                                 Some("text") => {
-                                    full_text = block.get("text").and_then(|t| t.as_str()).unwrap_or("").to_string();
+                                    let text = block.get("text").and_then(|t| t.as_str()).unwrap_or("");
+                                    full_text = text.to_string();
+                                    // Only emit if new text appeared
+                                    if text != last_emitted_text {
+                                        let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                                            "type": "text",
+                                            "text": text,
+                                        })).unwrap_or_default());
+                                        let _ = buf_file.flush();
+                                        last_emitted_text = text.to_string();
+                                    }
                                 }
                                 Some("tool_use") => {
                                     let tool = block.get("name").and_then(|n| n.as_str()).unwrap_or("?");
                                     let input = block.get("input").cloned().unwrap_or(json!({}));
-                                    tool_blocks.push(json!({"tool": tool, "input": input}));
+                                    let tb = json!({"tool": tool, "input": input});
+                                    tool_blocks.push(tb.clone());
+                                    // Emit tool as separate event
+                                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                                        "type": "tool_use",
+                                        "tool": tool,
+                                        "input": input,
+                                    })).unwrap_or_default());
+                                    let _ = buf_file.flush();
+                                }
+                                Some("tool_result") => {
+                                    let content_val = block.get("content").and_then(|c| c.as_str()).unwrap_or("");
+                                    let is_error = block.get("is_error").and_then(|e| e.as_bool()).unwrap_or(false);
+                                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                                        "type": "tool_result",
+                                        "content": &content_val[..content_val.len().min(500)],
+                                        "is_error": is_error,
+                                    })).unwrap_or_default());
+                                    let _ = buf_file.flush();
                                 }
                                 _ => {}
                             }
                         }
                     }
-                }
-                if etype == "result" {
+                } else if etype == "system" {
+                    let subtype = evt.get("subtype").and_then(|s| s.as_str()).unwrap_or("");
+                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                        "type": "system",
+                        "system": subtype,
+                    })).unwrap_or_default());
+                    let _ = buf_file.flush();
+                } else if etype == "result" {
                     let rt = evt.get("result").and_then(|r| r.as_str()).unwrap_or("");
                     if !rt.is_empty() && full_text.is_empty() { full_text = rt.to_string(); }
+                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                        "type": "result",
+                        "cost": evt.get("total_cost_usd"),
+                        "duration_ms": evt.get("duration_ms"),
+                        "tokens": evt.get("usage").and_then(|u| u.get("total_tokens")),
+                    })).unwrap_or_default());
+                    let _ = buf_file.flush();
                 }
-
-                // Write parsed event to buffer (frontend reads this)
-                let buf_evt = json!({
-                    "type": etype,
-                    "text": if etype == "assistant" { full_text.clone() } else { String::new() },
-                    "tools": if etype == "assistant" { json!(tool_blocks.clone()) } else { json!([]) },
-                    "system": if etype == "system" {
-                        evt.get("subtype").and_then(|s| s.as_str()).unwrap_or("").to_string()
-                    } else { String::new() },
-                    "result": if etype == "result" { evt.get("total_cost_usd").cloned() } else { None::<Value> },
-                    "duration_ms": if etype == "result" { evt.get("duration_ms").cloned() } else { None::<Value> },
-                });
-                use std::io::Write;
-                let _ = writeln!(buf_file, "{}", serde_json::to_string(&buf_evt).unwrap_or_default());
-                let _ = buf_file.flush();
             }
         }
     }

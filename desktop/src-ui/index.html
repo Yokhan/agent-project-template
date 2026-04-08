@@ -635,25 +635,28 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     if(__IS_TAURI){
       // Tauri mode: invoke stream_chat + poll file-based buffer
       __invoke('stream_chat',{project:proj,message:msg}).catch(e=>{console.error('stream_chat error:',e);showToast('Chat error: '+e,'error');isStreaming.value=false;});
-      let offset=0;let done=false;const tools=[];
+      let offset=0;let done=false;
+      // Collect ordered chain of blocks: [{type:'text',text:'...'},{type:'tool',tool:'Bash',input:{...}},{type:'tool_result',content:'...'}, ...]
+      const chain=[];
       while(!done){
         await new Promise(r=>setTimeout(r,300));
         try{
           const poll=await __invoke('poll_stream',{offset});
           if(poll.events){
             for(const evt of poll.events){
-              if(evt.type==='assistant'&&evt.text){full=evt.text;streamText.value=full;}
-              if(evt.type==='assistant'&&evt.tools?.length){for(const t of evt.tools)tools.push(t);}
-              if(evt.type==='system'&&evt.system){curActivity.value=evt.system;}
-              if(evt.type==='result'){lastStats.value={duration_ms:evt.duration_ms,cost:evt.result};}
-              if(evt.type==='delegation'){full+='\n\n<delegation id="'+evt.id+'" project="'+evt.project+'"/>';}
-              if(evt.type==='done'){done=true;if(evt.text&&!full)full=evt.text;if(evt.tools?.length)for(const t of evt.tools)tools.push(t);}
+              if(evt.type==='text'){full=evt.text;streamText.value=full;chain.push({type:'text',text:evt.text});}
+              if(evt.type==='tool_use'){chain.push({type:'tool',tool:evt.tool,input:evt.input});tools.push({tool:evt.tool,input:evt.input});curActivity.value='▸ '+evt.tool+'...';}
+              if(evt.type==='tool_result'){chain.push({type:'tool_result',content:evt.content,is_error:evt.is_error});curActivity.value='';}
+              if(evt.type==='system'&&evt.system){curActivity.value='••• '+evt.system;chain.push({type:'system',label:evt.system});}
+              if(evt.type==='result'){lastStats.value={duration_ms:evt.duration_ms,cost:evt.cost,tokens:evt.tokens};chain.push({type:'result',cost:evt.cost,duration_ms:evt.duration_ms,tokens:evt.tokens});}
+              if(evt.type==='delegation'){full+='\n\n<delegation id="'+evt.id+'" project="'+evt.project+'"/>';chain.push({type:'delegation',id:evt.id,project:evt.project,task:evt.task});}
+              if(evt.type==='done'){done=true;if(evt.text&&!full)full=evt.text;}
             }
             offset=poll.offset;
           }
         }catch(e){console.warn('poll_stream:',e);done=true;}
       }
-      streamText.value=full;curActivity.value='';
+      streamText.value='';curActivity.value='';
     }else{
       // Browser mode: fetch SSE stream from serve.py
       const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
@@ -672,7 +675,14 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     isStreaming.value=false;
     const dm=full.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
     if(dm){delegations.value={...delegations.value,[dm[1]]:{project:dm[2],status:'pending'}};}
-    beep();const st=lastStats.value;const meta=st?` [${st.tokens}t ${Math.round(st.duration_ms/1000)}s $${st.cost}]`:"";sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:full,meta}];curActivity.value="";lastStats.value=null;
+    beep();
+    const st=lastStats.value;
+    const meta=st?` [${st.tokens||'?'}t ${Math.round((st.duration_ms||0)/1000)}s]`:"";
+    // Save message with chain (tool blocks preserved for rendering)
+    const msgObj={ts:new Date().toISOString(),role:'assistant',msg:full,meta};
+    if(typeof chain!=='undefined'&&chain.length>0)msgObj.chain=chain;
+    sideMessages.value=[...sideMessages.value,msgObj];
+    curActivity.value="";lastStats.value=null;
     streamText.value='';loadFeed();
   }catch(e){isStreaming.value=false;sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:'Error: '+e.message}];}
 }
@@ -1088,23 +1098,37 @@ function ChatSidebar(){
     </div>
   </div>`;}
 
+function ToolBlock({t}){
+  const label=t.tool+(t.input?.command?' — '+t.input.command.substring(0,80):t.input?.file_path?' — '+t.input.file_path:t.input?.pattern?' — '+t.input.pattern:'');
+  return html`<details class="tool-block" style="margin:var(--sp-2xs) 0;font-family:var(--font-mono);font-size:var(--fs-xs)">
+    <summary style="cursor:pointer;color:var(--cyan);user-select:none">▸ ${label}</summary>
+    <pre style="font-size:10px;color:var(--t3);margin:var(--sp-2xs) 0 var(--sp-2xs) var(--sp-s);white-space:pre-wrap;max-height:120px;overflow:auto;border-left:2px solid var(--border);padding-left:var(--sp-xs)">${JSON.stringify(t.input,null,2)}</pre>
+  </details>`;
+}
+function ToolResult({t}){
+  return html`<div style="font-family:var(--font-mono);font-size:10px;color:${t.is_error?'var(--red)':'var(--t3)'};margin:0 0 var(--sp-2xs) var(--sp-s);border-left:2px solid ${t.is_error?'var(--red)':'var(--border)'};padding-left:var(--sp-xs);max-height:80px;overflow:auto;white-space:pre-wrap">${t.content||''}</div>`;
+}
 function ChatMsg({m}){
-  if(!m.msg||!m.msg.trim())return null;
+  if(!m.msg&&!(m.chain?.length))return null;
   if(m.role==='system')return html`<div class="m" style="color:var(--t3);font-style:italic;font-size:var(--fs-s);align-self:center">${m.msg}</div>`;
   const isViaPA=(m.msg||'').startsWith('[via PA]');
   const isError=(m.msg||'').startsWith('Error:')||(m.msg||'').includes('timed out');
   const canCopy=m.role==='assistant';const cls=m.role==='user'?(isViaPA?'a':'u'):'a';
   const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
   const clean=(m.msg||'').replace(/<delegation[^>]*\/>/g,'');
-  const mtools=m.tools||[];
+  const chain=m.chain||[];
+  // If we have a chain, render blocks in order. Otherwise fall back to flat text+tools
+  const hasChain=chain.length>0&&m.role==='assistant';
   return html`<div class="m ${cls}">
-    ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>
-    ${mtools.length?html`<div style="margin:var(--sp-xs) 0;font-size:var(--fs-xs);font-family:var(--font-mono)">
-      ${mtools.map(t=>html`<details style="margin:var(--sp-2xs) 0;color:var(--t3)">
-        <summary style="cursor:pointer;color:var(--cyan)">🔧 ${t.tool}${t.input?.command?' — '+t.input.command.substring(0,60):t.input?.file_path?' — '+t.input.file_path:''}</summary>
-        <pre style="font-size:var(--fs-2xs);color:var(--t3);margin:var(--sp-2xs) 0;white-space:pre-wrap;max-height:150px;overflow:auto">${JSON.stringify(t.input,null,2)}</pre>
-      </details>`)}
-    </div>`:''}
+    ${isViaPA?html`<div style="font-size:var(--fs-xs);color:var(--yellow);font-family:var(--font-mono);margin-bottom:var(--sp-xs)">via PA</div>`:null}
+    ${hasChain?chain.map((b,i)=>{
+      if(b.type==='text')return html`<div key=${'t'+i} dangerouslySetInnerHTML=${{__html:md(b.text||'')}}></div>`;
+      if(b.type==='tool')return html`<${ToolBlock} key=${'tb'+i} t=${b}/>`;
+      if(b.type==='tool_result')return html`<${ToolResult} key=${'tr'+i} t=${b}/>`;
+      if(b.type==='system')return html`<div key=${'s'+i} style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">••• ${b.label}</div>`;
+      if(b.type==='result')return html`<div key=${'r'+i} style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-top:var(--sp-xs)">⏱ ${b.tokens||'?'}t · ${Math.round((b.duration_ms||0)/1000)}s${b.cost?' · $'+b.cost:''}</div>`;
+      return null;
+    }):html`<div dangerouslySetInnerHTML=${{__html:m.role==='assistant'?md(clean):esc(isViaPA?(m.msg||'').replace('[via PA] ',''):m.msg)}}></div>`}
     ${canCopy?html`<button class="msg-copy" onClick=${()=>{navigator.clipboard.writeText(m.msg||'');showToast('Copied','success',1500);}}>copy</button>`:''}
     ${dm?html`<${DelegBtn} id=${dm[1]} project=${dm[2]}/>`:null}
     <div class="ts">${ft(m.ts)}${m.meta||""}${isError&&m.role==='assistant'?html` <button class="retry-btn" onClick=${()=>sendMessage(lastUserMsg.value)}>retry</button>`:''}</div>
