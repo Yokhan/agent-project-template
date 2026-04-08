@@ -636,20 +636,40 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
       // Tauri mode: invoke stream_chat + poll file-based buffer
       __invoke('stream_chat',{project:proj,message:msg}).catch(e=>{console.error('stream_chat error:',e);showToast('Chat error: '+e,'error');isStreaming.value=false;});
       let offset=0;let done=false;
-      // Collect ordered chain of blocks: [{type:'text',text:'...'},{type:'tool',tool:'Bash',input:{...}},{type:'tool_result',content:'...'}, ...]
+      // Collect ordered chain of blocks for rendering
       const chain=[];
       while(!done){
-        await new Promise(r=>setTimeout(r,300));
+        await new Promise(r=>setTimeout(r,250));
         try{
           const poll=await __invoke('poll_stream',{offset});
           if(poll.events){
             for(const evt of poll.events){
+              // Text (complete block from assistant event)
               if(evt.type==='text'){full=evt.text;streamText.value=full;chain.push({type:'text',text:evt.text});}
-              if(evt.type==='tool_use'){chain.push({type:'tool',tool:evt.tool,input:evt.input});tools.push({tool:evt.tool,input:evt.input});curActivity.value='▸ '+evt.tool+'...';}
-              if(evt.type==='tool_result'){chain.push({type:'tool_result',content:evt.content,is_error:evt.is_error});curActivity.value='';}
+              // Text delta (streaming partial)
+              if(evt.type==='text_delta'){streamText.value=evt.full||full;full=evt.full||full;}
+              // Tool use (started or complete)
+              if(evt.type==='tool_use'){
+                const tb={type:'tool',tool:evt.tool,input:evt.input||{},status:evt.status};
+                if(evt.status==='started'){curActivity.value='▸ '+evt.tool+'...';}
+                // Merge: if last chain item is same tool started, update to complete
+                const last=chain[chain.length-1];
+                if(last&&last.type==='tool'&&last.tool===evt.tool&&last.status==='started'&&evt.status==='complete'){
+                  last.input=evt.input;last.status='complete';
+                }else{
+                  chain.push(tb);
+                }
+                tools.push({tool:evt.tool,input:evt.input||{}});
+              }
+              // Tool result
+              if(evt.type==='tool_result'){chain.push({type:'tool_result',content:evt.content||''});curActivity.value='';}
+              // System
               if(evt.type==='system'&&evt.system){curActivity.value='••• '+evt.system;chain.push({type:'system',label:evt.system});}
+              // Result stats
               if(evt.type==='result'){lastStats.value={duration_ms:evt.duration_ms,cost:evt.cost,tokens:evt.tokens};chain.push({type:'result',cost:evt.cost,duration_ms:evt.duration_ms,tokens:evt.tokens});}
+              // Delegation
               if(evt.type==='delegation'){full+='\n\n<delegation id="'+evt.id+'" project="'+evt.project+'"/>';chain.push({type:'delegation',id:evt.id,project:evt.project,task:evt.task});}
+              // Done
               if(evt.type==='done'){done=true;if(evt.text&&!full)full=evt.text;}
             }
             offset=poll.offset;

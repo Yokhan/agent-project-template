@@ -276,7 +276,7 @@ pub async fn stream_chat(
 
     let claude_bin = super::claude_runner::find_claude();
     let mut child = std::process::Command::new(&claude_bin)
-        .args(["--continue", "-p", "--output-format", "stream-json", "--verbose", "--settings", &perm_path])
+        .args(["--continue", "-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--settings", &perm_path])
         .current_dir(&cwd)
         .stdin(std::process::Stdio::from(stdin_file))
         .env("PYTHONIOENCODING", "utf-8")
@@ -290,88 +290,153 @@ pub async fn stream_chat(
 
     let mut full_text = String::new();
     let mut tool_blocks: Vec<Value> = Vec::new();
-    // Track content blocks seen to emit individual events in order
-    let mut last_emitted_text = String::new();
+    let mut last_text_hash: u64 = 0;
+    // Track current tool being built from stream_event deltas
+    let mut cur_tool_name = String::new();
 
-    // Read stdout line by line, parse stream-json, write individual events to buffer
+    // Parse stream-json events and write individual blocks to buffer
     {
         let mut buf_file = std::fs::OpenOptions::new()
             .create(true).append(true).open(&stream_buf)
             .map_err(|e| e.to_string())?;
 
         use std::io::Write;
+        use std::hash::{Hash, Hasher};
+        use std::collections::hash_map::DefaultHasher;
+
+        let write_evt = |f: &mut std::fs::File, v: &Value| {
+            let _ = writeln!(f, "{}", serde_json::to_string(v).unwrap_or_default());
+            let _ = f.flush();
+        };
 
         for line in reader.lines() {
             let Ok(raw) = line else { break };
             let trimmed = raw.trim_end_matches('\r');
             if trimmed.is_empty() { continue; }
 
-            if let Ok(evt) = serde_json::from_str::<Value>(trimmed) {
-                let etype = evt.get("type").and_then(|t| t.as_str()).unwrap_or("");
+            let Ok(evt) = serde_json::from_str::<Value>(trimmed) else { continue };
+            let etype = evt.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
-                if etype == "assistant" {
+            match etype {
+                // stream_event: real-time content blocks (tool_use start, text deltas, etc.)
+                "stream_event" => {
+                    let inner = evt.get("event").unwrap_or(&json!({}));
+                    let inner_type = inner.get("type").and_then(|t| t.as_str()).unwrap_or("");
+
+                    match inner_type {
+                        // Tool use starting
+                        "content_block_start" => {
+                            if let Some(block) = inner.get("content_block") {
+                                let btype = block.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                                if btype == "tool_use" {
+                                    cur_tool_name = block.get("name").and_then(|n| n.as_str()).unwrap_or("?").to_string();
+                                    write_evt(&mut buf_file, &json!({
+                                        "type": "tool_use",
+                                        "tool": cur_tool_name,
+                                        "input": {},
+                                        "status": "started"
+                                    }));
+                                }
+                            }
+                        }
+                        // Text streaming delta
+                        "content_block_delta" => {
+                            if let Some(delta) = inner.get("delta") {
+                                let dtype = delta.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                                if dtype == "text_delta" {
+                                    if let Some(text) = delta.get("text").and_then(|t| t.as_str()) {
+                                        full_text.push_str(text);
+                                        // Emit text update (debounced by hash to avoid flooding)
+                                        let mut h = DefaultHasher::new();
+                                        full_text.hash(&mut h);
+                                        let new_hash = h.finish();
+                                        if new_hash != last_text_hash {
+                                            write_evt(&mut buf_file, &json!({"type": "text_delta", "text": text, "full": full_text}));
+                                            last_text_hash = new_hash;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                // assistant: complete message per turn (contains all content blocks)
+                "assistant" => {
                     if let Some(content) = evt.pointer("/message/content").and_then(|c| c.as_array()) {
-                        // Emit each content block as a SEPARATE event (text, tool_use, tool_result)
                         for block in content {
                             match block.get("type").and_then(|t| t.as_str()) {
                                 Some("text") => {
                                     let text = block.get("text").and_then(|t| t.as_str()).unwrap_or("");
-                                    full_text = text.to_string();
-                                    // Only emit if new text appeared
-                                    if text != last_emitted_text {
-                                        let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
-                                            "type": "text",
-                                            "text": text,
-                                        })).unwrap_or_default());
-                                        let _ = buf_file.flush();
-                                        last_emitted_text = text.to_string();
+                                    if !text.is_empty() {
+                                        full_text = text.to_string();
+                                        write_evt(&mut buf_file, &json!({"type": "text", "text": text}));
                                     }
                                 }
                                 Some("tool_use") => {
                                     let tool = block.get("name").and_then(|n| n.as_str()).unwrap_or("?");
                                     let input = block.get("input").cloned().unwrap_or(json!({}));
-                                    let tb = json!({"tool": tool, "input": input});
-                                    tool_blocks.push(tb.clone());
-                                    // Emit tool as separate event
-                                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                                    tool_blocks.push(json!({"tool": tool, "input": input}));
+                                    write_evt(&mut buf_file, &json!({
                                         "type": "tool_use",
                                         "tool": tool,
                                         "input": input,
-                                    })).unwrap_or_default());
-                                    let _ = buf_file.flush();
-                                }
-                                Some("tool_result") => {
-                                    let content_val = block.get("content").and_then(|c| c.as_str()).unwrap_or("");
-                                    let is_error = block.get("is_error").and_then(|e| e.as_bool()).unwrap_or(false);
-                                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
-                                        "type": "tool_result",
-                                        "content": &content_val[..content_val.len().min(500)],
-                                        "is_error": is_error,
-                                    })).unwrap_or_default());
-                                    let _ = buf_file.flush();
+                                        "status": "complete"
+                                    }));
                                 }
                                 _ => {}
                             }
                         }
                     }
-                } else if etype == "system" {
+                }
+
+                // user: tool results
+                "user" => {
+                    if let Some(content) = evt.pointer("/message/content").and_then(|c| c.as_array()) {
+                        for block in content {
+                            if block.get("type").and_then(|t| t.as_str()) == Some("tool_result") {
+                                let result_content = block.get("content").and_then(|c| c.as_str()).unwrap_or("");
+                                write_evt(&mut buf_file, &json!({
+                                    "type": "tool_result",
+                                    "content": &result_content[..result_content.len().min(500)],
+                                }));
+                            }
+                        }
+                    }
+                    // Also check for file content in tool_use_result
+                    if let Some(tur) = evt.get("tool_use_result") {
+                        if tur.get("type").and_then(|t| t.as_str()) == Some("text") {
+                            let fc = tur.pointer("/file/content").and_then(|c| c.as_str()).unwrap_or("");
+                            if !fc.is_empty() {
+                                write_evt(&mut buf_file, &json!({
+                                    "type": "tool_result",
+                                    "content": &fc[..fc.len().min(500)],
+                                }));
+                            }
+                        }
+                    }
+                }
+
+                // system events
+                "system" => {
                     let subtype = evt.get("subtype").and_then(|s| s.as_str()).unwrap_or("");
-                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
-                        "type": "system",
-                        "system": subtype,
-                    })).unwrap_or_default());
-                    let _ = buf_file.flush();
-                } else if etype == "result" {
+                    write_evt(&mut buf_file, &json!({"type": "system", "system": subtype}));
+                }
+
+                // final result
+                "result" => {
                     let rt = evt.get("result").and_then(|r| r.as_str()).unwrap_or("");
                     if !rt.is_empty() && full_text.is_empty() { full_text = rt.to_string(); }
-                    let _ = writeln!(buf_file, "{}", serde_json::to_string(&json!({
+                    write_evt(&mut buf_file, &json!({
                         "type": "result",
                         "cost": evt.get("total_cost_usd"),
                         "duration_ms": evt.get("duration_ms"),
-                        "tokens": evt.get("usage").and_then(|u| u.get("total_tokens")),
-                    })).unwrap_or_default());
-                    let _ = buf_file.flush();
+                        "tokens": evt.pointer("/usage/output_tokens"),
+                    }));
                 }
+
+                _ => {}
             }
         }
     }
