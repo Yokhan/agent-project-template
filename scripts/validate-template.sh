@@ -108,14 +108,14 @@ echo "  Checked ${#REQUIRED_FILES[@]} required files"
 # 6. Cross-platform safety: no bare python3, no <<<
 echo ""
 echo "[6/8] Checking cross-platform safety..."
-# Direct python3 calls (should use $PYTHON)
-BARE_PY=$(grep -rn "python3 -[cm]" scripts/*.sh .claude/hooks/*.sh 2>/dev/null | grep -v "command -v" | grep -v "^#" || true)
+# Direct python/python3 calls (should use _node or node)
+BARE_PY=$(grep -rn "python3\? -[cm]" scripts/*.sh .claude/hooks/*.sh 2>/dev/null | grep -v "command -v" | grep -v "^#" | grep -v "platform.sh" || true)
 if [ -n "$BARE_PY" ]; then
-  echo "  ERROR: Bare 'python3' calls found (use \$PYTHON instead):"
+  echo "  ERROR: Python calls found (should use node/_node instead):"
   echo "$BARE_PY" | head -5
   ERRORS=$((ERRORS + 1))
 else
-  echo "  OK: No bare python3 calls"
+  echo "  OK: No Python calls (using Node.js)"
 fi
 # grep -P (Perl regex, not portable)
 GREP_P=$(grep -rn "grep -[a-zA-Z]*P" scripts/*.sh .claude/hooks/*.sh setup.sh 2>/dev/null || true)

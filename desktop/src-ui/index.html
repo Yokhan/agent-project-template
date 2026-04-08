@@ -631,11 +631,10 @@ async function sendMessage(msg){
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
   isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
   try{
-    const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
-    let full='';
-    if(r._tauriStream&&__IS_TAURI){
-      // File-based polling: stream_chat writes to .stream-buffer.jsonl, we poll it
-      __invoke('stream_chat',{project:proj,message:msg}).catch(e=>console.error('stream_chat:',e));
+    let full='';const tools=[];
+    if(__IS_TAURI){
+      // Tauri mode: invoke stream_chat + poll file-based buffer
+      __invoke('stream_chat',{project:proj,message:msg}).catch(e=>{console.error('stream_chat error:',e);showToast('Chat error: '+e,'error');isStreaming.value=false;});
       let offset=0;let done=false;const tools=[];
       while(!done){
         await new Promise(r=>setTimeout(r,300));
@@ -656,7 +655,8 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
       }
       streamText.value=full;curActivity.value='';
     }else{
-      // Browser mode: read SSE stream
+      // Browser mode: fetch SSE stream from serve.py
+      const r=await fetch('/api/chat-stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,message:msg})});
       const reader=r.body.getReader();const dec=new TextDecoder();let buf='';
       while(true){
         const{done,value}=await reader.read();if(done)break;

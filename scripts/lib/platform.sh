@@ -1,30 +1,49 @@
 #!/bin/bash
 # platform.sh — Cross-platform helper functions
 # Source this file: source "$(dirname "$0")/lib/platform.sh"
-# All scripts MUST use these helpers instead of calling python3/sed -i/date -I directly.
+# All scripts MUST use these helpers instead of calling node/sed -i/date -I directly.
 
-# --- Python detection (CRITICAL for Windows) ---
-# Windows Git Bash: `python3` often doesn't exist, only `python`.
-# Some Linux: only `python3`, no `python`.
-# This detects once and exports PYTHON for all subsequent use.
-if [ -z "${PYTHON:-}" ]; then
-  if command -v python3 &>/dev/null; then
-    PYTHON="python3"
-  elif command -v python &>/dev/null; then
-    PYTHON="python"
+# --- Node.js detection ---
+# Required for JSON parsing. Python is NOT used.
+if [ -z "${NODE:-}" ]; then
+  if command -v node &>/dev/null; then
+    NODE="node"
   else
-    PYTHON=""
+    NODE=""
   fi
-  export PYTHON
+  export NODE
 fi
 
-# Run python with auto-detected binary. Usage: _python -c "print(1)"
-_python() {
-  if [ -z "$PYTHON" ]; then
-    echo "ERROR: Neither python3 nor python found. Install Python." >&2
+# Run node with auto-detected binary. Usage: _node -e "console.log(1)"
+_node() {
+  if [ -z "$NODE" ]; then
+    echo "ERROR: Node.js not found. Install Node.js: https://nodejs.org/" >&2
     return 1
   fi
-  "$PYTHON" "$@"
+  "$NODE" "$@"
+}
+
+# JSON helpers via node (replacing python json module)
+# Usage: _json_get file.json "key" → prints value
+_json_get() {
+  local file="$1" key="$2"
+  _node -e "const d=JSON.parse(require('fs').readFileSync('$file','utf8'));const v=$key;console.log(typeof v==='object'?JSON.stringify(v):v??'')" 2>/dev/null
+}
+
+# Usage: _json_set file.json '{"key":"value"}' → merges into file
+_json_set() {
+  local file="$1" patch="$2"
+  _node -e "
+const fs=require('fs');
+let d={};try{d=JSON.parse(fs.readFileSync('$file','utf8'))}catch{}
+Object.assign(d,JSON.parse('$patch'));
+fs.writeFileSync('$file',JSON.stringify(d,null,2));
+" 2>/dev/null
+}
+
+# Usage: _json_valid file.json → exit 0 if valid, 1 if not
+_json_valid() {
+  _node -e "JSON.parse(require('fs').readFileSync('$1','utf8'))" 2>/dev/null
 }
 
 # Portable sed -i (macOS requires -i '', GNU requires -i)
@@ -50,7 +69,7 @@ _stat_mtime() {
   elif [ "$(uname)" = "Darwin" ]; then
     stat -f %m "$file" 2>/dev/null
   else
-    _python -c "import os; print(int(os.path.getmtime('$file')))" 2>/dev/null || echo 0
+    _node -e "console.log(Math.floor(require('fs').statSync('$file').mtimeMs/1000))" 2>/dev/null || echo 0
   fi
 }
 
@@ -76,11 +95,16 @@ _require() {
   fi
 }
 
-# Require python (with helpful error)
-_require_python() {
-  if [ -z "$PYTHON" ]; then
-    echo "ERROR: Python is required but neither python3 nor python was found."
-    echo "Install Python 3: https://www.python.org/downloads/"
+# Require node (with helpful error)
+_require_node() {
+  if [ -z "$NODE" ]; then
+    echo "ERROR: Node.js is required but not found."
+    echo "Install Node.js: https://nodejs.org/"
     return 1
   fi
 }
+
+# Legacy aliases (for backward compatibility during migration)
+PYTHON="${NODE:-}"
+_python() { _node "$@"; }
+_require_python() { _require_node; }
