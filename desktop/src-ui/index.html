@@ -646,9 +646,22 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
           if(poll.events){
             for(const evt of poll.events){
               // Text (complete block from assistant event)
-              if(evt.type==='text'){full=evt.text;streamText.value=full;chain.push({type:'text',text:evt.text});streamChain.value=[...chain];}
-              // Text delta (streaming partial)
-              if(evt.type==='text_delta'){streamText.value=evt.full||full;full=evt.full||full;}
+              if(evt.type==='text'){
+                full=evt.text;streamText.value=full;
+                // Merge with last text block if exists (text_deltas already created it)
+                const lastT=chain[chain.length-1];
+                if(lastT&&lastT.type==='text'){lastT.text=evt.text;}
+                else{chain.push({type:'text',text:evt.text});}
+                streamChain.value=[...chain];
+              }
+              // Text delta (streaming partial) — update last text block in chain or create new one
+              if(evt.type==='text_delta'){
+                const newFull=evt.full||full;streamText.value=newFull;full=newFull;
+                const last=chain[chain.length-1];
+                if(last&&last.type==='text'){last.text=newFull;}
+                else{chain.push({type:'text',text:newFull});}
+                streamChain.value=[...chain];
+              }
               // Tool use (started or complete)
               if(evt.type==='tool_use'){
                 const tb={type:'tool',tool:evt.tool,input:evt.input||{},status:evt.status};
