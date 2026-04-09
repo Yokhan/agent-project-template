@@ -1262,7 +1262,7 @@ document.addEventListener('keydown',e=>{
 // ===== INIT =====
 await Promise.all([loadAgents(),loadSegments(),loadFeed(),loadActivity(),loadPlan(),loadQueue(),checkOrch(),chkConn()]);isLoading.value=false;
 render(html`<${App}/>`,document.body);
-setInterval(()=>{loadAgents();loadActivity();loadPlan();if(!currentProject.value&&!isStreaming.value){loadChat('_orchestrator');}loadFeed();},5000);
+setInterval(()=>{loadAgents();loadActivity();loadPlan();loadFeed();},15000);
 </script>
 
 </body></html>
