@@ -720,14 +720,11 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
     const dm=full.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);
     if(dm){delegations.value={...delegations.value,[dm[1]]:{project:dm[2],status:'pending'}};}
     beep();
-    const st=lastStats.value;
-    const meta=st?` [${st.tokens||'?'}t ${Math.round((st.duration_ms||0)/1000)}s]`:"";
-    // Save message with chain (tool blocks preserved for rendering)
-    const msgObj={ts:new Date().toISOString(),role:'assistant',msg:full,meta};
-    if(typeof chain!=='undefined'&&chain.length>0)msgObj.chain=chain;
-    sideMessages.value=[...sideMessages.value,msgObj];
     curActivity.value="";lastStats.value=null;
-    streamText.value='';loadFeed();
+    streamText.value='';streamChain.value=[];
+    // Reload chat from JSONL (single source of truth) — prevents duplicates
+    await loadChat(proj||'_orchestrator');
+    loadFeed();
   }catch(e){isStreaming.value=false;sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'assistant',msg:'Error: '+e.message}];}
 }
 
