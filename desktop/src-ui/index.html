@@ -576,7 +576,16 @@ function handlePaste(e){const items=e.clipboardData?.items;if(!items)return;for(
 async function loadAgents(){try{const r=await fetch('/api/agents');if(!r.ok)throw new Error('API error '+r.status);const d=await r.json();if(d.agents)agents.value=d.agents;if(d.error)showToast(d.error,'error');}catch(e){showToast('Cannot reach dashboard server','error');}}
 async function checkOrch(){try{const r=await fetch('/api/health');const d=await r.json();orchOk.value=!!d.orchestrator;}catch(e){console.warn('checkOrch:',e);}}
 async function loadSegments(){try{const r=await fetch('/api/segments');const d=await r.json();if(d.segments)segments.value=d.segments;}catch(e){console.warn('loadSegments:',e);}}
-async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=d.messages||[];sideMessages.value=msgs;
+async function loadChat(p){try{const r=await fetch('/api/chat/'+encodeURIComponent(p));const d=await r.json();const msgs=(d.messages||[]).map(m=>{
+  // Convert tools array from JSONL into chain for rendering
+  if(m.tools&&m.tools.length&&!m.chain){
+    const chain=[];
+    for(const t of m.tools){chain.push({type:'tool',tool:t.tool,input:t.input||{},status:'complete'});}
+    if(m.msg)chain.push({type:'text',text:m.msg});
+    m.chain=chain;
+  }
+  return m;
+});sideMessages.value=msgs;
 const newDel={...delegations.value};
 for(const m of msgs){const dm=m.msg?.match(/<delegation id="([^"]+)" project="([^"]+)"\/>/);if(dm&&!newDel[dm[1]]){newDel[dm[1]]={project:dm[2],status:m.msg.includes('✓')?'done':'pending'};}}
 delegations.value=newDel;
@@ -627,6 +636,7 @@ async function loadActivity(){
 
 async function sendMessage(msg){
   if(!msg.trim())return;
+  if(isStreaming.value){showToast('Wait for current response to complete','error',2000);return;}
   const proj=currentProject.value||'';
   lastUserMsg.value=msg;if(attFiles.value.length){const paths=attFiles.value.filter(f=>f.path).map(f=>'[file: '+f.path+']');if(paths.length)msg+='\n\nAttached files:\n'+paths.join('\n');else msg+=' | Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
@@ -1238,7 +1248,7 @@ function Feed(){return html`<div class="feed">${feedItems.value.length?feedItems
 
 // ===== KEYBOARD =====
 document.addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT')return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.isContentEditable)return;
   if(e.key==='Escape'){if(showSettings.value){showSettings.value=false;}else{currentProject.value=null;}return;}
   if(e.key==='/'){e.preventDefault();document.querySelector('.ch-inp input')?.focus();return;}
   if(e.key==='d'||e.key==='D'){theme.value=theme.value==='dark'?'light':'dark';return;}
