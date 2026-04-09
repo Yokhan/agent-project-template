@@ -41,11 +41,21 @@ pub async fn start(state: Arc<AppState>, port: u16) {
         .route("/api/delegation/reject", post(reject_delegation))
         .with_state(state);
 
-    let addr = format!("127.0.0.1:{}", port);
-    println!("HTTP API server: http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    // Try port, fallback to port+1, port+2
+    for p in [port, port + 1, port + 2] {
+        let addr = format!("127.0.0.1:{}", p);
+        match tokio::net::TcpListener::bind(&addr).await {
+            Ok(listener) => {
+                println!("HTTP API server: http://{}", addr);
+                axum::serve(listener, app).await.unwrap();
+                return;
+            }
+            Err(e) => {
+                eprintln!("Port {} busy ({}), trying next...", p, e);
+            }
+        }
+    }
+    eprintln!("WARNING: HTTP API server could not start — all ports busy");
 }
 
 async fn health(AxState(state): AxState<Arc<AppState>>) -> impl IntoResponse {
