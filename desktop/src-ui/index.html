@@ -504,6 +504,7 @@ const sideMessages=signal([]);
 const sideTitle=signal('orchestrator');
 const streamText=signal('');
 const isStreaming=signal(false);
+const streamChain=signal([]);
 const thinkStart=signal(0);
 const lastUserMsg=signal('');
 const selectedModel=signal('');  // '', 'opus', 'sonnet', 'haiku'
@@ -629,7 +630,7 @@ async function sendMessage(msg){
   const proj=currentProject.value||'';
   lastUserMsg.value=msg;if(attFiles.value.length){const paths=attFiles.value.filter(f=>f.path).map(f=>'[file: '+f.path+']');if(paths.length)msg+='\n\nAttached files:\n'+paths.join('\n');else msg+=' | Attached: '+attFiles.value.map(f=>f.name).join(', ');}attFiles.value=[];clrDr();
 sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'user',msg}];
-  isStreaming.value=true;streamText.value='';thinkStart.value=Date.now();
+  isStreaming.value=true;streamText.value='';streamChain.value=[];thinkStart.value=Date.now();
   try{
     let full='';const tools=[];
     if(__IS_TAURI){
@@ -645,14 +646,13 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
           if(poll.events){
             for(const evt of poll.events){
               // Text (complete block from assistant event)
-              if(evt.type==='text'){full=evt.text;streamText.value=full;chain.push({type:'text',text:evt.text});}
+              if(evt.type==='text'){full=evt.text;streamText.value=full;chain.push({type:'text',text:evt.text});streamChain.value=[...chain];}
               // Text delta (streaming partial)
               if(evt.type==='text_delta'){streamText.value=evt.full||full;full=evt.full||full;}
               // Tool use (started or complete)
               if(evt.type==='tool_use'){
                 const tb={type:'tool',tool:evt.tool,input:evt.input||{},status:evt.status};
                 if(evt.status==='started'){curActivity.value='▸ '+evt.tool+'...';}
-                // Merge: if last chain item is same tool started, update to complete
                 const last=chain[chain.length-1];
                 if(last&&last.type==='tool'&&last.tool===evt.tool&&last.status==='started'&&evt.status==='complete'){
                   last.input=evt.input;last.status='complete';
@@ -660,11 +660,11 @@ sideMessages.value=[...sideMessages.value,{ts:new Date().toISOString(),role:'use
                   chain.push(tb);
                 }
                 tools.push({tool:evt.tool,input:evt.input||{}});
+                streamChain.value=[...chain];
               }
-              // Tool result
-              if(evt.type==='tool_result'){chain.push({type:'tool_result',content:evt.content||''});curActivity.value='';}
+              if(evt.type==='tool_result'){chain.push({type:'tool_result',content:evt.content||''});curActivity.value='';streamChain.value=[...chain];}
               // System
-              if(evt.type==='system'&&evt.system){curActivity.value='••• '+evt.system;chain.push({type:'system',label:evt.system});}
+              if(evt.type==='system'&&evt.system){curActivity.value=evt.system;chain.push({type:'system',label:evt.system});streamChain.value=[...chain];}
               // Result stats
               if(evt.type==='result'){lastStats.value={duration_ms:evt.duration_ms,cost:evt.cost,tokens:evt.tokens};chain.push({type:'result',cost:evt.cost,duration_ms:evt.duration_ms,tokens:evt.tokens});}
               // Delegation
@@ -1157,8 +1157,20 @@ function ChatMsg({m}){
 
 function StreamBubble(){
   if(!isStreaming.value&&!streamText.value)return null;
-  if(!streamText.value){const el=thinkStart.value?Math.round((Date.now()-thinkStart.value)/1000):0;const act=curActivity.value;return html`<div class="thinking"><div class="dots"><span/><span/><span/></div> ${act||"thinking"}${el>2?" ("+el+"s)":""}</div>`;}
-  return html`<div class="m a"><div dangerouslySetInnerHTML=${{__html:md(streamText.value.replace(/<delegation[^>]*\/>/g,''))}}></div></div>`;
+  const ch=streamChain.value;const el=thinkStart.value?Math.round((Date.now()-thinkStart.value)/1000):0;
+  const act=curActivity.value;
+  // Show chain blocks + thinking indicator
+  return html`<div class="m a stream-chain">
+    ${ch.map((b,i)=>{
+      if(b.type==='text')return html`<div key=${'st'+i} dangerouslySetInnerHTML=${{__html:md(b.text||'')}}></div>`;
+      if(b.type==='tool')return html`<${ToolBlock} key=${'stb'+i} t=${b}/>`;
+      if(b.type==='tool_result')return html`<${ToolResult} key=${'str'+i} t=${b}/>`;
+      if(b.type==='system')return html`<div key=${'ss'+i} style="font-size:10px;color:var(--t3);font-family:var(--font-mono)">••• ${b.label}</div>`;
+      return null;
+    })}
+    ${(!streamText.value&&!ch.length)?html`<div class="thinking"><div class="dots"><span/><span/><span/></div> ${act||"thinking"}${el>2?" ("+el+"s)":""}</div>`:
+      act?html`<div style="font-size:10px;color:var(--t3);font-family:var(--font-mono);margin-top:var(--sp-xs)">▸ ${act}${el>2?' ('+el+'s)':''}</div>`:null}
+  </div>`;
 }
 
 function DelegBtn({id,project}){
