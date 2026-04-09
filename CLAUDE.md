@@ -1,8 +1,18 @@
 # Agent-Ready Project
-<!-- Template Version: 3.2.1 -->
+<!-- Template Version: 3.4.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
+
+## Philosophy — Quality Over Speed
+1. **Think before you type.** Research and planning ARE the work. Code is just output.
+2. **Doubt is a feature.** Surface uncertainty. Enumerate alternatives before choosing.
+3. **Slower is faster.** 30-min plan saves 3h rework. Test scenarios prevent production bugs.
+4. **One thing done well > three halfway.** Finish, verify, commit before starting next.
+5. **If unsure, STOP and ask.** Never produce code just to show progress.
+
+Slow down: shared/core, can't articulate WHY, 3+ iterations, HIGH/CRITICAL risk.
+Speed OK: XS+LOW, covered by tests, following approved plan.
 
 ## Stack
 <!-- Filled by /setup-project -->
@@ -55,27 +65,15 @@ bash scripts/research.sh <path>        — auto research (replaces 6 tool calls)
 bash scripts/plan-scaffold.sh <task>   — auto plan template in tasks/current.md
 bash scripts/verify-check.sh --size M  — auto verification checklist
 bash scripts/context-restore.sh        — context recovery after compaction
-bash scripts/measure-context.sh        — token budget meter
+bash scripts/measure-context.sh        — token budget meter (chars/token heuristic)
+bash scripts/blast-radius.sh <file>    — BFS impact analysis: all affected files
+bash scripts/import-graph.sh [dir]     — hot files: most-imported modules
+bash scripts/scan-repo.sh <path>       — security scan before opening untrusted repos
 ```
 
-## Command Center (Orchestration)
-
-If this project is configured as orchestrator (see `n8n/config.json`):
-- **Start**: `bash start.sh` or double-click `start.bat`
-- **Dashboard**: http://localhost:3333 — project tiles, chat, delegation
-- **Delegation**: Write `[DELEGATE:ProjectName]\ntask\n[/DELEGATE]` in response → dashboard sends to project agent
-- **Review loop**: Failed delegations auto-retry 2x with error context
-- **Chat files**: `tasks/chats/{project}.jsonl` — shared between orchestrator and project agents
-- **MCP**: context-router runs automatically via `.mcp.json` when Claude Code/Zed opens project
-
-## Self-Modification Safety (CRITICAL)
-When PA modifies Agent OS itself (template, desktop app, scripts):
-1. **NEVER edit master directly.** Create feature branch → modify → test → merge.
-2. **UI changes (index.html) are safe** — hot-reload on F5, no rebuild needed.
-3. **Rust changes require `cargo check`** — if it fails, DO NOT merge. Fix on branch.
-4. **Always `cargo check` before commit** for any .rs file change.
-5. **Watchdog restarts app** on crash — but fix the root cause, don't rely on restart.
-6. **Before modifying running app code**: backup current state with `git stash`.
+## Security & Integrations
+Hooks enforce automatically: prompt injection scanning, sensitive path blocking, dangerous command blocking, session audit logging. See `.claude/hooks/`.
+Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enable in `.mcp.json`.
 
 ## Design Work — HARD RULES (Figma, CSS, UI)
 1. **NEVER hardcode visual values.** Use tokens/variables. Create tokens FIRST if missing.
@@ -87,23 +85,20 @@ When PA modifies Agent OS itself (template, desktop app, scripts):
 Violation = revert and redo. Full pipeline: `.claude/library/domain/domain-design-pipeline.md`
 
 ## Commands (23)
-/setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly,
+/setup-project, /implement, /commit-push-pr, /review, /refactor, /sprint, /brain-sync, /weekly,
 /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all,
 /audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
 
 ## Self-Improvement
-After each correction: classify (BUG/KNOWLEDGE_GAP/STYLE/DESIGN/MISUNDERSTANDING).
-BUG or KNOWLEDGE_GAP → log to tasks/lessons.md (Error → Root cause → Rule).
+After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMENT/MISUNDERSTANDING).
+BUG or KNOWLEDGE_GAP → log to tasks/lessons.md with Track (BUG/KNOWLEDGE/PATTERN/PROCESS) + Severity (P0-P3).
 When >50 entries → promote via `/weekly`.
 
 ## Token Economy
-- Trust skills/memory over re-reading files. If you read it this session — don't read again.
-- Kill speculative tool calls. Only read files you WILL use.
-- Parallelize independent tool calls (don't serialize).
-- Route outputs >20 lines to subagents to keep main context clean.
-- After 2 failed corrections → /clear and restart with fresh context.
-- For task switching → write HANDOFF.md (status + files + next steps), start fresh session.
-- One task per subprocess. Don't chain multiple tasks in one claude -p call.
+- Trust skills/memory over re-reading. Don't re-read files you read this session.
+- Only read files you WILL use. Parallelize independent tool calls.
+- Route outputs >20 lines to subagents. After 2 failed corrections → /clear.
+- Task switching → HANDOFF.md (status + files + next steps), fresh session.
 
 ## DON'T
 - Code files > 375 lines — split them
@@ -124,7 +119,7 @@ When >50 entries → promote via `/weekly`.
 Not configured yet.
 
 ## Template Version
-3.2.1 — Run `bash scripts/check-drift.sh` to verify health.
+3.4.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

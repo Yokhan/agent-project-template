@@ -76,10 +76,16 @@ Classify the task to determine ceremony level:
 | **L** | 8-15 files, ≤500 lines (cross-module feature) | full cycle + user checkpoint at mid-build. All 4 gates. |
 | **XL** | >15 files OR architecture change OR migration | decompose into M-tasks first (see decompose skill). All 4 gates + pre-mortem. |
 
-**Risk override**: auth/security/payments/health content → always full 4 gates regardless of size.
-**Shared code** (shared/, core/) → minimum 2 gates regardless of size.
+Then classify **risk** per `.claude/library/process/risk-classification.md`:
 
-State the classification at the start of work: `Size: M (5 files, ~80 lines)`
+| Risk | Effect on Ceremony |
+|------|--------------------|
+| **LOW** | Size-based ceremony (table above) |
+| **MEDIUM** | Minimum Gate 1-2, blast radius check recommended |
+| **HIGH** | All 4 gates mandatory, user approval of plan, brainstorm recommended |
+| **CRITICAL** | All 4 gates + external reviewer, user approval of plan AND diff, brainstorm mandatory |
+
+State both at the start of work: `Size: M (5 files, ~80 lines) | Risk: MEDIUM (touches shared/utils, 3 consumers)`
 
 ## Strategic Context
 

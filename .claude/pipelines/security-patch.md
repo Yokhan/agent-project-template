@@ -1,6 +1,7 @@
 # Pipeline: Security Patch
 
 Fix security vulnerability with full audit.
+**Risk: always CRITICAL** — all gates mandatory, user approval of plan AND diff.
 
 ## Steps
 

@@ -1,8 +1,0 @@
-# Rust build artifacts
-src-tauri/target/
-
-# Node modules
-node_modules/
-
-# Tauri bundle output
-src-tauri/gen/

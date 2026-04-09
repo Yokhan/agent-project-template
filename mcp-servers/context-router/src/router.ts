@@ -5,6 +5,7 @@ const ROUTES: Record<string, Route> = {
     keywords: /implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate|настрой|создай|добавь|исправь|починь|реализуй|сделай|баг|ошибка|сломал|не работает|падает/i,
     files: [
       'process/research-first.md', 'process/plan-first.md', 'process/self-verification.md',
+      'process/risk-classification.md',
       'technical/architecture.md', 'technical/code-style.md', 'technical/error-handling.md',
       'technical/atomic-reuse.md'
     ],
@@ -36,8 +37,8 @@ const ROUTES: Record<string, Route> = {
     agent: 'implementer'
   },
   plan: {
-    keywords: /plan|strategy|architect|roadmap|estimate|decompose|breakdown|спланируй|декомпозируй|разбей|архитектур/i,
-    files: ['meta/strategic-thinking.md', 'process/plan-first.md', 'conflict/conflict-resolution.md'],
+    keywords: /plan|strategy|architect|roadmap|estimate|decompose|breakdown|brainstorm|risk|спланируй|декомпозируй|разбей|архитектур|мозговой.?штурм|риск/i,
+    files: ['meta/strategic-thinking.md', 'process/plan-first.md', 'process/brainstorm.md', 'process/risk-classification.md', 'conflict/conflict-resolution.md'],
     agent: 'researcher'
   },
   safety: {

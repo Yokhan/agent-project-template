@@ -63,9 +63,39 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Read|Bash|WebFetch|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/prompt-injection-defender.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|Bash|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-audit.sh",
+            "timeout": 2
+          }
+        ]
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/deny-sensitive-paths.sh",
+            "timeout": 3
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write",
         "hooks": [
@@ -81,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"$COMMAND\" | grep -qE \"(rm -rf /|git reset --hard|git push.*--force|DROP TABLE|TRUNCATE|git clean|docker system prune|chmod -R 777)\" && { echo '{\"block\":true,\"message\":\"Destructive command blocked.\"}' >&2; exit 2; } || true",
+            "command": "bash .claude/hooks/pre-bash-safety.sh",
             "timeout": 5
           }
         ]

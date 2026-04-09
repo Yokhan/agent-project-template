@@ -8,12 +8,18 @@ After EVERY user correction or discovered mistake:
 2. Add entry in this format:
    ```
    ### [DATE] — [Brief Title]
+   **Track**: BUG | KNOWLEDGE | PATTERN | PROCESS
+   **Severity**: P0 | P1 | P2 | P3
    **Error**: What went wrong
    **Root cause**: Why it happened
    **Rule**: Concrete prevention rule
    **Applies to**: [agent/skill/general]
+   **Category**: [security | architecture | testing | workflow | tooling | performance | ux | general]
+   **Status**: ACTIVE
    ```
-3. Never skip this step. This is how the system learns.
+3. Track definitions: BUG (code broke), KNOWLEDGE (didn't know), PATTERN (recurring anti-pattern), PROCESS (workflow failed).
+4. Severity: P0 (data loss/security), P1 (user-facing bug), P2 (minor/suboptimal), P3 (cosmetic).
+5. Never skip this step. This is how the system learns.
 
 ## Correction Classifier (BEFORE logging)
 
@@ -28,6 +34,12 @@ When user corrects you, classify the correction type first:
 | **MISUNDERSTANDING** | "No, I meant the OTHER file" | Clarify and retry. No logging needed. |
 
 Only BUG and KNOWLEDGE_GAP go to lessons.md. This keeps signal-to-noise ratio high.
+
+**Mapping Classifier → Track field** (when logging to lessons.md):
+- BUG → Track: **BUG**
+- KNOWLEDGE_GAP → Track: **KNOWLEDGE**
+- Recurring BUG/KNOWLEDGE_GAP (3+ similar entries) → Track: **PATTERN**
+- If the failure was in the workflow itself (skipped step, wrong ceremony) → Track: **PROCESS**
 
 ## Dual-Write Protocol
 

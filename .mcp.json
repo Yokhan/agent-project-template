@@ -13,6 +13,15 @@
       "args": [
         "mcp"
       ]
+    },
+    "codesight": {
+      "command": "npx",
+      "args": [
+        "codesight",
+        "--mcp"
+      ],
+      "env": {},
+      "disabled": true
     }
   }
 }

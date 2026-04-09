@@ -146,6 +146,8 @@ if [ -d ".claude/agents" ]; then
   AGENT_ERRORS=0
   for agent_file in .claude/agents/*.md; do
     [ -f "$agent_file" ] || continue
+    # Skip PROTOCOL.md — it's a shared protocol doc, not an agent definition
+    [ "$(basename "$agent_file")" = "PROTOCOL.md" ] && continue
     # Check frontmatter exists (starts with ---)
     first_line=$(head -1 "$agent_file" 2>/dev/null)
     if [ "$first_line" != "---" ]; then

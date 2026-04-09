@@ -13,6 +13,7 @@ Systematic bug investigation and fix.
   - Check `PROJECT_SPEC.md` — dependencies or constraints relevant to the bug
   - Search Engram globally for similar bugs
 - **Output**: research context for reproduction and diagnosis
+- **Also**: classify risk level per `risk-classification.md` (drives verification gates and review depth)
 
 ### 1. REPRODUCE (implementer, Sonnet) | GATE: none
 - **Input**: bug report, error logs, research context, steps to reproduce

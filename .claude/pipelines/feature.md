@@ -13,10 +13,22 @@ Full lifecycle for adding a new feature.
   - Check `PROJECT_SPEC.md` for project constraints and dependencies
   - Search for existing utilities (Grep/Glob) before planning new ones
 - **Output**: research summary — existing patterns, affected files, risks, reusable code, approach options
+- **Also**: classify risk level per `risk-classification.md` (LOW/MEDIUM/HIGH/CRITICAL)
 - **Budget**: ~20 tool calls
 
+### 1.5. BRAINSTORM (researcher, Opus) | GATE: risk_threshold
+- **Input**: research findings + feature description + risk classification
+- **Trigger**: MEDIUM risk M+ (optional), HIGH (recommended), CRITICAL (mandatory)
+- **Actions**:
+  - Enumerate 3+ approaches with trade-off analysis (effort/risk/reversibility/extensibility)
+  - Select recommended approach with justification
+  - Document rejected approaches with reasons
+- **Output**: brainstorm summary in `tasks/current.md` under `## Brainstorm`
+- **Budget**: ~10 tool calls
+- **Skip**: LOW risk, or size XS/S with MEDIUM risk
+
 ### 2. PLAN (implementer, Sonnet) | GATE: user_approval
-- **Input**: research findings + feature description
+- **Input**: research findings + feature description + brainstorm (if applicable)
 - **Output**: written plan in `tasks/current.md` including:
   - Goal (1 sentence)
   - Complexity estimate (size, file count, line estimate)
@@ -24,6 +36,8 @@ Full lifecycle for adding a new feature.
   - Implementation order with dependencies
   - File size check (nothing >375 lines)
   - Risks and mitigations
+  - Test scenarios (happy path, edge cases, errors) per `plan-first.md` templates
+- **Quality gate**: plan must pass Planning Quality Gate checklist (see `plan-first.md`)
 - **Action**: present plan to user, wait for approval/annotations
 
 ### 3. IMPLEMENT (implementer, Sonnet) | GATE: typecheck

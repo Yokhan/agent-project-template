@@ -31,7 +31,7 @@ Write this to `tasks/current.md` under `## Plan` BEFORE coding:
 - Files to create: [count]
 - Files to modify: [count]
 - Estimated lines: [range]
-- Risk: [LOW/MEDIUM/HIGH — why]
+- Risk: [LOW/MEDIUM/HIGH/CRITICAL — classify per risk-classification.md]
 
 ### File Architecture
 [Directory tree of files to create/modify with purpose of each]
@@ -107,16 +107,65 @@ For L/XL tasks: Plan B must be written and approved by user alongside Plan A.
 - Compare actual vs planned: files created, lines written, time spent
 - If estimate was off by >2x → log to lessons.md WHY (improves future estimates)
 
-## Why This Matters
+## Planning Quality Gate (M+ tasks — must pass before coding begins)
 
-Without upfront planning:
-- Files bloat to 500+ lines because "I'll split later" (never happens)
-- Wrong directory structure gets cemented and is expensive to fix
-- Complexity surprises cause half-finished features
-- No one knows what was planned vs what was ad-hoc
+A plan is NOT ready for execution until ALL applicable criteria are met.
+If any criterion fails, refine the plan. Do not proceed to code.
 
-With upfront planning:
-- File sizes stay manageable from the start
-- Architecture decisions are explicit and reviewable
-- Complexity is visible before commitment
-- Plans serve as documentation of intent
+| # | Criterion | Check | Fail Signal |
+|---|-----------|-------|-------------|
+| 1 | **Goal clarity** | Can you state the user's goal in ONE sentence without jargon? | If you need 2+ sentences, you don't understand the goal yet |
+| 2 | **Scope boundary** | Are the files to modify/create explicitly listed? | "And maybe some others" = fail |
+| 3 | **Dependency map** | Are imports, consumers, and cross-module effects documented? | No blast-radius for MEDIUM+ risk = fail |
+| 4 | **Test scenarios** | Are happy path, edge cases, and error scenarios enumerated? | "Will add tests" without specifics = fail |
+| 5 | **Risk classification** | Is risk level stated with justification? | Missing risk level = fail |
+| 6 | **Size confidence** | Is estimate based on file count + line count, not gut feeling? | "Should be quick" = fail |
+| 7 | **Reversibility** | Can this be reverted with `git revert`? If not, is rollback plan documented? | Irreversible change without rollback plan = fail |
+| 8 | **Plan B exists** | Is there a concrete alternative if primary approach fails? | "We'll figure it out" = fail |
+| 9 | **No premature code** | Does the plan describe WHAT and WHY, not HOW in code? | Code snippets in plan = premature |
+
+**Scoring**: 9/9 = proceed. 7-8/9 = proceed with noted gaps. <7/9 = refine before coding.
+
+For L/XL tasks, add:
+- [ ] User has approved the plan
+- [ ] Decomposition into M-sized subtasks is complete
+- [ ] Each subtask passes criteria 1-9 independently
+
+## Test Scenario Templates (required in plan for M+ tasks)
+
+Before writing any code, enumerate test scenarios in the plan. This is NOT about writing test code — it's about THINKING about what could go wrong.
+
+For EACH implementation unit (service, component, endpoint), add to plan:
+
+```markdown
+### Test Scenarios: [unit name]
+
+**Happy path:**
+- [ ] [Input] → [Expected output/behavior]
+- [ ] [Another normal case]
+
+**Edge cases:**
+- [ ] Empty/null input → [expected behavior]
+- [ ] Maximum/boundary values → [expected behavior]
+
+**Error scenarios:**
+- [ ] [Specific failure condition] → [expected error + message]
+- [ ] Network/IO failure → [expected degradation]
+
+**Integration:**
+- [ ] [Component A] + [Component B] → [expected interaction]
+```
+
+### Minimum requirements by risk:
+
+| Risk Level | Happy Path | Edge Cases | Errors | Integration |
+|------------|-----------|------------|--------|-------------|
+| LOW | 1 | 1 | 0 | 0 |
+| MEDIUM | 2 | 2 | 1 | 0 |
+| HIGH | 2 | 3 | 2 | 1 |
+| CRITICAL | 3 | 3 | 2 | 2 |
+
+### Rules:
+1. If you cannot enumerate edge cases, you don't understand the problem well enough. Go back to research.
+2. Scenarios written in plan are COMMITMENTS — implementation is not done until all have passing tests.
+3. Test scenarios become the TEST step's input — test-engineer implements tests from these scenarios.

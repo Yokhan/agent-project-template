@@ -60,36 +60,64 @@ Not all changes deserve the same scrutiny:
 - Changes with no test coverage in affected area
 - Anything touching cryptography, session management, or access control
 
-## Process
+## Two-Stage Review Process
 
-1. **Collect changes**: read the diff (staged + unstaged, or branch vs main)
-2. **For each changed file**, evaluate the review dimensions below
-3. **Output structured verdict**
+Reviews are split into two stages. Stage 1 can BLOCK before Stage 2 runs — if the implementation doesn't match the spec, there is no point reviewing code quality.
 
-## Core Review Dimensions
+### Stage 1: Spec Compliance (MUST pass before Stage 2)
 
-### 1. Intent Check
-- Does this change match the stated task/PR description?
-- Are there unrelated changes mixed in? (scope creep)
-- Is the scope appropriate? (too big = risk, too small = incomplete)
+Does the implementation do what was asked?
 
-### 2. Impact Analysis
+1. **Read the approved plan** in `tasks/current.md` — compare changes against plan
+2. **Intent Check** — do changes match the stated task/PR description?
+3. **Commander's Intent** — does this solve the user's ACTUAL goal?
+4. **Test Scenario Coverage** — are all scenarios from the plan covered by tests?
+5. **Scope Check** — are there unplanned changes mixed in?
+
+**Stage 1 Verdict:**
+- **PASS** → proceed to Stage 2
+- **SPEC_MISMATCH** → BLOCK. Implementation doesn't match plan. Fix before code review.
+- **SCOPE_CREEP** → NEEDS_REVIEW. Unplanned changes present. May proceed with caveat.
+
+### Stage 2: Code Quality (only after Stage 1 passes)
+
+Is the implementation done well? Evaluate dimensions below.
+
+### Finding Classification
+
+Each finding gets two independent dimensions:
+
+**Severity** (how bad):
+- **P0** — critical blocker (security breach, data loss, crashes)
+- **P1** — high priority (user-facing bug, architectural mistake)
+- **P2** — medium (wrong pattern, suboptimal, minor bug)
+- **P3** — low/advisory (style, naming, minor improvement)
+
+**Action** (who fixes):
+- **safe_auto** — reviewer can fix automatically (trivial)
+- **gated_auto** — fix proposed, needs human approval
+- **manual** — developer must fix, specific guidance given
+- **advisory** — no action required, informational
+
+## Core Review Dimensions (Stage 2)
+
+### 1. Impact Analysis
 - What behavior changed? (summarize in 1-2 sentences)
 - Who/what is affected downstream?
 - What's the blast radius? (1 module / cross-cutting / public API)
 
-### 3. Failure Modes
+### 2. Failure Modes
 - What could go wrong in production?
 - Are error paths handled?
 - Race conditions, edge cases, null scenarios?
 - Security implications? (auth bypass, data leak, injection)
 
-### 4. Rollback Plan
+### 3. Rollback Plan
 - Can this be reverted with `git revert`?
 - Are there irreversible changes? (DB migrations, data deletion)
 - Is there a feature flag for gradual rollout?
 
-### 5. Performance Check
+### 4. Performance Check
 - O(n^2) or worse loops over large/unbounded datasets?
 - Unnecessary re-renders or redundant recomputations (React)?
 - Missing DB indexes for filtered/sorted queries?
@@ -165,25 +193,24 @@ That's the completion bias talking. Force yourself to find at least ONE concern.
 ```
 ## Review: [brief description]
 
-### Verdict: PASS | NEEDS REVIEW | BLOCKED
+### Stage 1: Spec Compliance
+- Plan adherence: [MATCH / PARTIAL / MISMATCH]
+- Intent: [MATCH / MISMATCH / SCOPE CREEP]
+- Test coverage of plan scenarios: [COMPLETE / PARTIAL / MISSING]
+- Stage 1 verdict: [PASS / SPEC_MISMATCH / SCOPE_CREEP]
 
-### Strategic Alignment: [ALIGNED / MISALIGNED / UNCERTAIN]
-[Does this solve the right problem?]
+### Stage 2: Code Quality (skip if Stage 1 blocked)
+- Strategic Alignment: [ALIGNED / MISALIGNED / UNCERTAIN]
+- Impact: [LOW / MEDIUM / HIGH]
+- Failure Modes: [NONE FOUND / CONCERNS — details]
+- Rollback: [SAFE / CAUTION / RISKY]
+- Performance: [OK / CONCERN — details]
 
-### Intent: [MATCH / MISMATCH / SCOPE CREEP]
-[Details]
+### Findings
+- [P1/manual] [Description of finding]
+- [P2/advisory] [Description of finding]
 
-### Impact: [LOW / MEDIUM / HIGH]
-[What changed in behavior, who's affected]
-
-### Failure Modes: [NONE FOUND / CONCERNS]
-[Specific concerns if any]
-
-### Rollback: [SAFE / CAUTION / RISKY]
-[Details]
-
-### Performance: [OK / CONCERN]
-[Details if concern]
+### Overall Verdict: PASS | NEEDS_REVIEW | BLOCKED
 
 ### Action Items
 - [Specific things to fix/verify before merge]

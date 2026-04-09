@@ -14,11 +14,10 @@ Gates are NOT one-size-fits-all. Match verification intensity to task risk:
 | **L** | All 4 gates | Full Doubt Protocol. User checkpoint at mid-build. |
 | **XL** | All 4 gates + pre-mortem | Plus: reviewer agent mandatory. User approval at 3 checkpoints. |
 
-**Risk overrides** (always full 4 gates regardless of size):
-- auth/security/payments/health content changes
-- Changes to shared/ or core/ (high blast radius)
-- Any irreversible change (DB migration, API contract, data deletion)
-- Recommending a tool, library, or pattern
+**Risk-based overrides** (see `.claude/library/process/risk-classification.md` for full protocol):
+- **HIGH risk** → all 4 gates mandatory, regardless of task size
+- **CRITICAL risk** → all 4 gates + external reviewer + user approval of diff
+- Risk classification drives gates, not just task size. A one-line auth fix (XS) at HIGH risk gets full 4 gates.
 
 **Does NOT trigger** (no gates needed):
 - Answering questions without code changes

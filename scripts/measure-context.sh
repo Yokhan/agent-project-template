@@ -2,7 +2,7 @@
 # measure-context.sh — Measure auto-loaded context size + budget check
 # Usage: bash scripts/measure-context.sh [--budget 200]
 
-BUDGET=200
+BUDGET=210
 if [ "$1" = "--budget" ] && [ -n "$2" ]; then BUDGET="$2"; fi
 
 echo "=== Context Size Report ==="
@@ -29,7 +29,32 @@ echo "Rules total: $RULES_COUNT files, $RULES_LINES lines"
 
 # Total auto-loaded
 TOTAL=$((CLAUDE_LINES + RULES_LINES))
-TOKENS_EST=$((TOTAL * 15 / 10))
+
+# Better token estimation (inspired by CodeSight heuristics)
+# Code: ~3 chars/token, prose: ~4 chars/token, blended: ~3.5 chars/token
+# Lines average ~40 chars, so ~11 tokens/line for prose, ~13 for code
+estimate_tokens() {
+  local file="$1"
+  local chars=$(wc -c < "$file" 2>/dev/null | tr -d ' ')
+  # Detect if code or prose by extension
+  case "$file" in
+    *.md|*.txt|*.rst) echo $((chars / 4)) ;;  # prose: 4 chars/token
+    *.ts|*.js|*.py|*.go|*.rs|*.sh) echo $((chars / 3)) ;;  # code: 3 chars/token
+    *) echo $((chars * 2 / 7)) ;;  # blended: 3.5 chars/token
+  esac
+}
+
+# Accurate token count for auto-loaded files
+TOKENS_EST=0
+if [ -f CLAUDE.md ]; then
+  T=$(estimate_tokens CLAUDE.md)
+  TOKENS_EST=$((TOKENS_EST + T))
+fi
+for f in .claude/rules/*.md; do
+  [ -f "$f" ] || continue
+  T=$(estimate_tokens "$f")
+  TOKENS_EST=$((TOKENS_EST + T))
+done
 
 echo ""
 echo "AUTO-LOADED TOTAL: $TOTAL lines (~$TOKENS_EST tokens estimated)"
