@@ -21,6 +21,19 @@ pub struct ProjectInfo {
     pub segment: String,
 }
 
+impl ProjectInfo {
+    pub fn to_json(&self) -> serde_json::Value {
+        serde_json::json!({
+            "id": self.id, "name": self.name, "status": self.status,
+            "branch": self.branch, "last_commit": self.last_commit,
+            "uncommitted": self.uncommitted, "days": self.days,
+            "template_version": self.template_version, "task": self.task,
+            "blockers": self.blockers, "phase": self.phase,
+            "lessons": self.lessons, "managed": self.managed, "segment": self.segment,
+        })
+    }
+}
+
 /// Scan a single git repository. Returns None if not a valid repo.
 fn scan_repo(path: &Path, index: usize, project_segment: &std::collections::HashMap<String, String>) -> Option<ProjectInfo> {
     let git_dir = path.join(".git");

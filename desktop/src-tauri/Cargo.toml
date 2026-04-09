@@ -24,6 +24,7 @@ dirs = "6"
 regex = "1"
 chrono = { version = "0.4", features = ["serde"] }
 tauri-plugin-updater = "2.10.1"
+axum = { version = "0.8.8", features = ["json"] }
 
 [features]
 default = ["custom-protocol"]

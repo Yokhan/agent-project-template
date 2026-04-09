@@ -1,10 +1,12 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WindowEvent,
 };
 
+mod api_server;
 mod commands;
 mod scanner;
 mod state;
@@ -49,7 +51,15 @@ pub fn run() {
     let root = project_root();
     println!("Agent OS v0.2.0 starting — root: {:?}", root);
 
-    let app_state = state::AppState::new(root);
+    let app_state = state::AppState::new(root.clone());
+
+    // Create a second AppState for HTTP API (reads same files, same config)
+    let api_root = root.clone();
+    std::thread::spawn(move || {
+        let api_state = Arc::new(state::AppState::new(api_root));
+        let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+        rt.block_on(api_server::start(api_state, 3333));
+    });
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
