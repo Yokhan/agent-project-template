@@ -6,12 +6,13 @@ use crate::scanner;
 use crate::state::AppState;
 use axum::{
     extract::State as AxState,
-    extract::{Json, Path, Query},
-    http::StatusCode,
+    extract::{Json, Path},
+    http::{header, Method, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
+use tower_http::cors::{Any, CorsLayer};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -39,6 +40,10 @@ pub async fn start(state: Arc<AppState>, port: u16) {
         .route("/api/delegations", get(get_delegations))
         .route("/api/delegation/approve", post(approve_delegation))
         .route("/api/delegation/reject", post(reject_delegation))
+        .layer(CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods([Method::GET, Method::POST])
+            .allow_headers([header::CONTENT_TYPE]))
         .with_state(state);
 
     // Try port, fallback to port+1, port+2
