@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 3.4.0 -->
+<!-- Template Version: 3.5.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -71,8 +71,14 @@ bash scripts/import-graph.sh [dir]     — hot files: most-imported modules
 bash scripts/scan-repo.sh <path>       — security scan before opening untrusted repos
 ```
 
-## Security & Integrations
-Hooks enforce automatically: prompt injection scanning, sensitive path blocking, dangerous command blocking, session audit logging. See `.claude/hooks/`.
+## Security (Defense Layer)
+Hooks in `.claude/hooks/` enforce automatically:
+- **prompt-injection-defender.sh** — PostToolUse: scans Read/Bash/WebFetch/Grep output for 7 injection categories (warn-only, zero cost)
+- **deny-sensitive-paths.sh** — PreToolUse: blocks Read/Edit/Write on .env, SSH keys, credentials, certificates
+- **pre-bash-safety.sh** — PreToolUse: blocks rm -rf, force push, pipe-to-shell, mass kills, secret exfiltration
+- **check-encoding.sh** — PostToolUse: validates UTF-8 encoding, catches BOM and broken Cyrillic
+- **session-audit.sh** — PostToolUse: logs all tool invocations to tasks/audit/session-YYYY-MM-DD.jsonl (7-day rotation)
+- Security alerts logged to `tasks/audit/security.jsonl`
 Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enable in `.mcp.json`.
 
 ## Design Work — HARD RULES (Figma, CSS, UI)
@@ -84,10 +90,10 @@ Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enab
 6. **Before creating**: search_design_system — does it already exist?
 Violation = revert and redo. Full pipeline: `.claude/library/domain/domain-design-pipeline.md`
 
-## Commands (23)
+## Commands (24)
 /setup-project, /implement, /commit-push-pr, /review, /refactor, /sprint, /brain-sync, /weekly,
 /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all,
-/audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
+/audit, /audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
 
 ## Self-Improvement
 After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMENT/MISUNDERSTANDING).
@@ -107,6 +113,7 @@ When >50 entries → promote via `/weekly`.
 - No editing main/master directly
 - No skipping tests before commit
 - No committing secrets (.env, API keys)
+- No business logic in entry points — use functions-in-modules pattern (see docs/SHARED_CONVENTIONS.md)
 - No presenting solutions without self-verification
 - No "you're right!" without logging WHY
 - No new code without checking tool-registry first
@@ -114,12 +121,20 @@ When >50 entries → promote via `/weekly`.
 - No building screens without components (system→tokens→components→screens)
 - No surface-level analysis ("works"=HTTP 200 is NOT analysis)
 
+## Dual-Agent Coexistence
+This project supports both Claude Code and OpenAI Codex.
+- Shared rules: `.claude/library/` (single source of truth for both agents)
+- Shared conventions: `docs/SHARED_CONVENTIONS.md`
+- Claude-specific: `CLAUDE.md`, `.claude/settings.json`, `.claude/hooks/`
+- Codex-specific: `AGENTS.md`, `.codex/config.toml`, `.codex/hooks.json`
+- Sync check: `bash scripts/sync-agents.sh`
+
 ## Build & Test
 <!-- Filled by /setup-project -->
 Not configured yet.
 
 ## Template Version
-3.4.0 — Run `bash scripts/check-drift.sh` to verify health.
+3.5.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

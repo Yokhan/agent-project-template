@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "bash scripts/codex-hook-adapter.sh session-start",
+        "timeout": 15
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "shell|file_read|file_write|file_edit",
+        "command": "bash scripts/codex-hook-adapter.sh pre-tool-use",
+        "timeout": 5
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "shell|file_read|file_write|file_edit",
+        "command": "bash scripts/codex-hook-adapter.sh post-tool-use",
+        "timeout": 3
+      }
+    ],
+    "Stop": [
+      {
+        "command": "bash scripts/codex-hook-adapter.sh session-stop",
+        "timeout": 10
+      }
+    ]
+  }
+}
