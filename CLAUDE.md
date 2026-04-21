@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 3.5.0 -->
+<!-- Template Version: 3.6.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -51,6 +51,9 @@ Not configured yet.
 ## Session End
 Update `tasks/current.md` with handoff (status, files, next steps, blockers).
 If Engram: `mem_session_end` with summary.
+
+## Work Report Style
+Final reports about completed work must follow `.claude/library/technical/writing.md`, especially the client-facing report rules: lead with result, explain the effect in the reader's world, keep technical detail only when it changes a decision, and default to `Что было → Что стало → Что это даёт → Чего ожидать дальше`.
 
 ## MCP Memory (Engram) — PROACTIVE
 - After EVERY decision/bug/discovery → `mem_save` immediately
@@ -134,7 +137,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-3.5.0 — Run `bash scripts/check-drift.sh` to verify health.
+3.6.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

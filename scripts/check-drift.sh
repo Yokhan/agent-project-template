@@ -4,7 +4,19 @@
 # Usage: bash scripts/check-drift.sh
 
 # shellcheck source=lib/platform.sh
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 # Node.js is used for JSON parsing (Python removed)
 if [ -z "${NODE:-}" ]; then
@@ -12,7 +24,7 @@ if [ -z "${NODE:-}" ]; then
 fi
 
 # Template version check
-TEMPLATE_VERSION="3.4.0"
+TEMPLATE_VERSION="3.6.0"
 CLAUDE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "unknown")
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"
@@ -26,7 +38,7 @@ WARNINGS=0
 ERRORS=0
 
 # 1. Check if docs are stale (>30 days)
-echo "[1/10] Checking document freshness..."
+echo "[1/11] Checking document freshness..."
 if [ -d docs ]; then
   for doc in docs/*.md; do
     [ -f "$doc" ] || continue
@@ -52,7 +64,7 @@ if [ -d src ] && [ -d docs ]; then
 fi
 
 # 2. Check CLAUDE.md size
-echo "[2/10] Checking CLAUDE.md size..."
+echo "[2/11] Checking CLAUDE.md size..."
 if [ -f CLAUDE.md ]; then
   lines=$(wc -l < CLAUDE.md)
   if [ "$lines" -gt 300 ]; then
@@ -64,9 +76,9 @@ if [ -f CLAUDE.md ]; then
 fi
 
 # 3. Check lessons.md size (>50 = time to promote)
-echo "[3/10] Checking lessons.md..."
+echo "[3/11] Checking lessons.md..."
 if [ -f tasks/lessons.md ]; then
-  entries=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
+  entries=$(grep -c "^### " tasks/lessons.md 2>/dev/null) || entries=0
   if [ "$entries" -gt 50 ]; then
     echo "  ⚠️  tasks/lessons.md has $entries entries — run /weekly to promote"
     WARNINGS=$((WARNINGS + 1))
@@ -76,7 +88,7 @@ if [ -f tasks/lessons.md ]; then
 fi
 
 # 4. Check for files > 375 lines in src/
-echo "[4/10] Checking file sizes in src/..."
+echo "[4/11] Checking file sizes in src/..."
 if [ -d src ]; then
   find src -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.js" -o -name "*.jsx" \) | while read -r file; do
     lines=$(wc -l < "$file")
@@ -87,7 +99,7 @@ if [ -d src ]; then
 fi
 
 # 5. Check module entry points exist
-echo "[5/10] Checking module entry points..."
+echo "[5/11] Checking module entry points..."
 if [ -d src/features ]; then
   find src/features -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     found=0
@@ -101,7 +113,7 @@ if [ -d src/features ]; then
 fi
 
 # 6. Check architecture boundaries
-echo "[6/10] Checking architecture boundaries..."
+echo "[6/11] Checking architecture boundaries..."
 if command -v npx &> /dev/null && [ -f .dependency-cruiser.js ]; then
   npx dependency-cruiser src --output-type err 2>/dev/null || echo "  ⚠️  Boundary violations detected"
 else
@@ -109,7 +121,7 @@ else
 fi
 
 # 7. Check for secrets in tracked files
-echo "[7/10] Scanning for potential secrets..."
+echo "[7/11] Scanning for potential secrets..."
 if git rev-parse --git-dir > /dev/null 2>&1; then
   secrets=$(grep -rlE '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|-----BEGIN.*(RSA|EC|DSA))' src/ 2>/dev/null || true)
   if [ -n "$secrets" ]; then
@@ -121,7 +133,7 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # 8. Check template manifest integrity
-echo "[8/10] Checking template manifest..."
+echo "[8/11] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
@@ -178,7 +190,7 @@ else
 fi
 
 # 9. Check template rules not modified locally (read-only enforcement)
-echo "[9/10] Checking template rules integrity..."
+echo "[9/11] Checking template rules integrity..."
 if [ -f "$MANIFEST" ]; then
   RULE_DRIFT=0
   for rule_file in .claude/rules/*.md .claude/library/*/*.md .claude/agents/*.md; do
@@ -210,21 +222,43 @@ else
 fi
 
 # 10. Check tool registry health
-echo "[10/10] Checking tool registry..."
+echo "[10/11] Checking tool registry..."
 REGISTRY="_reference/tool-registry.md"
 if [ -f "$REGISTRY" ]; then
   # Check for stale entries (referenced paths that don't exist)
   STALE_TOOLS=0
-  while IFS='|' read -r _ _ path _; do
-    path=$(echo "$path" | xargs 2>/dev/null)
-    [ -z "$path" ] && continue
-    [ "$path" = "Path" ] && continue
-    [ "$path" = "Signature" ] && continue
-    [[ "$path" == _* ]] && continue
-    if [ ! -e "$path" ]; then
+  while IFS='|' read -r kind value; do
+    kind=$(printf "%s" "$kind" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    value=$(printf "%s" "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ "$kind" = "PATH" ] || continue
+    [ -z "$value" ] && continue
+    if [ ! -e "$value" ]; then
       STALE_TOOLS=$((STALE_TOOLS + 1))
     fi
-  done < <(grep "^|" "$REGISTRY" 2>/dev/null)
+  done < <(
+    awk '
+      /^## Template-Level/ { section="tool"; next }
+      /^## Project-Level/ { section="tool"; next }
+      /^## Helpers & Utilities/ { section="tool"; next }
+      /^## / { section=""; next }
+      section != "tool" { next }
+      /^\|/ {
+        split($0, cols, "|")
+        path = cols[3]
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", path)
+        if (path == "" || path == "Path" || path == "Signature") {
+          next
+        }
+        if (path ~ /^-+$/) {
+          next
+        }
+        if (path ~ /^_/) {
+          next
+        }
+        print "PATH|" path
+      }
+    ' "$REGISTRY" 2>/dev/null
+  )
 
   if [ "$STALE_TOOLS" -gt 0 ]; then
     echo "  ⚠️  $STALE_TOOLS stale entries in tool registry (files deleted). Run: bash scripts/audit-reuse.sh"
@@ -235,7 +269,7 @@ if [ -f "$REGISTRY" ]; then
 
   # Check if registry is too empty for a project with src/
   if [ -d src ]; then
-    ENTRIES=$(grep -cE "^\| [^_|]" "$REGISTRY" 2>/dev/null || echo 0)
+    ENTRIES=$(grep -cE "^\| [^_|]" "$REGISTRY" 2>/dev/null) || ENTRIES=0
     if [ "$ENTRIES" -lt 8 ]; then
       echo "  ⚠️  Tool registry has only $ENTRIES entries. Run: bash scripts/scan-project.sh"
       WARNINGS=$((WARNINGS + 1))
@@ -248,6 +282,48 @@ else
   else
     echo "  ℹ️  No tool registry (no src/ directory)"
   fi
+fi
+
+echo "[11/11] Checking trust defaults..."
+if git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1; then
+  echo "  ❌ .claude/settings.local.json is tracked. It must stay local-only."
+  ERRORS=$((ERRORS + 1))
+elif [ -f ".claude/settings.local.json" ]; then
+  echo "  ℹ️  .claude/settings.local.json exists locally but is not tracked"
+else
+  echo "  ✅ No tracked project-local Claude settings in template root"
+fi
+
+if grep -Eq '^(model|model_reasoning_effort|approval_policy|sandbox_mode)\s*=' .codex/config.toml 2>/dev/null; then
+  echo "  ❌ .codex/config.toml contains IDE/user-owned defaults"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  ✅ .codex/config.toml keeps only template-safe settings"
+fi
+
+if [ -f "docs/PRODUCT_BOUNDARY.md" ] && [ -f "docs/SAFE_DEFAULTS.md" ] && [ -f "docs/SUPPORTED_ENVIRONMENTS.md" ]; then
+  echo "  ✅ Trust and environment docs present"
+else
+  echo "  ⚠️  Trust/environment docs missing. Re-run release hardening slice."
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+USER_NAME="$(basename "${HOME:-}")"
+PATH_LEAKS=""
+for pattern in "$HOME" "$PWD" "C:/Users/$USER_NAME" "C:\\Users\\$USER_NAME" "/Users/$USER_NAME" "/home/$USER_NAME"; do
+  [ -n "$pattern" ] || continue
+  MATCHES=$(git grep -n -I -F "$pattern" -- . ':(exclude).git' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    PATH_LEAKS="${PATH_LEAKS}${MATCHES}"$'\n'
+  fi
+done
+
+if [ -n "$PATH_LEAKS" ]; then
+  echo "  ❌ Personal machine paths found in tracked files:"
+  printf '%s' "$PATH_LEAKS" | head -5
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  ✅ No personal machine paths in tracked files"
 fi
 
 echo ""

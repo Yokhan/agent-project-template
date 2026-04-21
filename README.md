@@ -1,42 +1,38 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v3.2.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v3.6.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
 Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
+> Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md)
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/Yokhan/agent-project-template.git my-project
+git clone https://github.com/Yokhan/agent-project-template.git agent-project-template
+cd agent-project-template
+bash setup.sh my-project
 cd my-project
-bash start.sh --install    # preflight checks + MCP bootstrap + start dashboard
+bash scripts/bootstrap-mcp.sh --install
 ```
 
-Open http://localhost:3333 — Command Center dashboard.
-Open project in Claude Code or Zed — MCP context-router activates automatically.
-In chat: `/setup-project` — Claude configures everything for your stack.
+Open the generated project in Claude Code or Zed.
+In chat: `/setup-project` — Claude configures the project for your stack.
 
-**Windows**: double-click `start.bat` instead of `bash start.sh`.
+**Windows**: run `setup.bat`, then `cd` into the generated project and run `bash scripts/bootstrap-mcp.sh --install`.
 
-## Command Center
+`README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
 
-Dashboard for managing multiple AI-agent projects from one place.
+## Project Creation Modes
 
-```bash
-bash start.sh              # start dashboard + n8n
-bash start.sh --no-n8n     # dashboard only (no n8n needed)
-```
+- **Generated project**: `setup.sh my-project` or `setup.bat` creates the clean payload that should ship to real projects.
+- **Template maintainer workspace**: stay in this repository only when improving the template itself.
+- **Optional orchestrator workspace**: `bash setup.sh --orchestrator my-orchestrator` creates a multi-project coordination workspace without template-maintainer artifacts.
 
-Features:
-- **Project tiles** grouped by business segment with health status
-- **PA Orchestrator chat** — delegates tasks to project agents via `claude -p`
-- **Drill-down** — click tile → project detail + agent chat
-- **Auto-retry** — failed delegations retry 2x with error context
-- **Activity tracking** — see which agents are executing in real-time
+`setup.*` copies the tracked project-facing allowlist only. It intentionally leaves behind template-maintainer files such as `n8n/`, `templates/`, local fixtures, debug artifacts, and the setup entrypoints themselves.
 
 ## Updating Existing Projects
 
@@ -51,6 +47,12 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 ```
 
 Or use the Claude Code command: `/update-template /path/to/template`
+
+If you are operating from the template repo instead of inside the child project, use:
+
+```bash
+bash /path/to/agent-project-template/scripts/sync-template.sh /path/to/agent-project-template --project-dir /path/to/my-project --dry-run
+```
 
 ### Automatic updates (git-based)
 If the template is hosted in a git repository, projects automatically track it:
@@ -80,8 +82,8 @@ git remote add template https://github.com/Yokhan/agent-project-template.git
 bash scripts/sync-template.sh --from-git
 ```
 
-**What gets updated**: Template infrastructure (.claude/rules, agents, skills, commands, settings.json, scripts)
-**What's preserved**: Your code (src/), docs, brain/, tasks/, CLAUDE.md, and all `project-*` files
+**What gets updated**: Template infrastructure (`.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
+**What's preserved**: Your code (`src/`), project docs, `brain/`, `tasks/`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and all `project-*` files
 **Convention**: Template files are read-only baseline. Project customizations go to `project-*` prefixed files (e.g., `rules/project-no-mock-db.md`).
 
 ## Extending the Template for Your Domain
@@ -146,7 +148,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 ## What's Included
 
-### Out of the box (setup.bat creates these)
+### Generated project includes these
 
 | Category | Count | Details |
 |----------|-------|---------|
@@ -252,6 +254,8 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **3.6.0** | Production-ready bootstrap contract, tracked-only payload, living PROJECT_SPEC/tool registry, AgentOS compatibility, and release hardening |
+| **3.5.0** | Dual-agent support for Claude Code + Codex, Codex project config, validation and recovery hardening |
 | **3.2.1** | MCP Context Router (1 tool call instead of 9), depth=brief/normal/full, rules cache, Russian keywords, -93% per-message tokens |
 | 3.1.x | Dynamic task router, rules moved to .claude/library/, 7 mode commands, 6 runtime helpers |
 | **3.0.0** | Merge-safe sync (conflict detection), cross-platform lib, 25 rules, 29 skills, 10 agents, audit-reuse system, design pipeline, validate-template.sh |

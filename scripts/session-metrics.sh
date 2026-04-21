@@ -41,13 +41,13 @@ fi
 
 # 4. Lessons count
 if [ -f tasks/lessons.md ]; then
-  LESSONS=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
+  LESSONS=$(grep -c "^### " tasks/lessons.md 2>/dev/null) || LESSONS=0
   echo "- Lessons total: $LESSONS" >> "$METRICS_FILE"
 fi
 
 # 5. Research cache entries
 if [ -f tasks/.research-cache.md ]; then
-  CACHE_ENTRIES=$(grep -c "^## \[" tasks/.research-cache.md 2>/dev/null || echo 0)
+  CACHE_ENTRIES=$(grep -cE "^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]" tasks/.research-cache.md 2>/dev/null) || CACHE_ENTRIES=0
   echo "- Research cache entries: $CACHE_ENTRIES" >> "$METRICS_FILE"
 fi
 

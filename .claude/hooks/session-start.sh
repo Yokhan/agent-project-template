@@ -62,7 +62,7 @@ fi
 
 # Tool registry check
 if [ -f "_reference/tool-registry.md" ]; then
-  REGISTRY_ENTRIES=$(grep -cE "^\| [^_|]" _reference/tool-registry.md 2>/dev/null || echo 0)
+  REGISTRY_ENTRIES=$(grep -cE "^\| [^_|]" _reference/tool-registry.md 2>/dev/null) || REGISTRY_ENTRIES=0
   if [ "$REGISTRY_ENTRIES" -lt 8 ] && [ -d src ]; then
     echo "WARNING: Tool registry has few entries ($REGISTRY_ENTRIES). Run: bash scripts/audit-reuse.sh"
   fi
@@ -122,7 +122,7 @@ fi
 
 # Task queue check
 if [ -f tasks/queue.md ] && [ -s tasks/queue.md ]; then
-  QUEUED=$(grep -c "^## Queued:" tasks/queue.md 2>/dev/null || echo 0)
+  QUEUED=$(grep -c "^## Queued:" tasks/queue.md 2>/dev/null) || QUEUED=0
   if [ "$QUEUED" -gt 0 ]; then
     echo "QUEUE: $QUEUED queued task(s) in tasks/queue.md — review before starting"
   fi
@@ -135,7 +135,7 @@ fi
 
 # Lessons count (learning velocity indicator)
 if [ -f tasks/lessons.md ]; then
-  LESSON_COUNT=$(grep -c "^### " tasks/lessons.md 2>/dev/null || echo 0)
+  LESSON_COUNT=$(grep -c "^### " tasks/lessons.md 2>/dev/null) || LESSON_COUNT=0
   if [ "$LESSON_COUNT" -gt 40 ]; then
     echo "INFO: $LESSON_COUNT lessons in lessons.md — consider running /weekly to promote patterns to rules"
   fi
@@ -156,8 +156,8 @@ if [ -d ".claude/agents" ]; then
       continue
     fi
     # Check required fields: name, model
-    has_name=$(head -10 "$agent_file" | grep -c "^name:" 2>/dev/null || echo 0)
-    has_model=$(head -10 "$agent_file" | grep -c "^model:" 2>/dev/null || echo 0)
+    has_name=$(head -10 "$agent_file" | grep -c "^name:" 2>/dev/null) || has_name=0
+    has_model=$(head -10 "$agent_file" | grep -c "^model:" 2>/dev/null) || has_model=0
     if [ "$has_name" -eq 0 ] || [ "$has_model" -eq 0 ]; then
       echo "ERROR: $agent_file frontmatter missing name or model field"
       AGENT_ERRORS=$((AGENT_ERRORS + 1))
@@ -184,7 +184,7 @@ fi
 
 # Memory fallback file — import reminder
 if [ -f tasks/.memory-fallback.md ] && [ -s tasks/.memory-fallback.md ]; then
-  FALLBACK_COUNT=$(grep -c "^## " tasks/.memory-fallback.md 2>/dev/null || echo 0)
+  FALLBACK_COUNT=$(grep -c "^## " tasks/.memory-fallback.md 2>/dev/null) || FALLBACK_COUNT=0
   if [ "$FALLBACK_COUNT" -gt 0 ]; then
     echo "RECOVERY: $FALLBACK_COUNT entries in tasks/.memory-fallback.md — import to Engram when available"
   fi

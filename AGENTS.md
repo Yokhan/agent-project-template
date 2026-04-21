@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 3.5.0 -->
+<!-- Template Version: 3.6.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -52,6 +52,7 @@ Rules live in `.claude/library/`. **Read them before implementing.**
 - **Implementation**: also read `.claude/library/process/plan-first.md`
 - **Review/Audit**: also read `.claude/library/meta/critical-thinking.md`
 - **Writing content**: also read `.claude/library/technical/writing.md`
+- **Work reports / closeout**: also read `.claude/library/technical/writing.md` and follow the client-facing report rules
 - **Testing**: also read `.claude/library/technical/testing.md`
 - **Design/UI**: also read `.claude/library/domain/domain-design-pipeline.md`
 
@@ -152,8 +153,11 @@ This project supports both Claude Code and OpenAI Codex.
 <!-- Filled per-project -->
 Not configured yet. Run project setup to populate.
 
+## Work Report Style
+Final reports about completed work must follow the client-facing report rules in `.claude/library/technical/writing.md`: lead with result, explain the effect in the reader's world, keep technical detail only when it changes a decision, and default to `Что было → Что стало → Что это даёт → Чего ожидать дальше`.
+
 ## Compaction
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-3.5.0
+3.6.0

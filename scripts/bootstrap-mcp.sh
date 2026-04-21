@@ -79,6 +79,17 @@ is_zed_environment() {
   [ -n "${ZED_TERM:-}" ] || pgrep -x "zed" &>/dev/null 2>&1 || pgrep -x "Zed" &>/dev/null 2>&1
 }
 
+create_temp_json_file() {
+  if command -v mktemp &>/dev/null; then
+    mktemp "${TMPDIR:-/tmp}/mcp-merged.XXXXXX.json"
+    return
+  fi
+
+  local base_dir="${TMPDIR:-.}"
+  mkdir -p "$base_dir" 2>/dev/null || true
+  echo "$base_dir/mcp-merged-$$.json"
+}
+
 OS=$(detect_os)
 ARCH=$(detect_arch)
 
@@ -527,6 +538,7 @@ else
   echo "No existing .mcp.json — creating new"
 fi
 
+MERGED_JSON_PATH=$(create_temp_json_file)
 MERGED_JSON=$(node -e "
 const fs=require('fs');
 const existing=JSON.parse(process.argv[1]);
@@ -545,15 +557,20 @@ if(added.length)process.stderr.write('Added: '+added.join(',')+'\n');
 if(preserved.length)process.stderr.write('Preserved: '+preserved.join(',')+'\n');
 if(disabled.length)process.stderr.write('Disabled (deprecated): '+disabled.join(',')+'\n');
 existing.mcpServers=servers;
-fs.writeFileSync('/tmp/mcp_merged.json',JSON.stringify(existing,null,2));
-" "$EXISTING_JSON" "$DETECTED_SERVERS" 2>&1)
+fs.writeFileSync(process.argv[3],JSON.stringify(existing,null,2));
+" "$EXISTING_JSON" "$DETECTED_SERVERS" "$MERGED_JSON_PATH" 2>&1)
 
 if [ -n "$MERGED_JSON" ]; then
   echo "$MERGED_JSON"
 fi
 
-MCP_JSON=$(cat /tmp/mcp_merged.json)
-rm -f /tmp/mcp_merged.json
+if [ ! -f "$MERGED_JSON_PATH" ]; then
+  echo "ERROR: Failed to create merged .mcp.json payload."
+  exit 1
+fi
+
+MCP_JSON=$(cat "$MERGED_JSON_PATH")
+rm -f "$MERGED_JSON_PATH"
 
 echo ""
 echo "--- Summary ---"

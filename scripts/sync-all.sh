@@ -4,7 +4,19 @@
 
 set -euo pipefail
 
-TEMPLATE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+TEMPLATE_DIR="$(normalize_drive_path "$(cd "$(dirname "$0")/.." && pwd)")"
 SEARCH_DIR="${1:-$HOME/Documents}"
 DRY_RUN=""
 
@@ -67,7 +79,7 @@ while IFS= read -r -d '' manifest; do
         UPDATED=$((UPDATED + 1))
       else
         printf "  %-30s v%s → v%s ... " "$PROJECT_NAME" "$CURRENT_VER" "$TEMPLATE_VER"
-        if bash "$TEMPLATE_DIR/scripts/sync-template.sh" "$TEMPLATE_DIR" "$PROJECT_DIR" 2>/dev/null; then
+        if bash "$TEMPLATE_DIR/scripts/sync-template.sh" "$TEMPLATE_DIR" --project-dir "$PROJECT_DIR" 2>/dev/null; then
           printf "${GREEN}✓ updated${NC}\n"
           UPDATED=$((UPDATED + 1))
         else

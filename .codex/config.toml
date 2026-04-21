@@ -1,11 +1,6 @@
 # Codex CLI configuration for agent-project-template
 # Docs: https://developers.openai.com/codex/config-basic
-
-model = "codex-5.4"
-approval_policy = "auto-edit"
-sandbox_mode = "workspace-write"
-model_reasoning_effort = "high"
-project_doc_max_bytes = 32768
+# All other settings (model, effort, approval, sandbox) come from Zed UI / ~/.codex/config.toml
 
 [features]
 codex_hooks = true

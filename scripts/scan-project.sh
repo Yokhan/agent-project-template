@@ -1,20 +1,49 @@
 #!/bin/bash
-# Scan Project — populate tool-registry.md from existing codebase
-# shellcheck source=lib/platform.sh
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# scan-project.sh - Scan repo and populate _reference/tool-registry.md
+
+set -euo pipefail
+
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
-# Usage:
-#   bash scripts/scan-project.sh          # scan + populate registry
-#   bash scripts/scan-project.sh --report # dry-run, no writes
 
 MODE="full"
-[ "$1" = "--report" ] && MODE="report"
+if [ "${1:-}" = "--report" ]; then
+  MODE="report"
+fi
 
 REGISTRY="_reference/tool-registry.md"
 
+sanitize_cell() {
+  printf '%s' "$1" | tr '\r\n|' '   ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//'
+}
+
+extract_table_lines() {
+  local heading="$1"
+  if [ ! -f "$REGISTRY" ]; then
+    return
+  fi
+
+  awk -v heading="$heading" '
+    $0 == heading { capture=1; next }
+    /^## / && capture { exit }
+    capture && /^\|/ { print }
+  ' "$REGISTRY"
+}
+
 echo "=== Project Scanner ==="
 
-# --- 1. Detect stack ---
 STACK="unknown"
 STACK_FILE=""
 if [ -f package.json ]; then
@@ -30,170 +59,185 @@ elif [ -f go.mod ]; then
 elif [ -f Cargo.toml ]; then
   STACK="rust"; STACK_FILE="Cargo.toml"
 fi
-echo "Stack: $STACK (detected via $STACK_FILE)"
+echo "Stack: $STACK ${STACK_FILE:+(detected via $STACK_FILE)}"
 
-# --- 2. Find source directories ---
-SRC_DIRS=""
-for d in src lib app packages; do
-  [ -d "$d" ] && SRC_DIRS="$SRC_DIRS $d"
+SRC_DIRS=()
+for dir in src lib app packages; do
+  if [ -d "$dir" ]; then
+    SRC_DIRS+=("$dir")
+  fi
 done
-echo "Source dirs: ${SRC_DIRS:-(none)}"
+if [ ${#SRC_DIRS[@]} -gt 0 ]; then
+  echo "Source dirs: ${SRC_DIRS[*]}"
+else
+  echo "Source dirs: (none)"
+fi
 
-# --- 3. Find shared utilities ---
+declare -A TEMPLATE_PATHS=()
+while IFS= read -r line; do
+  path="$(printf '%s\n' "$line" | awk -F'|' '{print $3}')"
+  path="$(sanitize_cell "$path")"
+  case "$path" in
+    ""|Path|-----|_Run*) continue ;;
+  esac
+  TEMPLATE_PATHS["$path"]=1
+done < <(extract_table_lines "## Template-Level (available in ALL projects)")
+
+declare -A PROJECT_ROW_SEEN=()
+declare -A HELPER_ROW_SEEN=()
+PROJECT_ROWS=()
+HELPER_ROWS=()
+
 echo ""
-echo "[1/5] Scanning shared utilities..."
-SHARED_UTILS=()
+echo "[1/2] Scanning scripts..."
+for script_dir in scripts bin tools; do
+  [ -d "$script_dir" ] || continue
+  for file in "$script_dir"/*.sh "$script_dir"/*.py "$script_dir"/*.js; do
+    [ -f "$file" ] || continue
+    tool_name="$(basename "$file" | sed 's/\.[^.]*$//')"
+    purpose="$(head -5 "$file" | grep -E '^#( |$)|^//|^"""' | head -1 | sed 's/^[# \/"]*//' | head -c 72)"
+    purpose="$(sanitize_cell "${purpose:-project script}")"
+    echo "  $file: $purpose"
 
+    if [ -z "${TEMPLATE_PATHS[$file]:-}" ] && [ -z "${PROJECT_ROW_SEEN[$file]:-}" ]; then
+      PROJECT_ROWS+=("| $tool_name | $file | $purpose | agent/manual |")
+      PROJECT_ROW_SEEN["$file"]=1
+    fi
+  done
+done
+
+echo ""
+echo "[2/2] Scanning shared utilities..."
 for shared_name in shared utils helpers common lib core; do
-  for root in $SRC_DIRS .; do
+  SEARCH_ROOTS=("${SRC_DIRS[@]}" ".")
+  for root in "${SEARCH_ROOTS[@]}"; do
     dir="$root/$shared_name"
     [ -d "$dir" ] || continue
-    while IFS= read -r f; do
-      # Get exported function/class names
-      basename_f=$(basename "$f")
+
+    while IFS= read -r file; do
+      [ -f "$file" ] || continue
+      basename_f="$(basename "$file")"
       ext="${basename_f##*.}"
+      exports=""
 
       case "$ext" in
         ts|tsx|js|jsx)
-          exports=$(grep -E "^export (default )?(function|const|class|type|interface|enum) " "$f" 2>/dev/null | \
+          exports=$(grep -E "^export (default )?(function|const|class|type|interface|enum) " "$file" 2>/dev/null | \
             sed -E 's/^export (default )?(function|const|let|class|type|interface|enum) ([a-zA-Z0-9_]+).*/\3/' | head -5)
           ;;
         py)
-          exports=$(grep -E "^(def |class )" "$f" 2>/dev/null | \
+          exports=$(grep -E "^(def |class )" "$file" 2>/dev/null | \
             sed -E 's/^(def |class )([a-zA-Z0-9_]+).*/\2/' | head -5)
           ;;
         go)
-          exports=$(grep -E "^func [A-Z]" "$f" 2>/dev/null | \
+          exports=$(grep -E "^func [A-Z]" "$file" 2>/dev/null | \
             sed -E 's/^func ([A-Za-z0-9_]+).*/\1/' | head -5)
           ;;
         rs)
-          exports=$(grep -E "^pub (fn|struct|enum|trait) " "$f" 2>/dev/null | \
+          exports=$(grep -E "^pub (fn|struct|enum|trait) " "$file" 2>/dev/null | \
             sed -E 's/^pub (fn|struct|enum|trait) ([a-zA-Z0-9_]+).*/\2/' | head -5)
           ;;
       esac
 
-      for exp in $exports; do
-        # Count importers
+      for export_name in $exports; do
+        helper_key="$export_name|$file"
+        [ -n "$export_name" ] || continue
+        [ -z "${HELPER_ROW_SEEN[$helper_key]:-}" ] || continue
+
         importers=0
         case "$ext" in
           ts|tsx|js|jsx)
-            importers=$(grep -rl "$exp" $SRC_DIRS --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" 2>/dev/null | grep -cv "$f" || echo 0)
+            if [ ${#SRC_DIRS[@]} -gt 0 ]; then
+              importers=$(grep -rl "$export_name" "${SRC_DIRS[@]}" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" 2>/dev/null | grep -cv "$file" || echo 0)
+            fi
             ;;
           py)
-            importers=$(grep -rl "import.*$exp" $SRC_DIRS --include="*.py" 2>/dev/null | grep -cv "$f" || echo 0)
+            if [ ${#SRC_DIRS[@]} -gt 0 ]; then
+              importers=$(grep -rl "import.*$export_name" "${SRC_DIRS[@]}" --include="*.py" 2>/dev/null | grep -cv "$file" || echo 0)
+            fi
             ;;
         esac
-        echo "  $f: $exp (used by $importers files)"
-        SHARED_UTILS+=("$exp|$f|$importers")
+
+        echo "  $file: $export_name (used by $importers files)"
+        HELPER_ROWS+=("| $export_name | $file | export | $importers files |")
+        HELPER_ROW_SEEN["$helper_key"]=1
       done
     done < <(find "$dir" -type f \( -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.rs" \) -not -name "*.test.*" -not -name "*.spec.*" 2>/dev/null)
   done
 done
 
-# --- 4. Find scripts ---
-echo ""
-echo "[2/5] Scanning scripts..."
-SCRIPTS=()
-
-for script_dir in scripts bin tools; do
-  [ -d "$script_dir" ] || continue
-  for f in "$script_dir"/*.sh "$script_dir"/*.py "$script_dir"/*.js; do
-    [ -f "$f" ] || continue
-    # Get first comment line as purpose
-    purpose=$(head -5 "$f" | grep -E "^#|^//|^\"\"\"" | head -1 | sed 's/^[# \/"]*//' | head -c 60)
-    echo "  $f: $purpose"
-    SCRIPTS+=("$(basename "$f" | sed 's/\.[^.]*$//')|$f|$purpose")
-  done
-done
-
-# --- 5. Find components (React/Vue/Svelte) ---
-echo ""
-echo "[3/5] Scanning components..."
-COMPONENTS=()
-
-for comp_dir in components ui widgets; do
-  for root in $SRC_DIRS; do
-    dir="$root/$comp_dir"
-    [ -d "$dir" ] || continue
-    find "$dir" -maxdepth 2 -type f \( -name "*.tsx" -o -name "*.jsx" -o -name "*.vue" -o -name "*.svelte" \) -not -name "*.test.*" -not -name "*.spec.*" -not -name "*.stories.*" 2>/dev/null | while read -r f; do
-      name=$(basename "$f" | sed 's/\.[^.]*$//')
-      echo "  $f: $name"
-      COMPONENTS+=("$name|$f")
-    done
-  done
-done
-
-# --- 6. Find design tokens ---
-echo ""
-echo "[4/5] Scanning design tokens..."
-HAS_DESIGN=false
-
-for token_dir in design-tokens tokens styles theme; do
-  if [ -d "$token_dir" ]; then
-    HAS_DESIGN=true
-    echo "  Found: $token_dir/"
-    find "$token_dir" -type f 2>/dev/null | head -10 | while read -r f; do
-      echo "    $f"
-    done
-  fi
-done
-
-# Check for Figma config
-for figma_file in .figma figma.config.js figma.config.ts; do
-  if [ -f "$figma_file" ]; then
-    HAS_DESIGN=true
-    echo "  Found: $figma_file"
-  fi
-done
-
-# --- 7. Count entry points ---
-echo ""
-echo "[5/5] Scanning module entry points..."
-MODULES=0
-for root in $SRC_DIRS; do
-  if [ -d "$root/features" ]; then
-    find "$root/features" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read -r m; do
-      name=$(basename "$m")
-      has_entry=false
-      for entry in "$m"/index.* "$m"/__init__.py "$m"/mod.rs; do
-        [ -f "$entry" ] && has_entry=true && break
-      done
-      echo "  $name ($m) — entry: $has_entry"
-      MODULES=$((MODULES + 1))
-    done
-  fi
-done
-
-# --- Summary ---
 echo ""
 echo "=== Scan Summary ==="
 echo "Stack: $STACK"
-echo "Shared utils: ${#SHARED_UTILS[@]} functions found"
-echo "Scripts: ${#SCRIPTS[@]} found"
-echo "Design tokens: $HAS_DESIGN"
+echo "Project-level scripts: ${#PROJECT_ROWS[@]}"
+echo "Shared utilities: ${#HELPER_ROWS[@]}"
 
 if [ "$MODE" = "report" ]; then
   echo ""
-  echo "(report mode — no changes written)"
-  echo "Run without --report to update _reference/tool-registry.md"
+  echo "(report mode - no changes written)"
   exit 0
 fi
 
-# --- Update registry ---
 if [ ! -f "$REGISTRY" ]; then
   echo "WARNING: $REGISTRY not found. Run setup-project first."
   exit 1
 fi
 
-# Update last scan date
-if grep -q "^_Last scan:" "$REGISTRY" 2>/dev/null; then
-  if command -v _sed_i &>/dev/null; then
-    _sed_i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY"
-  else
-    sed -i "s/^_Last scan:.*/_Last scan: $(date +%Y-%m-%d)_/" "$REGISTRY" 2>/dev/null || true
-  fi
+TEMPLATE_TABLE="$(extract_table_lines "## Template-Level (available in ALL projects)")"
+[ -n "$TEMPLATE_TABLE" ] || TEMPLATE_TABLE=$'| Tool | Path | Purpose |\n|------|------|---------|'
+
+CANDIDATE_TABLE="$(extract_table_lines "## Candidates for Extraction (auto-detected by audit-reuse.sh)")"
+[ -n "$CANDIDATE_TABLE" ] || CANDIDATE_TABLE=$'| Function | Found in | Count | Recommendation |\n|----------|----------|-------|----------------|\n| _Run `bash scripts/audit-reuse.sh` to detect_ | | | |'
+
+DESIGN_TABLE="$(extract_table_lines "## Design Tokens & Components (Figma projects only)")"
+[ -n "$DESIGN_TABLE" ] || DESIGN_TABLE=$'| Component | ID/Path | Variants | Used by |\n|-----------|---------|----------|---------|\n| _Populated by agents working with Figma MCP_ | | | |'
+
+PROJECT_TABLE=$'| Tool | Path | Purpose | Used by |\n|------|------|---------|---------|'
+if [ ${#PROJECT_ROWS[@]} -gt 0 ]; then
+  PROJECT_TABLE+=$'\n'"$(printf '%s\n' "${PROJECT_ROWS[@]}" | sort)"
+else
+  PROJECT_TABLE+=$'\n| _No project-level tools detected_ | | | |'
 fi
 
+HELPER_TABLE=$'| Function | Path | Signature | Used by |\n|----------|------|-----------|---------|'
+if [ ${#HELPER_ROWS[@]} -gt 0 ]; then
+  HELPER_TABLE+=$'\n'"$(printf '%s\n' "${HELPER_ROWS[@]}" | sort)"
+else
+  HELPER_TABLE+=$'\n| _No shared utilities detected_ | | | |'
+fi
+
+cat > "$REGISTRY" <<EOF
+# Tool Registry
+
+> Searchable index of reusable utilities across this project.
+> **Check HERE before writing new code.** See \`.claude/library/technical/atomic-reuse.md\`.
+>
+> Maintained by: agents (manual), \`scripts/scan-project.sh\` (project-level scan), \`scripts/audit-reuse.sh\` (ongoing).
+
+## Template-Level (available in ALL projects)
+
+$TEMPLATE_TABLE
+
+## Project-Level (auto-populated by scan-project.sh, updated by agents)
+
+$PROJECT_TABLE
+
+## Helpers & Utilities (src/shared/ or lib/)
+
+$HELPER_TABLE
+
+## Candidates for Extraction (auto-detected by audit-reuse.sh)
+
+$CANDIDATE_TABLE
+
+## Design Tokens & Components (Figma projects only)
+
+$DESIGN_TABLE
+
+---
+
+_Last scan: $(date +%Y-%m-%d)_
+EOF
+
 echo ""
-echo "Registry timestamp updated. Review scan output and add entries to $REGISTRY."
-echo "For automated duplicate detection, run: bash scripts/audit-reuse.sh"
+echo "Updated $REGISTRY"

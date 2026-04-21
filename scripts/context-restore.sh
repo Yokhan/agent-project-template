@@ -35,7 +35,11 @@ fi
 echo ""
 if [ -f "tasks/current.md" ]; then
   echo "--- HANDOFF (tasks/current.md) ---"
-  head -30 tasks/current.md 2>/dev/null
+  if [ -f "scripts/task-brief.sh" ]; then
+    bash scripts/task-brief.sh --brief 2>/dev/null || head -30 tasks/current.md 2>/dev/null
+  else
+    head -30 tasks/current.md 2>/dev/null
+  fi
 else
   echo "HANDOFF: (no tasks/current.md)"
 fi
@@ -74,6 +78,6 @@ fi
 # Research cache
 echo ""
 if [ -f "tasks/.research-cache.md" ]; then
-  ACTIVE_ENTRIES=$(grep -c "^## \[" tasks/.research-cache.md 2>/dev/null || echo 0)
+  ACTIVE_ENTRIES=$(grep -cE "^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]" tasks/.research-cache.md 2>/dev/null) || ACTIVE_ENTRIES=0
   echo "RESEARCH CACHE: $ACTIVE_ENTRIES entries"
 fi
