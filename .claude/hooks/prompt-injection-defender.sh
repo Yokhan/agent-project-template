@@ -38,7 +38,7 @@ if echo "$CONTENT" | grep -qE "[A-Za-z0-9+/]{40,}={0,2}" | head -1 && echo "$CON
   ALERTS="${ALERTS}\n⚠️  [HIGH] Possible encoded/obfuscated payload detected"
 fi
 # Unicode homoglyphs and zero-width characters
-if echo "$CONTENT" | grep -qP '[\x{200B}\x{200C}\x{200D}\x{FEFF}\x{00AD}]' 2>/dev/null; then
+if command -v xxd >/dev/null 2>&1 && printf '%s' "$CONTENT" | xxd -p -c 999999 2>/dev/null | grep -qiE '(e2808b|e2808c|e2808d|efbbbf|c2ad)'; then
   ALERTS="${ALERTS}\n⚠️  [HIGH] Zero-width/invisible characters detected (possible steganography)"
 fi
 

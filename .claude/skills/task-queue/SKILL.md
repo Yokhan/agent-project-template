@@ -27,8 +27,8 @@ Each queued task is a markdown section:
 ### At Session Start (session-start.sh)
 ```bash
 if [ -f tasks/queue.md ] && [ -s tasks/queue.md ]; then
-  QUEUED=$(grep -c "^## Queued:" tasks/queue.md 2>/dev/null || echo 0)
-  echo "📋 $QUEUED queued task(s) in tasks/queue.md — review before starting"
+  QUEUED=$(grep -c "^## Queued:" tasks/queue.md 2>/dev/null) || QUEUED=0
+  echo "QUEUE: $QUEUED queued task(s) in tasks/queue.md - review before starting"
 fi
 ```
 

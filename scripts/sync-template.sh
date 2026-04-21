@@ -9,7 +9,19 @@
 set -euo pipefail
 
 # --- Platform helpers ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 # Fallback node detection if platform.sh not available
 if [ -z "${NODE:-}" ]; then
@@ -18,20 +30,29 @@ fi
 
 # --- Config ---
 TEMPLATE_PATH=""
+PROJECT_PATH="."
 DRY_RUN=false
 FORCE=false
 FROM_GIT=false
 BOOTSTRAP=false
 
 # --- Parse args ---
-for arg in "$@"; do
-  case "$arg" in
+while [ $# -gt 0 ]; do
+  case "$1" in
     --dry-run) DRY_RUN=true ;;
     --force) FORCE=true ;;
     --from-git) FROM_GIT=true ;;
     --bootstrap) BOOTSTRAP=true ;;
+    --project-dir)
+      shift
+      if [ $# -eq 0 ]; then
+        echo "Error: --project-dir requires a path"
+        exit 1
+      fi
+      PROJECT_PATH="$1"
+      ;;
     --help|-h)
-      echo "Usage: $0 [/path/to/template] [--dry-run] [--force] [--from-git] [--bootstrap]"
+      echo "Usage: $0 [/path/to/template] [project-dir] [--project-dir PATH] [--dry-run] [--force] [--from-git] [--bootstrap]"
       echo ""
       echo "Syncs this project with a newer version of agent-project-template."
       echo "Template files (tracked in .template-manifest.json) are updated."
@@ -42,11 +63,30 @@ for arg in "$@"; do
       echo "  --force      Skip backup step"
       echo "  --from-git   Fetch template from the 'template' git remote instead of a local path"
       echo "  --bootstrap  Generate .template-manifest.json for a project created before sync support"
+      echo "  --project-dir PATH  Target project directory (defaults to current directory)"
       exit 0
       ;;
-    *) TEMPLATE_PATH="$arg" ;;
+    *)
+      if [ -z "$TEMPLATE_PATH" ]; then
+        TEMPLATE_PATH="$1"
+      elif [ "$PROJECT_PATH" = "." ]; then
+        PROJECT_PATH="$1"
+      else
+        echo "Error: Unexpected argument '$1'"
+        exit 1
+      fi
+      ;;
   esac
+  shift
 done
+
+if [ ! -d "$PROJECT_PATH" ]; then
+  echo "Error: Project directory not found: $PROJECT_PATH"
+  exit 1
+fi
+
+PROJECT_PATH="$(cd "$PROJECT_PATH" && pwd)"
+cd "$PROJECT_PATH"
 
 # --- Git-based update mode ---
 if [ "$FROM_GIT" = true ]; then
@@ -165,8 +205,8 @@ if [ ! -f "$MANIFEST" ]; then
     # Determine category for a file path
     get_category() {
       case "$1" in
-        CLAUDE.md|tasks/*|brain/*) echo "project" ;;
-        .gitignore|.vscode/*) echo "hybrid" ;;
+        CLAUDE.md|PROJECT_SPEC.md|ecosystem.md|tasks/*|brain/*) echo "project" ;;
+        .gitignore|.mcp.json|.vscode/*) echo "hybrid" ;;
         *) echo "template" ;;
       esac
     }
@@ -184,7 +224,10 @@ if [ ! -f "$MANIFEST" ]; then
 
     first=true
     for pattern in \
-      ".claude/settings.json" \
+      ".codex/config.toml" ".codex/hooks.json" \
+      ".claude/settings.json" ".claude/settings.local.json.example" \
+      ".claude/docs/*.md" \
+      ".claude/docs/domain-full/*.md" \
       ".claude/rules/*.md" \
       ".claude/library/process/*.md" \
       ".claude/library/technical/*.md" \
@@ -197,13 +240,15 @@ if [ ! -f "$MANIFEST" ]; then
       ".claude/hooks/*.sh" \
       ".claude/pipelines/*.md" \
       "scripts/*.sh" "scripts/lib/*.sh" \
+      "mcp-servers/context-router/package-lock.json" \
       "mcp-servers/context-router/src/*.ts" \
       "mcp-servers/context-router/package.json" \
       "mcp-servers/context-router/tsconfig.json" \
       "tests/rules/*.test.md" \
-      ".editorconfig" "Makefile" "SECURITY.md" "CONTRIBUTING.md" \
+      ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" \
+      ".github/ci.yml.template" ".github/workflows/*.yml" \
       "_reference/tool-registry.md" "_reference/README.md" \
-      ".mcp.json" "CLAUDE.md" ".gitignore" ".vscode/extensions.json"; do
+      ".mcp.json" "AGENTS.md" "CLAUDE.md" "PROJECT_SPEC.md" "ecosystem.md" "README.md" "SETUP_GUIDE.md" "upgrade-project.sh" ".gitignore" ".vscode/extensions.json"; do
       for f in $pattern; do
         [ -f "$f" ] || continue
         # Skip project-* files (agent-created)
@@ -225,7 +270,7 @@ if [ ! -f "$MANIFEST" ]; then
     echo "Generated $MANIFEST with $(grep -c '"hash"' "$MANIFEST") files."
     echo ""
     echo "Now run again WITHOUT --bootstrap to sync:"
-    echo "  $0 $TEMPLATE_PATH"
+    echo "  $0 $TEMPLATE_PATH --project-dir $PROJECT_PATH"
     exit 0
   else
     echo "ERROR: No $MANIFEST found. This project was created before sync support."
@@ -356,7 +401,7 @@ done < <(echo "$manifest_files")
 echo "--- Phase B: Checking for new template files ---"
 
 # Define template file patterns to check
-for pattern in ".claude/settings.json" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/lib/*.sh" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "tests/rules/*.test.md" "_reference/*.md" ".mcp.json" ".editorconfig" "Makefile" "SECURITY.md" "CONTRIBUTING.md"; do
+for pattern in ".codex/config.toml" ".codex/hooks.json" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "_reference/*.md" ".github/*.template" ".github/workflows/*.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "README.md" "SETUP_GUIDE.md" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
@@ -430,16 +475,29 @@ for(const[fp,info]of Object.entries(m.files||{})){
   const h=getHash(fp);if(h)info.hash=h;
 }
 
+function getCategory(fp){
+  if(fp==='CLAUDE.md'||fp==='PROJECT_SPEC.md'||fp==='ecosystem.md'||fp.startsWith('tasks/')||fp.startsWith('brain/'))return 'project';
+  if(fp==='.gitignore'||fp==='.mcp.json'||fp.startsWith('.vscode/'))return 'hybrid';
+  return 'template';
+}
+
 // Add new files from standard dirs
-const dirs=['.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','_reference'];
+const dirs=['.claude','.claude/docs','.claude/docs/domain-full','.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','_reference','.github','.github/workflows','.codex'];
 for(const d of dirs){
   if(!fs.existsSync(d))continue;
   for(const f of fs.readdirSync(d)){
     const fp=path.join(d,f).replace(/\\\\\\\\/g,'/');
     if(!m.files[fp]&&!f.startsWith('project-')&&fs.statSync(path.join(d,f)).isFile()){
-      const h=getHash(fp);if(h)m.files[fp]={category:'template',hash:h};
+      const h=getHash(fp);if(h)m.files[fp]={category:getCategory(fp),hash:h};
     }
   }
+}
+
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md'];
+for(const fp of rootFiles){
+  if(!fs.existsSync(fp)||m.files[fp])continue;
+  const h=getHash(fp);
+  if(h)m.files[fp]={category:getCategory(fp),hash:h};
 }
 
 // Skills scanning

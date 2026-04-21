@@ -75,6 +75,16 @@
         ]
       },
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-encoding.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
         "matcher": "Read|Edit|Write|Bash|Grep|Glob",
         "hooks": [
           {

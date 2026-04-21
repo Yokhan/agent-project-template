@@ -1,4 +1,10 @@
-# Agent Protocol v3.1 — Shared by ALL agents
+---
+name: protocol
+description: Shared protocol loaded by ALL agents — routing, verification, memory, handoff
+type: agent
+---
+
+# Agent Protocol v3.2 — Shared by ALL agents
 
 > This file is loaded alongside agent definitions. Do NOT duplicate this content in agent files.
 
@@ -8,6 +14,60 @@ Before starting work: `get_context(keywords="<your task keywords>")` → receive
 If task changes mid-work: `switch_context(keywords="<new keywords>")`.
 Fallback (no MCP): `bash scripts/route-task.sh "<keywords>"` → Read listed files.
 Rules are in `.claude/library/`, NOT pre-loaded. Load only what you need.
+
+## Pre-Implementation Verification (ALL agents, MANDATORY for M+ tasks)
+
+Before writing ANY code, complete this checklist:
+- [ ] Read all affected files AND their neighbors and tests
+- [ ] Stated user's goal in own words
+- [ ] Considered at least 2 approaches and chose one with reasoning
+- [ ] Identified the riskiest part of the plan
+- [ ] Checked lessons.md and tool-registry for prior solutions
+
+Skipping this checklist is a system failure.
+
+### Commitment Bias Check (at 50% implementation)
+Ask: "If I started fresh right now, would I choose this exact approach?"
+- YES → continue
+- NO or PROBABLY NOT → stop, reassess. Sunk cost is not a reason to continue.
+
+See also: `.claude/library/process/self-verification.md` — Doubt Protocol, Sunk Cost Test.
+
+## Claude-Specific Bias Corrections
+
+> Claude tends to rush to implementation without deep thinking. These gates counteract that.
+
+### Anti-Rush Protocol
+If you catch yourself writing code before completing research:
+1. STOP immediately
+2. Delete what you wrote
+3. Return to research phase
+4. Code written on wrong assumptions has zero value — starting over is free
+
+### Sycophancy Circuit Breaker
+When your reaction to user feedback is "you're right!":
+1. That means you ALREADY KNEW but didn't surface it
+2. Log to tasks/lessons.md: what the flaw was, why you didn't catch it
+3. Next time: same category of flaw must be caught by YOUR verification
+
+## Codex-Specific Context Gates
+
+> Codex is a strong engineer but needs explicit user intent and richer context.
+
+### Success Criteria Protocol (MANDATORY)
+Before implementing, state explicitly:
+1. **"User wants:** [goal in user's own terms]"
+2. **"Success means:** [measurable outcome — what changes, what works after]"
+3. **"I will verify by:** [specific check — test, manual verification, output comparison]"
+
+If you cannot state all three clearly, ASK the user before writing code.
+
+### Context Loading (at task start)
+Read these files before touching code:
+1. `PROJECT_SPEC.md` — stack, dependencies
+2. `tasks/current.md` — active work, handoff from previous session
+3. `tasks/lessons.md` — past mistakes to avoid (ALL entries)
+4. `_reference/tool-registry.md` — existing utilities (SEARCH before creating new)
 
 ## Subagent Context Discipline
 

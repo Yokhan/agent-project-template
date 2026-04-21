@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 2.5.1 | 2026-03-25
+> Версия: 3.6.0 | 2026-04-21
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -11,7 +11,7 @@
 
 - **Claude Code** (CLI) — установлен и авторизован
 - **Git** — установлен
-- **Python 3** — для скриптов настройки
+- **Node.js 20+** — для metadata/MCP/helper-скриптов
 - **Bash** — на Windows через Git Bash или WSL
 
 ---
@@ -19,8 +19,20 @@
 ## Быстрый старт (5 минут)
 
 ```bash
-git clone https://github.com/Yokhan/agent-project-template.git my-project
+git clone https://github.com/Yokhan/agent-project-template.git agent-project-template
+cd agent-project-template
+bash setup.sh my-project
 cd my-project
+bash scripts/bootstrap-mcp.sh --install
+claude
+```
+
+Windows:
+```powershell
+git clone https://github.com/Yokhan/agent-project-template.git agent-project-template
+cd agent-project-template
+setup.bat
+cd <generated-project>
 bash scripts/bootstrap-mcp.sh --install
 claude
 ```
@@ -36,7 +48,15 @@ claude
 
 ## Что делает каждый шаг
 
-### 1. bootstrap-mcp.sh --install
+### 1. setup.sh / setup.bat
+
+Скрипт создаёт **чистый дочерний проект** из шаблона:
+1. Копирует только tracked project-facing payload (`.claude`, `.codex`, `scripts`, `docs`, `tasks`, `brain`, MCP tooling)
+2. Накладывает clean starter-файлы для `tasks/current.md`, `tasks/.research-cache.md`, `tasks/lessons.md`
+3. Не тащит maintainer-only артефакты (`n8n/`, `templates/`, временные фикстуры, локальные debug-файлы, локальные untracked-файлы)
+4. Инициализирует git и `.template-manifest.json` для будущего `sync-template.sh`
+
+### 2. bootstrap-mcp.sh --install
 
 Скрипт делает три вещи:
 1. **Находит** установленные MCP-серверы (Engram, CodeGraphContext, Obsidian, Godot, Figma)
@@ -51,7 +71,7 @@ claude
 --dry-run     Показать, что изменится, не трогая файлы
 ```
 
-### 2. /setup-project
+### 3. /setup-project
 
 11 фаз автоматической настройки:
 1. Спрашивает стек, название, тип проекта
@@ -133,7 +153,7 @@ bash scripts/bootstrap-mcp.sh --check
 bash scripts/check-drift.sh
 ```
 
-8 проверок: документы, размеры файлов, секреты, архитектура, шаблон.
+10+ проверок: документы, размеры файлов, секреты, архитектура, шаблон, trust-hardening.
 
 ---
 
@@ -171,7 +191,7 @@ bash scripts/check-drift.sh
 
 ### Один проект
 ```bash
-bash scripts/sync-template.sh --from /path/to/agent-project-template
+bash scripts/sync-template.sh /path/to/agent-project-template
 ```
 
 ### Все проекты
@@ -179,8 +199,15 @@ bash scripts/sync-template.sh --from /path/to/agent-project-template
 bash scripts/sync-all.sh ~/Documents
 ```
 
+### Если запускаете sync из template repo
+```bash
+bash /path/to/agent-project-template/scripts/sync-template.sh /path/to/agent-project-template --project-dir /path/to/my-project --dry-run
+```
+
 Обновляет: `.claude/`, `scripts/`, `CLAUDE.md`.
 Не трогает: `src/`, `docs/`, `brain/`, `tasks/`, `.mcp.json`.
+
+`README.md` и `SETUP_GUIDE.md` в generated project остаются template-owned bootstrap docs. Project-specific onboarding и архитектурные детали храните в `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md` и `docs/`.
 
 ---
 
@@ -190,12 +217,16 @@ bash scripts/sync-all.sh ~/Documents
 my-project/
 ├── .claude/           ← Агенты, правила, скиллы, хуки
 ├── .mcp.json          ← MCP-серверы (генерируется скриптом)
+├── .codex/            ← Codex project hooks/config
 ├── brain/             ← Obsidian-хранилище
-├── tasks/             ← Текущая задача, очередь, уроки
 ├── docs/              ← Архитектура, API, схема данных
-├── src/               ← Код
+├── mcp-servers/       ← Локальные MCP helper sources
 ├── scripts/           ← Автоматизация
+├── tasks/             ← Текущая задача, очередь, уроки
+├── AGENTS.md          ← Codex instructions
 ├── CLAUDE.md          ← Главный конфиг Claude
+├── PROJECT_SPEC.md    ← Автозаполняемая project spec
+├── ecosystem.md       ← Карта зависимостей проекта
 └── SETUP_GUIDE.md     ← Этот файл
 ```
 

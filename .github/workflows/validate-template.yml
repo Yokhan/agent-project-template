@@ -5,25 +5,102 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  smoke-test:
-    name: Template Smoke Test
-    runs-on: ubuntu-latest
+  validation:
+    name: Validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - name: Make scripts executable
-        run: chmod +x agent-project-template/scripts/*.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      - name: Run smoke test
-        run: cd agent-project-template && bash scripts/test-template.sh
+      - name: Run validation scripts
+        run: |
+          bash scripts/validate-template.sh
+          bash scripts/check-drift.sh
+          bash scripts/test-hooks.sh
+          bash scripts/test-template.sh
+          bash scripts/sync-agents.sh
 
-  validate-json:
-    name: Validate JSON
+      - name: Smoke generated metadata scripts
+        run: |
+          bash scripts/generate-project-spec.sh >/dev/null
+          bash scripts/scan-project.sh --report >/dev/null
+          bash scripts/downstream-census.sh --no-sync --json "$PWD" >/dev/null
+
+  bootstrap-smoke-linux:
+    name: Bootstrap Smoke (Linux)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate settings.json
-        run: python -m json.tool agent-project-template/.claude/settings.json > /dev/null
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create fresh project from setup.sh
+        run: |
+          rm -rf ci-bootstrap-smoke
+          printf 'sentinel\n' > docs/.ci-untracked-sentinel.txt
+          bash setup.sh ci-bootstrap-smoke
+          test -f ci-bootstrap-smoke/scripts/task-brief.sh
+          test -f ci-bootstrap-smoke/brain/01-daily/.gitkeep
+          test ! -f ci-bootstrap-smoke/tasks/debug-recovery-log.md
+          test ! -f ci-bootstrap-smoke/docs/.ci-untracked-sentinel.txt
+          test ! -d ci-bootstrap-smoke/mcp-servers/context-router/node_modules
+          rm -f docs/.ci-untracked-sentinel.txt
+
+      - name: Validate generated Linux project
+        run: |
+          cd ci-bootstrap-smoke
+          bash scripts/test-hooks.sh
+          bash scripts/bootstrap-mcp.sh --dry-run
+          bash scripts/sync-template.sh "$GITHUB_WORKSPACE" --dry-run
+
+  bootstrap-smoke-windows:
+    name: Bootstrap Smoke (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Create fresh project from setup.bat
+        shell: cmd
+        run: |
+          if exist ci-bootstrap-win rmdir /s /q ci-bootstrap-win
+          echo sentinel>docs\.ci-untracked-sentinel.txt
+          (echo ci-bootstrap-win) | setup.bat
+          del docs\.ci-untracked-sentinel.txt
+
+      - name: Validate generated Windows project
+        shell: bash
+        run: |
+          test -f ci-bootstrap-win/scripts/task-brief.sh
+          test -f ci-bootstrap-win/brain/01-daily/.gitkeep
+          test ! -f ci-bootstrap-win/tasks/debug-recovery-log.md
+          test ! -f ci-bootstrap-win/docs/.ci-untracked-sentinel.txt
+          test ! -d ci-bootstrap-win/mcp-servers/context-router/node_modules
+          cd ci-bootstrap-win
+          bash scripts/test-hooks.sh
+          bash scripts/bootstrap-mcp.sh --dry-run
+          bash scripts/sync-template.sh "$GITHUB_WORKSPACE" --dry-run

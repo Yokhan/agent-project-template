@@ -1,8 +1,88 @@
 #!/usr/bin/env bash
 # setup.sh — Create a new agent-ready project from this template
-# Usage: ./setup.sh [project-name]
+# Usage: ./setup.sh [--orchestrator] [project-name]
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/AGENTS.md" 2>/dev/null | head -n 1)
+[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="3.6.0"
+
+copy_entry() {
+  local rel_path="$1"
+  local source_path="$SCRIPT_DIR/$rel_path"
+  local target_path="$PROJECT_DIR/$rel_path"
+
+  if [ ! -e "$source_path" ]; then
+    echo "WARNING: Missing template entry: $rel_path"
+    return
+  fi
+
+  mkdir -p "$(dirname "$target_path")"
+  if [ -d "$source_path" ]; then
+    cp -R "$source_path" "$target_path"
+    return
+  fi
+
+  cp "$source_path" "$target_path"
+}
+
+is_payload_path() {
+  case "$1" in
+    .claude/*|.codex/*|.github/*|.vscode/*|_reference/*|brain/*|docs/*|integrations/*|mcp-servers/*|scripts/*|tasks/*|tests/*) return 0 ;;
+    .editorconfig|.env.example|.gitattributes|.gitignore|.mcp.json|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|ecosystem.md|Makefile|PROJECT_SPEC.md|README.md|SECURITY.md|SETUP_GUIDE.md|upgrade-project.sh) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_excluded_payload_path() {
+  case "$1" in
+    .claude/settings.local.json|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_starter_override_path() {
+  case "$1" in
+    tasks/current.md|tasks/.research-cache.md|tasks/lessons.md) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+copy_starter_overrides() {
+  local starter_root="$SCRIPT_DIR/templates/project-starter"
+  [ -d "$starter_root" ] || return
+
+  while IFS= read -r -d '' starter_file; do
+    local rel_path="${starter_file#$starter_root/}"
+    local target_path="$PROJECT_DIR/$rel_path"
+    mkdir -p "$(dirname "$target_path")"
+    cp "$starter_file" "$target_path"
+  done < <(find "$starter_root" -type f -print0)
+}
+
+copy_template_payload() {
+  mkdir -p "$PROJECT_DIR"
+
+  local rel_path=""
+  declare -A payload_files=()
+
+  # Ship only tracked files so maintainer-local artifacts cannot leak into child projects.
+  while IFS= read -r rel_path; do
+    [ -n "$rel_path" ] || continue
+    payload_files["$rel_path"]=1
+  done < <(cd "$SCRIPT_DIR" && git ls-files)
+
+  for rel_path in "${!payload_files[@]}"; do
+    if is_payload_path "$rel_path" &&
+      ! is_excluded_payload_path "$rel_path" &&
+      ! is_starter_override_path "$rel_path"; then
+      copy_entry "$rel_path"
+    fi
+  done
+
+  copy_starter_overrides
+}
 
 # Parse flags and project name
 IS_ORCHESTRATOR=false
@@ -45,13 +125,10 @@ fi
 echo "Creating project: $PROJECT_DIR"
 
 # Capture template remote BEFORE changing to project directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_REMOTE=$(cd "$SCRIPT_DIR" && git remote get-url origin 2>/dev/null || echo "")
 
-# Copy template (exclude Command Center files — those stay in template root only)
-cp -r "$(dirname "$0")" "$PROJECT_DIR"
-# Remove Command Center files that should NOT be in individual projects
-rm -rf "$PROJECT_DIR/n8n" "$PROJECT_DIR/start.sh" "$PROJECT_DIR/start.bat" "$PROJECT_DIR/setup.sh" "$PROJECT_DIR/setup.bat" "$PROJECT_DIR/templates"
+# Copy the project-facing payload explicitly so local fixtures and maintainer-only files never leak.
+copy_template_payload
 
 cd "$PROJECT_DIR"
 
@@ -87,21 +164,49 @@ generate_manifest() {
   get_category() {
     local fpath="$1"
     case "$fpath" in
+      .codex/*) echo "template" ;;
       .claude/settings.json) echo "template" ;;
+      .claude/settings.local.json.example) echo "template" ;;
       .claude/rules/*.md) echo "template" ;;
+      .claude/docs/*.md) echo "template" ;;
+      .claude/docs/domain-full/*.md) echo "template" ;;
+      .claude/library/process/*.md) echo "template" ;;
+      .claude/library/technical/*.md) echo "template" ;;
+      .claude/library/meta/*.md) echo "template" ;;
+      .claude/library/domain/*.md) echo "template" ;;
+      .claude/library/conflict/*.md) echo "template" ;;
       .claude/agents/*.md) echo "template" ;;
       .claude/skills/*/SKILL.md) echo "template" ;;
       .claude/commands/*.md) echo "template" ;;
       .claude/hooks/*.sh) echo "template" ;;
+      .claude/pipelines/*.md) echo "template" ;;
       scripts/*.sh) echo "template" ;;
+      scripts/lib/*.sh) echo "template" ;;
+      mcp-servers/context-router/package-lock.json) echo "template" ;;
+      mcp-servers/context-router/src/*.ts) echo "template" ;;
+      mcp-servers/context-router/package.json) echo "template" ;;
+      mcp-servers/context-router/tsconfig.json) echo "template" ;;
+      tests/rules/*.test.md) echo "template" ;;
+      _reference/*.md) echo "template" ;;
+      .github/*) echo "template" ;;
+      .github/workflows/*.yml) echo "template" ;;
       .editorconfig) echo "template" ;;
+      .env.example) echo "template" ;;
+      .gitattributes) echo "template" ;;
       Makefile) echo "template" ;;
       SECURITY.md) echo "template" ;;
       CONTRIBUTING.md) echo "template" ;;
+      README.md) echo "template" ;;
+      SETUP_GUIDE.md) echo "template" ;;
+      upgrade-project.sh) echo "template" ;;
+      AGENTS.md) echo "template" ;;
       CLAUDE.md) echo "project" ;;
+      PROJECT_SPEC.md) echo "project" ;;
+      ecosystem.md) echo "project" ;;
       tasks/*) echo "project" ;;
       brain/*) echo "project" ;;
       .gitignore) echo "hybrid" ;;
+      .mcp.json) echo "hybrid" ;;
       .vscode/extensions.json) echo "hybrid" ;;
       *) echo "" ;;
     esac
@@ -110,18 +215,47 @@ generate_manifest() {
   # Collect all files that belong in the manifest
   local files=()
   local patterns=(
+    ".codex/config.toml"
+    ".codex/hooks.json"
     ".claude/settings.json"
+    ".claude/settings.local.json.example"
     ".claude/rules/"*.md
+    ".claude/docs/"*.md
+    ".claude/docs/domain-full/"*.md
+    ".claude/library/process/"*.md
+    ".claude/library/technical/"*.md
+    ".claude/library/meta/"*.md
+    ".claude/library/domain/"*.md
+    ".claude/library/conflict/"*.md
     ".claude/agents/"*.md
     ".claude/skills/"*/SKILL.md
     ".claude/commands/"*.md
     ".claude/hooks/"*.sh
+    ".claude/pipelines/"*.md
     "scripts/"*.sh
+    "scripts/lib/"*.sh
+    "mcp-servers/context-router/package-lock.json"
+    "mcp-servers/context-router/src/"*.ts
+    "mcp-servers/context-router/package.json"
+    "mcp-servers/context-router/tsconfig.json"
+    "tests/rules/"*.test.md
+    "_reference/"*.md
+    ".github/"*.template
+    ".github/workflows/"*.yml
     ".editorconfig"
+    ".env.example"
+    ".gitattributes"
     "Makefile"
     "SECURITY.md"
     "CONTRIBUTING.md"
+    "README.md"
+    "SETUP_GUIDE.md"
+    "upgrade-project.sh"
+    "AGENTS.md"
     "CLAUDE.md"
+    "PROJECT_SPEC.md"
+    "ecosystem.md"
+    ".mcp.json"
     ".gitignore"
     ".vscode/extensions.json"
   )
@@ -148,9 +282,7 @@ generate_manifest() {
   # Build JSON
   {
     printf '{\n'
-    local tpl_ver
-    tpl_ver=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/CLAUDE.md" 2>/dev/null || echo "3.0.0")
-    printf '  "template_version": "%s",\n' "$tpl_ver"
+    printf '  "template_version": "%s",\n' "$TEMPLATE_VERSION"
     printf '  "template_remote": "%s",\n' "$TEMPLATE_REMOTE"
     printf '  "created": "%s",\n' "$today"
     printf '  "updated": "%s",\n' "$today"
@@ -189,7 +321,7 @@ git update-index --chmod=+x scripts/check-drift.sh 2>/dev/null || true
 
 # Create initial commit
 git add -A
-git commit -m "chore: initialize project from agent-project-template v2"
+git commit -m "chore: initialize project from agent-project-template v$TEMPLATE_VERSION"
 
 # Test hooks compatibility
 if [ -f scripts/test-hooks.sh ]; then
@@ -204,7 +336,6 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
     echo "Run 'bash scripts/sync-template.sh --from-git' to check for updates."
 fi
 
-# Auto-bootstrap MCP servers (context-router, engram, n8n if docker available)
 # If orchestrator — replace CLAUDE.md with orchestrator template
 if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Setting up as ORCHESTRATOR project..."
@@ -218,24 +349,18 @@ if [ "$IS_ORCHESTRATOR" = true ]; then
 fi
 
 echo ""
-echo "--- Auto-bootstrapping MCP servers ---"
-if [ -f scripts/bootstrap-mcp.sh ]; then
-  bash scripts/bootstrap-mcp.sh --install 2>&1 || echo "WARNING: MCP bootstrap had issues. Run manually: bash scripts/bootstrap-mcp.sh --install"
-fi
-
-echo ""
-echo "✅ Project '$PROJECT_DIR' created successfully!"
+echo "Project '$PROJECT_DIR' created successfully."
 echo ""
 if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Next steps:"
   echo "  1. cd $PROJECT_DIR"
-  echo "  2. Open Command Center: cd .. && bash start.sh"
-  echo "  3. Dashboard will use this project as orchestrator"
+  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install"
+  echo "  3. Open the project in Claude Code or Zed and use it as the orchestrator workspace"
 else
   echo "Next steps:"
   echo "  1. cd $PROJECT_DIR"
-  echo "  2. Open in Claude Code or Zed"
-  echo "  3. Run /setup-project to configure for your stack"
+  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install"
+  echo "  3. Open in Claude Code or Zed and run /setup-project"
 fi
 echo ""
-echo "Included: 18 library rules, 10 agents, 29 skills, 23 commands, 9 MCP tools"
+echo "Included: shared agent rules, hooks, MCP bootstrap, sync tooling, task memory, and docs scaffolding"

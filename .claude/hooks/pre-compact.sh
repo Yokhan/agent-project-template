@@ -44,7 +44,7 @@ echo "" >> "$SNAPSHOT"
 echo "### Research Cache" >> "$SNAPSHOT"
 if [ -f tasks/.research-cache.md ] && [ -s tasks/.research-cache.md ]; then
   # Include active entries count
-  ACTIVE=$(grep -c "^## " tasks/.research-cache.md 2>/dev/null || echo 0)
+  ACTIVE=$(grep -cE "^## \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]" tasks/.research-cache.md 2>/dev/null) || ACTIVE=0
   echo "Research cache has $ACTIVE entries. Read tasks/.research-cache.md for full context." >> "$SNAPSHOT"
 else
   echo "No research cache entries." >> "$SNAPSHOT"
