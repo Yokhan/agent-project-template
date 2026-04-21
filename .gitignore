@@ -4,7 +4,7 @@
 .env.*.local
 
 # Project-local Claude Code settings (not synced with template)
-# .claude/settings.local.json
+.claude/settings.local.json
 
 # n8n local config (user-specific paths)
 n8n/config.json
@@ -90,3 +90,20 @@ htmlcov/
 tasks/chats/
 tasks/.running-tasks.json
 tasks/.current.md.bak
+
+# Maintainer-local notes and audit logs
+brain/01-daily/*
+!brain/01-daily/.gitkeep
+brain/03-knowledge/research/*
+brain/03-knowledge/audits/*
+tasks/audit/*
+
+# Local bootstrap/smoke fixtures
+codex-phase2-*-fixture/
+codex-phase2-win-fixture/
+codex-setup-smoke-*/
+payload-fix-*/
+template-leak-smoke-*/
+
+# Temporary repro/debug artifacts
+tmp-*
