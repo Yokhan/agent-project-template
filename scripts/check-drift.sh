@@ -193,11 +193,13 @@ fi
 echo "[9/11] Checking template rules integrity..."
 if [ -f "$MANIFEST" ]; then
   RULE_DRIFT=0
-  for rule_file in .claude/rules/*.md .claude/library/*/*.md .claude/agents/*.md; do
+  for rule_file in .claude/rules/*.md .claude/library/*/*.md .claude/agents/*.md .agents/skills/*/SKILL.md .agents/skills/*/agents/openai.yaml .agents/skills/*/references/*.md .codex/agents/*.toml; do
     [ -f "$rule_file" ] || continue
     # Skip project-* files (those ARE meant to be local)
     basename_f=$(basename "$rule_file")
     case "$basename_f" in project-*) continue ;; esac
+    case "$rule_file" in .agents/skills/project-*/*) continue ;; esac
+    case "$rule_file" in .codex/agents/project-*) continue ;; esac
     # Check if file is in manifest and hash matches
     EXPECTED_HASH=$(_node -e "
 const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
@@ -299,6 +301,30 @@ if grep -Eq '^(model|model_reasoning_effort|approval_policy|sandbox_mode)\s*=' .
   ERRORS=$((ERRORS + 1))
 else
   echo "  ✅ .codex/config.toml keeps only template-safe settings"
+fi
+
+if [ -f "scripts/validate-codex-skills.js" ]; then
+  if node scripts/validate-codex-skills.js >/dev/null 2>&1; then
+    echo "  ✅ Codex skills validate"
+  else
+    echo "  ❌ Codex skill validation failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  ⚠️  Codex skill validator missing"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+if [ -f "scripts/validate-codex-agents.js" ]; then
+  if node scripts/validate-codex-agents.js >/dev/null 2>&1; then
+    echo "  ✅ Codex agents validate"
+  else
+    echo "  ❌ Codex agent validation failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  ⚠️  Codex agent validator missing"
+  WARNINGS=$((WARNINGS + 1))
 fi
 
 if [ -f "docs/PRODUCT_BOUNDARY.md" ] && [ -f "docs/SAFE_DEFAULTS.md" ] && [ -f "docs/SUPPORTED_ENVIRONMENTS.md" ]; then

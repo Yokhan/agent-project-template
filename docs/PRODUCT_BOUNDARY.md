@@ -6,7 +6,7 @@ What belongs to the template, what belongs to a generated project, and what must
 
 These files and directories are part of the generated project payload:
 
-- `.claude/`, `.codex/`, `.github/`, `.vscode/extensions.json`
+- `.agents/`, `.claude/`, `.codex/`, `.github/`, `.vscode/extensions.json`
 - `_reference/`, `brain/`, `docs/`, `integrations/`, `mcp-servers/`, `scripts/`, `tasks/`, `tests/`
 - Root project files such as `AGENTS.md`, `CLAUDE.md`, `README.md`, `SETUP_GUIDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `.mcp.json`
 
@@ -29,6 +29,8 @@ These may exist in the template workspace but must never ship to child projects:
 Template-owned files are updated by `sync-template.sh` and should be treated as baseline infrastructure:
 
 - `.claude/`
+- `.agents/skills/`
+- `.codex/agents/`
 - `.codex/`
 - shipped scripts and MCP helper sources
 - release-facing bootstrap docs such as `README.md` and `SETUP_GUIDE.md`
@@ -42,6 +44,8 @@ Project-owned files are expected to evolve per repo and are preserved by templat
 - `tasks/`
 - `brain/`
 - all `project-*` overlays under `.claude/`
+- all `project-*` Codex skills under `.agents/skills/`
+- all `project-*` Codex agents under `.codex/agents/`
 
 ## Local-Only Extension Surface
 

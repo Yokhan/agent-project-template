@@ -42,11 +42,45 @@ Finish the production-ready template program inside the repository, leaving only
 - Verified: `scripts/scan-project.sh --report` stays concise on a real downstream repo (`YokhanCallService`), not only on the template itself.
 - Added: `scripts/task-brief.sh`, and `scripts/context-restore.sh` now uses a compact handoff brief instead of raw `head -30`.
 - Verified: `AgentOS` now resolves the sibling `agent-project-template` repo for create/deploy flows, falls back from `PROJECT_SPEC.md` to `tasks/current.md` milestone when scanning current template projects, and resolves Git Bash on Windows even when `bash` is not in `PATH`.
+- Added: Codex now has a repository-scoped skill layer under `.agents/skills/` with 36 template-owned skills, including pipeline, subagent orchestration, design, Figma, audit, debug, security, migration, domain review, template sync, and OpenAI model guidance skills.
+- Added: `docs/CODEX_SKILLS_AUDIT.md`, `docs/AGENT_PIPELINES.md`, and `docs/OPENAI_MODEL_GUIDANCE.md` document the Codex audit, shared pipelines, and current official OpenAI GPT-5.5 guidance.
+- Verified: `node scripts/validate-codex-skills.js`, `scripts/test-template.sh`, `scripts/validate-template.sh`, `scripts/check-drift.sh`, and `scripts/sync-agents.sh` pass with the new Codex skill surface.
+- Added: Codex subagent pack under `.codex/agents/` with 7 Spark-backed workers (`pr_explorer`, `reviewer`, `security_reviewer`, `tester`, `docs_researcher`, `design_reviewer`, `implementer`) plus `[agents] max_depth = 1` safety.
+- Added: `docs/CODEX_SUBAGENTS_AUDIT.md`, `scripts/validate-codex-agents.js`, and `$codex-subagent-orchestration` for parallel Codex work.
+- Verified: real `codex exec` spawned `pr_explorer` and returned `PR_EXPLORER_READY` from a child thread.
+- Added: `docs/CODEX_FANOUT_PATTERNS.md` with Spec Kit-inspired but project-flexible routing, prompt templates, `[P]` task splitting, and AgentOS compatibility notes.
+- Added: `scripts/test-codex-subagents-live.sh` as an opt-in quota-consuming live runtime check, not part of normal smoke.
+- Strengthened: `scripts/validate-codex-agents.js` now enforces Spark-backed template agents, read-only defaults, scoped `implementer`, and `[agents]` concurrency/recursion guards.
 - Logged in: `tasks/debug-recovery-log.md`, `tasks/.research-cache.md`, and `tasks/lessons.md`
 
 ## Immediate Next Step
 - Run the first remote GitHub Actions workflow with the new Linux/Windows bootstrap smoke and confirm runner parity.
 - If that run is green, cut the release tag / rollout using `docs/RELEASE_CHECKLIST.md`.
+
+## Plan
+
+### Goal
+Unblock `sync-template.sh` dry-run/validation when a downstream manifest has no template-trackable files.
+
+### Complexity Estimate
+- Size: S
+- Files to modify: 3 (`scripts/sync-template.sh`, `scripts/test-template.sh`, `tasks/current.md`)
+- Estimated lines: 15-30
+- Risk: MEDIUM/HIGH because template sync is shared release infrastructure
+
+### Implementation Order
+1. Reproduce the blocker with a tiny downstream fixture that has only project-category manifest entries.
+2. Change `sync-template.sh` so dry-run warns and continues to Phase B instead of exiting.
+3. Add a smoke regression in `scripts/test-template.sh` for that exact fixture.
+4. Run the focused dry-run and available validation checks.
+
+### Test Scenarios
+- Happy path: empty-trackable manifest + `--dry-run` reports new template additions and exits 0.
+- Edge case: non-dry-run empty-trackable manifest still rebuilds the manifest before sync.
+- Error scenario: invalid manifest still exits with parse error.
+
+### Plan B
+If continuing dry-run produces misleading output, make `--dry-run --bootstrap` generate the report in a temp copy instead, preserving the real project unchanged.
 
 **Edge cases:**
 - [x] Historical debug details remain discoverable via linked files.

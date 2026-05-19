@@ -4,10 +4,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
+Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), Codex repo-scoped skills and subagents, persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
-> Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md)
+> Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md)
 
 ## Quick Start
 
@@ -82,7 +82,7 @@ git remote add template https://github.com/Yokhan/agent-project-template.git
 bash scripts/sync-template.sh --from-git
 ```
 
-**What gets updated**: Template infrastructure (`.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
+**What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
 **What's preserved**: Your code (`src/`), project docs, `brain/`, `tasks/`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and all `project-*` files
 **Convention**: Template files are read-only baseline. Project customizations go to `project-*` prefixed files (e.g., `rules/project-no-mock-db.md`).
 
@@ -99,6 +99,8 @@ All project-specific files use the `project-` prefix. Template sync **never touc
 | Rules | `rules/architecture.md` | `rules/project-kiro-system.md` |
 | Commands | `commands/implement.md` | `commands/project-00-research.md` |
 | Skills | `skills/debug/SKILL.md` | `skills/project-kiro-drafting/SKILL.md` |
+| Codex Skills | `.agents/skills/codex-debug/SKILL.md` | `.agents/skills/project-kiro-drafting/SKILL.md` |
+| Codex Agents | `.codex/agents/reviewer.toml` | `.codex/agents/project-kiro-reviewer.toml` |
 | Agents | `agents/reviewer.md` | `agents/project-kiro-writer.md` |
 | Hooks | `settings.json` (template) | `settings.local.json` (project) |
 
@@ -124,10 +126,11 @@ For complex domain workflows (literary production, game design, data science):
 1. **Domain rules** → `.claude/rules/project-[domain]-*.md` (enforcement, methodology)
 2. **Domain commands** → `.claude/commands/project-[phase]-*.md` (pipeline steps)
 3. **Domain skills** → `.claude/skills/project-[domain]-*/SKILL.md` (specialist knowledge)
-4. **Domain agents** → `.claude/agents/project-[domain]-*.md` (sub-agents)
-5. **Domain scripts** → `core/scripts/` (validators, generators — NOT in template's `scripts/`)
-6. **Domain docs** → `core/docs/` (methodology, reference material)
-7. **Domain config** → `core/config.yaml` (universal project configuration)
+4. **Codex domain skills** → `.agents/skills/project-[domain]-*/SKILL.md` (Codex-native specialist knowledge)
+5. **Domain agents** → `.claude/agents/project-[domain]-*.md` (sub-agents)
+6. **Domain scripts** → `core/scripts/` (validators, generators — NOT in template's `scripts/`)
+7. **Domain docs** → `core/docs/` (methodology, reference material)
+8. **Domain config** → `core/config.yaml` (universal project configuration)
 
 ### Progressive disclosure for domain docs
 
@@ -154,10 +157,12 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 |----------|-------|---------|
 | **Rules** | 25 | 6 process + 7 technical + 4 meta + 8 domain guards |
 | **Hooks** | 7 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate |
-| **Skills** | 29 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 7 other |
+| **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
+| **Codex Skills** | 36 | Pipeline, subagent orchestration, design/Figma, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
 | **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
 | **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
-| **Scripts** | 12 | check-drift, audit-reuse, scan-project, sync-template, bootstrap-mcp, + 7 more |
+| **Scripts** | 31 | validation, drift checks, bootstrap, sync, project scanning, task brief, hooks, and release smoke |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
 | **Memory** | tasks/ | lessons.md, current.md, .research-cache.md, post-mortems/ |
@@ -178,7 +183,7 @@ Based on AI-agent spec v3.1 + patterns from 20+ production repositories:
 Three-tier context infrastructure:
 
 Tier 1 (Hot Memory)     — CLAUDE.md + .claude/rules/router.md + tasks/lessons.md    (every session)
-Tier 2 (Specialists)    — .claude/skills/ + agents/                         (on demand)
+Tier 2 (Specialists)    — .claude/skills/ + .agents/skills/ + agents/        (on demand)
 Tier 3 (Cold Memory)    — docs/ + brain/                                    (by request)
 ```
 

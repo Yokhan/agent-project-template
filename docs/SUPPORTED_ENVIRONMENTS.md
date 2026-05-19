@@ -38,4 +38,7 @@ Current release validation covers:
 
 - Linux and Windows bootstrap smoke in CI
 - local validation scripts: `validate-template`, `check-drift`, `test-hooks`, `test-template`, `sync-agents`
+- Codex skill validation: `node scripts/validate-codex-skills.js`
+- Codex agent validation: `node scripts/validate-codex-agents.js`
+- optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`
 - downstream migration dry-runs via `downstream-census.sh`

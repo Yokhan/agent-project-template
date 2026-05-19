@@ -29,7 +29,7 @@ copy_entry() {
 
 is_payload_path() {
   case "$1" in
-    .claude/*|.codex/*|.github/*|.vscode/*|_reference/*|brain/*|docs/*|integrations/*|mcp-servers/*|scripts/*|tasks/*|tests/*) return 0 ;;
+    .agents/*|.claude/*|.codex/*|.github/*|.vscode/*|_reference/*|brain/*|docs/*|integrations/*|mcp-servers/*|scripts/*|tasks/*|tests/*) return 0 ;;
     .editorconfig|.env.example|.gitattributes|.gitignore|.mcp.json|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|ecosystem.md|Makefile|PROJECT_SPEC.md|README.md|SECURITY.md|SETUP_GUIDE.md|upgrade-project.sh) return 0 ;;
     *) return 1 ;;
   esac
@@ -165,6 +165,9 @@ generate_manifest() {
     local fpath="$1"
     case "$fpath" in
       .codex/*) echo "template" ;;
+      .agents/skills/*/SKILL.md) echo "template" ;;
+      .agents/skills/*/agents/openai.yaml) echo "template" ;;
+      .agents/skills/*/references/*.md) echo "template" ;;
       .claude/settings.json) echo "template" ;;
       .claude/settings.local.json.example) echo "template" ;;
       .claude/rules/*.md) echo "template" ;;
@@ -187,6 +190,7 @@ generate_manifest() {
       mcp-servers/context-router/package.json) echo "template" ;;
       mcp-servers/context-router/tsconfig.json) echo "template" ;;
       tests/rules/*.test.md) echo "template" ;;
+      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
       _reference/*.md) echo "template" ;;
       .github/*) echo "template" ;;
       .github/workflows/*.yml) echo "template" ;;
@@ -217,6 +221,10 @@ generate_manifest() {
   local patterns=(
     ".codex/config.toml"
     ".codex/hooks.json"
+    ".codex/agents/"*.toml
+    ".agents/skills/"*/SKILL.md
+    ".agents/skills/"*/agents/openai.yaml
+    ".agents/skills/"*/references/*.md
     ".claude/settings.json"
     ".claude/settings.local.json.example"
     ".claude/rules/"*.md
@@ -233,12 +241,25 @@ generate_manifest() {
     ".claude/hooks/"*.sh
     ".claude/pipelines/"*.md
     "scripts/"*.sh
+    "scripts/"*.js
     "scripts/lib/"*.sh
     "mcp-servers/context-router/package-lock.json"
     "mcp-servers/context-router/src/"*.ts
     "mcp-servers/context-router/package.json"
     "mcp-servers/context-router/tsconfig.json"
     "tests/rules/"*.test.md
+    "docs/AGENT_PIPELINES.md"
+    "docs/CODEX_FANOUT_PATTERNS.md"
+    "docs/CODEX_SKILLS_AUDIT.md"
+    "docs/CODEX_SUBAGENTS_AUDIT.md"
+    "docs/MIGRATION_MATRIX.md"
+    "docs/OPENAI_MODEL_GUIDANCE.md"
+    "docs/PRODUCT_BOUNDARY.md"
+    "docs/RELEASE_CHECKLIST.md"
+    "docs/SAFE_DEFAULTS.md"
+    "docs/SHARED_CONVENTIONS.md"
+    "docs/SUPPORTED_ENVIRONMENTS.md"
+    "docs/"*.md.template
     "_reference/"*.md
     ".github/"*.template
     ".github/workflows/"*.yml

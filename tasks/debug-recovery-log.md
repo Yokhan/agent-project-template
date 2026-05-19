@@ -7,7 +7,7 @@ Purpose: persistent handoff log for crash/debug sessions. Before each test attem
 Context restored after chat crash.
 
 Known state:
-- Project: `C:\Users\iohan\Documents\agent-project-template`
+- Project: `<repo-root>`
 - User said previous task was "agent template in docs" and current goal is to find the launch failure.
 - Screenshot error from Zed: `Failed to Launch` and `Server exited with status exit code: 0xffffffff`
 - Dirty files already present when resumed:

@@ -56,6 +56,43 @@ Rules live in `.claude/library/`. **Read them before implementing.**
 - **Testing**: also read `.claude/library/technical/testing.md`
 - **Design/UI**: also read `.claude/library/domain/domain-design-pipeline.md`
 
+## Codex Skills
+
+Codex repo-scoped skills live in `.agents/skills/`.
+
+Use skills before re-reading long rule files when the task matches a skill trigger:
+
+- `$codex-pipeline-workflow` — feature, bugfix, security patch, design, and review pipelines.
+- `$codex-design-workflow`, `$codex-domain-design-review` — UI, UX, CSS, frontend, visual polish, design systems, and design audits.
+- `$codex-figma-workflow` — Figma MCP writes, screenshots, Code Connect, and design-system composition.
+- `$codex-audit`, `$codex-debug`, `$codex-security-audit` — review, bugfix, and security work.
+- `$codex-feature-workflow`, `$codex-api-contract`, `$codex-coverage` — implementation and quality gates.
+- `$codex-template-sync`, `$codex-skill-maintenance` — template infrastructure and skill maintenance.
+- `$codex-openai-model-guidance` — current OpenAI model guidance; browse official OpenAI docs when freshness matters.
+- `$codex-subagent-orchestration` — parallel Codex work via `.codex/agents` when the task can be split safely.
+
+Project-specific Codex skills use `.agents/skills/project-*` and must be preserved by template sync.
+
+## Codex Subagents
+
+Project-scoped Codex subagents live in `.codex/agents/*.toml`.
+
+Use them for parallel read-only work before editing:
+
+- `pr_explorer` — affected files, execution paths, dependencies, context.
+- `reviewer` — correctness, regressions, architecture boundaries, test gaps.
+- `security_reviewer` — auth, secrets, injection, permissions, data exposure.
+- `tester` — regression cases and verification commands.
+- `docs_researcher` — official docs and API/framework checks.
+- `design_reviewer` — UI, UX, design-system, accessibility, responsive review.
+- `implementer` — isolated non-overlapping implementation chunks only.
+
+Default orchestration: discover existing workflow artifacts first, spawn read-only agents, wait for all results, consolidate in the parent thread, then edit in the parent. Use `implementer` only when file ownership is explicit and isolated.
+
+Before fan-out, check for Spec Kit, litkit, Kiro, AgentOS, or project-local `project-*` workflow artifacts. If `spec.md`, `plan.md`, `tasks.md`, or equivalent task graphs exist, use them as the input contract. Treat `[P]` or equivalent metadata as the default signal for safe parallel work.
+
+Routing matrix and copy-ready prompts: `docs/CODEX_FANOUT_PATTERNS.md`.
+
 ## Code Conventions (Critical Subset — Inline)
 
 These rules are ALWAYS enforced. Full details in the library files above.
@@ -129,6 +166,13 @@ After implementing, before presenting results:
 3. Build order: System → Tokens → Components → Screens. NEVER skip to screens.
 4. Every container must have layout mode (auto-layout / flexbox / grid).
 5. 8 states: Default, Hover, Active, Focus, Disabled, Loading, Error, Empty.
+6. Use `$codex-design-workflow` for design/UI work and `$codex-figma-workflow` for Figma MCP work.
+
+## OpenAI Model Guidance
+
+For current OpenAI API model selection, check official OpenAI docs and `docs/OPENAI_MODEL_GUIDANCE.md`.
+As of the 2026-05-19 docs check, OpenAI recommends `gpt-5.5` as the starting point for complex reasoning and coding, with smaller GPT-5.4 variants for latency/cost.
+Do not hardcode model, effort, approval, or sandbox defaults in project `.codex/config.toml`; those stay in user or IDE config.
 
 ## Self-Improvement
 After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMENT/MISUNDERSTANDING).
@@ -146,7 +190,7 @@ This project supports both Claude Code and OpenAI Codex.
 - Shared rules: `.claude/library/` (single source of truth for both agents)
 - Shared conventions: `docs/SHARED_CONVENTIONS.md`
 - Claude-specific: `CLAUDE.md`, `.claude/settings.json`, `.claude/hooks/`
-- Codex-specific: `AGENTS.md`, `.codex/config.toml`, `.codex/hooks.json`
+- Codex-specific: `AGENTS.md`, `.codex/config.toml`, `.codex/hooks.json`, `.agents/skills/`
 - Sync check: `bash scripts/sync-agents.sh`
 
 ## Build & Test

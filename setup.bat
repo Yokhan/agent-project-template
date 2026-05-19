@@ -59,7 +59,7 @@ echo [1/6] Copying template payload...
 powershell -NoProfile -Command ^
   "$templateRoot = (Resolve-Path $env:RAW_TEMPLATE_DIR).Path;" ^
   "$projectRoot = (Resolve-Path $env:RAW_PROJECT_DIR).Path;" ^
-  "$payloadPrefixes = @('.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
+  "$payloadPrefixes = @('.agents/','.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
   "$payloadFiles = @('.editorconfig','.env.example','.gitattributes','.gitignore','.mcp.json','AGENTS.md','CLAUDE.md','CONTRIBUTING.md','ecosystem.md','Makefile','PROJECT_SPEC.md','README.md','SECURITY.md','SETUP_GUIDE.md','upgrade-project.sh');" ^
   "$excludePatterns = @('.claude/settings.local.json','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
   "$starterOverrides = @('tasks/current.md','tasks/.research-cache.md','tasks/lessons.md');" ^
@@ -116,6 +116,7 @@ powershell -NoProfile -Command ^
   "$templateFiles = @(" ^
   "  '.codex/config.toml'," ^
   "  '.codex/hooks.json'," ^
+  "  '.codex/agents/*.toml'," ^
   "  '.claude/settings.json'," ^
   "  '.claude/settings.local.json.example'," ^
   "  '.github/ci.yml.template'," ^
@@ -137,6 +138,9 @@ powershell -NoProfile -Command ^
   "  '.vscode/extensions.json'" ^
   ");" ^
   "$templatePatterns = @(" ^
+  "  '.agents/skills/*/SKILL.md'," ^
+  "  '.agents/skills/*/agents/openai.yaml'," ^
+  "  '.agents/skills/*/references/*.md'," ^
   "  '.claude/docs/*.md'," ^
   "  '.claude/docs/domain-full/*.md'," ^
   "  '.claude/rules/*.md'," ^
@@ -151,12 +155,25 @@ powershell -NoProfile -Command ^
   "  '.claude/hooks/*.sh'," ^
   "  '.claude/pipelines/*.md'," ^
   "  'scripts/*.sh'," ^
+  "  'scripts/*.js'," ^
   "  'scripts/lib/*.sh'," ^
   "  'mcp-servers/context-router/package-lock.json'," ^
   "  'mcp-servers/context-router/src/*.ts'," ^
   "  'mcp-servers/context-router/package.json'," ^
   "  'mcp-servers/context-router/tsconfig.json'," ^
   "  'tests/rules/*.test.md'," ^
+  "  'docs/AGENT_PIPELINES.md'," ^
+  "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
+  "  'docs/CODEX_SKILLS_AUDIT.md'," ^
+  "  'docs/CODEX_SUBAGENTS_AUDIT.md'," ^
+  "  'docs/MIGRATION_MATRIX.md'," ^
+  "  'docs/OPENAI_MODEL_GUIDANCE.md'," ^
+  "  'docs/PRODUCT_BOUNDARY.md'," ^
+  "  'docs/RELEASE_CHECKLIST.md'," ^
+  "  'docs/SAFE_DEFAULTS.md'," ^
+  "  'docs/SHARED_CONVENTIONS.md'," ^
+  "  'docs/SUPPORTED_ENVIRONMENTS.md'," ^
+  "  'docs/*.md.template'," ^
   "  '_reference/*.md'," ^
   "  '.github/workflows/*.yml'" ^
   ");" ^

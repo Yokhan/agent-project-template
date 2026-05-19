@@ -5,6 +5,9 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 ## Codex And Claude Config
 
 - `.codex/config.toml` keeps only project-specific toggles. Model, effort, approval, and sandbox stay in IDE or user-level config.
+- Codex repo-scoped skills live in `.agents/skills/`; template-owned skills sync normally, while `project-*` skills are project-owned.
+- Codex subagents live in `.codex/agents/`; template-owned agents sync normally, while `project-*` agents are project-owned.
+- Codex fan-out defaults to read-only workers; `implementer` is only for explicit non-overlapping file scopes.
 - `.claude/settings.local.json` is local-only and must not ship in the template payload.
 - Shared rules live under `.claude/library/`; project-specific additions use `project-*` files.
 
@@ -22,5 +25,5 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 ## Update Contract
 
 - `sync-template.sh` updates template-owned files from the manifest.
-- `project-*` files, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
+- `project-*` files, `.agents/skills/project-*`, `.codex/agents/project-*`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
 - When both local and template versions changed, sync writes `*.template-new` instead of overwriting silently.

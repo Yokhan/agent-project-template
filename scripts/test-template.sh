@@ -26,6 +26,11 @@ check "ecosystem.md" test -f ecosystem.md
 check "docs/PRODUCT_BOUNDARY.md" test -f docs/PRODUCT_BOUNDARY.md
 check "docs/SAFE_DEFAULTS.md" test -f docs/SAFE_DEFAULTS.md
 check "docs/SUPPORTED_ENVIRONMENTS.md" test -f docs/SUPPORTED_ENVIRONMENTS.md
+check "docs/AGENT_PIPELINES.md" test -f docs/AGENT_PIPELINES.md
+check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
+check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
+check "docs/CODEX_SUBAGENTS_AUDIT.md" test -f docs/CODEX_SUBAGENTS_AUDIT.md
+check "docs/OPENAI_MODEL_GUIDANCE.md" test -f docs/OPENAI_MODEL_GUIDANCE.md
 check "setup.sh" test -f setup.sh
 check "setup.bat" test -f setup.bat
 check ".codex/config.toml" test -f .codex/config.toml
@@ -44,6 +49,27 @@ check "scripts/check-drift.sh" test -f scripts/check-drift.sh
 check "scripts/downstream-census.sh" test -f scripts/downstream-census.sh
 check "scripts/generate-project-spec.sh" test -f scripts/generate-project-spec.sh
 check "scripts/task-brief.sh" test -f scripts/task-brief.sh
+check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.js
+check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
+check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
+
+echo ""
+echo "Codex skills:"
+check ">=36 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 36 ]'
+check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
+check "core Codex design review skill" test -f .agents/skills/codex-domain-design-review/SKILL.md
+check "core Codex Figma skill" test -f .agents/skills/codex-figma-workflow/SKILL.md
+check "core Codex pipeline skill" test -f .agents/skills/codex-pipeline-workflow/SKILL.md
+check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
+check "validate-codex-skills" node scripts/validate-codex-skills.js
+
+echo ""
+echo "Codex subagents:"
+check ">=7 Codex agent files" bash -c '[ $(ls .codex/agents/*.toml 2>/dev/null | wc -l) -ge 7 ]'
+check "Codex pr_explorer agent" test -f .codex/agents/pr-explorer.toml
+check "Codex reviewer agent" test -f .codex/agents/reviewer.toml
+check "Codex implementer agent" test -f .codex/agents/implementer.toml
+check "validate-codex-agents" node scripts/validate-codex-agents.js
 
 echo ""
 echo "Claude config:"
@@ -72,6 +98,7 @@ check ">=3 brain templates" bash -c '[ $(ls brain/templates/*.md 2>/dev/null | w
 echo ""
 echo "File sizes:"
 check "CLAUDE.md <=300 lines" bash -c '[ $(wc -l < CLAUDE.md) -le 300 ]'
+check "AGENTS.md <=32KB" bash -c '[ $(wc -c < AGENTS.md) -le 32768 ]'
 
 echo ""
 echo "Entry points:"
@@ -93,14 +120,65 @@ echo ""
 echo "Bootstrap trust smoke:"
 SMOKE_SENTINEL="docs/.setup-leak-sentinel-$RANDOM-$$.txt"
 SMOKE_PROJECT="template-leak-smoke-$RANDOM-$$"
+SMOKE_INDEX=""
 cleanup_smoke() {
   rm -f "$SMOKE_SENTINEL"
+  [ -n "$SMOKE_INDEX" ] && rm -f "$SMOKE_INDEX"
   rm -rf "$SMOKE_PROJECT" 2>/dev/null || powershell.exe -NoProfile -Command "if (Test-Path '$SMOKE_PROJECT') { Remove-Item -Recurse -Force '$SMOKE_PROJECT' }" >/dev/null 2>&1 || true
+}
+run_setup_payload_smoke() {
+  local project="$1"
+  local sentinel="$2"
+
+  SMOKE_INDEX="$(mktemp)"
+  GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
+  GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+  GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
+
+  [ ! -f "$project/$sentinel" ] &&
+    [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
+    [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
+    [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
+    [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
+    [ -f "$project/scripts/validate-codex-agents.js" ] &&
+    [ -f "$project/scripts/validate-codex-skills.js" ]
 }
 trap cleanup_smoke EXIT
 printf 'sentinel\n' > "$SMOKE_SENTINEL"
-check "setup.sh excludes untracked payload sentinel" bash -c 'bash setup.sh "'"$SMOKE_PROJECT"'" >/dev/null 2>&1 && [ ! -f "'"$SMOKE_PROJECT"'/'"$SMOKE_SENTINEL"'" ]'
+check "setup.sh excludes untracked payload sentinel and ships Codex skills" run_setup_payload_smoke "$SMOKE_PROJECT" "$SMOKE_SENTINEL"
 cleanup_smoke
+trap - EXIT
+
+echo ""
+echo "Sync regression smoke:"
+SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
+SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
+cleanup_sync_smoke() {
+  rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+}
+run_empty_manifest_sync_smoke() {
+  local project="$1"
+  local output="$2"
+
+  mkdir -p "$project"
+  printf '%s\n' \
+    '{' \
+    '  "template_version": "unknown",' \
+    '  "created": "2000-01-01",' \
+    '  "updated": "2000-01-01",' \
+    '  "template_remote": "",' \
+    '  "files": {' \
+    '    "CLAUDE.md": {"category": "project", "hash": "fixture"}' \
+    '  }' \
+    '}' > "$project/.template-manifest.json"
+
+  bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
+  grep -q "Manifest has no trackable files" "$output"
+  grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
+}
+trap cleanup_sync_smoke EXIT
+check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+cleanup_sync_smoke
 trap - EXIT
 
 echo ""

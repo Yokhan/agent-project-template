@@ -70,7 +70,47 @@ for skill_dir in .claude/skills/*/; do
   fi
   SKILL_COUNT=$((SKILL_COUNT + 1))
 done
-echo "  Found $SKILL_COUNT skills"
+echo "  Found $SKILL_COUNT Claude skills"
+
+CODEX_SKILL_COUNT=0
+for skill_dir in .agents/skills/*/; do
+  [ -d "$skill_dir" ] || continue
+  if [ ! -f "${skill_dir}SKILL.md" ]; then
+    echo "  ERROR: $skill_dir missing SKILL.md"
+    ERRORS=$((ERRORS + 1))
+  fi
+  CODEX_SKILL_COUNT=$((CODEX_SKILL_COUNT + 1))
+done
+if [ "$CODEX_SKILL_COUNT" -lt 20 ]; then
+  echo "  ERROR: Expected at least 20 Codex skills, found $CODEX_SKILL_COUNT"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  Found $CODEX_SKILL_COUNT Codex skills"
+fi
+if ! node scripts/validate-codex-skills.js >/dev/null 2>&1; then
+  echo "  ERROR: Codex skill validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Codex skills validate"
+fi
+
+CODEX_AGENT_COUNT=0
+for agent_file in .codex/agents/*.toml; do
+  [ -f "$agent_file" ] || continue
+  CODEX_AGENT_COUNT=$((CODEX_AGENT_COUNT + 1))
+done
+if [ "$CODEX_AGENT_COUNT" -lt 7 ]; then
+  echo "  ERROR: Expected at least 7 Codex agents, found $CODEX_AGENT_COUNT"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  Found $CODEX_AGENT_COUNT Codex agents"
+fi
+if ! node scripts/validate-codex-agents.js >/dev/null 2>&1; then
+  echo "  ERROR: Codex agent validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Codex agents validate"
+fi
 
 # 4. Script syntax
 echo ""
@@ -82,21 +122,37 @@ for script in scripts/*.sh scripts/lib/*.sh .claude/hooks/*.sh; do
     ERRORS=$((ERRORS + 1))
   fi
 done
+for script in scripts/*.js; do
+  [ -f "$script" ] || continue
+  if ! node --check "$script" >/dev/null 2>&1; then
+    echo "  ERROR: $script has syntax errors"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
 echo "  All scripts pass syntax check"
 
 # 5. Required files exist
 echo ""
 echo "[5/11] Checking required files..."
 REQUIRED_FILES=(
+  "AGENTS.md"
   "CLAUDE.md"
   "README.md"
   "PROJECT_SPEC.md"
   "ecosystem.md"
+  "docs/AGENT_PIPELINES.md"
+  "docs/CODEX_FANOUT_PATTERNS.md"
+  "docs/CODEX_SKILLS_AUDIT.md"
+  "docs/CODEX_SUBAGENTS_AUDIT.md"
   "docs/MIGRATION_MATRIX.md"
+  "docs/OPENAI_MODEL_GUIDANCE.md"
   "docs/PRODUCT_BOUNDARY.md"
   "docs/RELEASE_CHECKLIST.md"
   "docs/SAFE_DEFAULTS.md"
   "docs/SUPPORTED_ENVIRONMENTS.md"
+  "scripts/validate-codex-skills.js"
+  "scripts/validate-codex-agents.js"
+  "scripts/test-codex-subagents-live.sh"
   "_reference/README.md"
   "_reference/tool-registry.md"
   ".claude/settings.json"
@@ -185,7 +241,9 @@ RULE_COUNT=$(ls .claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
 echo "  Commands: $CMD_COUNT"
 echo "  Agents: $AGENT_COUNT"
 echo "  Rules: $RULE_COUNT"
-echo "  Skills: $SKILL_COUNT"
+echo "  Claude Skills: $SKILL_COUNT"
+echo "  Codex Skills: $CODEX_SKILL_COUNT"
+echo "  Codex Agents: $CODEX_AGENT_COUNT"
 
 # 10. Platform lib
 echo ""
@@ -213,6 +271,14 @@ if grep -Eq '^(model|model_reasoning_effort|approval_policy|sandbox_mode)\s*=' .
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: .codex/config.toml keeps only project-specific Codex settings"
+fi
+
+AGENTS_BYTES=$(wc -c < AGENTS.md 2>/dev/null || echo 0)
+if [ "$AGENTS_BYTES" -gt 32768 ]; then
+  echo "  ERROR: AGENTS.md is $AGENTS_BYTES bytes, above Codex 32KB guidance"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: AGENTS.md size $AGENTS_BYTES bytes"
 fi
 
 TRACKED_ARTIFACTS=$(git ls-files "mcp-servers/*/node_modules/*" "mcp-servers/*/dist/*" "docs/.ci-untracked-sentinel.txt" "docs/.setup-leak-sentinel*" 2>/dev/null || true)

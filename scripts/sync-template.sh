@@ -191,6 +191,41 @@ if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
   fi
 fi
 
+manifest_trackable_count() {
+  _node -e "
+const fs=require('fs');
+const m=JSON.parse(fs.readFileSync('$MANIFEST','utf8'));
+let count=0;
+for(const[,info]of Object.entries(m.files||{})){
+  if((info.category||'template')!=='project')count++;
+}
+console.log(count);
+" 2>/dev/null
+}
+
+if [ -f "$MANIFEST" ]; then
+  trackable_count="$(manifest_trackable_count || echo parse_error)"
+  if [ "$trackable_count" = "parse_error" ]; then
+    echo "ERROR: Failed to parse $MANIFEST"
+    exit 1
+  fi
+
+  if [ "$trackable_count" = "0" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      echo "WARNING: Manifest has no trackable files. Dry-run will report template additions without changing files."
+      echo "Run bootstrap to rebuild the manifest before applying sync:"
+      echo "  $0 $TEMPLATE_PATH --project-dir $PROJECT_PATH --bootstrap"
+      echo ""
+    else
+      backup_manifest="$MANIFEST.empty-$(date +%Y%m%d-%H%M%S).bak"
+      mv "$MANIFEST" "$backup_manifest"
+      echo "WARNING: Manifest has no trackable files. Backed up to $backup_manifest."
+      echo "Rebuilding manifest from current project state before sync..."
+      "${BASH:-bash}" "$SCRIPT_DIR/sync-template.sh" "$TEMPLATE_PATH" --project-dir "$PROJECT_PATH" --bootstrap
+    fi
+  fi
+fi
+
 # Warn if manifest version is unknown
 manifest_ver=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('.template-manifest.json','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
 if [ "$manifest_ver" = "unknown" ] || [ -z "$manifest_ver" ]; then
@@ -225,6 +260,10 @@ if [ ! -f "$MANIFEST" ]; then
     first=true
     for pattern in \
       ".codex/config.toml" ".codex/hooks.json" \
+      ".codex/agents/*.toml" \
+      ".agents/skills/*/SKILL.md" \
+      ".agents/skills/*/agents/openai.yaml" \
+      ".agents/skills/*/references/*.md" \
       ".claude/settings.json" ".claude/settings.local.json.example" \
       ".claude/docs/*.md" \
       ".claude/docs/domain-full/*.md" \
@@ -239,21 +278,40 @@ if [ ! -f "$MANIFEST" ]; then
       ".claude/commands/*.md" \
       ".claude/hooks/*.sh" \
       ".claude/pipelines/*.md" \
-      "scripts/*.sh" "scripts/lib/*.sh" \
+      "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" \
       "mcp-servers/context-router/package-lock.json" \
       "mcp-servers/context-router/src/*.ts" \
       "mcp-servers/context-router/package.json" \
       "mcp-servers/context-router/tsconfig.json" \
       "tests/rules/*.test.md" \
+      "docs/AGENT_PIPELINES.md" \
+      "docs/CODEX_FANOUT_PATTERNS.md" \
+      "docs/CODEX_SKILLS_AUDIT.md" \
+      "docs/CODEX_SUBAGENTS_AUDIT.md" \
+      "docs/MIGRATION_MATRIX.md" \
+      "docs/OPENAI_MODEL_GUIDANCE.md" \
+      "docs/PRODUCT_BOUNDARY.md" \
+      "docs/RELEASE_CHECKLIST.md" \
+      "docs/SAFE_DEFAULTS.md" \
+      "docs/SHARED_CONVENTIONS.md" \
+      "docs/SUPPORTED_ENVIRONMENTS.md" \
+      "docs/*.md.template" \
+      "templates/project-starter/tasks/*" \
+      "templates/project-starter/tasks/.research-cache.md" \
+      "templates/project-starter/tasks/audit/.gitkeep" \
+      "templates/project-starter/brain/01-daily/.gitkeep" \
+      "templates/project-starter/brain/03-knowledge/research/.gitkeep" \
+      "templates/project-starter/brain/03-knowledge/audits/.gitkeep" \
       ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" \
       ".github/ci.yml.template" ".github/workflows/*.yml" \
       "_reference/tool-registry.md" "_reference/README.md" \
-      ".mcp.json" "AGENTS.md" "CLAUDE.md" "PROJECT_SPEC.md" "ecosystem.md" "README.md" "SETUP_GUIDE.md" "upgrade-project.sh" ".gitignore" ".vscode/extensions.json"; do
+      ".mcp.json" "AGENTS.md" "CLAUDE.md" "PROJECT_SPEC.md" "ecosystem.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" ".gitignore" ".vscode/extensions.json"; do
       for f in $pattern; do
         [ -f "$f" ] || continue
         # Skip project-* files (agent-created)
         basename_f=$(basename "$f")
         case "$basename_f" in project-*) continue ;; esac
+        case "$f" in .claude/skills/project-*/*|.agents/skills/project-*/*) continue ;; esac
 
         hash=$(get_hash "$f")
         cat=$(get_category "$f")
@@ -401,7 +459,7 @@ done < <(echo "$manifest_files")
 echo "--- Phase B: Checking for new template files ---"
 
 # Define template file patterns to check
-for pattern in ".codex/config.toml" ".codex/hooks.json" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "_reference/*.md" ".github/*.template" ".github/workflows/*.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "README.md" "SETUP_GUIDE.md" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
+for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/*.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
@@ -410,7 +468,7 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".claude/settings.json" 
 
     # Skip project-local files
     case "$rel_path" in
-      .claude/settings.local.json|core/*)
+      .claude/settings.local.json|.codex/agents/project-*|core/*)
         continue
         ;;
     esac
@@ -434,9 +492,19 @@ console.log((m.files||{})['$rel_path']?'yes':'no');
   done
 done
 
+# Project-local Claude settings must never be tracked or carried in the manifest.
+if git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1; then
+  if [ "$DRY_RUN" = true ]; then
+    echo "  WOULD UNTRACK: .claude/settings.local.json (local-only settings)"
+  else
+    git rm --cached --quiet -- .claude/settings.local.json || true
+    echo "  UNTRACKED: .claude/settings.local.json (local-only settings)"
+  fi
+fi
+
 # --- Phase C: Detect project files (preserved) ---
 echo "--- Phase C: Project files (preserved) ---"
-for dir in .claude/rules .claude/agents .claude/skills .claude/commands .claude/pipelines; do
+for dir in .codex/agents .agents/skills .claude/rules .claude/agents .claude/skills .claude/commands .claude/pipelines; do
   [ -d "$dir" ] || continue
   for f in "$dir"/project-*; do
     [ -e "$f" ] || continue
@@ -444,7 +512,7 @@ for dir in .claude/rules .claude/agents .claude/skills .claude/commands .claude/
     PRESERVED=$((PRESERVED + 1))
   done
   # Also check for project- prefixed directories (skills)
-  if [ "$dir" = ".claude/skills" ]; then
+  if [ "$dir" = ".claude/skills" ] || [ "$dir" = ".agents/skills" ]; then
     for d in "$dir"/project-*/; do
       [ -d "$d" ] || continue
       echo "  PRESERVED: $d"
@@ -454,13 +522,26 @@ for dir in .claude/rules .claude/agents .claude/skills .claude/commands .claude/
 done
 
 # --- Update manifest ---
-if [ "$DRY_RUN" = false ] && [ $((UPDATED + NEW_FILES)) -gt 0 ]; then
+if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
   echo "--- Updating manifest ---"
   _node -e "
 const fs=require('fs'),path=require('path'),{execSync}=require('child_process');
 const manifestPath='$MANIFEST',newVer='$NEW_VER',syncDate=new Date().toISOString().slice(0,10);
 const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
 m.template_version=newVer;m.updated=syncDate;
+function toPosix(fp){return fp.split(path.sep).join('/').replace(/\/+/g,'/');}
+function cleanHash(hash){return String(hash||'').replace(/^[\\\\/]+/,'');}
+
+const normalizedFiles={};
+for(const[rawFp,rawInfo]of Object.entries(m.files||{})){
+  const fp=toPosix(rawFp);
+  if(fp==='.claude/settings.local.json')continue;
+  if(fp.startsWith('docs/.setup-leak-sentinel-'))continue;
+  const info={...rawInfo};
+  if(info.hash)info.hash=cleanHash(info.hash);
+  normalizedFiles[fp]=info;
+}
+m.files=normalizedFiles;
 
 function getHash(fp){
   try{return execSync('sha256sum \"'+fp+'\"',{encoding:'utf8'}).split(' ')[0];}catch{}
@@ -482,18 +563,19 @@ function getCategory(fp){
 }
 
 // Add new files from standard dirs
-const dirs=['.claude','.claude/docs','.claude/docs/domain-full','.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','_reference','.github','.github/workflows','.codex'];
+const dirs=['.claude','.claude/docs','.claude/docs/domain-full','.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','templates/project-starter/tasks','templates/project-starter/tasks/audit','templates/project-starter/brain/01-daily','templates/project-starter/brain/03-knowledge/research','templates/project-starter/brain/03-knowledge/audits','_reference','.github','.github/workflows','.codex','.codex/agents'];
 for(const d of dirs){
   if(!fs.existsSync(d))continue;
   for(const f of fs.readdirSync(d)){
-    const fp=path.join(d,f).replace(/\\\\\\\\/g,'/');
-    if(!m.files[fp]&&!f.startsWith('project-')&&fs.statSync(path.join(d,f)).isFile()){
+    const diskPath=path.join(d,f);
+    const fp=toPosix(diskPath);
+    if(!m.files[fp]&&!f.startsWith('project-')&&fs.statSync(diskPath).isFile()){
       const h=getHash(fp);if(h)m.files[fp]={category:getCategory(fp),hash:h};
     }
   }
 }
 
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md'];
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
 for(const fp of rootFiles){
   if(!fs.existsSync(fp)||m.files[fp])continue;
   const h=getHash(fp);
@@ -501,14 +583,24 @@ for(const fp of rootFiles){
 }
 
 // Skills scanning
-const sd='.claude/skills';
-if(fs.existsSync(sd)){
-  for(const sn of fs.readdirSync(sd)){
+for(const sd of ['.claude/skills','.agents/skills']){
+ if(!fs.existsSync(sd))continue;
+ for(const sn of fs.readdirSync(sd)){
     if(sn.startsWith('project-'))continue;
-    const sf=path.join(sd,sn,'SKILL.md').replace(/\\\\\\\\/g,'/');
-    if(fs.existsSync(sf)){
-      const h=getHash(sf);
-      if(h){if(!m.files[sf])m.files[sf]={category:'template',hash:h};else m.files[sf].hash=h;}
+    const skillDir=path.join(sd,sn);
+    const candidates=[path.join(skillDir,'SKILL.md'),path.join(skillDir,'agents','openai.yaml')];
+    const refs=path.join(skillDir,'references');
+    if(fs.existsSync(refs)){
+      for(const f of fs.readdirSync(refs)){
+        candidates.push(path.join(refs,f));
+      }
+    }
+    for(const candidate of candidates){
+      const sf=toPosix(candidate);
+      if(fs.existsSync(sf)&&fs.statSync(sf).isFile()){
+        const h=getHash(sf);
+        if(h){if(!m.files[sf])m.files[sf]={category:'template',hash:h};else m.files[sf].hash=h;}
+      }
     }
   }
 }

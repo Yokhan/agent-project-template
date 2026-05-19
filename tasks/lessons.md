@@ -43,6 +43,26 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-05-19 - Codex custom agents require trusted project loading
+**Track**: KNOWLEDGE
+**Severity**: P2
+**Error**: A temp-project probe returned `unknown agent_type 'probe_reader'`, which could be misread as custom Codex agents not working.
+**Root cause**: Codex custom agents loaded correctly from the trusted repository's `.codex/agents/*.toml`, but did not load the same way from an ad hoc temp directory outside the trusted project setup.
+**Rule**: Test Codex project-scoped agents from the trusted repository where they will run. A temp directory probe is useful for generic `spawn_agent`, but not reliable for custom agent loading.
+**Applies to**: Codex subagent testing, Zed/ACP validation, `.codex/agents`
+**Category**: tooling
+**Status**: ACTIVE
+
+### 2026-05-19 - Script scanners must tolerate files without header comments
+**Track**: BUG
+**Severity**: P2
+**Error**: `scripts/test-template.sh` failed at `scan-project --report` after adding `scripts/validate-codex-skills.js`; the scanner exited before the shared-utilities phase.
+**Root cause**: `scan-project.sh` ran a `grep` pipeline under `set -euo pipefail` while extracting a script purpose from the first five lines. A JavaScript file with no `//` header made `grep` return 1, which aborted the script instead of falling back to `project script`.
+**Rule**: Metadata scanners must treat optional comments as optional. Any `grep` pipeline used for discovery under `set -e` needs an explicit `|| true` or equivalent fallback.
+**Applies to**: scan-project.sh, template smoke tests, metadata discovery scripts
+**Category**: tooling
+**Status**: ACTIVE
+
 ### 2026-03-17 — Example: Hallucinated npm package name
 **Error**: Recommended `@utils/smart-merge` package which does not exist on npm.
 **Root cause**: Generated a plausible-sounding package name from training data without verifying it exists. No verification step was performed before recommending.
