@@ -24,8 +24,11 @@ if [ -z "${NODE:-}" ]; then
 fi
 
 # Template version check
-TEMPLATE_VERSION="3.6.0"
-CLAUDE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "unknown")
+TEMPLATE_VERSION="3.7.0"
+CLAUDE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || true)
+if [ -z "$CLAUDE_VERSION" ]; then
+    CLAUDE_VERSION="unknown"
+fi
 if [ "$CLAUDE_VERSION" = "unknown" ]; then
     echo "INFO: Template version not found in CLAUDE.md"
 elif [ "$CLAUDE_VERSION" != "$TEMPLATE_VERSION" ]; then

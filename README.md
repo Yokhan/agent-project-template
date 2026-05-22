@@ -1,6 +1,6 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v3.6.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v3.7.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -259,6 +259,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **3.7.0** | Codex-native skills, subagent fan-out, validators, OpenAI model guidance, and setup/sync delivery for the Codex execution layer |
 | **3.6.0** | Production-ready bootstrap contract, tracked-only payload, living PROJECT_SPEC/tool registry, AgentOS compatibility, and release hardening |
 | **3.5.0** | Dual-agent support for Claude Code + Codex, Codex project config, validation and recovery hardening |
 | **3.2.1** | MCP Context Router (1 tool call instead of 9), depth=brief/normal/full, rules cache, Russian keywords, -93% per-message tokens |

@@ -537,6 +537,7 @@ for(const[rawFp,rawInfo]of Object.entries(m.files||{})){
   const fp=toPosix(rawFp);
   if(fp==='.claude/settings.local.json')continue;
   if(fp.startsWith('docs/.setup-leak-sentinel-'))continue;
+  if(rawInfo.category!=='project'&&!fs.existsSync(fp))continue;
   const info={...rawInfo};
   if(info.hash)info.hash=cleanHash(info.hash);
   normalizedFiles[fp]=info;

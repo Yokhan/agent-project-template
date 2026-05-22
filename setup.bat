@@ -108,7 +108,7 @@ echo [2/6] Generating template manifest...
 cd "%PROJECT_DIR%"
 powershell -NoProfile -Command ^
   "$today = (Get-Date -Format 'yyyy-MM-dd');" ^
-  "$templateVersion = '3.6.0';" ^
+  "$templateVersion = '3.7.0';" ^
   "try {" ^
   "  $versionMatch = Select-String -Path (Join-Path '%TEMPLATE_DIR%' 'AGENTS.md') -Pattern 'Template Version:\s*([0-9.]+)' -ErrorAction Stop | Select-Object -First 1;" ^
   "  if ($versionMatch.Matches.Count -gt 0) { $templateVersion = $versionMatch.Matches[0].Groups[1].Value }" ^
@@ -245,7 +245,7 @@ if errorlevel 1 (
 ) else (
     git update-index --chmod=+x scripts/check-drift.sh >nul 2>&1
     git add -A >nul 2>&1
-    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$match = Select-String -Path 'AGENTS.md' -Pattern 'Template Version:\s*([0-9.]+)' | Select-Object -First 1; if ($match -and $match.Matches.Count -gt 0) { $match.Matches[0].Groups[1].Value } else { '3.6.0' }"`) do set "TEMPLATE_VERSION=%%i"
+    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$match = Select-String -Path 'AGENTS.md' -Pattern 'Template Version:\s*([0-9.]+)' | Select-Object -First 1; if ($match -and $match.Matches.Count -gt 0) { $match.Matches[0].Groups[1].Value } else { '3.7.0' }"`) do set "TEMPLATE_VERSION=%%i"
     git commit -m "chore: initialize project from agent-project-template v%TEMPLATE_VERSION%" >nul 2>&1
     echo Git repository initialized with initial commit.
 )

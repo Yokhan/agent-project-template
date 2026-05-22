@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/AGENTS.md" 2>/dev/null | head -n 1)
-[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="3.6.0"
+[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="3.7.0"
 
 copy_entry() {
   local rel_path="$1"
