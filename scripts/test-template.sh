@@ -11,7 +11,18 @@ cd "$TEMPLATE_DIR"
 
 pass() { echo "  PASS: $1"; CHECKS=$((CHECKS+1)); }
 fail() { echo "  FAIL: $1"; ERRORS=$((ERRORS+1)); CHECKS=$((CHECKS+1)); }
+skip() { echo "  SKIP: $1"; CHECKS=$((CHECKS+1)); }
 check() { local d="$1"; shift; if "$@" &>/dev/null; then pass "$d"; else fail "$d"; fi; }
+is_template_source_repo() { grep -Eq '^- Name: agent-project-template$' PROJECT_SPEC.md 2>/dev/null; }
+source_only_check() {
+  local description="$1"
+  shift
+  if is_template_source_repo; then
+    check "$description" "$@"
+  else
+    skip "$description (template source repo only)"
+  fi
+}
 
 echo "=== Template Smoke Test: $TEMPLATE_DIR ==="
 echo ""
@@ -31,8 +42,8 @@ check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
 check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
 check "docs/CODEX_SUBAGENTS_AUDIT.md" test -f docs/CODEX_SUBAGENTS_AUDIT.md
 check "docs/OPENAI_MODEL_GUIDANCE.md" test -f docs/OPENAI_MODEL_GUIDANCE.md
-check "setup.sh" test -f setup.sh
-check "setup.bat" test -f setup.bat
+source_only_check "setup.sh" test -f setup.sh
+source_only_check "setup.bat" test -f setup.bat
 check ".codex/config.toml" test -f .codex/config.toml
 check ".codex/hooks.json" test -f .codex/hooks.json
 check ".gitignore" test -f .gitignore
@@ -40,11 +51,11 @@ check ".gitattributes" test -f .gitattributes
 check ".env.example" test -f .env.example
 check "tasks/lessons.md" test -f tasks/lessons.md
 check "tasks/current.md" test -f tasks/current.md
-check "starter tasks/current.md" test -f templates/project-starter/tasks/current.md
-check "starter .research-cache.md" test -f templates/project-starter/tasks/.research-cache.md
-check "starter lessons.md" test -f templates/project-starter/tasks/lessons.md
-check "starter tasks/audit/.gitkeep" test -f templates/project-starter/tasks/audit/.gitkeep
-check "starter brain/01-daily/.gitkeep" test -f templates/project-starter/brain/01-daily/.gitkeep
+source_only_check "starter tasks/current.md" test -f templates/project-starter/tasks/current.md
+source_only_check "starter .research-cache.md" test -f templates/project-starter/tasks/.research-cache.md
+source_only_check "starter lessons.md" test -f templates/project-starter/tasks/lessons.md
+source_only_check "starter tasks/audit/.gitkeep" test -f templates/project-starter/tasks/audit/.gitkeep
+source_only_check "starter brain/01-daily/.gitkeep" test -f templates/project-starter/brain/01-daily/.gitkeep
 check "scripts/check-drift.sh" test -f scripts/check-drift.sh
 check "scripts/downstream-census.sh" test -f scripts/downstream-census.sh
 check "scripts/generate-project-spec.sh" test -f scripts/generate-project-spec.sh
@@ -91,8 +102,8 @@ check "brain/01-daily" test -d brain/01-daily
 check "brain/02-projects" test -d brain/02-projects
 check "brain/03-knowledge" test -d brain/03-knowledge
 check "brain/04-decisions" test -d brain/04-decisions
-check "starter research/.gitkeep" test -f templates/project-starter/brain/03-knowledge/research/.gitkeep
-check "starter audits/.gitkeep" test -f templates/project-starter/brain/03-knowledge/audits/.gitkeep
+source_only_check "starter research/.gitkeep" test -f templates/project-starter/brain/03-knowledge/research/.gitkeep
+source_only_check "starter audits/.gitkeep" test -f templates/project-starter/brain/03-knowledge/audits/.gitkeep
 check ">=3 brain templates" bash -c '[ $(ls brain/templates/*.md 2>/dev/null | wc -l) -ge 3 ]'
 
 echo ""
@@ -118,68 +129,76 @@ check "task-brief --json" bash -c 'bash scripts/task-brief.sh --json | node -e "
 
 echo ""
 echo "Bootstrap trust smoke:"
-SMOKE_SENTINEL="docs/.setup-leak-sentinel-$RANDOM-$$.txt"
-SMOKE_PROJECT="template-leak-smoke-$RANDOM-$$"
-SMOKE_INDEX=""
-cleanup_smoke() {
-  rm -f "$SMOKE_SENTINEL"
-  [ -n "$SMOKE_INDEX" ] && rm -f "$SMOKE_INDEX"
-  rm -rf "$SMOKE_PROJECT" 2>/dev/null || powershell.exe -NoProfile -Command "if (Test-Path '$SMOKE_PROJECT') { Remove-Item -Recurse -Force '$SMOKE_PROJECT' }" >/dev/null 2>&1 || true
-}
-run_setup_payload_smoke() {
-  local project="$1"
-  local sentinel="$2"
+if is_template_source_repo; then
+  SMOKE_SENTINEL="docs/.setup-leak-sentinel-$RANDOM-$$.txt"
+  SMOKE_PROJECT="template-leak-smoke-$RANDOM-$$"
+  SMOKE_INDEX=""
+  cleanup_smoke() {
+    rm -f "$SMOKE_SENTINEL"
+    [ -n "$SMOKE_INDEX" ] && rm -f "$SMOKE_INDEX"
+    rm -rf "$SMOKE_PROJECT" 2>/dev/null || powershell.exe -NoProfile -Command "if (Test-Path '$SMOKE_PROJECT') { Remove-Item -Recurse -Force '$SMOKE_PROJECT' }" >/dev/null 2>&1 || true
+  }
+  run_setup_payload_smoke() {
+    local project="$1"
+    local sentinel="$2"
 
-  SMOKE_INDEX="$(mktemp)"
-  GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-  GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
-  GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
+    SMOKE_INDEX="$(mktemp)"
+    GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
-  [ ! -f "$project/$sentinel" ] &&
-    [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
-    [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
-    [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
-    [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
-    [ -f "$project/scripts/validate-codex-agents.js" ] &&
-    [ -f "$project/scripts/validate-codex-skills.js" ]
-}
-trap cleanup_smoke EXIT
-printf 'sentinel\n' > "$SMOKE_SENTINEL"
-check "setup.sh excludes untracked payload sentinel and ships Codex skills" run_setup_payload_smoke "$SMOKE_PROJECT" "$SMOKE_SENTINEL"
-cleanup_smoke
-trap - EXIT
+    [ ! -f "$project/$sentinel" ] &&
+      [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
+      [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
+      [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
+      [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
+      [ -f "$project/scripts/validate-codex-agents.js" ] &&
+      [ -f "$project/scripts/validate-codex-skills.js" ]
+  }
+  trap cleanup_smoke EXIT
+  printf 'sentinel\n' > "$SMOKE_SENTINEL"
+  check "setup.sh excludes untracked payload sentinel and ships Codex skills" run_setup_payload_smoke "$SMOKE_PROJECT" "$SMOKE_SENTINEL"
+  cleanup_smoke
+  trap - EXIT
+else
+  skip "setup.sh bootstrap smoke (template source repo only)"
+fi
 
 echo ""
 echo "Sync regression smoke:"
-SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
-SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
-cleanup_sync_smoke() {
-  rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
-}
-run_empty_manifest_sync_smoke() {
-  local project="$1"
-  local output="$2"
+if is_template_source_repo; then
+  SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
+  SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
+  cleanup_sync_smoke() {
+    rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+  }
+  run_empty_manifest_sync_smoke() {
+    local project="$1"
+    local output="$2"
 
-  mkdir -p "$project"
-  printf '%s\n' \
-    '{' \
-    '  "template_version": "unknown",' \
-    '  "created": "2000-01-01",' \
-    '  "updated": "2000-01-01",' \
-    '  "template_remote": "",' \
-    '  "files": {' \
-    '    "CLAUDE.md": {"category": "project", "hash": "fixture"}' \
-    '  }' \
-    '}' > "$project/.template-manifest.json"
+    mkdir -p "$project"
+    printf '%s\n' \
+      '{' \
+      '  "template_version": "unknown",' \
+      '  "created": "2000-01-01",' \
+      '  "updated": "2000-01-01",' \
+      '  "template_remote": "",' \
+      '  "files": {' \
+      '    "CLAUDE.md": {"category": "project", "hash": "fixture"}' \
+      '  }' \
+      '}' > "$project/.template-manifest.json"
 
-  bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
-  grep -q "Manifest has no trackable files" "$output"
-  grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
-}
-trap cleanup_sync_smoke EXIT
-check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
-cleanup_sync_smoke
-trap - EXIT
+    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
+    grep -q "Manifest has no trackable files" "$output"
+    grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
+  }
+  trap cleanup_sync_smoke EXIT
+  check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+  cleanup_sync_smoke
+  trap - EXIT
+else
+  skip "sync-template empty-manifest smoke (template source repo only)"
+fi
 
 echo ""
 echo "Results: $((CHECKS-ERRORS))/$CHECKS passed"

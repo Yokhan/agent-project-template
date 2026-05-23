@@ -41,6 +41,9 @@ Finish the production-ready template program inside the repository, leaving only
 - Verified: `scripts/test-template.sh` now includes an untracked-sentinel smoke check so bootstrap leakage regressions fail locally before release.
 - Verified: `scripts/scan-project.sh --report` stays concise on a real downstream repo (`YokhanCallService`), not only on the template itself.
 - Added: `scripts/task-brief.sh`, and `scripts/context-restore.sh` now uses a compact handoff brief instead of raw `head -30`.
+- Fixed: `scripts/task-brief.sh` no longer uses `collect_items ... | head -1` under `set -euo pipefail`, preventing silent SIGPIPE exits in downstream repos.
+- Fixed: `scripts/test-template.sh` runs setup/bootstrap smoke only when the current repo is the `agent-project-template` source; downstream repos record the check as source-only instead of creating projects from local memory.
+- Verified: 2026-05-23 local gate is green after the fixes: `check-drift.sh` 0 warnings/0 errors, `validate-template.sh` PASS, `test-template.sh` 82/82, `sync-agents.sh` GREEN, Codex validators 48/15.
 - Verified: `AgentOS` now resolves the sibling `agent-project-template` repo for create/deploy flows, falls back from `PROJECT_SPEC.md` to `tasks/current.md` milestone when scanning current template projects, and resolves Git Bash on Windows even when `bash` is not in `PATH`.
 - Added: Codex now has a repository-scoped skill layer under `.agents/skills/` with 36 template-owned skills, including pipeline, subagent orchestration, design, Figma, audit, debug, security, migration, domain review, template sync, and OpenAI model guidance skills.
 - Added: `docs/CODEX_SKILLS_AUDIT.md`, `docs/AGENT_PIPELINES.md`, and `docs/OPENAI_MODEL_GUIDANCE.md` document the Codex audit, shared pipelines, and current official OpenAI GPT-5.5 guidance.
@@ -55,6 +58,7 @@ Finish the production-ready template program inside the repository, leaving only
 
 ## Immediate Next Step
 - Run the first remote GitHub Actions workflow with the new Linux/Windows bootstrap smoke and confirm runner parity.
+- Commit/push the 2026-05-23 template cleanup (`task-brief`, downstream-safe `test-template`, and refreshed release docs) before tagging a new patch release.
 - If that run is green, cut the release tag / rollout using `docs/RELEASE_CHECKLIST.md`.
 
 ## Plan

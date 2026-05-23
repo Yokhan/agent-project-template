@@ -3,6 +3,8 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
+Last reviewed: 2026-05-23 for template `3.7.0`; no convention changes required.
+
 ## Functions-in-Modules Pattern
 
 All business logic lives in importable modules. Entry points only import and call.

@@ -1,9 +1,19 @@
 # Migration Matrix
 
-Date: 2026-04-21
-Target template version: `3.5.0`
-Runner: `bash scripts/downstream-census.sh --json <project>`
+Date: 2026-05-23
+Target template version: `3.7.0`
+Runner: `bash scripts/downstream-census.sh --brief --no-sync --search <workspace>` for read-only census; `bash scripts/downstream-census.sh --json <project>` for dry-run detail
 Mode: dry-run only, no downstream files modified
+
+## 3.7.0 Review Snapshot
+
+- Source template local gate passed on 2026-05-23 after fixing `task-brief.sh` pipefail and downstream-safe `test-template.sh` bootstrap smoke routing.
+- `PersonalAssistant` is the first confirmed downstream control-plane repo on template `3.7.0`.
+- Latest read-only workspace census found 25 template-managed repos: 1 on `3.7.0`, 20 on `3.6.0`, and 4 with unknown template version.
+- Do not bulk-sync the downstream fleet. Pick 1-2 canary repos for explicit dry-run review before rollout.
+- The historical table below remains the last detailed dry-run proof set. Refresh it with 3.7 dry-run rows before cutting a broader rollout.
+
+## Historical Dry-Run Proof Set
 
 ## Summary
 

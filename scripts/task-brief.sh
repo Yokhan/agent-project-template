@@ -70,6 +70,19 @@ collect_items() {
   done < <(extract_section "$heading")
 }
 
+first_item() {
+  local heading="$1"
+  local item=""
+
+  while IFS= read -r item; do
+    [ -z "$item" ] && continue
+    printf '%s\n' "$item"
+    return 0
+  done < <(collect_items "$heading")
+
+  return 0
+}
+
 collect_warnings() {
   local line_count=""
   line_count=$(wc -l < "$TASK_FILE" | tr -d ' ')
@@ -164,7 +177,7 @@ print_json_array() {
 print_brief() {
   local goal=""
 
-  goal="$(collect_items "Goal" | head -1)"
+  goal="$(first_item "Goal")"
   echo "=== Task Brief ==="
   echo "File: $TASK_FILE"
   echo "Goal: ${goal:-_Not set yet._}"
@@ -176,7 +189,7 @@ print_brief() {
 print_default() {
   local goal=""
 
-  goal="$(collect_items "Goal" | head -1)"
+  goal="$(first_item "Goal")"
   echo "=== Task Brief ==="
   echo "File: $TASK_FILE"
   echo "Goal: ${goal:-_Not set yet._}"
@@ -207,7 +220,7 @@ print_json() {
   mapfile -t next_steps < <(collect_items "Immediate Next Step")
   mapfile -t warnings < <(collect_warnings)
 
-  goal="$(collect_items "Goal" | head -1)"
+  goal="$(first_item "Goal")"
   line_count=$(wc -l < "$TASK_FILE" | tr -d ' ')
 
   echo "{"

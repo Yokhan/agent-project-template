@@ -185,6 +185,26 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Category**: testing
 **Status**: ACTIVE
 
+
+### 2026-05-23 - Pipefail can turn first-line extraction into a silent failure
+**Track**: BUG
+**Severity**: P2
+**Error**: `scripts/task-brief.sh --brief` and `--json` exited with code 1 in a downstream repo even though the handoff file was readable.
+**Root cause**: `collect_items ... | head -1` ran under `set -euo pipefail`; when `head` closed the pipe after the first item, the producer received SIGPIPE and failed the command substitution.
+**Rule**: In shell scripts with `pipefail`, do not use `producer | head` as normal control flow. Read the first item with a loop/helper that returns 0.
+**Applies to**: task-brief.sh, shell helpers, release smoke
+**Category**: tooling
+**Status**: ACTIVE
+
+### 2026-05-23 - Template setup smoke must know whether it is in the source repo
+**Track**: PROCESS
+**Severity**: P2
+**Error**: Running `scripts/test-template.sh` in `PersonalAssistant` tried to run the setup/bootstrap smoke against PA's project-owned tracked memory.
+**Root cause**: The smoke test assumed every repo with template files was the `agent-project-template` source. Downstream repos can carry template-owned scripts plus project-owned `brain/` and `tasks/` state.
+**Rule**: Setup/bootstrap smoke belongs in the template source repo. Downstream repos should validate synced infrastructure and mark source-only setup smoke as skipped.
+**Applies to**: test-template.sh, downstream health checks, template sync
+**Category**: testing
+**Status**: ACTIVE
 ### 2026-04-21 - Work reports should be written in the client's world
 **Track**: STYLE
 **Severity**: P2
@@ -213,4 +233,14 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Rule**: Any Windows app that relies on Bash scripts must resolve Git Bash explicitly (`PATH` first, then common Git for Windows install locations) instead of assuming `bash` exists in the process environment.
 **Applies to**: AgentOS, Windows orchestration tooling
 **Category**: tooling
+**Status**: ACTIVE
+
+### 2026-05-23 - Source-only template checks in downstream projects
+**Track**: BUG
+**Severity**: P2
+**Error**: Fresh downstream projects failed `scripts/test-template.sh` because the smoke test required `setup.sh`, `setup.bat`, and `templates/project-starter/*`, even though those files are intentionally source-only and not shipped to child projects.
+**Root cause**: Required-file checks did not distinguish `agent-project-template` source repos from downstream template-managed repos.
+**Rule**: Template smoke tests must route source-only bootstrap/starter checks through an explicit source-repo guard and report `SKIP` in downstream projects, not `FAIL`.
+**Applies to**: test-template.sh, setup.sh payload, downstream health checks
+**Category**: testing
 **Status**: ACTIVE

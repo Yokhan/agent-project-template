@@ -101,8 +101,10 @@ if [[ ! -f "$CONV_FILE" ]]; then
   echo "ERROR: docs/SHARED_CONVENTIONS.md missing"
   ISSUES=$((ISSUES + 1))
 else
-  CLAUDE_HAS_CONV=$(grep -c "SHARED_CONVENTIONS" "$CLAUDE_MD" 2>/dev/null || echo "0")
-  AGENTS_HAS_CONV=$(grep -c "SHARED_CONVENTIONS" "$AGENTS_MD" 2>/dev/null || echo "0")
+  CLAUDE_HAS_CONV=$(grep -c "SHARED_CONVENTIONS" "$CLAUDE_MD" 2>/dev/null || true)
+  AGENTS_HAS_CONV=$(grep -c "SHARED_CONVENTIONS" "$AGENTS_MD" 2>/dev/null || true)
+  CLAUDE_HAS_CONV="${CLAUDE_HAS_CONV:-0}"
+  AGENTS_HAS_CONV="${AGENTS_HAS_CONV:-0}"
   if (( CLAUDE_HAS_CONV == 0 )); then
     echo "WARNING: CLAUDE.md does not reference SHARED_CONVENTIONS.md"
     WARNINGS=$((WARNINGS + 1))
