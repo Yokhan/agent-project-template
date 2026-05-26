@@ -9,12 +9,14 @@ Use this skill when parallel work can reduce latency without creating edit confl
 
 ## Default Pattern
 
-1. Discover existing workflow artifacts first: Spec Kit, litkit, Kiro, AgentOS, `PROJECT_SPEC.md`, `tasks/current.md`, or project-local `project-*` skills.
-2. Spawn read-only agents first: `pr_explorer`, `reviewer`, `security_reviewer`, `tester`, `docs_researcher`, or `design_reviewer`.
-3. Ask for narrow outputs with file references and verification steps.
-4. Wait for all results.
-5. Consolidate in the parent thread.
-6. Parent performs edits unless an `implementer` task is isolated to non-overlapping files.
+1. Run `node scripts/codex-route-task.js "<user request>" --summary --write-state`.
+2. Discover existing workflow artifacts first: Spec Kit, litkit, Kiro, AgentOS, `PROJECT_SPEC.md`, `tasks/current.md`, or project-local `project-*` skills.
+3. If AgentOS is detected, treat it as the orchestrator and use Codex subagents only inside the assigned worker route.
+4. Spawn read-only agents first: `pr_explorer`, `reviewer`, `security_reviewer`, `tester`, `docs_researcher`, or `design_reviewer`.
+5. Ask for narrow outputs with file references and verification steps.
+6. Wait for all results.
+7. Consolidate in the parent thread.
+8. Parent performs edits unless an `implementer` task is isolated to non-overlapping files.
 
 For prompt templates and the routing matrix, read `docs/CODEX_FANOUT_PATTERNS.md`.
 

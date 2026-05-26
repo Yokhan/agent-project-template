@@ -81,8 +81,8 @@ for skill_dir in .agents/skills/*/; do
   fi
   CODEX_SKILL_COUNT=$((CODEX_SKILL_COUNT + 1))
 done
-if [ "$CODEX_SKILL_COUNT" -lt 20 ]; then
-  echo "  ERROR: Expected at least 20 Codex skills, found $CODEX_SKILL_COUNT"
+if [ "$CODEX_SKILL_COUNT" -lt 37 ]; then
+  echo "  ERROR: Expected at least 37 Codex skills, found $CODEX_SKILL_COUNT"
   ERRORS=$((ERRORS + 1))
 else
   echo "  Found $CODEX_SKILL_COUNT Codex skills"
@@ -110,6 +110,12 @@ if ! node scripts/validate-codex-agents.js >/dev/null 2>&1; then
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: Codex agents validate"
+fi
+if ! node scripts/test-codex-routing.js >/dev/null 2>&1; then
+  echo "  ERROR: Codex routing smoke failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Codex routing smoke passes"
 fi
 
 # 4. Script syntax
@@ -148,11 +154,15 @@ REQUIRED_FILES=(
   "docs/OPENAI_MODEL_GUIDANCE.md"
   "docs/PRODUCT_BOUNDARY.md"
   "docs/RELEASE_CHECKLIST.md"
+  "docs/TEMPLATE_RELEASES.md"
   "docs/SAFE_DEFAULTS.md"
   "docs/SUPPORTED_ENVIRONMENTS.md"
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
+  "scripts/codex-route-task.js"
+  "scripts/test-codex-routing.js"
   "scripts/test-codex-subagents-live.sh"
+  ".github/workflows/release-template.yml"
   "_reference/README.md"
   "_reference/tool-registry.md"
   ".claude/settings.json"
@@ -168,6 +178,12 @@ for f in "${REQUIRED_FILES[@]}"; do
   fi
 done
 echo "  Checked ${#REQUIRED_FILES[@]} required files"
+if ! node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); for (const event of ['SessionStart','PreToolUse','PostToolUse','Stop']) { if (!Array.isArray(h.hooks?.[event]) || !h.hooks[event][0]?.hooks?.[0]?.command) process.exit(1); }" >/dev/null 2>&1; then
+  echo "  ERROR: .codex/hooks.json must use Codex nested hook command schema"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: .codex/hooks.json uses Codex hook schema"
+fi
 
 # 6. Cross-platform safety: no bare python3, no <<<
 echo ""

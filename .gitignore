@@ -21,6 +21,7 @@ mcp-servers/*/dist/
 
 # Active rules state (project-local, set by route-task.sh)
 tasks/.active-rules
+tasks/.active-codex-route.json
 tasks/.mode
 .engram/
 .memcp/

@@ -11,6 +11,9 @@ Last reviewed: 2026-05-23 for template `3.7.0` local validation. Remote GitHub A
 - [ ] `bash scripts/test-hooks.sh`
 - [ ] `bash scripts/test-template.sh`
 - [ ] `bash scripts/sync-agents.sh`
+- [ ] `node scripts/test-codex-routing.js`
+- [ ] `node scripts/validate-codex-skills.js`
+- [ ] `node scripts/validate-codex-agents.js`
 - [ ] `bash scripts/generate-project-spec.sh --write`
 - [ ] `bash scripts/scan-project.sh --report`
 
@@ -21,6 +24,7 @@ Last reviewed: 2026-05-23 for template `3.7.0` local validation. Remote GitHub A
 - [ ] Generated projects pass `bash scripts/test-hooks.sh`
 - [ ] Generated projects pass `bash scripts/bootstrap-mcp.sh --dry-run`
 - [ ] Generated projects pass `bash scripts/sync-template.sh <template-root> --dry-run`
+- [ ] Generated projects can preview a pinned release sync with `bash scripts/sync-template.sh --from-git --ref <tag> --dry-run` when a `template` remote is configured
 
 ## Migration Gate
 
@@ -43,3 +47,5 @@ Last reviewed: 2026-05-23 for template `3.7.0` local validation. Remote GitHub A
 - [ ] CI workflow covers validation scripts plus Linux/Windows bootstrap smoke
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
+- [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`
+- [ ] AgentOS rollout notes state whether AgentOS is the orchestrator or the project uses Codex parent orchestration

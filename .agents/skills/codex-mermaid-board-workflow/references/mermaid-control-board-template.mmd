@@ -1,0 +1,54 @@
+flowchart LR
+  title["Project control board"]
+
+  subgraph Inputs["Inputs"]
+    srcA["Source A"]
+    srcB["Source B"]
+    waitA["Waiting: missing input"]
+  end
+
+  subgraph Surfaces["Visible surfaces"]
+    surfaceA["Primary surface"]
+    surfaceB["Fallback surface"]
+  end
+
+  subgraph Work["Current work"]
+    workA["Next action"]
+    workB["Second action"]
+  end
+
+  subgraph Gates["Gates"]
+    gateA{"Gate: pass condition?"}
+    gateB{"Gate: stop condition?"}
+  end
+
+  subgraph Metrics["Metrics and decisions"]
+    metricA["Metric: changes decision"]
+    decisionA{"Keep / kill / change"}
+  end
+
+  title --> srcA
+  title --> srcB
+  srcA --> surfaceA --> workA --> gateA
+  srcB --> surfaceB --> workB --> gateA
+  waitA -.-> workA
+  gateA --> metricA --> decisionA
+  gateB --> decisionA
+
+  noteA["Comment: explain what this board controls, what is blocked, and what decision comes next."]
+  title ~~~ noteA
+
+  classDef source fill:#e7f0dc,stroke:#6f7f5f,color:#1f2a1f
+  classDef surface fill:#f7eadf,stroke:#a46f4d,color:#2d211b
+  classDef work fill:#edf0ff,stroke:#6e6ea8,color:#202033
+  classDef gate fill:#fff1c8,stroke:#a27821,color:#2f260f
+  classDef metric fill:#e9f4f6,stroke:#4f8492,color:#10272d
+  classDef waiting fill:#f5e3e1,stroke:#a35d55,color:#321817
+  classDef comment fill:#6b4d3d,stroke:#3a281f,color:#fff7ee
+  class srcA,srcB source
+  class surfaceA,surfaceB surface
+  class workA,workB work
+  class gateA,gateB gate
+  class metricA,decisionA metric
+  class waitA waiting
+  class noteA comment

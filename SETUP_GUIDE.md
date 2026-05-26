@@ -194,6 +194,14 @@ bash scripts/check-drift.sh
 bash scripts/sync-template.sh /path/to/agent-project-template
 ```
 
+### Из git-релиза шаблона
+```bash
+bash scripts/sync-template.sh --from-git --ref v3.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v3.8.0
+```
+
+AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.
+
 ### Все проекты
 ```bash
 bash scripts/sync-all.sh ~/Documents

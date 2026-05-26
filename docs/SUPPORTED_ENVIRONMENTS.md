@@ -40,5 +40,6 @@ Current release validation covers:
 - local validation scripts: `validate-template`, `check-drift`, `test-hooks`, `test-template`, `sync-agents`
 - Codex skill validation: `node scripts/validate-codex-skills.js`
 - Codex agent validation: `node scripts/validate-codex-agents.js`
+- Codex route validation: `node scripts/test-codex-routing.js`
 - optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`
 - downstream migration dry-runs via `downstream-census.sh`

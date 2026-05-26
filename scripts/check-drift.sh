@@ -330,6 +330,18 @@ else
   WARNINGS=$((WARNINGS + 1))
 fi
 
+if [ -f "scripts/test-codex-routing.js" ]; then
+  if node scripts/test-codex-routing.js >/dev/null 2>&1; then
+    echo "  ✅ Codex route smoke passes"
+  else
+    echo "  ❌ Codex route smoke failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  ⚠️  Codex route smoke missing"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 if [ -f "docs/PRODUCT_BOUNDARY.md" ] && [ -f "docs/SAFE_DEFAULTS.md" ] && [ -f "docs/SUPPORTED_ENVIRONMENTS.md" ]; then
   echo "  ✅ Trust and environment docs present"
 else

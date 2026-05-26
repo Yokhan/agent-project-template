@@ -17,7 +17,7 @@ Codex subagents are worth adding to this template, but they should not replace s
 | `.claude/agents/` | 10 specialized Claude agents plus `PROTOCOL.md` | Claude-specific model/tool metadata, not reusable as Codex TOML |
 | `.codex/config.toml` | Project-safe hooks feature only | No `[agents]` concurrency guard |
 | `.codex/agents/` | Empty | No project-scoped Codex subagents |
-| `.agents/skills/` | 36 Codex skills | Skills describe workflows but do not create parallel worker threads |
+| `.agents/skills/` | 37 Codex skills | Skills describe workflows and route-first contracts; subagents provide parallel worker threads |
 | Zed ACP | Runs managed `codex-acp` | Zed UI support for Codex child-thread visibility is not as explicit as Claude subagents |
 
 ## Local Test Evidence
@@ -50,7 +50,13 @@ Probe results:
 ## Prompt Patterns
 
 Detailed fan-out prompts, routing rules, and Spec Kit-inspired task splitting live
-in `docs/CODEX_FANOUT_PATTERNS.md`. Keep this audit as the evidence and risk log.
+in `docs/CODEX_FANOUT_PATTERNS.md`. The deterministic route entrypoint is:
+
+```bash
+node scripts/codex-route-task.js "<user request>" --summary --write-state
+```
+
+Keep this audit as the evidence and risk log.
 
 Use this for safe fan-out in Zed or CLI:
 
@@ -103,6 +109,11 @@ No AgentOS code changes are required for this subagent pack. The template still
 exports docs, skills, agents, and scripts through the existing setup/sync contract,
 and AgentOS can continue to orchestrate via its own Strategy/Tactic/Plan/Todo/Gate
 model.
+
+If `scripts/codex-route-task.js` detects AgentOS, Codex treats AgentOS as the
+orchestrator and uses subagents only inside the assigned worker route. AgentOS
+may choose the template release tag, but the project applies it through
+`scripts/sync-template.sh --from-git --ref <tag>`.
 
 ## Risks
 

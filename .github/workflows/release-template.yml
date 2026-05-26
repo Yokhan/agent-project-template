@@ -1,0 +1,83 @@
+name: Release Template
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, for example v3.8.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Validate And Publish Release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+            git rev-parse "$tag" >/dev/null
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release gate
+        run: |
+          bash scripts/validate-template.sh
+          bash scripts/check-drift.sh
+          bash scripts/test-hooks.sh
+          bash scripts/test-template.sh
+          bash scripts/sync-agents.sh
+          node scripts/test-codex-routing.js
+          node scripts/validate-codex-skills.js
+          node scripts/validate-codex-agents.js
+
+      - name: Build release archive
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+          archive="agent-project-template-${tag}.tar.gz"
+          git archive --format=tar.gz --prefix="agent-project-template-${tag}/" -o "$archive" "$tag"
+          {
+            echo "# Agent Project Template ${tag}"
+            echo ""
+            echo "Update downstream projects with:"
+            echo ""
+            echo '```bash'
+            echo "bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run"
+            echo "bash scripts/sync-template.sh --from-git --ref ${tag}"
+            echo '```'
+            echo ""
+            echo "AgentOS may orchestrate rollout order, but projects consume this template through the same sync command."
+          } > release-notes.md
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+          archive="agent-project-template-${tag}.tar.gz"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$archive" --clobber
+          else
+            gh release create "$tag" "$archive" --title "Agent Project Template ${tag}" --notes-file release-notes.md
+          fi

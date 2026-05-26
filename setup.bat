@@ -170,6 +170,7 @@ powershell -NoProfile -Command ^
   "  'docs/OPENAI_MODEL_GUIDANCE.md'," ^
   "  'docs/PRODUCT_BOUNDARY.md'," ^
   "  'docs/RELEASE_CHECKLIST.md'," ^
+  "  'docs/TEMPLATE_RELEASES.md'," ^
   "  'docs/SAFE_DEFAULTS.md'," ^
   "  'docs/SHARED_CONVENTIONS.md'," ^
   "  'docs/SUPPORTED_ENVIRONMENTS.md'," ^
@@ -263,6 +264,7 @@ for /f "tokens=*" %%r in ('cd /d "%TEMPLATE_DIR%" ^&^& git remote get-url origin
 if defined TEMPLATE_REMOTE (
     git remote add template "%TEMPLATE_REMOTE%" 2>nul
     echo Template remote added: %TEMPLATE_REMOTE%
+    echo For pinned releases, run bash scripts/sync-template.sh --from-git --ref vX.Y.Z
 )
 
 cd ..

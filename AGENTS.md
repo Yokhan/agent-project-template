@@ -31,6 +31,30 @@ Codex is a strong engineer but needs explicit user intent. Before implementing:
 
 If you cannot state all three clearly, ASK the user before writing code.
 
+### Route-First Protocol (MANDATORY)
+
+Codex reads `AGENTS.md` once at session start as project guidance. Keep this file short. Put reusable workflows in `.agents/skills`, project workers in `.codex/agents`, and long references in docs.
+
+Before any file edit, release, template change, security work, design work, or M+ task:
+
+1. Run: `node scripts/codex-route-task.js "<user request>" --summary --write-state`
+2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Skills:** names | **Subagents:** names | **Orchestrator:** owner.
+3. Follow the returned skills/rules. Do not scan every skill or reread broad docs.
+4. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
+
+### Route Operating Rules
+
+These are the useful rules distilled from `.claude/rules/router.md`, `.claude/library/`, and `docs/AGENT_PIPELINES.md`:
+
+- Feature: research affected files, check registry/reuse, compare approach if risk is MEDIUM+, plan, implement in modules, test, review.
+- Bugfix: reproduce or document why reproduction is blocked before patching; diagnose root cause; make the smallest fix; add/identify regression check.
+- Review/audit: findings first, severity ordered, file/line grounded; include missing tests and residual risk.
+- Security: HIGH risk by default; map actors/data/trust boundaries; patch narrowly; prove exploit path is closed.
+- Design/UI: system -> tokens -> components -> screens; no hardcoded visual values; cover default/hover/active/focus/disabled/loading/error/empty; screenshot or viewport-check before closeout.
+- Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
+- OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
+- Fan-out: spawn read-only subagents first for M+ tasks; parent consolidates and edits. Use `implementer` only for exact, non-overlapping files.
+
 ### User Context
 - User communicates in Russian (primary) and English (technical)
 - Prefers direct communication, technical depth, no fluff
@@ -41,7 +65,10 @@ If you cannot state all three clearly, ASK the user before writing code.
 
 Rules live in `.claude/library/`. **Read them before implementing.**
 
-### Always read before ANY code change:
+### Route-selected rules before code changes:
+
+Prefer the shared rules returned by `scripts/codex-route-task.js`. If the router is unavailable or ambiguous, read this fallback set before code changes:
+
 1. `.claude/library/process/research-first.md` — research before code
 2. `.claude/library/process/self-verification.md` — doubt protocol, confidence declaration
 3. `.claude/library/technical/code-style.md` — naming, immutability, types, functions-in-modules
@@ -60,16 +87,7 @@ Rules live in `.claude/library/`. **Read them before implementing.**
 
 Codex repo-scoped skills live in `.agents/skills/`.
 
-Use skills before re-reading long rule files when the task matches a skill trigger:
-
-- `$codex-pipeline-workflow` — feature, bugfix, security patch, design, and review pipelines.
-- `$codex-design-workflow`, `$codex-domain-design-review` — UI, UX, CSS, frontend, visual polish, design systems, and design audits.
-- `$codex-figma-workflow` — Figma MCP writes, screenshots, Code Connect, and design-system composition.
-- `$codex-audit`, `$codex-debug`, `$codex-security-audit` — review, bugfix, and security work.
-- `$codex-feature-workflow`, `$codex-api-contract`, `$codex-coverage` — implementation and quality gates.
-- `$codex-template-sync`, `$codex-skill-maintenance` — template infrastructure and skill maintenance.
-- `$codex-openai-model-guidance` — current OpenAI model guidance; browse official OpenAI docs when freshness matters.
-- `$codex-subagent-orchestration` — parallel Codex work via `.codex/agents` when the task can be split safely.
+Use the skills named by the route output. Open only those `SKILL.md` files.
 
 Project-specific Codex skills use `.agents/skills/project-*` and must be preserved by template sync.
 
@@ -77,21 +95,19 @@ Project-specific Codex skills use `.agents/skills/project-*` and must be preserv
 
 Project-scoped Codex subagents live in `.codex/agents/*.toml`.
 
-Use them for parallel read-only work before editing:
-
-- `pr_explorer` — affected files, execution paths, dependencies, context.
-- `reviewer` — correctness, regressions, architecture boundaries, test gaps.
-- `security_reviewer` — auth, secrets, injection, permissions, data exposure.
-- `tester` — regression cases and verification commands.
-- `docs_researcher` — official docs and API/framework checks.
-- `design_reviewer` — UI, UX, design-system, accessibility, responsive review.
-- `implementer` — isolated non-overlapping implementation chunks only.
-
-Default orchestration: discover existing workflow artifacts first, spawn read-only agents, wait for all results, consolidate in the parent thread, then edit in the parent. Use `implementer` only when file ownership is explicit and isolated.
+Use subagents named by the route output. Default to read-only workers first. Parent Codex consolidates results and edits. Use `implementer` only for exact, isolated, non-overlapping files.
 
 Before fan-out, check for Spec Kit, litkit, Kiro, AgentOS, or project-local `project-*` workflow artifacts. If `spec.md`, `plan.md`, `tasks.md`, or equivalent task graphs exist, use them as the input contract. Treat `[P]` or equivalent metadata as the default signal for safe parallel work.
 
-Routing matrix and copy-ready prompts: `docs/CODEX_FANOUT_PATTERNS.md`.
+Routing details and copy-ready prompts: `docs/CODEX_FANOUT_PATTERNS.md`.
+
+### AgentOS Boundary
+
+AgentOS, when present, is the orchestrator. Codex must not create a competing task graph. Treat AgentOS Strategy/Tactic/Plan/Todo/Gate artifacts as the source of truth and use Codex routes as worker execution contracts.
+
+If AgentOS is absent, the parent Codex thread is the orchestrator: it owns sequencing, consolidation, edits, verification, and release notes.
+
+Template releases belong to this repository. Downstream projects and AgentOS workspaces consume released template versions through git tags and `scripts/sync-template.sh --from-git --ref <tag>`.
 
 ## Code Conventions (Critical Subset — Inline)
 

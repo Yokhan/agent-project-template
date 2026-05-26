@@ -54,6 +54,7 @@ Use these for per-machine or per-repo customization without forking template-own
 - `.claude/settings.local.json`
 - local MCP installation state
 - runtime caches under `.memory/`, `.engram/`, `.session-cache/`
+- route state such as `tasks/.active-rules` and `tasks/.active-codex-route.json`
 - IDE-specific user settings outside the repo
 
 ## Release Rule

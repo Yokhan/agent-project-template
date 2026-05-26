@@ -14,4 +14,5 @@ Template sync is shared release infrastructure. Treat changes as MEDIUM/HIGH ris
 3. Ship tracked files only plus starter overlays.
 4. Update Unix and Windows setup paths together.
 5. Add smoke coverage before changing sync behavior.
-6. Run `test-template`, `check-drift`, and focused sync dry-runs.
+6. For release work, use `docs/TEMPLATE_RELEASES.md` and prefer git tags consumed with `scripts/sync-template.sh --from-git --ref <tag>`.
+7. Run `test-template`, `check-drift`, Codex routing smoke, and focused sync dry-runs.

@@ -37,6 +37,7 @@ check "ecosystem.md" test -f ecosystem.md
 check "docs/PRODUCT_BOUNDARY.md" test -f docs/PRODUCT_BOUNDARY.md
 check "docs/SAFE_DEFAULTS.md" test -f docs/SAFE_DEFAULTS.md
 check "docs/SUPPORTED_ENVIRONMENTS.md" test -f docs/SUPPORTED_ENVIRONMENTS.md
+check "docs/TEMPLATE_RELEASES.md" test -f docs/TEMPLATE_RELEASES.md
 check "docs/AGENT_PIPELINES.md" test -f docs/AGENT_PIPELINES.md
 check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
 check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
@@ -46,9 +47,11 @@ source_only_check "setup.sh" test -f setup.sh
 source_only_check "setup.bat" test -f setup.bat
 check ".codex/config.toml" test -f .codex/config.toml
 check ".codex/hooks.json" test -f .codex/hooks.json
+check ".codex/hooks.json valid JSON" node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); if(!h.hooks?.PreToolUse?.[0]?.hooks?.[0]?.command) process.exit(1)"
 check ".gitignore" test -f .gitignore
 check ".gitattributes" test -f .gitattributes
 check ".env.example" test -f .env.example
+check ".github/workflows/release-template.yml" test -f .github/workflows/release-template.yml
 check "tasks/lessons.md" test -f tasks/lessons.md
 check "tasks/current.md" test -f tasks/current.md
 source_only_check "starter tasks/current.md" test -f templates/project-starter/tasks/current.md
@@ -62,17 +65,21 @@ check "scripts/generate-project-spec.sh" test -f scripts/generate-project-spec.s
 check "scripts/task-brief.sh" test -f scripts/task-brief.sh
 check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.js
 check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
+check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
+check "scripts/test-codex-routing.js" test -f scripts/test-codex-routing.js
 check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
 
 echo ""
 echo "Codex skills:"
-check ">=36 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 36 ]'
+check ">=37 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 37 ]'
 check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
 check "core Codex design review skill" test -f .agents/skills/codex-domain-design-review/SKILL.md
 check "core Codex Figma skill" test -f .agents/skills/codex-figma-workflow/SKILL.md
 check "core Codex pipeline skill" test -f .agents/skills/codex-pipeline-workflow/SKILL.md
+check "core Codex Mermaid board skill" test -f .agents/skills/codex-mermaid-board-workflow/SKILL.md
 check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
 check "validate-codex-skills" node scripts/validate-codex-skills.js
+check "test-codex-routing" node scripts/test-codex-routing.js
 
 echo ""
 echo "Codex subagents:"
@@ -126,6 +133,7 @@ check "generate-project-spec" bash -c 'bash scripts/generate-project-spec.sh | g
 check "scan-project --report" bash -c 'bash scripts/scan-project.sh --report >/dev/null'
 check "task-brief --brief" bash scripts/task-brief.sh --brief
 check "task-brief --json" bash -c 'bash scripts/task-brief.sh --json | node -e "JSON.parse(require(\"fs\").readFileSync(0, \"utf8\"))"'
+check "codex-route-task template route" bash -c 'node scripts/codex-route-task.js "обнови агентский шаблон и release tag" | node -e "const r=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); if(!r.skills.includes(\"codex-template-sync\") || !r.skills.includes(\"codex-health-check\")) process.exit(1)"'
 
 echo ""
 echo "Bootstrap trust smoke:"
@@ -144,13 +152,17 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(mktemp)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
       [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
       [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
+      [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
+      [ -f "$project/scripts/codex-route-task.js" ] &&
+      [ -f "$project/scripts/test-codex-routing.js" ] &&
+      [ -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&
       [ -f "$project/scripts/validate-codex-skills.js" ]

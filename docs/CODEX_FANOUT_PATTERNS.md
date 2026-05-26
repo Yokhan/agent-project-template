@@ -22,6 +22,14 @@ reuse the best Spec Kit ideas in a flexible way:
 
 Before spawning subagents, inspect the project for existing workflow artifacts:
 
+For Codex, start with the deterministic route check:
+
+```bash
+node scripts/codex-route-task.js "<user request>" --summary --write-state
+```
+
+Use the returned skills, subagents, pipeline, risk, and orchestrator owner as the parent-thread contract. The script does not replace project artifacts; it makes the first routing step explicit and testable.
+
 | Look for | Meaning |
 | --- | --- |
 | `.specify/`, `specs/*/spec.md`, `specs/*/plan.md`, `specs/*/tasks.md` | Spec Kit or Spec Kit-like flow |
@@ -165,8 +173,12 @@ additive:
 - Do not rename setup or sync entrypoints.
 - Treat AgentOS Strategy/Tactic/Plan/Todo/Gate artifacts as the source task graph
   when present.
+- If `codex-route-task.js` reports `orchestrator.owner = agentos`, Codex acts as
+  a worker for the AgentOS task graph and does not create a competing graph.
 - Ship new Codex docs, skills, and agents through the existing template setup/sync
   allowlist only.
+- AgentOS may choose a template release tag, but projects still consume that tag
+  through `scripts/sync-template.sh --from-git --ref <tag>`.
 
 ## Zed Note
 

@@ -7,7 +7,7 @@
 Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), Codex repo-scoped skills and subagents, persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
-> Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md)
+> Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md) • Template releases: [docs/TEMPLATE_RELEASES.md](docs/TEMPLATE_RELEASES.md)
 
 ## Quick Start
 
@@ -64,6 +64,15 @@ bash scripts/sync-template.sh --from-git --dry-run
 bash scripts/sync-template.sh --from-git
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
+
+For pinned release rollout, sync from a tag:
+
+```bash
+bash scripts/sync-template.sh --from-git --ref v3.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v3.8.0
+```
+
+AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
 
 ### Updating older projects (created before v2.2.0)
 ```bash
@@ -158,11 +167,11 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Rules** | 25 | 6 process + 7 technical + 4 meta + 8 domain guards |
 | **Hooks** | 7 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate |
 | **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
-| **Codex Skills** | 36 | Pipeline, subagent orchestration, design/Figma, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Skills** | 37 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
 | **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
 | **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
 | **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
-| **Scripts** | 31 | validation, drift checks, bootstrap, sync, project scanning, task brief, hooks, and release smoke |
+| **Scripts** | 35 | validation, route selection, drift checks, bootstrap, sync, project scanning, task brief, hooks, and release smoke |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
 | **Memory** | tasks/ | lessons.md, current.md, .research-cache.md, post-mortems/ |

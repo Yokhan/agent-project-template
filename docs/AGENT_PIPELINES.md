@@ -28,6 +28,7 @@ Common artifact chain:
 4. Implement: parent-owned sequencing, with subagents only on safe splits.
 
 Codex-specific routing and prompts live in `docs/CODEX_FANOUT_PATTERNS.md`.
+Codex route selection is made explicit with `node scripts/codex-route-task.js "<task>" --summary --write-state`.
 
 ## Feature
 
@@ -116,6 +117,41 @@ Use for Figma, UI, CSS, frontend screens, design systems, game UI, or visual pol
    - Screenshot, responsive checks, contrast, overflow, and state coverage.
 8. Iterate
    - Fix deviations and re-validate.
+
+## Template Maintenance
+
+Use for `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, MCP router, setup/sync payloads, and validation scripts.
+
+1. Route
+   - Run `node scripts/codex-route-task.js "<task>" --summary --write-state`.
+   - Confirm whether AgentOS or project artifacts own the task graph.
+2. Boundary check
+   - Read `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md`.
+   - Preserve `project-*` overlays and project-owned files.
+3. Patch
+   - Update Unix and Windows setup/sync paths together.
+   - Keep model, effort, sandbox, and approval defaults out of project `.codex/config.toml`.
+4. Smoke
+   - Run skill, agent, route, hook, and template validation relevant to the change.
+5. Sync proof
+   - Prove new template-owned files are included in setup and sync allowlists.
+6. Closeout
+   - State compatibility impact for existing projects and AgentOS workspaces.
+
+## Template Release
+
+Use for release tags, release notes, downstream rollout, and AgentOS rollout coordination.
+
+1. Freeze scope
+   - Identify the version and whether the release is patch, minor, or major.
+2. Validate
+   - Run the release gate from `docs/TEMPLATE_RELEASES.md`.
+3. Tag
+   - Create a `vX.Y.Z` git tag only after validation is green.
+4. Downstream instructions
+   - Tell projects to use `scripts/sync-template.sh --from-git --ref <tag>`.
+5. AgentOS note
+   - If AgentOS is present, it chooses rollout order and records the template tag; it does not replace template sync.
 
 ## Closeout Format
 

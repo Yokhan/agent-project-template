@@ -18,6 +18,7 @@ const REQUIRED_CORE_SKILLS = [
   "codex-openai-model-guidance",
   "codex-agent-router",
   "codex-subagent-orchestration",
+  "codex-mermaid-board-workflow",
 ];
 
 const state = {

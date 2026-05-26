@@ -35,6 +35,7 @@ DRY_RUN=false
 FORCE=false
 FROM_GIT=false
 BOOTSTRAP=false
+TEMPLATE_REF=""
 
 # --- Parse args ---
 while [ $# -gt 0 ]; do
@@ -43,6 +44,14 @@ while [ $# -gt 0 ]; do
     --force) FORCE=true ;;
     --from-git) FROM_GIT=true ;;
     --bootstrap) BOOTSTRAP=true ;;
+    --ref|--template-ref)
+      shift
+      if [ $# -eq 0 ]; then
+        echo "Error: --ref requires a git ref or tag"
+        exit 1
+      fi
+      TEMPLATE_REF="$1"
+      ;;
     --project-dir)
       shift
       if [ $# -eq 0 ]; then
@@ -52,7 +61,7 @@ while [ $# -gt 0 ]; do
       PROJECT_PATH="$1"
       ;;
     --help|-h)
-      echo "Usage: $0 [/path/to/template] [project-dir] [--project-dir PATH] [--dry-run] [--force] [--from-git] [--bootstrap]"
+      echo "Usage: $0 [/path/to/template] [project-dir] [--project-dir PATH] [--dry-run] [--force] [--from-git] [--ref REF] [--bootstrap]"
       echo ""
       echo "Syncs this project with a newer version of agent-project-template."
       echo "Template files (tracked in .template-manifest.json) are updated."
@@ -62,6 +71,7 @@ while [ $# -gt 0 ]; do
       echo "  --dry-run    Show what would change without modifying files"
       echo "  --force      Skip backup step"
       echo "  --from-git   Fetch template from the 'template' git remote instead of a local path"
+      echo "  --ref REF    With --from-git, fetch a specific template branch, tag, or commit"
       echo "  --bootstrap  Generate .template-manifest.json for a project created before sync support"
       echo "  --project-dir PATH  Target project directory (defaults to current directory)"
       exit 0
@@ -108,13 +118,18 @@ if [ "$FROM_GIT" = true ]; then
 
     if [ "$DRY_RUN" = true ]; then
         echo "Would fetch from: $TEMPLATE_REMOTE"
+        [ -n "$TEMPLATE_REF" ] && echo "Would use template ref: $TEMPLATE_REF"
         echo "Run without --dry-run to actually fetch and sync."
         exit 0
     fi
 
     # actual fetch only happens when not dry-run
     echo "Fetching template updates from $TEMPLATE_REMOTE..."
-    git fetch template --depth 1 2>/dev/null || { echo "Error: Cannot reach template remote: $TEMPLATE_REMOTE"; exit 1; }
+    if [ -n "$TEMPLATE_REF" ]; then
+        git fetch template --depth 1 "$TEMPLATE_REF" 2>/dev/null || { echo "Error: Cannot fetch template ref: $TEMPLATE_REF"; exit 1; }
+    else
+        git fetch template --depth 1 2>/dev/null || { echo "Error: Cannot reach template remote: $TEMPLATE_REMOTE"; exit 1; }
+    fi
 
     # Create temp directory with latest template
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'template-sync')
@@ -123,24 +138,29 @@ if [ "$FROM_GIT" = true ]; then
         mkdir -p "$TEMP_DIR"
     fi
 
-    # Detect which branch exists on the remote
-    TEMPLATE_BRANCH=""
-    for branch in main master; do
-        if git rev-parse --verify "template/$branch" &>/dev/null; then
-            TEMPLATE_BRANCH="$branch"
-            break
+    if [ -n "$TEMPLATE_REF" ]; then
+        git archive FETCH_HEAD | tar -x -C "$TEMP_DIR" 2>/dev/null || \
+        { echo "Error: Cannot extract template ref: $TEMPLATE_REF"; rm -rf "$TEMP_DIR"; exit 1; }
+    else
+        # Detect which branch exists on the remote
+        TEMPLATE_BRANCH=""
+        for branch in main master; do
+            if git rev-parse --verify "template/$branch" &>/dev/null; then
+                TEMPLATE_BRANCH="$branch"
+                break
+            fi
+        done
+
+        if [ -z "$TEMPLATE_BRANCH" ]; then
+            echo "Error: No main or master branch found on template remote."
+            echo "Available branches: $(git branch -r | grep template/ | tr '\n' ' ')"
+            rm -rf "$TEMP_DIR"
+            exit 1
         fi
-    done
 
-    if [ -z "$TEMPLATE_BRANCH" ]; then
-        echo "Error: No main or master branch found on template remote."
-        echo "Available branches: $(git branch -r | grep template/ | tr '\n' ' ')"
-        rm -rf "$TEMP_DIR"
-        exit 1
+        git archive "template/$TEMPLATE_BRANCH" | tar -x -C "$TEMP_DIR" 2>/dev/null || \
+        { echo "Error: Cannot extract template branch."; rm -rf "$TEMP_DIR"; exit 1; }
     fi
-
-    git archive "template/$TEMPLATE_BRANCH" | tar -x -C "$TEMP_DIR" 2>/dev/null || \
-    { echo "Error: Cannot extract template branch."; rm -rf "$TEMP_DIR"; exit 1; }
 
     # Now use TEMP_DIR as TEMPLATE_PATH and continue with normal sync
     TEMPLATE_PATH="$TEMP_DIR"
@@ -292,6 +312,7 @@ if [ ! -f "$MANIFEST" ]; then
       "docs/OPENAI_MODEL_GUIDANCE.md" \
       "docs/PRODUCT_BOUNDARY.md" \
       "docs/RELEASE_CHECKLIST.md" \
+      "docs/TEMPLATE_RELEASES.md" \
       "docs/SAFE_DEFAULTS.md" \
       "docs/SHARED_CONVENTIONS.md" \
       "docs/SUPPORTED_ENVIRONMENTS.md" \
@@ -459,7 +480,7 @@ done < <(echo "$manifest_files")
 echo "--- Phase B: Checking for new template files ---"
 
 # Define template file patterns to check
-for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/*.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
+for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/*.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
@@ -576,7 +597,7 @@ for(const d of dirs){
   }
 }
 
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
 for(const fp of rootFiles){
   if(!fs.existsSync(fp)||m.files[fp])continue;
   const h=getHash(fp);

@@ -9,13 +9,14 @@ Use `docs/AGENT_PIPELINES.md` as the source of truth.
 
 ## Process
 
-1. Identify the pipeline: feature, bugfix, security patch, design, or review.
-2. Read the relevant pipeline section from `docs/AGENT_PIPELINES.md`.
-3. State the active phase and gate before doing work.
-4. Complete one phase at a time.
-5. Stop at user-approval gates when required by risk or local rules.
-6. Write handoff notes to `tasks/current.md` for M+ or interrupted work.
-7. Run the verification commands from the pipeline, then close out with confidence and doubt.
+1. Run `node scripts/codex-route-task.js "<user request>" --summary --write-state` unless the user already supplied a route.
+2. Identify the pipeline: feature, bugfix, security patch, design, review, release, or template maintenance.
+3. Read the relevant pipeline section from `docs/AGENT_PIPELINES.md`.
+4. State the active phase and gate before doing work.
+5. Complete one phase at a time.
+6. Stop at user-approval gates when required by risk or local rules.
+7. Write handoff notes to `tasks/current.md` for M+ or interrupted work.
+8. Run the verification commands from the pipeline, then close out with confidence and doubt.
 
 ## Codex Adaptation
 

@@ -12,9 +12,9 @@ Codex сейчас получает только базу:
 
 | Поверхность | Текущее состояние |
 | --- | --- |
-| `AGENTS.md` | 7,778 bytes, есть базовые правила и ссылки на `.claude/library`, но нет полного router/runtime/pipeline слоя из `CLAUDE.md` |
+| `AGENTS.md` | Route-first Codex instructions with deterministic router, skills, subagents, and AgentOS boundary |
 | `.codex/` | только `config.toml` и `hooks.json`, всего 918 bytes |
-| `.agents/skills/` | 36 Codex-native repository skills, official repo-scoped skills path |
+| `.agents/skills/` | 37 Codex-native repository skills, official repo-scoped skills path |
 | `.claude/skills/` | 30 skills, 277,875 bytes |
 | `.claude/pipelines/` | 3 pipeline: feature, bugfix, security-patch |
 | `.claude/agents/` | 10 agent definitions плюс `PROTOCOL.md` |
@@ -23,14 +23,15 @@ Codex сейчас получает только базу:
 
 This audit is now implemented as a first Codex-native skill layer:
 
-- 36 repository-scoped Codex skills live under the official `.agents/skills/` path.
-- The pack covers all Claude skill categories either as a direct Codex port or as a Codex-native replacement: feature work, routing, pipelines, audit, debug, security, design review, design production, Figma, migrations, API work, coverage, health checks, memory, setup, integrations, sprint/task queue, template sync, skill maintenance, dependency updates, and OpenAI model guidance.
-- `docs/AGENT_PIPELINES.md` is the agent-neutral pipeline source for feature, bugfix, security patch, and design work.
-- `scripts/validate-codex-skills.js`, `scripts/test-template.sh`, `scripts/validate-template.sh`, and `scripts/check-drift.sh` now validate the Codex skill surface.
+- 37 repository-scoped Codex skills live under the official `.agents/skills/` path.
+- The pack covers all Claude skill categories either as a direct Codex port or as a Codex-native replacement: feature work, route-first selection, pipelines, audit, debug, security, design review, design production, Figma, Mermaid boards, migrations, API work, coverage, health checks, memory, setup, integrations, sprint/task queue, template sync, skill maintenance, dependency updates, and OpenAI model guidance.
+- `docs/AGENT_PIPELINES.md` is the agent-neutral pipeline source for feature, bugfix, security patch, design, template maintenance, and release work.
+- `scripts/codex-route-task.js` is the deterministic Codex route source for skills, subagents, pipeline, risk, shared rules, and orchestrator owner.
+- `scripts/validate-codex-skills.js`, `scripts/test-codex-routing.js`, `scripts/test-template.sh`, `scripts/validate-template.sh`, and `scripts/check-drift.sh` now validate the Codex skill and routing surface.
 - `setup.sh`, `setup.bat`, and `scripts/sync-template.sh` ship and sync `.agents/skills/**` while preserving `.agents/skills/project-*`.
 - Official OpenAI docs checked on 2026-05-19 confirm that repo-scoped Codex skills belong in `.agents/skills`, not `.codex/skills`.
 
-Главный разрыв: Claude имеет on-demand specialist layer, Codex нет. `AGENTS.md` уже ссылается на общие правила, но Codex не получает отдельные task skills, workflow runners, дизайн-production skill и skill metadata.
+Оставшийся разрыв: Codex route choice is now explicit and testable, but runtime fan-out still depends on Codex multi-agent support and the parent agent choosing to spawn workers. AgentOS, when present, remains the orchestrator.
 
 ## Что нельзя переносить механически
 
@@ -314,7 +315,9 @@ Run after implementation phases:
 bash scripts/test-template.sh
 bash scripts/sync-agents.sh
 bash scripts/check-drift.sh
+node scripts/test-codex-routing.js
 node scripts/validate-codex-skills.js
+node scripts/validate-codex-agents.js
 ```
 
 Manual checks:
@@ -322,8 +325,11 @@ Manual checks:
 - Fresh generated project contains `.agents/skills`.
 - Existing downstream project receives new Codex skills via `sync-template.sh --dry-run`.
 - `AGENTS.md` stays below the 32KB limit.
+- Template/release tasks route to `codex-template-sync`, `codex-skill-maintenance`, `codex-test-rules`, and `codex-health-check`.
 - Design task routes to `codex-design-workflow`.
 - Figma task routes to `codex-figma-workflow`.
+- Mermaid board task routes to `codex-mermaid-board-workflow`.
+- AgentOS fixture reports `orchestrator.owner = agentos`.
 - No Codex project config hardcodes model, effort, approval or sandbox.
 
 ## Open Questions

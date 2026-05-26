@@ -19,6 +19,8 @@
 | generate-project-spec | scripts/generate-project-spec.sh | Build PROJECT_SPEC.md from repo state |
 | scan-project | scripts/scan-project.sh | Initial project scan, registry population |
 | task-brief | scripts/task-brief.sh | Compact summary for tasks/current.md |
+| codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, pipeline, risk, and orchestrator |
+| test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
 | test-hooks | scripts/test-hooks.sh | Hook syntax validation |
 | brain-search | scripts/brain-search.sh | Search brain/ knowledge base |
 
@@ -27,6 +29,7 @@
 | Tool | Path | Purpose | Used by |
 |------|------|---------|---------|
 | blast-radius | scripts/blast-radius.sh | blast-radius.sh — BFS through import graph to find all affected files | agent/manual |
+| codex-route-task | scripts/codex-route-task.js | Codex route contract generator for AGENTS.md route-first workflow | agent/manual |
 | codex-hook-adapter | scripts/codex-hook-adapter.sh | codex-hook-adapter.sh — Translates Codex hook env vars to Claude hook | agent/manual |
 | context-restore | scripts/context-restore.sh | context-restore.sh — Restore context after compaction or session start | agent/manual |
 | import-graph | scripts/import-graph.sh | import-graph.sh — Find most-imported files (hot files) in a project | agent/manual |

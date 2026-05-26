@@ -2,12 +2,22 @@ export interface Route {
   keywords: RegExp;
   files: string[];
   agent: string;
+  codexSkills: string[];
+  codexSubagents: string[];
+  pipeline: string;
+  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  needsFreshDocs?: boolean;
 }
 
 export interface RouteResult {
   modes: string[];
   agent: string;
   files: string[];
+  codexSkills: string[];
+  codexSubagents: string[];
+  pipeline: string;
+  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  needsFreshDocs: boolean;
 }
 
 export interface ServerState {

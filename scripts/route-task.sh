@@ -55,6 +55,18 @@ if echo "$TASK" | grep -qiE "commit|push|pr|pull.request|merge|branch|release|de
   MODES="$MODES git"
 fi
 
+# TEMPLATE / CODEX ROUTING
+if echo "$TASK" | grep -qiE "template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent.project|шаблон|агент|скилл|роут|маршрут|синхрон"; then
+  FILES="$FILES $LIB/meta/critical-thinking.md $LIB/technical/testing.md $LIB/technical/git-workflow.md"
+  MODES="$MODES template"
+fi
+
+# RELEASE
+if echo "$TASK" | grep -qiE "release|tag|version|changelog|publish|github release|deploy|релиз|верси|тег|опубликуй|выкат"; then
+  FILES="$FILES $LIB/technical/git-workflow.md $LIB/technical/testing.md $LIB/meta/critical-thinking.md"
+  MODES="$MODES release"
+fi
+
 # PLAN
 if echo "$TASK" | grep -qiE "plan|strategy|architect|roadmap|estimate|decompose|breakdown|спланируй|декомпозируй|разбей|оцени сложность|архитектур"; then
   FILES="$FILES $LIB/meta/strategic-thinking.md $LIB/process/plan-first.md $LIB/conflict/conflict-resolution.md"
@@ -103,12 +115,49 @@ elif echo "$TASK" | grep -qiE "document|readme|changelog|api.doc"; then AGENT="d
 elif echo "$TASK" | grep -qiE "simplif|reduce|clean"; then AGENT="simplifier"
 else AGENT="implementer"; fi
 
+CODEX_SKILLS="codex-audit"
+CODEX_SUBAGENTS="reviewer"
+PIPELINE="review"
+RISK="MEDIUM"
+if echo "$MODES" | grep -q "template"; then
+  CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router"
+  CODEX_SUBAGENTS="pr_explorer tester reviewer"
+  PIPELINE="template maintenance"
+  RISK="HIGH"
+elif echo "$MODES" | grep -q "release"; then
+  CODEX_SKILLS="codex-template-sync codex-health-check codex-test-rules"
+  CODEX_SUBAGENTS="tester reviewer security_reviewer"
+  PIPELINE="release"
+  RISK="HIGH"
+elif echo "$MODES" | grep -q "audit"; then
+  CODEX_SKILLS="codex-security-audit"
+  CODEX_SUBAGENTS="security_reviewer pr_explorer tester"
+  PIPELINE="security patch"
+  RISK="HIGH"
+elif echo "$MODES" | grep -q "design"; then
+  CODEX_SKILLS="codex-design-workflow codex-domain-design-review"
+  CODEX_SUBAGENTS="design_reviewer tester reviewer"
+  PIPELINE="design"
+elif echo "$MODES" | grep -q "test"; then
+  CODEX_SKILLS="codex-coverage"
+  CODEX_SUBAGENTS="tester reviewer"
+  PIPELINE="quality gate"
+elif echo "$MODES" | grep -q "code"; then
+  CODEX_SKILLS="codex-feature-workflow codex-pipeline-workflow"
+  CODEX_SUBAGENTS="pr_explorer tester reviewer"
+  PIPELINE="feature"
+fi
+
 # Save active rules
 mkdir -p tasks
 {
   echo "TASK=$TASK"
   echo "MODES=$MODES"
   echo "AGENT=$AGENT"
+  echo "CODEX_SKILLS=$CODEX_SKILLS"
+  echo "CODEX_SUBAGENTS=$CODEX_SUBAGENTS"
+  echo "PIPELINE=$PIPELINE"
+  echo "RISK=$RISK"
   echo "COUNT=$FILE_COUNT files, $LINE_COUNT lines"
   echo "ROUTED_AT=$(date -u +%Y-%m-%dT%H:%M 2>/dev/null || date +%Y-%m-%dT%H:%M)"
   echo "---"
@@ -120,6 +169,10 @@ echo "=== ROUTE ==="
 echo "TASK: $TASK"
 echo "MODES:$MODES"
 echo "AGENT: $AGENT"
+echo "CODEX_SKILLS: $CODEX_SKILLS"
+echo "CODEX_SUBAGENTS: $CODEX_SUBAGENTS"
+echo "PIPELINE: $PIPELINE"
+echo "RISK: $RISK"
 echo "RULES: $FILE_COUNT files, ~$LINE_COUNT lines"
 echo "---"
 echo "READ these files:"

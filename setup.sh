@@ -184,13 +184,14 @@ generate_manifest() {
       .claude/hooks/*.sh) echo "template" ;;
       .claude/pipelines/*.md) echo "template" ;;
       scripts/*.sh) echo "template" ;;
+      scripts/*.js) echo "template" ;;
       scripts/lib/*.sh) echo "template" ;;
       mcp-servers/context-router/package-lock.json) echo "template" ;;
       mcp-servers/context-router/src/*.ts) echo "template" ;;
       mcp-servers/context-router/package.json) echo "template" ;;
       mcp-servers/context-router/tsconfig.json) echo "template" ;;
       tests/rules/*.test.md) echo "template" ;;
-      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
+      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
       _reference/*.md) echo "template" ;;
       .github/*) echo "template" ;;
       .github/workflows/*.yml) echo "template" ;;
@@ -355,7 +356,8 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
     git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || true
     echo "Template remote added: $TEMPLATE_REMOTE"
     echo "Run 'bash scripts/sync-template.sh --from-git' to check for updates."
-fi
+    echo "For pinned releases, run 'bash scripts/sync-template.sh --from-git --ref vX.Y.Z'."
+  fi
 
 # If orchestrator — replace CLAUDE.md with orchestrator template
 if [ "$IS_ORCHESTRATOR" = true ]; then

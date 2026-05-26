@@ -26,13 +26,50 @@ if [[ -z "$EVENT" ]]; then
   exit 1
 fi
 
-# Translate Codex env vars to Claude-compatible format
-# Codex uses: CODEX_TOOL_NAME, CODEX_TOOL_INPUT, CODEX_COMMAND
-# Claude hooks expect: TOOL_NAME, TOOL_INPUT, FILE_PATH, COMMAND
-export TOOL_NAME="${CODEX_TOOL_NAME:-${TOOL_NAME:-}}"
-export TOOL_INPUT="${CODEX_TOOL_INPUT:-${TOOL_INPUT:-}}"
-export FILE_PATH="${CODEX_FILE_PATH:-${FILE_PATH:-}}"
-export COMMAND="${CODEX_COMMAND:-${COMMAND:-}}"
+# Translate Codex hook JSON stdin to Claude-compatible env vars.
+# Keep env fallbacks for older adapters and local tests.
+HOOK_INPUT_JSON=""
+if [[ ! -t 0 ]]; then
+  HOOK_INPUT_JSON="$(cat 2>/dev/null || true)"
+fi
+
+json_value() {
+  local key="$1"
+  HOOK_INPUT_JSON="$HOOK_INPUT_JSON" node -e '
+const key = process.argv[1];
+let data = {};
+try { data = JSON.parse(process.env.HOOK_INPUT_JSON || "{}"); } catch {}
+const input = data.tool_input || data.toolInput || {};
+const values = {
+  tool_name: data.tool_name || data.toolName || data.tool || data.name || "",
+  tool_input: JSON.stringify(input || {}),
+  file_path: data.file_path || data.filePath || input.file_path || input.filePath || input.path || "",
+  command: data.command || input.command || input.cmd || input.input || ""
+};
+process.stdout.write(String(values[key] || ""));
+' "$key" 2>/dev/null || true
+}
+
+export TOOL_NAME="${CODEX_TOOL_NAME:-${TOOL_NAME:-$(json_value tool_name)}}"
+export TOOL_INPUT="${CODEX_TOOL_INPUT:-${TOOL_INPUT:-$(json_value tool_input)}}"
+export FILE_PATH="${CODEX_FILE_PATH:-${FILE_PATH:-$(json_value file_path)}}"
+export COMMAND="${CODEX_COMMAND:-${COMMAND:-$(json_value command)}}"
+
+ensure_codex_route_before_write() {
+  if [[ "${TEST_MODE:-}" = "1" ]]; then
+    return 0
+  fi
+
+  local route_state="$PROJECT_DIR/tasks/.active-codex-route.json"
+  if [[ -f "$route_state" ]]; then
+    return 0
+  fi
+
+  cat >&2 <<'JSON'
+{"block":true,"message":"Codex route state missing. Run: node scripts/codex-route-task.js \"<user request>\" --summary --write-state"}
+JSON
+  exit 2
+}
 
 # Route to appropriate Claude hook scripts based on event type
 case "$EVENT" in
@@ -54,7 +91,8 @@ case "$EVENT" in
       fi
     fi
     # For file edit/write, run pre-edit-safety (branch protection + secret scanning)
-    if [[ "$TOOL_NAME" == "file_edit" || "$TOOL_NAME" == "file_write" || "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" ]]; then
+    if [[ "$TOOL_NAME" == "file_edit" || "$TOOL_NAME" == "file_write" || "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "apply_patch" ]]; then
+      ensure_codex_route_before_write
       if [[ -x "$HOOKS_DIR/pre-edit-safety.sh" ]]; then
         bash "$HOOKS_DIR/pre-edit-safety.sh" || exit $?
       fi
@@ -67,7 +105,7 @@ case "$EVENT" in
       bash "$HOOKS_DIR/prompt-injection-defender.sh" || true
     fi
     # Run encoding check for file operations
-    if [[ "$TOOL_NAME" == "file_write" || "$TOOL_NAME" == "file_edit" || "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" ]]; then
+    if [[ "$TOOL_NAME" == "file_write" || "$TOOL_NAME" == "file_edit" || "$TOOL_NAME" == "Write" || "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "apply_patch" ]]; then
       if [[ -x "$HOOKS_DIR/check-encoding.sh" ]]; then
         bash "$HOOKS_DIR/check-encoding.sh" || true
       fi

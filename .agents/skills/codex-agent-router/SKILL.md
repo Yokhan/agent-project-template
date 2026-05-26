@@ -7,6 +7,16 @@ description: "Route Codex work to repository skills, shared rules, plans, memory
 
 Codex does not use the Claude subagent/model routing table. Route by task type and risk inside the current agent.
 
+## Mandatory First Step
+
+For any file edit, M+ task, template work, release, design, security task, or ambiguous request, run:
+
+```bash
+node scripts/codex-route-task.js "<user request>" --summary --write-state
+```
+
+State the returned modes, skills, pipeline, subagents, risk, and orchestrator before editing. If the route reports `agentos`, treat AgentOS as the orchestrator and Codex as the worker.
+
 ## Routing
 
 - Implementation: `$codex-feature-workflow`, `$codex-pipeline-workflow`.
