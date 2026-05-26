@@ -8,6 +8,8 @@ instruction architecture. It exists to prevent blind edits to `AGENTS.md`,
 
 - `sources.json` - machine-readable source registry with trust level,
   last-checked date, refresh policy, and local conclusions.
+- `top-works.md` - priority annotated bibliography for agent engineering and
+  template maintenance decisions.
 - `originals/ai-agent-spec-v3-final.md` - user-provided local spec imported as
   a byte-preserved source.
 

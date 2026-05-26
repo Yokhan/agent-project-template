@@ -109,7 +109,9 @@ echo ""
 echo "Agent SOT:"
 check "_reference/agent-sot/README.md" test -f _reference/agent-sot/README.md
 check "_reference/agent-sot/sources.json" test -f _reference/agent-sot/sources.json
+check "_reference/agent-sot/top-works.md" test -f _reference/agent-sot/top-works.md
 check "local ai-agent spec original" test -f _reference/agent-sot/originals/ai-agent-spec-v3-final.md
+check "Agent SOT has >=20 top works" bash -c '[ $(grep -c "^## TW-" _reference/agent-sot/top-works.md) -ge 20 ]'
 check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
 check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
 

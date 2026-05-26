@@ -175,6 +175,7 @@ REQUIRED_FILES=(
   "_reference/tool-registry.md"
   "_reference/agent-sot/README.md"
   "_reference/agent-sot/sources.json"
+  "_reference/agent-sot/top-works.md"
   "_reference/agent-sot/originals/ai-agent-spec-v3-final.md"
   ".claude/settings.json"
   "tasks/lessons.md"

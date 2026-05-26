@@ -11,8 +11,9 @@ Do not redesign agent infrastructure from memory. Check:
 
 1. `_reference/agent-sot/sources.json` for the source registry and freshness.
 2. `_reference/agent-sot/README.md` for the local interpretation.
-3. Official docs URLs from the registry when behavior may have changed.
-4. `_reference/agent-sot/originals/ai-agent-spec-v3-final.md` for the imported
+3. `_reference/agent-sot/top-works.md` for the priority reading set.
+4. Official docs URLs from the registry when behavior may have changed.
+5. `_reference/agent-sot/originals/ai-agent-spec-v3-final.md` for the imported
    project spec that motivated this template.
 
 Do not paste full third-party documentation into the repo. Store URLs, dates,
@@ -52,6 +53,10 @@ research live in `docs/`, `_reference/`, `brain/`, and `tasks/`.
 
 Agent SOT material belongs under `_reference/agent-sot/`. Operational summaries
 that agents must see during maintenance belong in this file.
+
+The priority reading set is `_reference/agent-sot/top-works.md`. It must contain
+at least 20 source cards and each card must reference an ID from
+`_reference/agent-sot/sources.json`.
 
 ## Decision Matrix
 
