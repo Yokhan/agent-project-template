@@ -58,6 +58,10 @@ The priority reading set is `_reference/agent-sot/top-works.md`. It must contain
 at least 20 source cards and each card must reference an ID from
 `_reference/agent-sot/sources.json`.
 
+GitHub Spec Kit also has a managed local snapshot under `_reference/spec-kit/`.
+Use it for offline reading and deploy it with `scripts/init-spec-kit.sh`.
+Refresh it with `scripts/sync-spec-kit.sh --latest-tag` after checking upstream.
+
 ## Decision Matrix
 
 Use hooks for deterministic checks that must run every time.

@@ -8,6 +8,11 @@ These are the environments the template is designed and tested to support.
 - `node` 20+ for JSON parsing, MCP tooling, and metadata scripts
 - `bash`
 
+## Optional Tools
+
+- `uvx` or an installed `specify` CLI for `scripts/init-spec-kit.sh`
+- network access for `scripts/sync-spec-kit.sh --check` and `--latest-tag`
+
 ## Supported Bootstrap Paths
 
 ### Linux
@@ -41,5 +46,6 @@ Current release validation covers:
 - Codex skill validation: `node scripts/validate-codex-skills.js`
 - Codex agent validation: `node scripts/validate-codex-agents.js`
 - Codex route validation: `node scripts/test-codex-routing.js`
+- Spec Kit snapshot validation: `node scripts/validate-spec-kit.js`
 - optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`
 - downstream migration dry-runs via `downstream-census.sh`

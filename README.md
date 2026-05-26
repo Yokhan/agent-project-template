@@ -26,6 +26,16 @@ In chat: `/setup-project` — Claude configures the project for your stack.
 
 `README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
 
+Optional Spec Kit setup is shipped but inert by default:
+
+```bash
+# Validate local managed snapshot
+node scripts/validate-spec-kit.js
+
+# Initialize Spec Kit in the current project using the pinned upstream ref
+bash scripts/init-spec-kit.sh --integration codex --script sh --project-dir .
+```
+
 ## Project Creation Modes
 
 - **Generated project**: `setup.sh my-project` or `setup.bat` creates the clean payload that should ship to real projects.
@@ -171,7 +181,8 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
 | **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
 | **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
-| **Scripts** | 35 | validation, route selection, drift checks, bootstrap, sync, project scanning, task brief, hooks, and release smoke |
+| **Scripts** | 38 | validation, route selection, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
 | **Memory** | tasks/ | lessons.md, current.md, .research-cache.md, post-mortems/ |

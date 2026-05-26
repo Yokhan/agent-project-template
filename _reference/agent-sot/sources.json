@@ -119,6 +119,17 @@
       "local_conclusion": "Use Spec -> Plan -> Tasks -> Implement artifacts when task intent and work graph need to be explicit and agent-agnostic."
     },
     {
+      "id": "local-spec-kit-snapshot",
+      "kind": "local-snapshot",
+      "trust": "project-sot",
+      "title": "Managed local GitHub Spec Kit snapshot",
+      "url": "https://github.com/github/spec-kit",
+      "local_path": "_reference/spec-kit/manifest.json",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Keep a reviewed stable Spec Kit snapshot in the template and deploy projects through the official CLI at the pinned manifest ref."
+    },
+    {
       "id": "trailofbits-claude-code-config",
       "kind": "public-implementation",
       "trust": "secondary",

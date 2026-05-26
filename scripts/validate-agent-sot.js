@@ -19,6 +19,7 @@ const REQUIRED_SOURCE_IDS = [
   "openai-codex-hooks",
   "openai-codex-subagents",
   "zed-external-agents",
+  "local-spec-kit-snapshot",
   "claude-code-extend",
   "claude-code-skills",
   "claude-code-hooks",

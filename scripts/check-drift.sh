@@ -354,6 +354,18 @@ else
   WARNINGS=$((WARNINGS + 1))
 fi
 
+if [ -f "scripts/validate-spec-kit.js" ]; then
+  if node scripts/validate-spec-kit.js >/dev/null 2>&1; then
+    echo "  ✅ Spec Kit snapshot validates"
+  else
+    echo "  ❌ Spec Kit snapshot validation failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  ⚠️  Spec Kit snapshot validator missing"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 if [ -f "docs/PRODUCT_BOUNDARY.md" ] && [ -f "docs/SAFE_DEFAULTS.md" ] && [ -f "docs/SUPPORTED_ENVIRONMENTS.md" ]; then
   echo "  ✅ Trust and environment docs present"
 else

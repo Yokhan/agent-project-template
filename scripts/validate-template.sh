@@ -123,6 +123,12 @@ if ! node scripts/validate-agent-sot.js >/dev/null 2>&1; then
 else
   echo "  OK: Agent SOT validates"
 fi
+if ! node scripts/validate-spec-kit.js >/dev/null 2>&1; then
+  echo "  ERROR: Spec Kit snapshot validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Spec Kit snapshot validates"
+fi
 
 # 4. Script syntax
 echo ""
@@ -164,9 +170,13 @@ REQUIRED_FILES=(
   "docs/TEMPLATE_RELEASES.md"
   "docs/SAFE_DEFAULTS.md"
   "docs/SUPPORTED_ENVIRONMENTS.md"
+  "integrations/spec-kit/README.md"
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
   "scripts/validate-agent-sot.js"
+  "scripts/validate-spec-kit.js"
+  "scripts/sync-spec-kit.sh"
+  "scripts/init-spec-kit.sh"
   "scripts/codex-route-task.js"
   "scripts/test-codex-routing.js"
   "scripts/test-codex-subagents-live.sh"
@@ -177,6 +187,12 @@ REQUIRED_FILES=(
   "_reference/agent-sot/sources.json"
   "_reference/agent-sot/top-works.md"
   "_reference/agent-sot/originals/ai-agent-spec-v3-final.md"
+  "_reference/spec-kit/README.md"
+  "_reference/spec-kit/manifest.json"
+  "_reference/spec-kit/upstream/templates/commands/specify.md"
+  "_reference/spec-kit/upstream/templates/commands/plan.md"
+  "_reference/spec-kit/upstream/templates/commands/tasks.md"
+  "_reference/spec-kit/upstream/templates/commands/implement.md"
   ".claude/settings.json"
   "tasks/lessons.md"
   "tasks/current.md"

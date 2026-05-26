@@ -46,6 +46,34 @@ claude
 
 ---
 
+## Optional: Spec Kit
+
+The template ships a managed GitHub Spec Kit snapshot under `_reference/spec-kit/`.
+It is not applied automatically during setup.
+
+Validate the local snapshot:
+
+```bash
+node scripts/validate-spec-kit.js
+```
+
+Check whether the snapshot is stale against upstream stable tags:
+
+```bash
+bash scripts/sync-spec-kit.sh --check
+```
+
+Initialize Spec Kit in the current project using the pinned snapshot ref:
+
+```bash
+bash scripts/init-spec-kit.sh --integration codex --script sh --project-dir .
+```
+
+Use `--integration claude` for Claude Code or `--script ps` for PowerShell
+helpers.
+
+---
+
 ## Что делает каждый шаг
 
 ### 1. setup.sh / setup.bat

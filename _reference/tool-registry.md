@@ -22,6 +22,9 @@
 | codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, pipeline, risk, and orchestrator |
 | test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
 | validate-agent-sot | scripts/validate-agent-sot.js | Validates local Agent SOT sources, AGENTS/CLAUDE links, and drift gates |
+| validate-spec-kit | scripts/validate-spec-kit.js | Offline validation for the managed Spec Kit snapshot |
+| sync-spec-kit | scripts/sync-spec-kit.sh | Fetch/update the managed GitHub Spec Kit snapshot |
+| init-spec-kit | scripts/init-spec-kit.sh | Initialize Spec Kit in a project using the pinned snapshot ref |
 | test-hooks | scripts/test-hooks.sh | Hook syntax validation |
 | brain-search | scripts/brain-search.sh | Search brain/ knowledge base |
 
@@ -47,6 +50,9 @@
 | test-template | scripts/test-template.sh | test-template.sh — Smoke test for agent-project-template | agent/manual |
 | update-template | scripts/update-template.sh | update-template.sh — Update project from newer template version | agent/manual |
 | validate-agent-sot | scripts/validate-agent-sot.js | Ensures agent docs and source registry stay present and referenced | agent/manual |
+| validate-spec-kit | scripts/validate-spec-kit.js | Ensures the local Spec Kit snapshot and manifest are complete | agent/manual |
+| sync-spec-kit | scripts/sync-spec-kit.sh | Updates `_reference/spec-kit/upstream` from GitHub Spec Kit | agent/manual |
+| init-spec-kit | scripts/init-spec-kit.sh | Runs official Spec Kit CLI at the pinned manifest ref | agent/manual |
 | validate-template | scripts/validate-template.sh | validate-template.sh — Pre-release validation for agent-project-templa | agent/manual |
 | verify-check | scripts/verify-check.sh | verify-check.sh — Automated verification checklist | agent/manual |
 

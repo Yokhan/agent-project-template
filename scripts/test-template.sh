@@ -44,6 +44,7 @@ check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
 check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
 check "docs/CODEX_SUBAGENTS_AUDIT.md" test -f docs/CODEX_SUBAGENTS_AUDIT.md
 check "docs/OPENAI_MODEL_GUIDANCE.md" test -f docs/OPENAI_MODEL_GUIDANCE.md
+check "integrations/spec-kit/README.md" test -f integrations/spec-kit/README.md
 source_only_check "setup.sh" test -f setup.sh
 source_only_check "setup.bat" test -f setup.bat
 check ".codex/config.toml" test -f .codex/config.toml
@@ -67,6 +68,9 @@ check "scripts/task-brief.sh" test -f scripts/task-brief.sh
 check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.js
 check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
 check "scripts/validate-agent-sot.js" test -f scripts/validate-agent-sot.js
+check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
+check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
+check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
 check "scripts/test-codex-routing.js" test -f scripts/test-codex-routing.js
 check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
@@ -83,6 +87,7 @@ check "core Codex model guidance skill" test -f .agents/skills/codex-openai-mode
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-agent-sot" node scripts/validate-agent-sot.js
+check "validate-spec-kit" node scripts/validate-spec-kit.js
 
 echo ""
 echo "Codex subagents:"
@@ -114,6 +119,15 @@ check "local ai-agent spec original" test -f _reference/agent-sot/originals/ai-a
 check "Agent SOT has >=20 top works" bash -c '[ $(grep -c "^## TW-" _reference/agent-sot/top-works.md) -ge 20 ]'
 check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
 check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
+
+echo ""
+echo "Spec Kit snapshot:"
+check "_reference/spec-kit/README.md" test -f _reference/spec-kit/README.md
+check "_reference/spec-kit/manifest.json" test -f _reference/spec-kit/manifest.json
+check "Spec Kit command templates" test -f _reference/spec-kit/upstream/templates/commands/specify.md
+check "Spec Kit plan template" test -f _reference/spec-kit/upstream/templates/plan-template.md
+check "Spec Kit bash helper" test -f _reference/spec-kit/upstream/scripts/bash/check-prerequisites.sh
+check "Spec Kit PowerShell helper" test -f _reference/spec-kit/upstream/scripts/powershell/check-prerequisites.ps1
 
 echo ""
 echo "Brain vault:"
@@ -165,7 +179,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(mktemp)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/validate-agent-sot.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -174,10 +188,15 @@ if is_template_source_repo; then
       [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
       [ -f "$project/docs/AGENT_CONTEXT_SOT.md" ] &&
       [ -f "$project/_reference/agent-sot/sources.json" ] &&
+      [ -f "$project/_reference/spec-kit/manifest.json" ] &&
+      [ -f "$project/integrations/spec-kit/README.md" ] &&
       [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
       [ -f "$project/scripts/codex-route-task.js" ] &&
       [ -f "$project/scripts/test-codex-routing.js" ] &&
+      [ -f "$project/scripts/init-spec-kit.sh" ] &&
+      [ -f "$project/scripts/sync-spec-kit.sh" ] &&
       [ -f "$project/scripts/validate-agent-sot.js" ] &&
+      [ -f "$project/scripts/validate-spec-kit.js" ] &&
       [ -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&

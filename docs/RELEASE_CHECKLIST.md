@@ -14,6 +14,8 @@ Last reviewed: 2026-05-23 for template `3.7.0` local validation. Remote GitHub A
 - [ ] `node scripts/test-codex-routing.js`
 - [ ] `node scripts/validate-codex-skills.js`
 - [ ] `node scripts/validate-codex-agents.js`
+- [ ] `node scripts/validate-agent-sot.js`
+- [ ] `node scripts/validate-spec-kit.js`
 - [ ] `bash scripts/generate-project-spec.sh --write`
 - [ ] `bash scripts/scan-project.sh --report`
 
@@ -40,6 +42,7 @@ Last reviewed: 2026-05-23 for template `3.7.0` local validation. Remote GitHub A
 - [ ] Session-start uses compact summaries, not raw markdown dumps
 - [ ] No project-level Codex defaults override IDE/user-level model or effort settings
 - [ ] `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md` match the shipped contract
+- [ ] `_reference/spec-kit/manifest.json` matches the intended stable Spec Kit ref; run `bash scripts/sync-spec-kit.sh --check` before cutting the release
 
 ## Release Decision
 

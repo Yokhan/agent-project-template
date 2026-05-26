@@ -64,3 +64,4 @@ Before calling the template release-ready:
 - generated projects must not contain maintainer-only or machine-local files
 - template-owned docs must match the real bootstrap and update flow
 - project-owned files must remain preserved by sync
+- managed upstream snapshots such as `_reference/spec-kit/` must include a manifest and validator
