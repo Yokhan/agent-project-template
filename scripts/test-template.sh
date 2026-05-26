@@ -161,6 +161,7 @@ check "scan-project --report" bash -c 'bash scripts/scan-project.sh --report >/d
 check "task-brief --brief" bash scripts/task-brief.sh --brief
 check "task-brief --json" bash -c 'bash scripts/task-brief.sh --json | node -e "JSON.parse(require(\"fs\").readFileSync(0, \"utf8\"))"'
 check "codex-route-task template route" bash -c 'node scripts/codex-route-task.js "обнови агентский шаблон и release tag" | node -e "const r=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); if(!r.skills.includes(\"codex-template-sync\") || !r.skills.includes(\"codex-health-check\")) process.exit(1)"'
+check "route-task fallback includes strategic review" bash -c 'bash scripts/route-task.sh "template release" | grep -q "codex-strategic-review"'
 
 echo ""
 echo "Bootstrap trust smoke:"

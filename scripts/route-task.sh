@@ -120,20 +120,24 @@ CODEX_SUBAGENTS="reviewer"
 PIPELINE="review"
 RISK="MEDIUM"
 if echo "$MODES" | grep -q "template"; then
-  CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router"
+  CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router codex-strategic-review"
   CODEX_SUBAGENTS="pr_explorer tester reviewer"
   PIPELINE="template maintenance"
   RISK="HIGH"
 elif echo "$MODES" | grep -q "release"; then
-  CODEX_SKILLS="codex-template-sync codex-health-check codex-test-rules"
+  CODEX_SKILLS="codex-template-sync codex-health-check codex-test-rules codex-strategic-review"
   CODEX_SUBAGENTS="tester reviewer security_reviewer"
   PIPELINE="release"
   RISK="HIGH"
-elif echo "$MODES" | grep -q "audit"; then
-  CODEX_SKILLS="codex-security-audit"
+elif echo "$TASK" | grep -qiE "security|vulnerability|secret|auth|permission|injection|xss|csrf|ssrf|cve|owasp"; then
+  CODEX_SKILLS="codex-security-audit codex-strategic-review"
   CODEX_SUBAGENTS="security_reviewer pr_explorer tester"
   PIPELINE="security patch"
   RISK="HIGH"
+elif echo "$MODES" | grep -q "plan"; then
+  CODEX_SKILLS="codex-strategic-review codex-decompose"
+  CODEX_SUBAGENTS="pr_explorer reviewer"
+  PIPELINE="planning"
 elif echo "$MODES" | grep -q "design"; then
   CODEX_SKILLS="codex-design-workflow codex-domain-design-review"
   CODEX_SUBAGENTS="design_reviewer tester reviewer"
@@ -148,6 +152,11 @@ elif echo "$MODES" | grep -q "code"; then
   PIPELINE="feature"
 fi
 
+if { [ "$RISK" = "HIGH" ] || echo "$MODES" | grep -q "plan"; } &&
+   ! echo "$CODEX_SKILLS" | grep -q "codex-strategic-review"; then
+  CODEX_SKILLS="$CODEX_SKILLS codex-strategic-review"
+fi
+
 # Save active rules
 mkdir -p tasks
 {
@@ -158,6 +167,7 @@ mkdir -p tasks
   echo "CODEX_SUBAGENTS=$CODEX_SUBAGENTS"
   echo "PIPELINE=$PIPELINE"
   echo "RISK=$RISK"
+  echo "STRATEGY_GATE=Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
   echo "COUNT=$FILE_COUNT files, $LINE_COUNT lines"
   echo "ROUTED_AT=$(date -u +%Y-%m-%dT%H:%M 2>/dev/null || date +%Y-%m-%dT%H:%M)"
   echo "---"
@@ -173,6 +183,7 @@ echo "CODEX_SKILLS: $CODEX_SKILLS"
 echo "CODEX_SUBAGENTS: $CODEX_SUBAGENTS"
 echo "PIPELINE: $PIPELINE"
 echo "RISK: $RISK"
+echo "STRATEGY_GATE: Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
 echo "RULES: $FILE_COUNT files, ~$LINE_COUNT lines"
 echo "---"
 echo "READ these files:"

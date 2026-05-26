@@ -4,25 +4,10 @@ const os = require("os");
 const path = require("path");
 const STATE_PATH = path.join("tasks", ".active-codex-route.json");
 const SHARED_RULES = {
-  base: [
-    ".claude/library/process/context-first.md",
-    ".claude/library/process/research-first.md",
-    ".claude/library/process/self-verification.md",
-  ],
-  implementation: [
-    ".claude/library/process/plan-first.md",
-    ".claude/library/technical/architecture.md",
-    ".claude/library/technical/code-style.md",
-    ".claude/library/technical/error-handling.md",
-  ],
-  review: [
-    ".claude/library/meta/critical-thinking.md",
-    ".claude/library/meta/analysis.md",
-  ],
-  design: [
-    ".claude/library/domain/domain-design-pipeline.md",
-    ".claude/library/technical/atomic-reuse.md",
-  ],
+  base: [".claude/library/process/context-first.md", ".claude/library/process/research-first.md", ".claude/library/process/self-verification.md"],
+  implementation: [".claude/library/process/plan-first.md", ".claude/library/technical/architecture.md", ".claude/library/technical/code-style.md", ".claude/library/technical/error-handling.md"],
+  review: [".claude/library/meta/critical-thinking.md", ".claude/library/meta/analysis.md"],
+  design: [".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
   testing: [".claude/library/technical/testing.md"],
   writing: [".claude/library/technical/writing.md"],
   git: [".claude/library/technical/git-workflow.md"],
@@ -72,12 +57,7 @@ const ROUTES = [
     mode: "template",
     pattern:
       /template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent project|шаблон|агент|скилл|роут|маршрут|синхрон/i,
-    skills: [
-      "codex-template-sync",
-      "codex-skill-maintenance",
-      "codex-test-rules",
-      "codex-agent-router",
-    ],
+    skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],
     rules: ["review", "testing", "git"],
@@ -235,13 +215,8 @@ function detectArtifacts(root) {
       name: "project-overlays",
       present:
         pathExists(root, ".agents/skills") &&
-        fs
-          .readdirSync(path.join(root, ".agents/skills"), {
-            withFileTypes: true,
-          })
-          .some(
-            (entry) => entry.isDirectory() && entry.name.startsWith("project-"),
-          ),
+        fs.readdirSync(path.join(root, ".agents/skills"), { withFileTypes: true })
+          .some((entry) => entry.isDirectory() && entry.name.startsWith("project-")),
       role: "project-specific skills extend the route",
     },
     {
@@ -279,16 +254,21 @@ function getOrchestrator(artifacts) {
       "No external orchestrator detected. Parent Codex thread owns sequencing, consolidation, edits, and verification.",
   };
 }
+function needsStrategicReview(selected, risk, artifacts) {
+  const strategicModes = new Set(["strategy", "template", "release", "security", "migration"]);
+  return risk === "HIGH" ||
+    selected.some((route) => strategicModes.has(route.mode)) ||
+    artifacts.some((artifact) => artifact.name !== "template-native");
+}
 function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
   const matches = ROUTES.filter((route) => route.pattern.test(task));
   const defaultMode = /сделай|сделать|do it|make it/i.test(task)
     ? "feature"
     : "review";
-  const selected =
-    matches.length > 0
-      ? matches
-      : [ROUTES.find((route) => route.mode === defaultMode)];
+  const selected = matches.length > 0
+    ? matches
+    : [ROUTES.find((route) => route.mode === defaultMode)];
   const artifacts = detectArtifacts(cwd);
   const riskOrder = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
   const risk = selected.reduce(
@@ -296,6 +276,7 @@ function getRoute(task, options = {}) {
       riskOrder[route.risk] > riskOrder[current] ? route.risk : current,
     "LOW",
   );
+  const shouldUseStrategicReview = needsStrategicReview(selected, risk, artifacts);
   const ruleGroups = unique([
     "base",
     ...selected.flatMap((route) => route.rules || []),
@@ -306,7 +287,10 @@ function getRoute(task, options = {}) {
     modes: unique(selected.map((route) => route.mode)),
     pipeline: selected[0].pipeline,
     risk,
-    skills: unique(selected.flatMap((route) => route.skills || [])),
+    skills: unique([
+      ...selected.flatMap((route) => route.skills || []),
+      shouldUseStrategicReview ? "codex-strategic-review" : "",
+    ]),
     subagents: unique(selected.flatMap((route) => route.subagents || [])),
     sharedRules: unique(
       ruleGroups.flatMap((group) => SHARED_RULES[group] || []),

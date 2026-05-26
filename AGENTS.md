@@ -31,6 +31,18 @@ Codex is a strong engineer but needs explicit user intent. Before implementing:
 
 If you cannot state all three clearly, ASK the user before writing code.
 
+### Intent & Strategy Gate (MANDATORY)
+
+Before choosing tools or editing, understand the logic of the task:
+
+- Real objective: what user outcome improves, not just which file changes.
+- System logic: what existing workflow, data flow, or agent flow this touches.
+- Constraints: invariants, ownership boundaries, compatibility, deadlines, rollback.
+- Strategy: smallest valuable reversible move; compare one alternative for MEDIUM+ risk.
+- Verification: what evidence proves the outcome, and what doubt remains.
+
+For ambiguous, M+, HIGH risk, template/release/security/design, or cross-project work, state a compact action strategy: **Goal -> Constraints -> Approach -> Verification -> Risk/Doubt**. If any part is unclear, ask before editing.
+
 ### Route-First Protocol (MANDATORY)
 
 Codex reads `AGENTS.md` once at session start as project guidance. Keep this file short. Put reusable workflows in `.agents/skills`, project workers in `.codex/agents`, and long references in docs.
@@ -56,6 +68,7 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Security: HIGH risk by default; map actors/data/trust boundaries; patch narrowly; prove exploit path is closed.
 - Design/UI: system -> tokens -> components -> screens; no hardcoded visual values; cover default/hover/active/focus/disabled/loading/error/empty; screenshot or viewport-check before closeout.
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
+- Strategy/ambiguous: use `$codex-strategic-review`; optimize for user victory over local task completion; compare at least one alternative; choose the next smallest reversible move.
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
 - Fan-out: spawn read-only subagents first for M+ tasks; parent consolidates and edits. Use `implementer` only for exact, non-overlapping files.
 

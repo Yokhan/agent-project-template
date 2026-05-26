@@ -70,7 +70,7 @@ function main() {
 
   testRoute("проверь безопасность auth secrets injection", {
     modes: ["security", "review"],
-    skills: ["codex-security-audit", "codex-audit"],
+    skills: ["codex-security-audit", "codex-audit", "codex-strategic-review"],
     subagents: ["security_reviewer", "tester"],
     risk: "HIGH",
   });
@@ -81,6 +81,7 @@ function main() {
       "codex-template-sync",
       "codex-skill-maintenance",
       "codex-test-rules",
+      "codex-strategic-review",
     ],
     subagents: ["pr_explorer", "tester"],
     risk: "HIGH",
@@ -88,7 +89,11 @@ function main() {
 
   testRoute("выпусти release v3.8.0 и tag чтобы проекты качали релиз", {
     modes: ["release"],
-    skills: ["codex-template-sync", "codex-health-check"],
+    skills: [
+      "codex-template-sync",
+      "codex-health-check",
+      "codex-strategic-review",
+    ],
     subagents: ["security_reviewer", "tester"],
     risk: "HIGH",
   });
