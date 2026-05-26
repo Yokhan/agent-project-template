@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-05-26",
+  "policy": {
+    "refresh_after_days": 30,
+    "do_not_vendor_third_party_docs": true,
+    "official_sources_override_community_sources": true
+  },
+  "sources": [
+    {
+      "id": "local-ai-agent-spec-v3",
+      "kind": "local-original",
+      "trust": "project-sot",
+      "title": "AI agent development spec v3.1",
+      "local_path": "_reference/agent-sot/originals/ai-agent-spec-v3-final.md",
+      "sha256": "1a3e65302b965232df93639790025e71b04648dc9b2e71906ba38048dca03468",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": false,
+      "local_conclusion": "Use three context tiers: hot instructions, specialist skills/agents, cold references. Prefer hooks and validators for deterministic behavior."
+    },
+    {
+      "id": "openai-codex-agents-md",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "OpenAI Codex AGENTS.md guide",
+      "url": "https://developers.openai.com/codex/guides/agents-md",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "AGENTS.md is project guidance discovered by Codex with a 32 KiB default limit; keep it concise and route to deeper docs."
+    },
+    {
+      "id": "openai-codex-skills",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "OpenAI Codex skills",
+      "url": "https://developers.openai.com/codex/skills",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
+    },
+    {
+      "id": "openai-codex-hooks",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "OpenAI Codex hooks",
+      "url": "https://developers.openai.com/codex/hooks",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Codex hooks use nested event matchers. PreToolUse can guard Bash, apply_patch/file edits, and MCP tool calls, but is not a complete enforcement boundary."
+    },
+    {
+      "id": "openai-codex-subagents",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "OpenAI Codex subagents",
+      "url": "https://developers.openai.com/codex/subagents",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Codex can spawn specialized agents in parallel and collect results. Use for parallel exploration/review and carefully scoped implementation."
+    },
+    {
+      "id": "zed-external-agents",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Zed external agents",
+      "url": "https://zed.dev/docs/ai/external-agents",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Zed runs Codex CLI through ACP. Zed is the UI transport, not the source of Codex instruction semantics."
+    },
+    {
+      "id": "claude-code-extend",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Claude Code extension overview",
+      "url": "https://code.claude.com/docs/en/features-overview",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Claude separates persistent context, skills, subagents, hooks, MCP, and plugins. Match the tool to the kind of context or enforcement needed."
+    },
+    {
+      "id": "claude-code-skills",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Claude Code skills",
+      "url": "https://code.claude.com/docs/en/skills",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Claude skills load only when used; move repeated procedures and long reference material out of CLAUDE.md into skills."
+    },
+    {
+      "id": "claude-code-hooks",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Claude Code hooks",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Hooks are lifecycle automation with nested event/matcher/handler structure. Prefer command hooks for production enforcement."
+    },
+    {
+      "id": "claude-code-subagents",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Claude Code custom subagents",
+      "url": "https://code.claude.com/docs/en/sub-agents",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Claude subagents are specialized workers with their own prompts, tools, permissions, and optional skills."
+    },
+    {
+      "id": "github-spec-kit",
+      "kind": "official-project-docs",
+      "trust": "primary",
+      "title": "GitHub Spec Kit",
+      "url": "https://github.github.io/spec-kit/",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Use Spec -> Plan -> Tasks -> Implement artifacts when task intent and work graph need to be explicit and agent-agnostic."
+    },
+    {
+      "id": "trailofbits-claude-code-config",
+      "kind": "public-implementation",
+      "trust": "secondary",
+      "title": "Trail of Bits claude-code-config",
+      "url": "https://github.com/trailofbits/claude-code-config",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": false,
+      "local_conclusion": "Treat agent setup as a continuous improvement loop: add rules, hooks, or skills only after real failures or repeated workflows."
+    },
+    {
+      "id": "humanlayer-claude-md",
+      "kind": "public-guidance",
+      "trust": "secondary",
+      "title": "HumanLayer - Writing a good CLAUDE.md",
+      "url": "https://www.humanlayer.dev/blog/writing-a-good-claude-md",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": false,
+      "local_conclusion": "CLAUDE.md/AGENTS.md is high leverage because it enters every session; keep it intentional and project-specific."
+    },
+    {
+      "id": "nx-ai-agent-skills",
+      "kind": "public-implementation",
+      "trust": "secondary",
+      "title": "Nx AI agent skills",
+      "url": "https://nx.dev/blog/nx-ai-agent-skills",
+      "last_checked": "2026-05-26",
+      "requires_fresh_check": false,
+      "local_conclusion": "Move procedural monorepo knowledge into skills and keep MCP focused on live external systems."
+    }
+  ]
+}

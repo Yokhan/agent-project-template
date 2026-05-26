@@ -42,6 +42,10 @@ Before any file edit, release, template change, security work, design work, or M
 3. Follow the returned skills/rules. Do not scan every skill or reread broad docs.
 4. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
 
+### Agent Infrastructure SOT
+
+Before changing `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, routing, or template sync behavior, read `docs/AGENT_CONTEXT_SOT.md` and check `_reference/agent-sot/sources.json`. If a source is stale or behavior-sensitive, browse the canonical URL first. Run `node scripts/validate-agent-sot.js` before closeout.
+
 ### Route Operating Rules
 
 These are the useful rules distilled from `.claude/rules/router.md`, `.claude/library/`, and `docs/AGENT_PIPELINES.md`:

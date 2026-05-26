@@ -342,6 +342,18 @@ else
   WARNINGS=$((WARNINGS + 1))
 fi
 
+if [ -f "scripts/validate-agent-sot.js" ]; then
+  if node scripts/validate-agent-sot.js >/dev/null 2>&1; then
+    echo "  ✅ Agent SOT validates"
+  else
+    echo "  ❌ Agent SOT validation failed"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  ⚠️  Agent SOT validator missing"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 if [ -f "docs/PRODUCT_BOUNDARY.md" ] && [ -f "docs/SAFE_DEFAULTS.md" ] && [ -f "docs/SUPPORTED_ENVIRONMENTS.md" ]; then
   echo "  ✅ Trust and environment docs present"
 else

@@ -39,6 +39,7 @@ check "docs/SAFE_DEFAULTS.md" test -f docs/SAFE_DEFAULTS.md
 check "docs/SUPPORTED_ENVIRONMENTS.md" test -f docs/SUPPORTED_ENVIRONMENTS.md
 check "docs/TEMPLATE_RELEASES.md" test -f docs/TEMPLATE_RELEASES.md
 check "docs/AGENT_PIPELINES.md" test -f docs/AGENT_PIPELINES.md
+check "docs/AGENT_CONTEXT_SOT.md" test -f docs/AGENT_CONTEXT_SOT.md
 check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
 check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
 check "docs/CODEX_SUBAGENTS_AUDIT.md" test -f docs/CODEX_SUBAGENTS_AUDIT.md
@@ -65,6 +66,7 @@ check "scripts/generate-project-spec.sh" test -f scripts/generate-project-spec.s
 check "scripts/task-brief.sh" test -f scripts/task-brief.sh
 check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.js
 check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
+check "scripts/validate-agent-sot.js" test -f scripts/validate-agent-sot.js
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
 check "scripts/test-codex-routing.js" test -f scripts/test-codex-routing.js
 check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
@@ -80,6 +82,7 @@ check "core Codex Mermaid board skill" test -f .agents/skills/codex-mermaid-boar
 check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-routing" node scripts/test-codex-routing.js
+check "validate-agent-sot" node scripts/validate-agent-sot.js
 
 echo ""
 echo "Codex subagents:"
@@ -101,6 +104,14 @@ check ">=6 domain skill dirs" bash -c '[ $(ls -d .claude/skills/domain-*/ 2>/dev
 check ">=12 command files" bash -c '[ $(ls .claude/commands/*.md 2>/dev/null | wc -l) -ge 12 ]'
 check ">=7 hook files" bash -c '[ $(ls .claude/hooks/*.sh 2>/dev/null | wc -l) -ge 7 ]'
 check "scripts/test-hooks.sh" test -f scripts/test-hooks.sh
+
+echo ""
+echo "Agent SOT:"
+check "_reference/agent-sot/README.md" test -f _reference/agent-sot/README.md
+check "_reference/agent-sot/sources.json" test -f _reference/agent-sot/sources.json
+check "local ai-agent spec original" test -f _reference/agent-sot/originals/ai-agent-spec-v3-final.md
+check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
+check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
 
 echo ""
 echo "Brain vault:"
@@ -152,16 +163,19 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(mktemp)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/validate-agent-sot.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
       [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
       [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
+      [ -f "$project/docs/AGENT_CONTEXT_SOT.md" ] &&
+      [ -f "$project/_reference/agent-sot/sources.json" ] &&
       [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
       [ -f "$project/scripts/codex-route-task.js" ] &&
       [ -f "$project/scripts/test-codex-routing.js" ] &&
+      [ -f "$project/scripts/validate-agent-sot.js" ] &&
       [ -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&

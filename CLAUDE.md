@@ -30,6 +30,8 @@ Not configured yet.
 
 **Rules are NOT pre-loaded.** They live in `.claude/library/` and load ON DEMAND per task.
 
+**Agent infrastructure SOT:** before changing `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, routing, or template sync behavior, read `docs/AGENT_CONTEXT_SOT.md` and check `_reference/agent-sot/sources.json`. If a source is stale or behavior-sensitive, browse the canonical URL first. Run `node scripts/validate-agent-sot.js`.
+
 **On every new task**:
 1. User gives task (any language, any jargon)
 2. YOU extract English keywords: task type + domain + action

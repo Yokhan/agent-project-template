@@ -117,6 +117,12 @@ if ! node scripts/test-codex-routing.js >/dev/null 2>&1; then
 else
   echo "  OK: Codex routing smoke passes"
 fi
+if ! node scripts/validate-agent-sot.js >/dev/null 2>&1; then
+  echo "  ERROR: Agent SOT validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Agent SOT validates"
+fi
 
 # 4. Script syntax
 echo ""
@@ -147,6 +153,7 @@ REQUIRED_FILES=(
   "PROJECT_SPEC.md"
   "ecosystem.md"
   "docs/AGENT_PIPELINES.md"
+  "docs/AGENT_CONTEXT_SOT.md"
   "docs/CODEX_FANOUT_PATTERNS.md"
   "docs/CODEX_SKILLS_AUDIT.md"
   "docs/CODEX_SUBAGENTS_AUDIT.md"
@@ -159,12 +166,16 @@ REQUIRED_FILES=(
   "docs/SUPPORTED_ENVIRONMENTS.md"
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
+  "scripts/validate-agent-sot.js"
   "scripts/codex-route-task.js"
   "scripts/test-codex-routing.js"
   "scripts/test-codex-subagents-live.sh"
   ".github/workflows/release-template.yml"
   "_reference/README.md"
   "_reference/tool-registry.md"
+  "_reference/agent-sot/README.md"
+  "_reference/agent-sot/sources.json"
+  "_reference/agent-sot/originals/ai-agent-spec-v3-final.md"
   ".claude/settings.json"
   "tasks/lessons.md"
   "tasks/current.md"

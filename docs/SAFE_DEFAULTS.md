@@ -9,6 +9,7 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 - Codex subagents live in `.codex/agents/`; template-owned agents sync normally, while `project-*` agents are project-owned.
 - Codex route selection is explicit through `scripts/codex-route-task.js`; route state is local-only under `tasks/.active-codex-route.json`.
 - Codex fan-out defaults to read-only workers; `implementer` is only for explicit non-overlapping file scopes.
+- Agent infrastructure changes must check `docs/AGENT_CONTEXT_SOT.md` and `_reference/agent-sot/sources.json`, then pass `node scripts/validate-agent-sot.js`.
 - `.claude/settings.local.json` is local-only and must not ship in the template payload.
 - Shared rules live under `.claude/library/`; project-specific additions use `project-*` files.
 

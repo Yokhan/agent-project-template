@@ -21,6 +21,7 @@
 | task-brief | scripts/task-brief.sh | Compact summary for tasks/current.md |
 | codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, pipeline, risk, and orchestrator |
 | test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
+| validate-agent-sot | scripts/validate-agent-sot.js | Validates local Agent SOT sources, AGENTS/CLAUDE links, and drift gates |
 | test-hooks | scripts/test-hooks.sh | Hook syntax validation |
 | brain-search | scripts/brain-search.sh | Search brain/ knowledge base |
 
@@ -45,6 +46,7 @@
 | sync-all | scripts/sync-all.sh | sync-all.sh — Sync template to all projects with .template-manifest.js | agent/manual |
 | test-template | scripts/test-template.sh | test-template.sh — Smoke test for agent-project-template | agent/manual |
 | update-template | scripts/update-template.sh | update-template.sh — Update project from newer template version | agent/manual |
+| validate-agent-sot | scripts/validate-agent-sot.js | Ensures agent docs and source registry stay present and referenced | agent/manual |
 | validate-template | scripts/validate-template.sh | validate-template.sh — Pre-release validation for agent-project-templa | agent/manual |
 | verify-check | scripts/verify-check.sh | verify-check.sh — Automated verification checklist | agent/manual |
 
