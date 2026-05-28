@@ -239,10 +239,12 @@ if is_template_source_repo; then
     bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
     grep -q "Manifest has no trackable files" "$output"
     grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
+    grep -q "WOULD ADD: CLAUDE.md" "$output"
     grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
 
     bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" > "$output.apply" 2>&1
+    grep -q '"CLAUDE.md"' "$project/.template-manifest.json"
     grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json"
     grep -q '"_reference/agent-sot/originals/ai-agent-spec-v3-final.md"' "$project/.template-manifest.json"
     grep -q '"_reference/spec-kit/upstream/templates/commands/specify.md"' "$project/.template-manifest.json"
