@@ -240,6 +240,7 @@ if is_template_source_repo; then
     grep -q "Manifest has no trackable files" "$output"
     grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
     grep -q "WOULD ADD: CLAUDE.md" "$output"
+    grep -q "WOULD ADD: .gitignore" "$output"
     grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
 
