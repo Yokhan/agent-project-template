@@ -388,14 +388,19 @@ echo ""
 # --- Backup ---
 if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
   if git rev-parse --git-dir > /dev/null 2>&1; then
-    # Stash if dirty
-    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-      echo "Stashing uncommitted changes..."
-      git stash push -m "pre-sync backup $(date +%Y%m%d-%H%M%S)"
+    GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -n "$GIT_ROOT" ] && [ "$(cd "$GIT_ROOT" && pwd)" = "$PROJECT_PATH" ]; then
+      # Stash if dirty
+      if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        echo "Stashing uncommitted changes..."
+        git stash push -m "pre-sync backup $(date +%Y%m%d-%H%M%S)"
+      fi
+      # Tag for rollback (M3: add seconds)
+      git tag "backup/pre-sync-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+      echo "Backup tag created."
+    else
+      echo "Skipping git backup: project directory is not a git repository root."
     fi
-    # Tag for rollback (M3: add seconds)
-    git tag "backup/pre-sync-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
-    echo "Backup tag created."
   fi
 fi
 
@@ -594,6 +599,31 @@ function getCategory(fp){
   return 'template';
 }
 
+function addManagedFile(fp){
+  if(!fp||m.files[fp])return;
+  if(fp==='.claude/settings.local.json')return;
+  if(fp.startsWith('docs/.setup-leak-sentinel-'))return;
+  const base=path.basename(fp);
+  if(base.startsWith('project-'))return;
+  if(!fs.existsSync(fp)||!fs.statSync(fp).isFile())return;
+  const h=getHash(fp);if(h)m.files[fp]={category:getCategory(fp),hash:h};
+}
+
+function addManagedTree(dir){
+  if(!fs.existsSync(dir))return;
+  for(const f of fs.readdirSync(dir)){
+    const diskPath=path.join(dir,f);
+    const fp=toPosix(diskPath);
+    const st=fs.statSync(diskPath);
+    if(st.isDirectory()){
+      if(f.startsWith('project-'))continue;
+      addManagedTree(fp);
+    }else if(st.isFile()){
+      addManagedFile(fp);
+    }
+  }
+}
+
 // Add new files from standard dirs
 const dirs=['.claude','.claude/docs','.claude/docs/domain-full','.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','templates/project-starter/tasks','templates/project-starter/tasks/audit','templates/project-starter/brain/01-daily','templates/project-starter/brain/03-knowledge/research','templates/project-starter/brain/03-knowledge/audits','_reference','.github','.github/workflows','.codex','.codex/agents'];
 for(const d of dirs){
@@ -601,13 +631,15 @@ for(const d of dirs){
   for(const f of fs.readdirSync(d)){
     const diskPath=path.join(d,f);
     const fp=toPosix(diskPath);
-    if(!m.files[fp]&&!f.startsWith('project-')&&fs.statSync(diskPath).isFile()){
-      const h=getHash(fp);if(h)m.files[fp]={category:getCategory(fp),hash:h};
-    }
+    addManagedFile(fp);
   }
 }
 
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
+for(const d of ['integrations/spec-kit','_reference/agent-sot','_reference/spec-kit']){
+  addManagedTree(d);
+}
+
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
 for(const fp of rootFiles){
   if(!fs.existsSync(fp)||m.files[fp])continue;
   const h=getHash(fp);

@@ -218,7 +218,7 @@ if is_template_source_repo; then
   SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
   cleanup_sync_smoke() {
-    rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+    rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply"
   }
   run_empty_manifest_sync_smoke() {
     local project="$1"
@@ -241,6 +241,12 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
     grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
+
+    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" > "$output.apply" 2>&1
+    grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json"
+    grep -q '"_reference/agent-sot/originals/ai-agent-spec-v3-final.md"' "$project/.template-manifest.json"
+    grep -q '"_reference/spec-kit/upstream/templates/commands/specify.md"' "$project/.template-manifest.json"
+    grep -q '"integrations/spec-kit/README.md"' "$project/.template-manifest.json"
   }
   trap cleanup_sync_smoke EXIT
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
