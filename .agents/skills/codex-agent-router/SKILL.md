@@ -30,6 +30,10 @@ If the route includes `$codex-strategic-review`, use it before choosing the impl
 - Review or audit: `$codex-audit`, `$codex-domain-software-review`, `$codex-domain-design-review`.
 - Security: `$codex-security-audit`.
 - UI/Figma: `$codex-design-workflow`, `$codex-figma-workflow`.
+- Product goal/current-step continuity: `$codex-product-goal`.
+- Design system, Storybook, tokens, component contracts: `$codex-design-system-workflow`.
+- Product UX flow/dead-end checks: `$codex-product-ux-audit`.
+- Repeated downstream mistakes and template promotion: `$codex-cross-project-lessons`.
 - Template changes: `$codex-template-sync`, `$codex-skill-maintenance`, `$codex-test-rules`.
 - OpenAI API/model guidance: `$codex-openai-model-guidance`.
 - Strategy, roadmap, release sequencing, ambiguous or HIGH-risk work: `$codex-strategic-review`, `$codex-decompose`.

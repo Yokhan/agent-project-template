@@ -14,7 +14,7 @@ Codex сейчас получает только базу:
 | --- | --- |
 | `AGENTS.md` | Route-first Codex instructions with deterministic router, skills, subagents, and AgentOS boundary |
 | `.codex/` | только `config.toml` и `hooks.json`, всего 918 bytes |
-| `.agents/skills/` | 37 Codex-native repository skills, official repo-scoped skills path |
+| `.agents/skills/` | 41 Codex-native repository skills, official repo-scoped skills path |
 | `.claude/skills/` | 30 skills, 277,875 bytes |
 | `.claude/pipelines/` | 3 pipeline: feature, bugfix, security-patch |
 | `.claude/agents/` | 10 agent definitions плюс `PROTOCOL.md` |
@@ -23,8 +23,9 @@ Codex сейчас получает только базу:
 
 This audit is now implemented as a first Codex-native skill layer:
 
-- 37 repository-scoped Codex skills live under the official `.agents/skills/` path.
+- 41 repository-scoped Codex skills live under the official `.agents/skills/` path.
 - The pack covers all Claude skill categories either as a direct Codex port or as a Codex-native replacement: feature work, route-first selection, pipelines, audit, debug, security, design review, design production, Figma, Mermaid boards, migrations, API work, coverage, health checks, memory, setup, integrations, sprint/task queue, template sync, skill maintenance, dependency updates, and OpenAI model guidance.
+- v4 adds production product goal, design-system workflow, product UX audit, and cross-project lesson promotion skills.
 - `docs/AGENT_PIPELINES.md` is the agent-neutral pipeline source for feature, bugfix, security patch, design, template maintenance, and release work.
 - `scripts/codex-route-task.js` is the deterministic Codex route source for skills, subagents, pipeline, risk, shared rules, and orchestrator owner.
 - `scripts/validate-codex-skills.js`, `scripts/test-codex-routing.js`, `scripts/test-template.sh`, `scripts/validate-template.sh`, and `scripts/check-drift.sh` now validate the Codex skill and routing surface.

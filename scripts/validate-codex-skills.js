@@ -19,6 +19,10 @@ const REQUIRED_CORE_SKILLS = [
   "codex-agent-router",
   "codex-subagent-orchestration",
   "codex-mermaid-board-workflow",
+  "codex-product-goal",
+  "codex-design-system-workflow",
+  "codex-product-ux-audit",
+  "codex-cross-project-lessons",
 ];
 
 const state = {

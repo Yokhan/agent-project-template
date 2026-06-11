@@ -81,8 +81,8 @@ for skill_dir in .agents/skills/*/; do
   fi
   CODEX_SKILL_COUNT=$((CODEX_SKILL_COUNT + 1))
 done
-if [ "$CODEX_SKILL_COUNT" -lt 37 ]; then
-  echo "  ERROR: Expected at least 37 Codex skills, found $CODEX_SKILL_COUNT"
+if [ "$CODEX_SKILL_COUNT" -lt 41 ]; then
+  echo "  ERROR: Expected at least 41 Codex skills, found $CODEX_SKILL_COUNT"
   ERRORS=$((ERRORS + 1))
 else
   echo "  Found $CODEX_SKILL_COUNT Codex skills"
@@ -116,6 +116,12 @@ if ! node scripts/test-codex-routing.js >/dev/null 2>&1; then
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: Codex routing smoke passes"
+fi
+if ! node scripts/validate-production-standard.js >/dev/null 2>&1; then
+  echo "  ERROR: Production standard validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Production standard validates"
 fi
 if ! node scripts/validate-agent-sot.js >/dev/null 2>&1; then
   echo "  ERROR: Agent SOT validation failed"
@@ -170,9 +176,13 @@ REQUIRED_FILES=(
   "docs/TEMPLATE_RELEASES.md"
   "docs/SAFE_DEFAULTS.md"
   "docs/SUPPORTED_ENVIRONMENTS.md"
+  ".claude/library/product/production-product-standard.md"
+  ".claude/library/process/product-goal-loop.md"
+  ".claude/library/domain/domain-design-system.md"
   "integrations/spec-kit/README.md"
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
+  "scripts/validate-production-standard.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"
   "scripts/sync-spec-kit.sh"
@@ -196,6 +206,7 @@ REQUIRED_FILES=(
   ".claude/settings.json"
   "tasks/lessons.md"
   "tasks/current.md"
+  "tasks/goal.md"
   "tasks/.research-cache.md"
   "tasks/post-mortems/TEMPLATE.md"
 )

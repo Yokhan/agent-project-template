@@ -22,7 +22,7 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 ## Bootstrap Defaults
 
 - `setup.sh` and `setup.bat` copy only tracked project-facing files.
-- Starter overlays reset `tasks/current.md`, `tasks/.research-cache.md`, `tasks/lessons.md`, and empty knowledge/audit folders.
+- Starter overlays reset `tasks/current.md`, `tasks/goal.md`, `tasks/.research-cache.md`, `tasks/lessons.md`, and empty knowledge/audit folders.
 - Maintainer logs, local fixtures, dependency artifacts, and machine-specific settings are excluded from generated projects.
 
 ## Update Contract

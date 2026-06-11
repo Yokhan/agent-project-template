@@ -38,6 +38,9 @@ check "docs/PRODUCT_BOUNDARY.md" test -f docs/PRODUCT_BOUNDARY.md
 check "docs/SAFE_DEFAULTS.md" test -f docs/SAFE_DEFAULTS.md
 check "docs/SUPPORTED_ENVIRONMENTS.md" test -f docs/SUPPORTED_ENVIRONMENTS.md
 check "docs/TEMPLATE_RELEASES.md" test -f docs/TEMPLATE_RELEASES.md
+check ".claude/library/product/production-product-standard.md" test -f .claude/library/product/production-product-standard.md
+check ".claude/library/process/product-goal-loop.md" test -f .claude/library/process/product-goal-loop.md
+check ".claude/library/domain/domain-design-system.md" test -f .claude/library/domain/domain-design-system.md
 check "docs/AGENT_PIPELINES.md" test -f docs/AGENT_PIPELINES.md
 check "docs/AGENT_CONTEXT_SOT.md" test -f docs/AGENT_CONTEXT_SOT.md
 check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
@@ -56,7 +59,9 @@ check ".env.example" test -f .env.example
 check ".github/workflows/release-template.yml" test -f .github/workflows/release-template.yml
 check "tasks/lessons.md" test -f tasks/lessons.md
 check "tasks/current.md" test -f tasks/current.md
+check "tasks/goal.md" test -f tasks/goal.md
 source_only_check "starter tasks/current.md" test -f templates/project-starter/tasks/current.md
+source_only_check "starter tasks/goal.md" test -f templates/project-starter/tasks/goal.md
 source_only_check "starter .research-cache.md" test -f templates/project-starter/tasks/.research-cache.md
 source_only_check "starter lessons.md" test -f templates/project-starter/tasks/lessons.md
 source_only_check "starter tasks/audit/.gitkeep" test -f templates/project-starter/tasks/audit/.gitkeep
@@ -68,6 +73,7 @@ check "scripts/task-brief.sh" test -f scripts/task-brief.sh
 check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.js
 check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
 check "scripts/validate-agent-sot.js" test -f scripts/validate-agent-sot.js
+check "scripts/validate-production-standard.js" test -f scripts/validate-production-standard.js
 check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
 check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
@@ -77,7 +83,7 @@ check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagent
 
 echo ""
 echo "Codex skills:"
-check ">=37 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 37 ]'
+check ">=41 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 41 ]'
 check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
 check "core Codex design review skill" test -f .agents/skills/codex-domain-design-review/SKILL.md
 check "core Codex Figma skill" test -f .agents/skills/codex-figma-workflow/SKILL.md
@@ -86,6 +92,7 @@ check "core Codex Mermaid board skill" test -f .agents/skills/codex-mermaid-boar
 check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-routing" node scripts/test-codex-routing.js
+check "validate-production-standard" node scripts/validate-production-standard.js
 check "validate-agent-sot" node scripts/validate-agent-sot.js
 check "validate-spec-kit" node scripts/validate-spec-kit.js
 
@@ -180,7 +187,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(mktemp)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -188,6 +195,10 @@ if is_template_source_repo; then
       [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
       [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
       [ -f "$project/docs/AGENT_CONTEXT_SOT.md" ] &&
+      [ -f "$project/.claude/library/product/production-product-standard.md" ] &&
+      [ -f "$project/.claude/library/process/product-goal-loop.md" ] &&
+      [ -f "$project/.claude/library/domain/domain-design-system.md" ] &&
+      [ -f "$project/tasks/goal.md" ] &&
       [ -f "$project/_reference/agent-sot/sources.json" ] &&
       [ -f "$project/_reference/spec-kit/manifest.json" ] &&
       [ -f "$project/integrations/spec-kit/README.md" ] &&
@@ -201,7 +212,8 @@ if is_template_source_repo; then
       [ -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&
-      [ -f "$project/scripts/validate-codex-skills.js" ]
+      [ -f "$project/scripts/validate-codex-skills.js" ] &&
+      [ -f "$project/scripts/validate-production-standard.js" ]
   }
   trap cleanup_smoke EXIT
   printf 'sentinel\n' > "$SMOKE_SENTINEL"

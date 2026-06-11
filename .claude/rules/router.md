@@ -2,6 +2,13 @@
 
 Rules live in `.claude/library/`. They are NOT pre-loaded. Load ONLY what each task needs.
 
+For product, design, auth, data, game, docs, deployment, template, or M+ work, also preserve the v4 product goal loop:
+
+- `.claude/library/product/production-product-standard.md`
+- `.claude/library/process/product-goal-loop.md`
+
+Plans, audits, status, and closeout must use the language of the user's request.
+
 ## ON EVERY NEW TASK:
 
 1. User gives you a task (any language, any jargon)
@@ -53,6 +60,7 @@ Subagent calls `get_context()` for its own rules.
 NEVER hardcode visual values. System→Tokens→Components→Screens.
 Every container needs layout mode. 8 states for interactive elements.
 Search before creating.
+For design-system work, also load `.claude/library/domain/domain-design-system.md` and verify token tables, composition traces, Storybook/equivalent stories, and rendered geometry.
 
 ## MCP Tools (use these, not bash scripts):
 

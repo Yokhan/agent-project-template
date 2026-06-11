@@ -24,6 +24,9 @@ function testRoute(task, expectations) {
   for (const subagent of expectations.subagents || []) {
     assertIncludes(route.subagents, subagent, `${task} subagents`);
   }
+  for (const gate of expectations.qualityGates || []) {
+    assertIncludes(route.qualityGates || [], gate, `${task} quality gates`);
+  }
   if (expectations.risk) {
     assert.strictEqual(route.risk, expectations.risk, `${task} risk`);
   }
@@ -39,6 +42,13 @@ function testRoute(task, expectations) {
       route.needsFreshDocs,
       expectations.needsFreshDocs,
       `${task} fresh docs`,
+    );
+  }
+  if (typeof expectations.planRequired === "boolean") {
+    assert.strictEqual(
+      route.planContract.required,
+      expectations.planRequired,
+      `${task} plan required`,
     );
   }
 }
@@ -68,6 +78,21 @@ function main() {
     risk: "MEDIUM",
   });
 
+  testRoute("доработай дизайн-систему: токены, Storybook, атомы, молекулы и формы", {
+    modes: ["design-system"],
+    skills: ["codex-design-system-workflow", "codex-design-workflow"],
+    qualityGates: ["token-contract", "composition-trace", "rendered-geometry"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("проверь UX личного кабинета: вход, сервисы, dead ends и возврат на главную", {
+    modes: ["product-ux"],
+    skills: ["codex-product-ux-audit"],
+    qualityGates: ["entry-to-value-flow", "no-dead-ends", "return-path"],
+    planRequired: true,
+  });
+
   testRoute("проверь безопасность auth secrets injection", {
     modes: ["security", "review"],
     skills: ["codex-security-audit", "codex-audit", "codex-strategic-review"],
@@ -81,9 +106,27 @@ function main() {
       "codex-template-sync",
       "codex-skill-maintenance",
       "codex-test-rules",
+      "codex-product-goal",
       "codex-strategic-review",
     ],
     subagents: ["pr_explorer", "tester"],
+    qualityGates: ["template-boundary", "product-goal-artifact"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("запрети MVP мышление и веди задачу как /goal с финальным качеством продукта", {
+    modes: ["product-goal"],
+    skills: ["codex-product-goal", "codex-strategic-review"],
+    qualityGates: ["quality-bar", "current-step", "language-match"],
+    planRequired: true,
+  });
+
+  testRoute("изучи косяки последней недели и преврати уроки в правила шаблона", {
+    modes: ["lessons", "template"],
+    skills: ["codex-cross-project-lessons", "codex-template-sync"],
+    qualityGates: ["lesson-classification", "validator-or-route-check"],
+    planRequired: true,
     risk: "HIGH",
   });
 

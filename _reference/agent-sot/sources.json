@@ -24,7 +24,7 @@
       "trust": "primary",
       "title": "OpenAI Codex AGENTS.md guide",
       "url": "https://developers.openai.com/codex/guides/agents-md",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-06-11",
       "requires_fresh_check": true,
       "local_conclusion": "AGENTS.md is project guidance discovered by Codex with a 32 KiB default limit; keep it concise and route to deeper docs."
     },
@@ -34,7 +34,7 @@
       "trust": "primary",
       "title": "OpenAI Codex skills",
       "url": "https://developers.openai.com/codex/skills",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-06-11",
       "requires_fresh_check": true,
       "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
     },
@@ -74,7 +74,7 @@
       "trust": "primary",
       "title": "Claude Code extension overview",
       "url": "https://code.claude.com/docs/en/features-overview",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-06-11",
       "requires_fresh_check": true,
       "local_conclusion": "Claude separates persistent context, skills, subagents, hooks, MCP, and plugins. Match the tool to the kind of context or enforcement needed."
     },
@@ -84,7 +84,7 @@
       "trust": "primary",
       "title": "Claude Code skills",
       "url": "https://code.claude.com/docs/en/skills",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-06-11",
       "requires_fresh_check": true,
       "local_conclusion": "Claude skills load only when used; move repeated procedures and long reference material out of CLAUDE.md into skills."
     },

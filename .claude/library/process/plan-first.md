@@ -1,5 +1,9 @@
 # Plan-First Protocol — Architecture Before Code
 
+For product, design, auth, data, game, docs, deployment, template, or M+ work, read `.claude/library/process/product-goal-loop.md` and `.claude/library/product/production-product-standard.md` before planning.
+
+Plans, audits, and reports must use the language of the user's request.
+
 ## The Rule
 For every task S+ size, the agent MUST produce a written plan with file structure and complexity estimate BEFORE writing any code.
 Plans are saved to `tasks/current.md` under `## Plan` and tracked alongside the work.
@@ -25,6 +29,12 @@ Write this to `tasks/current.md` under `## Plan` BEFORE coding:
 
 ### Goal
 [1 sentence: what this achieves for the user]
+
+### Product Goal Link
+- Final outcome: [from `tasks/goal.md` or inferred]
+- Current step: [bounded step for this task]
+- Quality bar preserved: [UX/security/privacy/performance/design/data/etc.]
+- Out of scope for this step: [honest exclusions]
 
 ### Complexity Estimate
 - Size: [XS/S/M/L/XL]

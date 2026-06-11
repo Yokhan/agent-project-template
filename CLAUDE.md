@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 3.7.0 -->
+<!-- Template Version: 4.0.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -13,6 +13,25 @@
 
 Slow down: shared/core, can't articulate WHY, 3+ iterations, HIGH/CRITICAL risk.
 Speed OK: XS+LOW, covered by tests, following approved plan.
+
+## Production Product Standard
+
+Real product work is never treated as MVP/prototype work unless the user explicitly asks for a disposable experiment. Bounded implementation steps are fine; lowering the final product quality bar is not.
+
+Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
+
+1. `.claude/library/product/production-product-standard.md`
+2. `.claude/library/process/product-goal-loop.md`
+
+Maintain a goal-like contract:
+
+- Final outcome: what the finished product lets the end user do.
+- Quality bar: UX, safety, privacy, reliability, performance, accessibility, design-system, data, docs, and domain tone.
+- Current step: the smallest valuable reversible move toward that final outcome.
+- Dependencies and risks: what could block or lower the final product.
+- Out of scope: honest exclusions for this step, not hidden debt.
+
+Plans, audits, status updates, and final reports must use the language of the user's request. Code identifiers and commands stay in their native language.
 
 ## Stack
 <!-- Filled by /setup-project -->
@@ -92,7 +111,9 @@ Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enab
 3. **Build order: System→Tokens→Components→Screens.** NEVER skip to screens.
 4. **Every container must have layout mode** (auto-layout / flexbox / grid).
 5. **8 states**: Default, Hover, Active, Focus, Disabled, Loading, Error, Empty.
-6. **Before creating**: search_design_system — does it already exist?
+6. **Composition trace**: higher layers must declare lower-layer tokens/components.
+7. **Rendered geometry**: verify important components with browser/Storybook bounding-box checks.
+8. **Before creating**: search_design_system — does it already exist?
 Violation = revert and redo. Full pipeline: `.claude/library/domain/domain-design-pipeline.md`
 
 ## Commands (24)
@@ -139,7 +160,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-3.7.0 — Run `bash scripts/check-drift.sh` to verify health.
+4.0.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

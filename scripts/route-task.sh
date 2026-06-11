@@ -19,6 +19,12 @@ fi
 FILES="$LIB/process/context-first.md"
 MODES=""
 
+# PRODUCT GOAL / PRODUCTION STANDARD
+if echo "$TASK" | grep -qiE "product.goal|final.outcome|quality.bar|production|prod|mvp|prototype|goal|roadmap|continue|finish|цель|финал|качество|доделай|продолжай|прототип"; then
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/plan-first.md"
+  MODES="$MODES product"
+fi
+
 # CODE
 if echo "$TASK" | grep -qiE "implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate|настрой|создай|добавь|исправь|починь|реализуй|напиши код|сделай|баг|не работает|падает|ошибка|сломал"; then
   FILES="$FILES $LIB/process/research-first.md $LIB/process/plan-first.md $LIB/process/self-verification.md $LIB/technical/architecture.md $LIB/technical/code-style.md $LIB/technical/error-handling.md $LIB/technical/atomic-reuse.md"
@@ -33,8 +39,14 @@ fi
 
 # DESIGN
 if echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen|дизайн|макет|фигма|экран|интерфейс|стиль"; then
-  FILES="$FILES $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES design"
+fi
+
+# DESIGN SYSTEM
+if echo "$TASK" | grep -qiE "design.system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component.library|spacing|radius|typography|rendered.geometry|bounding|дизайн-систем|сторибук|токен|атом|молекул|организм|отступ|скругл|типограф"; then
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/domain/domain-design-system.md $LIB/domain/domain-design-pipeline.md"
+  MODES="$MODES design-system"
 fi
 
 # REVIEW
@@ -57,7 +69,7 @@ fi
 
 # TEMPLATE / CODEX ROUTING
 if echo "$TASK" | grep -qiE "template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent.project|шаблон|агент|скилл|роут|маршрут|синхрон"; then
-  FILES="$FILES $LIB/meta/critical-thinking.md $LIB/technical/testing.md $LIB/technical/git-workflow.md"
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/meta/critical-thinking.md $LIB/technical/testing.md $LIB/technical/git-workflow.md"
   MODES="$MODES template"
 fi
 
@@ -120,7 +132,7 @@ CODEX_SUBAGENTS="reviewer"
 PIPELINE="review"
 RISK="MEDIUM"
 if echo "$MODES" | grep -q "template"; then
-  CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router codex-strategic-review"
+  CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router codex-product-goal codex-strategic-review"
   CODEX_SUBAGENTS="pr_explorer tester reviewer"
   PIPELINE="template maintenance"
   RISK="HIGH"
@@ -135,11 +147,16 @@ elif echo "$TASK" | grep -qiE "security|vulnerability|secret|auth|permission|inj
   PIPELINE="security patch"
   RISK="HIGH"
 elif echo "$MODES" | grep -q "plan"; then
-  CODEX_SKILLS="codex-strategic-review codex-decompose"
+  CODEX_SKILLS="codex-product-goal codex-strategic-review codex-decompose"
   CODEX_SUBAGENTS="pr_explorer reviewer"
   PIPELINE="planning"
+elif echo "$MODES" | grep -q "design-system"; then
+  CODEX_SKILLS="codex-design-system-workflow codex-design-workflow codex-domain-design-review codex-product-goal"
+  CODEX_SUBAGENTS="design_reviewer tester reviewer"
+  PIPELINE="design system"
+  RISK="HIGH"
 elif echo "$MODES" | grep -q "design"; then
-  CODEX_SKILLS="codex-design-workflow codex-domain-design-review"
+  CODEX_SKILLS="codex-design-workflow codex-domain-design-review codex-product-goal"
   CODEX_SUBAGENTS="design_reviewer tester reviewer"
   PIPELINE="design"
 elif echo "$MODES" | grep -q "test"; then
@@ -150,6 +167,11 @@ elif echo "$MODES" | grep -q "code"; then
   CODEX_SKILLS="codex-feature-workflow codex-pipeline-workflow"
   CODEX_SUBAGENTS="pr_explorer tester reviewer"
   PIPELINE="feature"
+fi
+
+if echo "$MODES" | grep -q "product" &&
+   ! echo "$CODEX_SKILLS" | grep -q "codex-product-goal"; then
+  CODEX_SKILLS="$CODEX_SKILLS codex-product-goal"
 fi
 
 if { [ "$RISK" = "HIGH" ] || echo "$MODES" | grep -q "plan"; } &&
@@ -168,6 +190,8 @@ mkdir -p tasks
   echo "PIPELINE=$PIPELINE"
   echo "RISK=$RISK"
   echo "STRATEGY_GATE=Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
+  echo "PLAN_CONTRACT=required for M+/product/template/design/security work; language=match-user-request"
+  echo "PRODUCT_BAR=final-product-quality; no-mvp-by-default=true"
   echo "COUNT=$FILE_COUNT files, $LINE_COUNT lines"
   echo "ROUTED_AT=$(date -u +%Y-%m-%dT%H:%M 2>/dev/null || date +%Y-%m-%dT%H:%M)"
   echo "---"
@@ -184,6 +208,8 @@ echo "CODEX_SUBAGENTS: $CODEX_SUBAGENTS"
 echo "PIPELINE: $PIPELINE"
 echo "RISK: $RISK"
 echo "STRATEGY_GATE: Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
+echo "PLAN: required for M+/product/template/design/security work | match-user-request"
+echo "PRODUCT_BAR: final-product-quality | no_mvp=true"
 echo "RULES: $FILE_COUNT files, ~$LINE_COUNT lines"
 echo "---"
 echo "READ these files:"

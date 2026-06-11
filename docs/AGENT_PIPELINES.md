@@ -9,6 +9,7 @@ Agent-specific wrappers may live under `.claude/pipelines/` or `.agents/skills/`
 | Gate | Pass condition | On fail |
 | --- | --- | --- |
 | `research_done` | Affected files, history, lessons, registry, and risks are summarized | Continue research |
+| `product_goal_preserved` | Final outcome, quality bar, current step, dependencies, and out-of-scope items are explicit | Restore or create `tasks/goal.md` |
 | `plan_approved` | User approval when risk or size requires it | Wait for user |
 | `typecheck_pass` | Relevant typecheck or syntax check passes | Fix before next phase |
 | `tests_pass` | Relevant tests pass | Fix or document blocker |
@@ -29,6 +30,28 @@ Common artifact chain:
 
 Codex-specific routing and prompts live in `docs/CODEX_FANOUT_PATTERNS.md`.
 Codex route selection is made explicit with `node scripts/codex-route-task.js "<task>" --summary --write-state`.
+
+## Production Product Standard
+
+Use for any real product, design, auth, data, game, docs, deployment, or M+ work.
+
+1. Restore goal
+   - Read `tasks/goal.md` when present.
+   - If absent for M+ product work, create or propose it.
+2. Preserve final outcome
+   - State the final user outcome, quality bar, current step, dependencies, risks, and out-of-scope items.
+   - Do not use MVP/prototype reasoning unless the user explicitly asks for a disposable experiment.
+3. Route and plan
+   - Route the task and save the current step to `tasks/current.md`.
+   - Plans, audits, and reports use the language of the user's request.
+4. Execute bounded step
+   - Keep the step small and reversible.
+   - Do not introduce fake UX, dead ends, privacy regressions, or architecture shortcuts that conflict with the final product goal.
+5. Verify product effect
+   - Prove user-visible behavior or contract improvement, not only file changes.
+6. Update
+   - Update `tasks/goal.md` only when final outcome or quality bar changes.
+   - Mark partial work honestly.
 
 ## Feature
 
@@ -114,9 +137,25 @@ Use for Figma, UI, CSS, frontend screens, design systems, game UI, or visual pol
 6. Compose
    - Build tokens -> components -> screens.
 7. Validate
-   - Screenshot, responsive checks, contrast, overflow, and state coverage.
+   - Screenshot, responsive checks, contrast, overflow, state coverage, and rendered geometry for important components.
 8. Iterate
    - Fix deviations and re-validate.
+
+## Design System
+
+Use for tokens, Storybook, component libraries, atomic design, forms, product UI primitives, and reusable layout contracts.
+
+1. Foundations
+   - Confirm token tables for typography, spacing, radius, motion, layout, and control sizes.
+2. Atoms and molecules
+   - Compose only from lower layers.
+   - Add/request tokens before using new visual values.
+3. Organisms and templates
+   - Record composition traces and responsive behavior.
+4. Product surfaces
+   - Cover forms, account/auth, service gateway, empty/loading/error, docs/help, and everyday product UI.
+5. Rendered checks
+   - Use Storybook/browser automation to compare computed styles and bounding boxes against tokens.
 
 ## Template Maintenance
 

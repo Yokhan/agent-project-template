@@ -46,6 +46,7 @@ Current release validation covers:
 - Codex skill validation: `node scripts/validate-codex-skills.js`
 - Codex agent validation: `node scripts/validate-codex-agents.js`
 - Codex route validation: `node scripts/test-codex-routing.js`
+- Production standard validation: `node scripts/validate-production-standard.js`
 - Spec Kit snapshot validation: `node scripts/validate-spec-kit.js`
 - optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`
 - downstream migration dry-runs via `downstream-census.sh`

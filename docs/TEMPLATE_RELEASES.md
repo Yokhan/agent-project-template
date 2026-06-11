@@ -25,13 +25,26 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v3.8.0
-git push origin v3.8.0
+git tag v4.0.0
+git push origin v4.0.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
 
-Patch releases are for compatible fixes to rules, skills, hooks, scripts, and docs. Minor releases can add new skills, agents, release flows, or routing behavior. Major releases can change sync contracts or project ownership boundaries.
+Patch releases are for compatible fixes to rules, skills, hooks, scripts, and docs. Minor releases can add new skills, agents, release flows, or routing behavior. Major releases can change sync contracts, project ownership boundaries, or the default agent operating contract.
+
+## v4 Production Standard Notes
+
+Version `4.0.0` changes the agent operating contract:
+
+- Real product work is not treated as MVP/prototype work unless explicitly requested.
+- `tasks/goal.md` carries the persistent final outcome, quality bar, current step, dependencies, and risks.
+- Plans, audits, status updates, and final reports must use the language of the user's request.
+- Codex routing now exposes `planContract`, `productionBar`, `languagePolicy`, and `qualityGates`.
+- Design-system and product-UX work have dedicated skills and rendered verification gates.
+- Cross-project lessons can be promoted into rules, skills, validators, or router behavior.
+
+Downstream projects should sync `v4.0.0` with a dry run first and review local `project-*` skills, auth flows, design systems, and task files before applying.
 
 ## Release Gate
 
@@ -46,6 +59,7 @@ bash scripts/sync-agents.sh
 node scripts/test-codex-routing.js
 node scripts/validate-codex-skills.js
 node scripts/validate-codex-agents.js
+node scripts/validate-production-standard.js
 ```
 
 Also run a generated-project smoke when the payload changes:
@@ -53,7 +67,8 @@ Also run a generated-project smoke when the payload changes:
 ```bash
 bash setup.sh template-release-smoke
 cd template-release-smoke
-bash scripts/test-template.sh
+bash scripts/test-hooks.sh
+bash scripts/bootstrap-mcp.sh --dry-run
 bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
 ```
 
@@ -63,8 +78,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v3.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v3.8.0
+bash scripts/sync-template.sh --from-git --ref v4.0.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.0.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

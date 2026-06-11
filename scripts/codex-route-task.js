@@ -8,6 +8,8 @@ const SHARED_RULES = {
   implementation: [".claude/library/process/plan-first.md", ".claude/library/technical/architecture.md", ".claude/library/technical/code-style.md", ".claude/library/technical/error-handling.md"],
   review: [".claude/library/meta/critical-thinking.md", ".claude/library/meta/analysis.md"],
   design: [".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
+  designSystem: [".claude/library/domain/domain-design-system.md", ".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
+  product: [".claude/library/product/production-product-standard.md", ".claude/library/process/product-goal-loop.md"],
   testing: [".claude/library/technical/testing.md"],
   writing: [".claude/library/technical/writing.md"],
   git: [".claude/library/technical/git-workflow.md"],
@@ -35,6 +37,28 @@ const ROUTES = [
     risk: "MEDIUM",
   },
   {
+    mode: "design-system",
+    pattern:
+      /design system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component library|spacing|radius|typography|motion token|rendered geometry|РґРёР·Р°Р№РЅ-?СЃРёСЃС‚РµРј|СЃС‚РѕСЂРёР±СѓРє|С‚РѕРєРµРЅ|Р°С‚РѕРј|РјРѕР»РµРєСѓР»|РѕСЂРіР°РЅРёР·Рј|РѕС‚СЃС‚СѓРї|СЃРєСЂСѓРіР»|С‚РёРїРѕРіСЂР°С„|Р±Р°СѓРЅРґ|bounding/i,
+    skills: ["codex-design-system-workflow", "codex-design-workflow", "codex-domain-design-review"],
+    pipeline: "design system",
+    subagents: ["design_reviewer", "tester", "reviewer"],
+    rules: ["product", "designSystem", "testing"],
+    gates: ["token-contract", "composition-trace", "storybook-or-equivalent", "rendered-geometry", "responsive-state-check"],
+    risk: "HIGH",
+  },
+  {
+    mode: "product-ux",
+    pattern:
+      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|Р»Рє|Р»РёС‡РЅ|РґРµС€Р±РѕСЂРґ|РґР°С€Р±РѕСЂРґ|РІС…РѕРґ|РІС‹С…РѕРґ|СЃРµСЃСЃРё|С„Р»РѕСѓ|СЃС†РµРЅР°СЂ|РєР»РёРє|СЃРµСЂРІРёСЃ|РіР»Р°РІРЅ|РґРѕРєРё/i,
+    skills: ["codex-product-ux-audit", "codex-design-workflow", "codex-domain-design-review"],
+    pipeline: "product ux",
+    subagents: ["design_reviewer", "tester", "reviewer"],
+    rules: ["product", "design", "testing"],
+    gates: ["entry-to-value-flow", "no-dead-ends", "auth-session-states", "return-path", "responsive-check"],
+    risk: "MEDIUM",
+  },
+  {
     mode: "design",
     pattern:
       /design|figma|ui|ux|css|layout|visual|component|responsive|accessib|screen|mockup|дизайн|фигма|макет|экран|интерфейс|стиль/i,
@@ -42,6 +66,7 @@ const ROUTES = [
     pipeline: "design",
     subagents: ["design_reviewer", "tester", "reviewer"],
     rules: ["design", "testing"],
+    gates: ["token-contract", "state-coverage", "responsive-check"],
     risk: "MEDIUM",
   },
   {
@@ -60,8 +85,31 @@ const ROUTES = [
     skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["review", "testing", "git"],
+    rules: ["product", "review", "testing", "git"],
+    gates: ["template-boundary", "sot-validation", "sync-regression", "release-gate"],
     risk: "HIGH",
+  },
+  {
+    mode: "product-goal",
+    pattern:
+      /product goal|final outcome|quality bar|production|prod|finish|continue|done right|mvp|prototype|goal|roadmap|РїСЂРѕРґР°РєС€РЅ|РїСЂРѕРґ|РїСЂРѕРґСѓРєС‚|С†РµР»СЊ|С„РёРЅР°Р»|РєР°С‡РµСЃС‚РІ|РґРѕРґРµР»Р°Р№|РїСЂРѕРґРѕР»Р¶Р°Р№|РјРІРї|РїСЂРѕС‚РѕС‚РёРї|СЂРѕР°РґРјР°Рї/i,
+    skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
+    pipeline: "product planning",
+    subagents: ["pr_explorer", "reviewer"],
+    rules: ["product", "review"],
+    gates: ["product-goal-artifact", "quality-bar", "current-step", "language-match"],
+    risk: "MEDIUM",
+  },
+  {
+    mode: "lessons",
+    pattern:
+      /lesson|lessons|retrospective|post-?mortem|last week|promote|self improvement|косяк|ошибк|урок|ретро|недел|извлек|промоут|РєРѕСЃСЏРє|РѕС€РёР±Рє|СѓСЂРѕРє|СЂРµС‚СЂРѕ|РїРѕСЃР»РµРґРЅ.*РЅРµРґРµР»|РёР·РІР»РµРє|РїСЂРѕРјРѕСѓС‚/i,
+    skills: ["codex-cross-project-lessons", "codex-self-update", "codex-strategic-review"],
+    pipeline: "self improvement",
+    subagents: ["pr_explorer", "reviewer"],
+    rules: ["product", "review"],
+    gates: ["lesson-classification", "reusable-target", "validator-or-route-check"],
+    risk: "MEDIUM",
   },
   {
     mode: "release",
@@ -255,10 +303,51 @@ function getOrchestrator(artifacts) {
   };
 }
 function needsStrategicReview(selected, risk, artifacts) {
-  const strategicModes = new Set(["strategy", "template", "release", "security", "migration"]);
+  const strategicModes = new Set(["strategy", "template", "release", "security", "migration", "product-goal", "lessons"]);
   return risk === "HIGH" ||
     selected.some((route) => strategicModes.has(route.mode)) ||
     artifacts.some((artifact) => artifact.name !== "template-native");
+}
+function needsProductGoal(selected, risk) {
+  const productModes = new Set(["product-goal", "product-ux", "design-system", "template", "release", "strategy", "lessons"]);
+  return risk !== "LOW" && selected.some((route) => productModes.has(route.mode));
+}
+function getPlanContract(selected, risk) {
+  const modes = new Set(selected.map((route) => route.mode));
+  return {
+    required: risk !== "LOW" || modes.has("product-goal") || modes.has("template"),
+    language: "match-user-request",
+    writeTo: "tasks/current.md",
+    goalArtifact: modes.has("product-goal") || modes.has("template") || modes.has("design-system")
+      ? "read-or-create tasks/goal.md for M+ product work"
+      : "read tasks/goal.md when present",
+    approval: risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
+  };
+}
+function getProductionBar(selected) {
+  const modes = selected.map((route) => route.mode);
+  return {
+    default: "final-product-quality",
+    noMvpByDefault: true,
+    currentStepAllowed: true,
+    preserveFinalOutcome: true,
+    appliesToModes: modes,
+  };
+}
+function getQualityGates(selected, risk, shouldUseProductGoal = false) {
+  const base = ["success-criteria", "verification-evidence", "confidence-and-doubt"];
+  const riskGates = risk === "HIGH" || risk === "CRITICAL"
+    ? ["rollback-or-plan-b", "route-state-written"]
+    : [];
+  const productGoalGates = shouldUseProductGoal
+    ? ["product-goal-artifact", "quality-bar", "current-step", "language-match"]
+    : [];
+  return unique([
+    ...base,
+    ...riskGates,
+    ...productGoalGates,
+    ...selected.flatMap((route) => route.gates || []),
+  ]);
 }
 function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
@@ -277,6 +366,7 @@ function getRoute(task, options = {}) {
     "LOW",
   );
   const shouldUseStrategicReview = needsStrategicReview(selected, risk, artifacts);
+  const shouldUseProductGoal = needsProductGoal(selected, risk);
   const ruleGroups = unique([
     "base",
     ...selected.flatMap((route) => route.rules || []),
@@ -289,12 +379,17 @@ function getRoute(task, options = {}) {
     risk,
     skills: unique([
       ...selected.flatMap((route) => route.skills || []),
+      shouldUseProductGoal ? "codex-product-goal" : "",
       shouldUseStrategicReview ? "codex-strategic-review" : "",
     ]),
     subagents: unique(selected.flatMap((route) => route.subagents || [])),
     sharedRules: unique(
       ruleGroups.flatMap((group) => SHARED_RULES[group] || []),
     ),
+    planContract: getPlanContract(selected, risk),
+    productionBar: getProductionBar(selected),
+    languagePolicy: "plans-audits-status-and-final-reports-match-user-request-language",
+    qualityGates: getQualityGates(selected, risk, shouldUseProductGoal),
     needsFreshDocs: selected.some((route) => route.needsFreshDocs),
     artifacts,
     orchestrator: getOrchestrator(artifacts),
@@ -308,6 +403,9 @@ function formatSummary(route) {
     `SKILLS: ${route.skills.join(", ")}`,
     `SUBAGENTS: ${route.subagents.join(", ") || "none"}`,
     `ORCHESTRATOR: ${route.orchestrator.owner} (${route.orchestrator.codexRole})`,
+    `PLAN: ${route.planContract.required ? "required" : "optional"} | ${route.planContract.language}`,
+    `PRODUCT_BAR: ${route.productionBar.default} | no_mvp=${route.productionBar.noMvpByDefault}`,
+    `GATES: ${route.qualityGates.join(", ")}`,
     `RULES: ${route.sharedRules.join(", ")}`,
     route.needsFreshDocs
       ? "FRESH_DOCS: required"

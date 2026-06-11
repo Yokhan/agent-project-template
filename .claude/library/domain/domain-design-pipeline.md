@@ -43,6 +43,7 @@ See `brain/03-knowledge/domains/product-design-ux.md`, `graphic-design-and-writi
 
 > Universal design production rules. Project-specific details (component IDs, brand tokens)
 > belong in `project-figma-workflow.md`, not here.
+> For design-system work, also read `.claude/library/domain/domain-design-system.md`.
 
 ## Core Principles
 
@@ -53,6 +54,8 @@ NEVER hardcode visual values. Always bind to tokens/variables:
 - Spacing → spacing token (never raw px)
 - Border radius → radius token (never raw value)
 - Shadows → effect style (never raw box-shadow)
+
+If a required value has no token, stop and add/request the token. Do not create one-off visual values inside molecules, organisms, templates, or screens.
 
 ### Component-First
 NEVER build from raw shapes or primitives when a component exists:
@@ -133,6 +136,27 @@ Screens    → Templates + real data + navigation
 ```
 
 **Build order**: always Tokens → Screens. Never skip levels.
+
+Higher layers must expose a dependency trace:
+
+- Molecule → tokens + atoms used.
+- Organism → tokens + atoms + molecules used.
+- Template → organisms + layout tokens used.
+- Screen → template + real data + navigation state.
+
+If the trace cannot be named, the component is probably bypassing the system.
+
+## Rendered Geometry Gate
+
+For web/product UI, token references must be verified against rendered output, not only source text.
+
+Check important stories or pages with browser automation:
+
+- `getComputedStyle()` for color, typography, radius, spacing, and motion tokens.
+- `getBoundingClientRect()` for control heights, gaps, card sizing, and layout constraints.
+- Mobile and desktop viewport screenshots for overflow, overlap, clipped text, and parent grid/flex stretch.
+
+This is mandatory for design-system primitives, forms, headers, app shells, dashboards, and service gateway screens.
 
 ## Figma MCP Specifics (when available)
 

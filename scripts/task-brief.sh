@@ -154,7 +154,7 @@ print_warning_list() {
 }
 
 json_escape() {
-  printf '%s' "$1" | sed ':a;N;$!ba;s/\\/\\\\/g;s/"/\\"/g;s/\t/\\t/g;s/\r//g;s/\n/\\n/g'
+  JSON_ESCAPE_VALUE="$1" node -e "const value = process.env.JSON_ESCAPE_VALUE || ''; process.stdout.write(JSON.stringify(value).slice(1, -1));"
 }
 
 print_json_array() {

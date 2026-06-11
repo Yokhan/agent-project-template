@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 3.7.0 -->
+<!-- Template Version: 4.0.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -13,6 +13,25 @@
 
 Slow down: shared/core, can't articulate WHY, 3+ iterations, HIGH/CRITICAL risk.
 Speed OK: XS+LOW, covered by tests, following approved plan.
+
+## Production Product Standard
+
+Real product work is never treated as MVP/prototype work unless the user explicitly asks for a disposable experiment. Bounded implementation steps are fine; lowering the final product quality bar is not.
+
+Before state-changing product, design, auth, data, game, docs, deployment, template, or M+ work, load:
+
+1. `.claude/library/product/production-product-standard.md`
+2. `.claude/library/process/product-goal-loop.md`
+
+Maintain a goal-like contract:
+
+- Final outcome: what the finished product lets the end user do.
+- Quality bar: UX, safety, privacy, reliability, performance, accessibility, design-system, data, docs, and domain tone.
+- Current step: the smallest valuable reversible move toward that final outcome.
+- Dependencies and risks: what could block or lower the final product.
+- Out of scope: honest exclusions for this step, not hidden debt.
+
+Plans, audits, status updates, and final reports must use the language of the user's request. Code identifiers and commands stay in their native language.
 
 ## Project Context
 
@@ -69,6 +88,9 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Design/UI: system -> tokens -> components -> screens; no hardcoded visual values; cover default/hover/active/focus/disabled/loading/error/empty; screenshot or viewport-check before closeout.
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for user victory over local task completion; compare at least one alternative; choose the next smallest reversible move.
+- Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
+- Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
+- Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
 - Fan-out: spawn read-only subagents first for M+ tasks; parent consolidates and edits. Use `implementer` only for exact, non-overlapping files.
 
@@ -91,6 +113,8 @@ Prefer the shared rules returned by `scripts/codex-route-task.js`. If the router
 3. `.claude/library/technical/code-style.md` — naming, immutability, types, functions-in-modules
 4. `.claude/library/technical/architecture.md` — module boundaries, file size limits
 5. `docs/SHARED_CONVENTIONS.md` — functions-in-modules, entry point rules
+6. `.claude/library/product/production-product-standard.md` — final product quality bar
+7. `.claude/library/process/product-goal-loop.md` — persistent product goal/current-step loop
 
 ### Read per task type:
 - **Implementation**: also read `.claude/library/process/plan-first.md`
@@ -237,4 +261,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-3.7.0
+4.0.0

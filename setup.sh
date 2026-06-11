@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/AGENTS.md" 2>/dev/null | head -n 1)
-[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="3.7.0"
+[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="4.0.0"
 
 copy_entry() {
   local rel_path="$1"
@@ -44,7 +44,7 @@ is_excluded_payload_path() {
 
 is_starter_override_path() {
   case "$1" in
-    tasks/current.md|tasks/.research-cache.md|tasks/lessons.md) return 0 ;;
+    tasks/current.md|tasks/goal.md|tasks/.research-cache.md|tasks/lessons.md) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -177,6 +177,7 @@ generate_manifest() {
       .claude/library/technical/*.md) echo "template" ;;
       .claude/library/meta/*.md) echo "template" ;;
       .claude/library/domain/*.md) echo "template" ;;
+      .claude/library/product/*.md) echo "template" ;;
       .claude/library/conflict/*.md) echo "template" ;;
       .claude/agents/*.md) echo "template" ;;
       .claude/skills/*/SKILL.md) echo "template" ;;
@@ -235,6 +236,7 @@ generate_manifest() {
     ".claude/library/technical/"*.md
     ".claude/library/meta/"*.md
     ".claude/library/domain/"*.md
+    ".claude/library/product/"*.md
     ".claude/library/conflict/"*.md
     ".claude/agents/"*.md
     ".claude/skills/"*/SKILL.md
@@ -257,6 +259,7 @@ generate_manifest() {
     "docs/OPENAI_MODEL_GUIDANCE.md"
     "docs/PRODUCT_BOUNDARY.md"
     "docs/RELEASE_CHECKLIST.md"
+    "docs/TEMPLATE_RELEASES.md"
     "docs/SAFE_DEFAULTS.md"
     "docs/SHARED_CONVENTIONS.md"
     "docs/SUPPORTED_ENVIRONMENTS.md"
