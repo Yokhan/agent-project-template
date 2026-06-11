@@ -7,6 +7,21 @@
 
 set -euo pipefail
 
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
+
 REPO_URL="https://github.com/github/spec-kit.git"
 TARGET_ROOT="_reference/spec-kit"
 SNAPSHOT_ROOT="$TARGET_ROOT/upstream"
@@ -161,7 +176,7 @@ if [ "$MODE" = "dry-run" ]; then
   exit 0
 fi
 
-TMP_DIR="$(mktemp -d)"
+TMP_DIR="$(_temp_dir spec-kit-sync)"
 cleanup() {
   rm -rf "$TMP_DIR"
 }

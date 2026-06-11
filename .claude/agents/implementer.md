@@ -5,7 +5,7 @@ description: "Implementation agent. Builds features following project convention
 allowed-tools: Read, Write, Edit, Bash(test*), Bash(npm*), Bash(npx*), Bash(pip*), Bash(cargo*), Bash(go*), Glob, Grep
 ---
 ## Model Note
-This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals � send concrete tasks.
+This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don't send vague goals; send concrete tasks.
 
 
 # Implementer Agent

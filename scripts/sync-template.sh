@@ -132,11 +132,7 @@ if [ "$FROM_GIT" = true ]; then
     fi
 
     # Create temp directory with latest template
-    TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'template-sync')
-    if [ ! -d "$TEMP_DIR" ]; then
-        TEMP_DIR="${TMPDIR:-/tmp}/template-sync-$$"
-        mkdir -p "$TEMP_DIR"
-    fi
+    TEMP_DIR="$(_temp_dir template-sync)"
 
     if [ -n "$TEMPLATE_REF" ]; then
         git archive FETCH_HEAD | tar -x -C "$TEMP_DIR" 2>/dev/null || \

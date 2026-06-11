@@ -4,10 +4,24 @@
 
 set -euo pipefail
 
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
 ERRORS=0
 CHECKS=0
-TEMPLATE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+TEMPLATE_DIR="$(normalize_drive_path "$(cd "$(dirname "$0")/.." && pwd)")"
 cd "$TEMPLATE_DIR"
+
+[ -f "$TEMPLATE_DIR/scripts/lib/platform.sh" ] && source "$TEMPLATE_DIR/scripts/lib/platform.sh"
 
 pass() { echo "  PASS: $1"; CHECKS=$((CHECKS+1)); }
 fail() { echo "  FAIL: $1"; ERRORS=$((ERRORS+1)); CHECKS=$((CHECKS+1)); }
@@ -22,6 +36,17 @@ source_only_check() {
   else
     skip "$description (template source repo only)"
   fi
+}
+validate_text_policy_rejects_mojibake() {
+  local fixture
+  fixture="$(_temp_file text-policy-fixture)"
+  node -e "require('fs').writeFileSync(process.argv[1], 'Broken: \\u0432\\u0402\\u201D\\n', 'utf8')" "$fixture"
+  if node scripts/validate-text-policy.js --path "$fixture" >/dev/null 2>&1; then
+    rm -f "$fixture"
+    return 1
+  fi
+  rm -f "$fixture"
+  return 0
 }
 
 echo "=== Template Smoke Test: $TEMPLATE_DIR ==="
@@ -75,6 +100,7 @@ check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.j
 check "scripts/validate-agent-sot.js" test -f scripts/validate-agent-sot.js
 check "scripts/validate-production-standard.js" test -f scripts/validate-production-standard.js
 check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
+check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
 check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
@@ -95,6 +121,8 @@ check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
 check "validate-agent-sot" node scripts/validate-agent-sot.js
 check "validate-spec-kit" node scripts/validate-spec-kit.js
+check "validate-text-policy" node scripts/validate-text-policy.js
+check "validate-text-policy rejects mojibake" validate_text_policy_rejects_mojibake
 
 echo ""
 echo "Codex subagents:"
@@ -185,9 +213,9 @@ if is_template_source_repo; then
     local project="$1"
     local sentinel="$2"
 
-    SMOKE_INDEX="$(mktemp)"
+    SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -209,6 +237,7 @@ if is_template_source_repo; then
       [ -f "$project/scripts/sync-spec-kit.sh" ] &&
       [ -f "$project/scripts/validate-agent-sot.js" ] &&
       [ -f "$project/scripts/validate-spec-kit.js" ] &&
+      [ -f "$project/scripts/validate-text-policy.js" ] &&
       [ -f "$project/.github/workflows/validate-template.yml" ] &&
       [ ! -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
@@ -228,19 +257,38 @@ fi
 echo ""
 echo "Sync regression smoke:"
 if is_template_source_repo; then
+  SYNC_TEMPLATE_FIXTURE="template-sync-fixture-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
   SYNC_SOURCE_ONLY_PROJECT="template-source-only-sync-smoke-$RANDOM-$$"
   SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
   cleanup_sync_smoke() {
     rm -rf \
+      "$SYNC_TEMPLATE_FIXTURE" \
       "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
       "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply"
   }
-  run_empty_manifest_sync_smoke() {
-    local project="$1"
-    local output="$2"
+  create_sync_template_fixture() {
+    local template="$1"
 
+    mkdir -p \
+      "$template/scripts" \
+      "$template/docs" \
+      "$template/_reference/spec-kit" \
+      "$template/templates/project-starter/tasks"
+
+    printf '%s\n' '# Fixture Claude' '<!-- Template Version: 9.9.9 -->' > "$template/CLAUDE.md"
+    printf '%s\n' '*.log' > "$template/.gitignore"
+    printf '%s\n' '# Agent SOT fixture' > "$template/docs/AGENT_CONTEXT_SOT.md"
+    printf '%s\n' '{"ref":"fixture"}' > "$template/_reference/spec-kit/manifest.json"
+    cp scripts/sync-template.sh "$template/scripts/sync-template.sh"
+
+    printf '%s\n' '# source-only unix setup fixture' > "$template/setup.sh"
+    printf '%s\r\n' '@echo off' 'rem source-only windows setup fixture' > "$template/setup.bat"
+    printf '%s\n' '# source-only starter task fixture' > "$template/templates/project-starter/tasks/current.md"
+  }
+  write_empty_trackable_manifest() {
+    local project="$1"
     mkdir -p "$project"
     printf '%s\n' \
       '{' \
@@ -252,8 +300,32 @@ if is_template_source_repo; then
       '    "CLAUDE.md": {"category": "project", "hash": "fixture"}' \
       '  }' \
       '}' > "$project/.template-manifest.json"
+  }
+  write_trackable_manifest() {
+    local project="$1"
+    local hash
 
-    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
+    mkdir -p "$project"
+    printf '%s\n' '# Local Claude' '<!-- Template Version: 4.0.3 -->' > "$project/CLAUDE.md"
+    hash="$(_get_hash "$project/CLAUDE.md")"
+    printf '%s\n' \
+      '{' \
+      '  "template_version": "4.0.3",' \
+      '  "created": "2000-01-01",' \
+      '  "updated": "2000-01-01",' \
+      '  "template_remote": "",' \
+      '  "files": {' \
+      "    \"CLAUDE.md\": {\"category\": \"template\", \"hash\": \"$hash\"}" \
+      '  }' \
+      '}' > "$project/.template-manifest.json"
+  }
+  run_empty_manifest_sync_smoke() {
+    local project="$1"
+    local output="$2"
+
+    write_empty_trackable_manifest "$project"
+
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1
     grep -q "Manifest has no trackable files" "$output"
     grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
     grep -q "WOULD ADD: CLAUDE.md" "$output"
@@ -261,25 +333,26 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
 
-    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" > "$output.apply" 2>&1
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1
     grep -q '"CLAUDE.md"' "$project/.template-manifest.json"
     grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json"
-    grep -q '"_reference/agent-sot/originals/ai-agent-spec-v3-final.md"' "$project/.template-manifest.json"
-    grep -q '"_reference/spec-kit/upstream/templates/commands/specify.md"' "$project/.template-manifest.json"
-    grep -q '"integrations/spec-kit/README.md"' "$project/.template-manifest.json"
+    grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json"
+    ! grep -q '"templates/' "$project/.template-manifest.json"
+    ! grep -q '"setup.sh"' "$project/.template-manifest.json"
+    ! grep -q '"setup.bat"' "$project/.template-manifest.json"
   }
   run_source_only_sync_smoke() {
     local project="$1"
     local output="$2"
 
-    bash setup.sh "$project" >/dev/null 2>&1
+    write_trackable_manifest "$project"
 
-    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1
     ! grep -q "WOULD ADD: templates/" "$output"
     ! grep -q "WOULD ADD: setup.sh" "$output"
     ! grep -q "WOULD ADD: setup.bat" "$output"
 
-    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" > "$output.apply" 2>&1
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1
     [ ! -e "$project/templates" ] &&
       [ ! -f "$project/setup.sh" ] &&
       [ ! -f "$project/setup.bat" ] &&
@@ -288,6 +361,7 @@ if is_template_source_repo; then
       ! grep -q '"setup.bat"' "$project/.template-manifest.json"
   }
   trap cleanup_sync_smoke EXIT
+  create_sync_template_fixture "$SYNC_TEMPLATE_FIXTURE"
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
   check "sync-template keeps source-only files out of generated projects" run_source_only_sync_smoke "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT"
   cleanup_sync_smoke

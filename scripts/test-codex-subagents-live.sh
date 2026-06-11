@@ -6,6 +6,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$ROOT_DIR/scripts"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 MODEL="${CODEX_LIVE_MODEL:-gpt-5.3-codex-spark}"
 OUTPUT_FILE=""
 ERROR_FILE=""
@@ -23,8 +25,8 @@ EOF
 }
 
 find_codex() {
-  case "$(uname -s 2>/dev/null || echo unknown)" in
-    MINGW*|MSYS*|CYGWIN*)
+  case "$(_detect_os)" in
+    windows)
       if command -v codex.cmd >/dev/null 2>&1; then
         command -v codex.cmd
         return 0
@@ -88,8 +90,8 @@ main() {
     exit 1
   fi
 
-  OUTPUT_FILE="$(mktemp 2>/dev/null || mktemp -t codex-live-agent)"
-  ERROR_FILE="$(mktemp 2>/dev/null || mktemp -t codex-live-agent-err)"
+  OUTPUT_FILE="$(_temp_file codex-live-agent)"
+  ERROR_FILE="$(_temp_file codex-live-agent-err)"
   trap cleanup EXIT
 
   local prompt

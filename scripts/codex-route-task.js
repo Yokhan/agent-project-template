@@ -39,7 +39,7 @@ const ROUTES = [
   {
     mode: "design-system",
     pattern:
-      /design system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component library|spacing|radius|typography|motion token|rendered geometry|РґРёР·Р°Р№РЅ-?СЃРёСЃС‚РµРј|СЃС‚РѕСЂРёР±СѓРє|С‚РѕРєРµРЅ|Р°С‚РѕРј|РјРѕР»РµРєСѓР»|РѕСЂРіР°РЅРёР·Рј|РѕС‚СЃС‚СѓРї|СЃРєСЂСѓРіР»|С‚РёРїРѕРіСЂР°С„|Р±Р°СѓРЅРґ|bounding/i,
+      /design system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component library|spacing|radius|typography|motion token|rendered geometry|дизайн-?систем|сторибук|токен|атом|молекул|организм|отступ|скругл|типограф|баунд|bounding/i,
     skills: ["codex-design-system-workflow", "codex-design-workflow", "codex-domain-design-review"],
     pipeline: "design system",
     subagents: ["design_reviewer", "tester", "reviewer"],
@@ -50,7 +50,7 @@ const ROUTES = [
   {
     mode: "product-ux",
     pattern:
-      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|Р»Рє|Р»РёС‡РЅ|РґРµС€Р±РѕСЂРґ|РґР°С€Р±РѕСЂРґ|РІС…РѕРґ|РІС‹С…РѕРґ|СЃРµСЃСЃРё|С„Р»РѕСѓ|СЃС†РµРЅР°СЂ|РєР»РёРє|СЃРµСЂРІРёСЃ|РіР»Р°РІРЅ|РґРѕРєРё/i,
+      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|лк|личн|дешборд|дашборд|вход|выход|сесси|флоу|сценар|клик|сервис|главн|доки/i,
     skills: ["codex-product-ux-audit", "codex-design-workflow", "codex-domain-design-review"],
     pipeline: "product ux",
     subagents: ["design_reviewer", "tester", "reviewer"],
@@ -92,7 +92,7 @@ const ROUTES = [
   {
     mode: "product-goal",
     pattern:
-      /product goal|final outcome|quality bar|production|prod|finish|continue|done right|mvp|prototype|goal|roadmap|РїСЂРѕРґР°РєС€РЅ|РїСЂРѕРґ|РїСЂРѕРґСѓРєС‚|С†РµР»СЊ|С„РёРЅР°Р»|РєР°С‡РµСЃС‚РІ|РґРѕРґРµР»Р°Р№|РїСЂРѕРґРѕР»Р¶Р°Р№|РјРІРї|РїСЂРѕС‚РѕС‚РёРї|СЂРѕР°РґРјР°Рї/i,
+      /product goal|final outcome|quality bar|production|prod|finish|continue|done right|mvp|prototype|goal|roadmap|продакшн|прод|продукт|цель|финал|качеств|доделай|продолжай|мвп|прототип|роадмап/i,
     skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
     pipeline: "product planning",
     subagents: ["pr_explorer", "reviewer"],
@@ -103,7 +103,7 @@ const ROUTES = [
   {
     mode: "lessons",
     pattern:
-      /lesson|lessons|retrospective|post-?mortem|last week|promote|self improvement|косяк|ошибк|урок|ретро|недел|извлек|промоут|РєРѕСЃСЏРє|РѕС€РёР±Рє|СѓСЂРѕРє|СЂРµС‚СЂРѕ|РїРѕСЃР»РµРґРЅ.*РЅРµРґРµР»|РёР·РІР»РµРє|РїСЂРѕРјРѕСѓС‚/i,
+      /lesson|lessons|retrospective|post-?mortem|last week|promote|self improvement|косяк|ошибк|урок|ретро|недел|извлек|промоут/i,
     skills: ["codex-cross-project-lessons", "codex-self-update", "codex-strategic-review"],
     pipeline: "self improvement",
     subagents: ["pr_explorer", "reviewer"],

@@ -69,6 +69,20 @@ Build screens by composing existing components, not by drawing new ones:
 - Override props/slots/variants — don't recreate from scratch
 - If a component doesn't support what you need → extend it, don't bypass it
 
+### Subtraction-First
+Before improving a screen, decide what should be removed, hidden, collapsed, or moved. Do not start by adding panels.
+
+Every screen serves exactly one current user job. Examples:
+- Dashboard: scan, triage, decide, act.
+- Form/editor: create, edit, submit, recover.
+- Commerce/gear: compare, select, buy, equip.
+- Settings/admin: configure, grant, revoke, audit.
+- Content/log/codex: review history, not drive the primary loop.
+- Game run/combat: continue, survive, descend, return.
+- Game camp/town: spend, cleanse, upgrade, prepare.
+
+Add only after the subtraction pass names what to keep, remove, collapse, and move.
+
 ## 8-Phase Design Pipeline
 
 Every design task follows this pipeline. No phase may be skipped.
@@ -76,7 +90,7 @@ Every design task follows this pipeline. No phase may be skipped.
 | Phase | Name | What |
 |-------|------|------|
 | 0 | **CONTEXT** | User journey, design language, device/viewport |
-| 1 | **ANALYZE** | 5-lens: Art Direction, UX, UI, Flow, Behavior |
+| 1 | **ANALYZE** | 5-lens + UI Subtraction Gate |
 | 2 | **REFERENCE** | Find gold-standard, deep-inspect structure |
 | 3 | **BOM** | Bill of Materials — list ALL component instances needed |
 | 4 | **DISCOVER** | Query available tokens, styles, components |
@@ -90,6 +104,36 @@ Every design task follows this pipeline. No phase may be skipped.
 3. **UI** — all values from tokens? Consistent spacing? Systematic?
 4. **Flow** — where from → what they see → where they go?
 5. **Behavior** — all states covered? (see State Coverage below)
+
+## UI Subtraction Gate
+
+Before adding UI, answer:
+
+1. Can the user make a decision from this element right now?
+2. Is this information needed every second, or only on demand?
+3. Does it duplicate another signal?
+4. Does it belong to this mode?
+5. Is it competing with the primary action?
+6. Can it become a badge, drawer, tooltip, details section, or nav badge?
+7. Would removing it make the next action clearer?
+
+General rules:
+
+- Keep the current mode's best next action before long lists.
+- Collapse secondary diagnostics, explanations, recommendations, and history until needed.
+- Move cross-mode information to the mode where it becomes actionable.
+- Avoid dead disabled buttons in primary action zones; explain unavailable actions where the user can fix them.
+- Reset scroll on major tab or mode changes when old scroll position would hide the new primary action.
+
+Mobile/game additions:
+
+- Keep main tap targets at least 52px high.
+- Use disclosure for long progression matrices.
+- Do not show full wallet on run screens unless spending is possible there.
+- Do not show meta-upgrade advice inside an active run unless there is a direct action.
+- One danger state gets one primary textual signal; the rest should be visual treatment.
+
+Design reviews must include: Keep, Remove, Collapse, Move, Add only after subtraction.
 
 ## State Coverage (mandatory)
 

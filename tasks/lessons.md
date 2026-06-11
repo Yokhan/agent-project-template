@@ -43,6 +43,26 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-06-11 - Mojibake and Linux assumptions need hard gates
+**Track**: PROCESS
+**Severity**: P1
+**Error**: Template rules allowed mojibake to remain in tracked text and shell scripts still used Linux-style OS/temp assumptions such as direct `uname`, `/tmp`, or `mktemp`.
+**Root cause**: Encoding and platform guidance existed mostly as prose or weak warnings, not as fail-hard validators in hooks, smoke tests, and release gates.
+**Rule**: Treat mojibake, replacement characters, mixed line endings, and raw shell platform probes as release blockers. Use `node scripts/validate-text-policy.js` and route OS/temp behavior through `scripts/lib/platform.sh`.
+**Applies to**: AGENTS.md, CLAUDE.md, shell scripts, hooks, release validation, template sync
+**Category**: tooling
+**Status**: ACTIVE
+
+### 2026-06-11 - UI subtraction is a general gate, not a game-only rule
+**Track**: PROCESS
+**Severity**: P2
+**Error**: A useful subtraction-first UI rule was initially narrowed to mobile game UI, even though the same failure mode appears in dashboards, forms, commerce, tools, settings, and content screens.
+**Root cause**: The originating example came from game work, so the rule was classified by source context instead of by the underlying design principle.
+**Rule**: When promoting a lesson from one domain, extract the invariant first. UI subtraction applies to every screen; mobile/game constraints are only extra domain-specific clauses.
+**Applies to**: design workflow, design review, Figma/code UI work
+**Category**: ux
+**Status**: ACTIVE
+
 ### 2026-05-19 - Codex custom agents require trusted project loading
 **Track**: KNOWLEDGE
 **Severity**: P2
@@ -125,7 +145,7 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Rule**: Minimum analysis = browser walkthrough of full user journey + marketer lens evaluation. Reference: PersonalAssistant/brain/02-projects/personal-strategy/content/funnel-deep-audit-v2.md — this is what proper analysis looks like.
 **Applies to**: All agents doing project health checks or status reports
 
-### 2026-04-21 вЂ” Bootstrap payload must come from an allowlist, not repo-wide copy
+### 2026-04-21 - Bootstrap payload must come from an allowlist, not repo-wide copy
 **Track**: BUG
 **Severity**: P1
 **Error**: `setup.sh` leaked maintainer-only directories and local debug artifacts into generated projects, while `setup.bat` omitted Codex and MCP-related files and created a different project shape.

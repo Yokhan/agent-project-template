@@ -84,10 +84,9 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 ## Current Status
 - Working branch: `feature/template-v4-production-product-standard`
 - v4 production standard, product goal loop, design-system workflow, product UX audit, and cross-project lesson promotion are implemented in shared rules, Codex skills, router, starter files, and validators.
-- Recent project lessons gathered and summarized above.
-- Verified green: `node scripts/validate-codex-skills.js`, `node scripts/test-codex-routing.js`, `node scripts/validate-production-standard.js`, `node scripts/validate-agent-sot.js`, `bash scripts/check-drift.sh`, `bash scripts/sync-agents.sh`, `bash scripts/validate-template.sh`, `bash scripts/test-template.sh`, `bash scripts/test-hooks.sh`.
+- v4.0.2 has been published as the sync-boundary hotfix.
+- v4.0.3 is in progress as a patch release for fail-hard text/platform policy, no-mojibake gates, Windows-safe shell helpers, generalized UI Subtraction Gate, and faster sync regression smoke.
+- Verified green so far: `node scripts/validate-text-policy.js`, `node scripts/validate-codex-skills.js`, `node scripts/test-codex-routing.js`, `bash scripts/validate-template.sh`, `bash scripts/test-template.sh`.
 
 ## Immediate Next Step
-- Fix the post-release sync boundary bug found after `v4.0.1` and ship it as `v4.0.2`: `sync-template.sh` must not add source-only `templates/project-starter/*`, `setup.sh`, or `setup.bat` to generated projects.
-- Add regression coverage proving generated-project sync keeps those files out.
-- If green, publish `v4.0.2` instead of rewriting the published `v4.0.1` tag.
+- Finish the v4.0.3 release gate, commit, tag, push, and verify the GitHub release workflow.

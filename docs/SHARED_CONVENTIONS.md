@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-05-23 for template `3.7.0`; no convention changes required.
+Last reviewed: 2026-06-11 for template `4.0.3`; text policy and platform policy are enforced by validators.
 
 ## Functions-in-Modules Pattern
 
@@ -71,21 +71,36 @@ Both agents check before presenting implementation:
 - Does the entry point contain business logic beyond imports + calls?
 - If yes → refactor before proceeding.
 
-## File Encoding
+## File Encoding And Text Policy
 
-**ALL text files MUST be UTF-8 without BOM.** This is non-negotiable.
+**ALL text files MUST be UTF-8 without BOM, without mojibake, and without mixed line endings.** This is a release blocker.
 
 ### Rules
 
 1. **Never write files in Windows-1251, latin1, CP1252, or any non-UTF-8 encoding**
-2. **No UTF-8 BOM** (`EF BB BF`) — causes parser issues in many tools
-3. **Russian text is expected** — this is a bilingual project (EN/RU). Кириллица must stay intact
-4. **Line endings**: LF (`\n`) preferred. CRLF tolerated on Windows but never mixed within a file
+2. **No UTF-8 BOM** (`EF BB BF`) because it breaks parsers and diffs
+3. **No mojibake**: known double-decoded UTF-8 signatures and replacement characters are forbidden. Keep literal fixtures out of source; use Unicode escapes in tests.
+4. **Russian text is expected** in this bilingual project. Cyrillic must stay readable as Cyrillic
+5. **Line endings**: LF (`\n`) preferred. CRLF is tolerated for Windows batch files, but mixed endings inside one file are forbidden
 
 ### Enforcement
 
-Post-write hook validates encoding. If a file is written in wrong encoding, the hook warns immediately.
-Both agents: before writing a file with non-ASCII content, ensure your output is UTF-8.
+- Run `node scripts/validate-text-policy.js` before release or after encoding-sensitive edits.
+- Post-write hook `.claude/hooks/check-encoding.sh` fails on invalid UTF-8, BOM, mixed line endings, mojibake, and unsafe shell platform assumptions.
+- `scripts/validate-template.sh` and `scripts/test-template.sh` include the same text-policy gate.
+- Tests that need mojibake fixtures must create them with Unicode escapes, not by pasting literal corrupted text into source files.
+
+## Platform And OS Policy
+
+**Shell scripts must detect the current OS through `scripts/lib/platform.sh`.** Do not assume Linux behavior on Windows.
+
+### Rules
+
+1. Source `scripts/lib/platform.sh` before OS, architecture, temp path, hash, or JSON helper logic.
+2. Use `_detect_os`, `_detect_arch`, `_is_windows`, `_temp_file`, and `_temp_dir` instead of raw `uname`, `/tmp`, or direct `mktemp`.
+3. Keep raw platform probes inside `scripts/lib/platform.sh` only.
+4. On Windows, resolve Git Bash/PowerShell behavior explicitly. Do not assume `bash`, POSIX paths, or Linux temp directories exist in the parent process environment.
+5. Update Unix and Windows paths together when changing template setup, sync, or validation behavior.
 
 ## Entry Point Naming Convention
 

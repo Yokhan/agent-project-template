@@ -2,7 +2,22 @@
 # test-hooks.sh — Validate all Claude Code hooks work on the current platform
 set -euo pipefail
 
-echo "Testing hooks on $(uname -s)..."
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
+
+echo "Testing hooks on $(_detect_os)..."
 echo ""
 
 errors=0

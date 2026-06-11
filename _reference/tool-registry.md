@@ -23,6 +23,7 @@
 | test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
 | validate-agent-sot | scripts/validate-agent-sot.js | Validates local Agent SOT sources, AGENTS/CLAUDE links, and drift gates |
 | validate-spec-kit | scripts/validate-spec-kit.js | Offline validation for the managed Spec Kit snapshot |
+| validate-text-policy | scripts/validate-text-policy.js | Fails on invalid UTF-8, BOM, mixed line endings, mojibake, and unsafe shell OS assumptions |
 | sync-spec-kit | scripts/sync-spec-kit.sh | Fetch/update the managed GitHub Spec Kit snapshot |
 | init-spec-kit | scripts/init-spec-kit.sh | Initialize Spec Kit in a project using the pinned snapshot ref |
 | test-hooks | scripts/test-hooks.sh | Hook syntax validation |
@@ -51,6 +52,7 @@
 | update-template | scripts/update-template.sh | update-template.sh — Update project from newer template version | agent/manual |
 | validate-agent-sot | scripts/validate-agent-sot.js | Ensures agent docs and source registry stay present and referenced | agent/manual |
 | validate-spec-kit | scripts/validate-spec-kit.js | Ensures the local Spec Kit snapshot and manifest are complete | agent/manual |
+| validate-text-policy | scripts/validate-text-policy.js | Enforces UTF-8/no-mojibake text policy and shell OS/temp helper usage | agent/manual |
 | sync-spec-kit | scripts/sync-spec-kit.sh | Updates `_reference/spec-kit/upstream` from GitHub Spec Kit | agent/manual |
 | init-spec-kit | scripts/init-spec-kit.sh | Runs official Spec Kit CLI at the pinned manifest ref | agent/manual |
 | validate-template | scripts/validate-template.sh | validate-template.sh — Pre-release validation for agent-project-templa | agent/manual |

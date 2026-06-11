@@ -1,7 +1,91 @@
 #!/bin/bash
-# platform.sh — Cross-platform helper functions
+# platform.sh - Cross-platform helper functions
 # Source this file: source "$(dirname "$0")/lib/platform.sh"
 # All scripts MUST use these helpers instead of calling node/sed -i/date -I directly.
+
+# --- OS, architecture, and temp path detection ---
+# Keep raw uname and platform-specific temp path logic here only.
+_detect_os() {
+  local raw_os
+  raw_os="$(uname -s 2>/dev/null || printf '%s' "${OS:-Windows}")"
+  case "$raw_os" in
+    Linux*) echo "linux" ;;
+    Darwin*) echo "macos" ;;
+    MINGW*|MSYS*|CYGWIN*|Windows*|win32*) echo "windows" ;;
+    *)
+      if [ -n "${OS:-}" ] && printf '%s' "$OS" | grep -qi "windows"; then
+        echo "windows"
+      else
+        echo "unknown"
+      fi
+      ;;
+  esac
+}
+
+_detect_arch() {
+  local raw_arch
+  raw_arch="$(uname -m 2>/dev/null || echo "x86_64")"
+  case "$raw_arch" in
+    x86_64|amd64) echo "amd64" ;;
+    aarch64|arm64) echo "arm64" ;;
+    *) echo "$raw_arch" ;;
+  esac
+}
+
+_is_windows() {
+  [ "$(_detect_os)" = "windows" ]
+}
+
+_to_shell_path() {
+  local input="$1"
+  if command -v cygpath >/dev/null 2>&1 && printf '%s' "$input" | grep -qE '^[A-Za-z]:\\'; then
+    cygpath -u "$input"
+  else
+    printf '%s\n' "$input"
+  fi
+}
+
+_temp_base_dir() {
+  local base_dir=""
+  if [ -n "${TMPDIR:-}" ]; then
+    base_dir="$TMPDIR"
+  elif _is_windows; then
+    base_dir="${TEMP:-${TMP:-.}}"
+  else
+    base_dir="/tmp"
+  fi
+
+  base_dir="$(_to_shell_path "$base_dir")"
+  mkdir -p "$base_dir" 2>/dev/null || base_dir="."
+  printf '%s\n' "$base_dir"
+}
+
+_temp_file() {
+  local prefix="${1:-tmp}"
+  local base_dir
+  base_dir="$(_temp_base_dir)"
+
+  if command -v mktemp >/dev/null 2>&1; then
+    mktemp "$base_dir/${prefix}.XXXXXX"
+  else
+    printf '%s/%s.%s\n' "$base_dir" "$prefix" "$$"
+  fi
+}
+
+_temp_dir() {
+  local prefix="${1:-tmp}"
+  local base_dir temp_dir
+  base_dir="$(_temp_base_dir)"
+
+  if command -v mktemp >/dev/null 2>&1; then
+    mktemp -d "$base_dir/${prefix}.XXXXXX"
+    return
+  fi
+
+  temp_dir="$base_dir/${prefix}.$$"
+  mkdir -p "$temp_dir"
+  printf '%s\n' "$temp_dir"
+}
 
 # --- Node.js detection ---
 # Required for JSON parsing. Python is NOT used.
@@ -24,13 +108,13 @@ _node() {
 }
 
 # JSON helpers via node (replacing python json module)
-# Usage: _json_get file.json "key" → prints value
+# Usage: _json_get file.json "key" -> prints value
 _json_get() {
   local file="$1" key="$2"
   _node -e "const d=JSON.parse(require('fs').readFileSync('$file','utf8'));const v=$key;console.log(typeof v==='object'?JSON.stringify(v):v??'')" 2>/dev/null
 }
 
-# Usage: _json_set file.json '{"key":"value"}' → merges into file
+# Usage: _json_set file.json '{"key":"value"}' -> merges into file
 _json_set() {
   local file="$1" patch="$2"
   _node -e "
@@ -41,7 +125,7 @@ fs.writeFileSync('$file',JSON.stringify(d,null,2));
 " 2>/dev/null
 }
 
-# Usage: _json_valid file.json → exit 0 if valid, 1 if not
+# Usage: _json_valid file.json -> exit 0 if valid, 1 if not
 _json_valid() {
   _node -e "JSON.parse(require('fs').readFileSync('$1','utf8'))" 2>/dev/null
 }
@@ -66,7 +150,7 @@ _stat_mtime() {
   local file="$1"
   if stat --version 2>/dev/null | grep -q GNU; then
     stat -c %Y "$file" 2>/dev/null
-  elif [ "$(uname)" = "Darwin" ]; then
+  elif [ "$(_detect_os)" = "macos" ]; then
     stat -f %m "$file" 2>/dev/null
   else
     _node -e "console.log(Math.floor(require('fs').statSync('$file').mtimeMs/1000))" 2>/dev/null || echo 0

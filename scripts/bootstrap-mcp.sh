@@ -21,6 +21,21 @@
 
 set -euo pipefail
 
+normalize_drive_path() {
+  local path="$1"
+  case "$path" in
+    /[A-Z]/*)
+      printf '/%s%s\n' "$(printf '%s' "${path:1:1}" | tr 'A-Z' 'a-z')" "${path:2}"
+      ;;
+    *)
+      printf '%s\n' "$path"
+      ;;
+  esac
+}
+
+SCRIPT_DIR="$(normalize_drive_path "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
+[ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
+
 DRY_RUN=false
 DO_INSTALL=false
 DO_CHECK=false
@@ -47,22 +62,11 @@ done
 # --- OS and environment detection ---
 
 detect_os() {
-  case "$(uname -s 2>/dev/null || echo Windows)" in
-    Linux*)  echo "linux" ;;
-    Darwin*) echo "macos" ;;
-    MINGW*|MSYS*|CYGWIN*|Windows*) echo "windows" ;;
-    *)       echo "unknown" ;;
-  esac
+  _detect_os
 }
 
 detect_arch() {
-  local arch
-  arch=$(uname -m 2>/dev/null || echo "x86_64")
-  case "$arch" in
-    x86_64|amd64) echo "amd64" ;;
-    aarch64|arm64) echo "arm64" ;;
-    *) echo "$arch" ;;
-  esac
+  _detect_arch
 }
 
 detect_zed_settings_path() {
@@ -80,14 +84,7 @@ is_zed_environment() {
 }
 
 create_temp_json_file() {
-  if command -v mktemp &>/dev/null; then
-    mktemp "${TMPDIR:-/tmp}/mcp-merged.XXXXXX.json"
-    return
-  fi
-
-  local base_dir="${TMPDIR:-.}"
-  mkdir -p "$base_dir" 2>/dev/null || true
-  echo "$base_dir/mcp-merged-$$.json"
+  _temp_file "mcp-merged"
 }
 
 OS=$(detect_os)

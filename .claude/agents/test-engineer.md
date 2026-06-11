@@ -5,7 +5,7 @@ description: "TDD-focused test agent. Tests BEHAVIOR not implementation. Writes 
 allowed-tools: Read, Write, Edit, Bash(test*), Bash(npx*), Bash(pytest*), Bash(cargo test*), Bash(go test*), Glob, Grep
 ---
 ## Model Note
-This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don'''t send vague goals � send concrete tasks.
+This agent runs on Sonnet. When launching, provide SPECIFIC instructions: exact files, exact changes, exact test expectations. Sonnet executes precisely but needs clear targets. Don't send vague goals; send concrete tasks.
 
 
 # Test Engineer Agent

@@ -14,6 +14,7 @@ Read:
 
 1. Context: user journey, viewport, design language, constraints.
 2. Analyze: art direction, UX, UI, flow, behavior.
+   - Run the UI Subtraction Gate before BOM or any new panel/control.
 3. Reference: inspect existing product/system or gold-standard references.
 4. BOM: list tokens, components, states, assets, and content.
 5. Discover: search existing components, tokens, and styles.
@@ -30,6 +31,52 @@ Read:
 - Text must not overlap or overflow at target viewports.
 - Molecules and larger components must declare lower-layer token/component dependencies.
 - Design-system work must expose foundation tables and Storybook or equivalent inspectable stories.
+- Screens must pass the subtraction gate before adding panels, persistent lists, banners, advice blocks, or secondary controls.
+
+## UI Subtraction Gate
+
+Before improving any UI screen, decide what must be removed, hidden, collapsed, or moved to another mode. Do not start by adding panels.
+
+Every screen serves exactly one current user job:
+
+- Product dashboard: scan, triage, decide, act.
+- Form/editor: create, edit, submit, recover.
+- Commerce/gear: compare, select, buy, equip.
+- Settings/admin: configure, grant, revoke, audit.
+- Content/log/codex: review history, not drive the primary loop.
+- Game run/combat: continue, survive, descend, return.
+- Game camp/town: spend, cleanse, upgrade, prepare.
+- Game skills: understand growth, train.
+
+Before adding UI, ask:
+
+1. Can the player make a decision from this element right now?
+2. Is this information needed every second, or only on demand?
+3. Does it duplicate another signal?
+4. Does it belong to this mode?
+5. Is it competing with the primary action?
+6. Can it become a badge, drawer, tooltip, details section, or nav badge?
+7. Would removing it make the next action clearer?
+
+General UI rules:
+
+- Keep the current mode's best next action before long lists.
+- Collapse secondary diagnostics, explanations, and history until needed.
+- Move cross-mode information to the mode where it becomes actionable.
+- Prefer badges, drawers, tooltips, details sections, or nav badges for on-demand signals.
+- Avoid dead disabled buttons in primary action zones; explain unavailable actions where the user can fix them.
+- Reset scroll on major tab or mode changes when old scroll position would hide the new primary action.
+
+For mobile and game screens:
+
+- Keep the current mode's best next action before long lists.
+- Keep main tap targets at least 52px high.
+- Use disclosure for long progression matrices.
+- Do not show full wallet on run screens unless spending is possible there.
+- Do not show meta-upgrade advice inside an active run unless there is a direct action.
+- One danger state gets one primary textual signal; the rest should be visual treatment.
+
+Design reviews must include: Keep, Remove, Collapse, Move, Add only after subtraction.
 
 For Figma writes, also use `$codex-figma-workflow`.
 For token/component library work, also use `$codex-design-system-workflow`.

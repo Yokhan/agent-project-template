@@ -139,6 +139,12 @@ if ! node scripts/validate-spec-kit.js >/dev/null 2>&1; then
 else
   echo "  OK: Spec Kit snapshot validates"
 fi
+if ! node scripts/validate-text-policy.js >/dev/null 2>&1; then
+  echo "  ERROR: Text policy validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Text policy validates"
+fi
 
 # 4. Script syntax
 echo ""
@@ -189,6 +195,7 @@ REQUIRED_FILES=(
   "scripts/validate-production-standard.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"
+  "scripts/validate-text-policy.js"
   "scripts/sync-spec-kit.sh"
   "scripts/init-spec-kit.sh"
   "scripts/codex-route-task.js"

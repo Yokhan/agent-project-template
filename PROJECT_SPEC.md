@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, and verification contract.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Fix the post-release sync boundary bug found after `v4.0.1` and ship it as `v4.0.2`: `sync-template.sh` must not add source-only `templates/project-starter/*`, `setup.sh`, or `setup.bat` to generated projects.
+- Next: Finish the v4.0.3 release gate, commit, tag, push, and verify the GitHub release workflow.
 
 ## Last Scan
 2026-06-11

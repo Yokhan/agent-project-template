@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.0.2 -->
+<!-- Template Version: 4.0.3 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -146,6 +146,9 @@ When >50 entries → promote via `/weekly`.
 - No hardcoded visual values (use tokens)
 - No building screens without components (system→tokens→components→screens)
 - No surface-level analysis ("works"=HTTP 200 is NOT analysis)
+- No writing files in non-UTF-8 encoding — ALL files must be UTF-8 without BOM (see docs/SHARED_CONVENTIONS.md)
+- No mojibake, replacement characters, or mixed line endings in tracked text — run `node scripts/validate-text-policy.js`
+- No raw `uname`, `/tmp`, or `mktemp` outside `scripts/lib/platform.sh` — use platform helpers so Windows is never treated like Linux
 
 ## Dual-Agent Coexistence
 This project supports both Claude Code and OpenAI Codex.
@@ -160,7 +163,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.0.2 — Run `bash scripts/check-drift.sh` to verify health.
+4.0.3 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

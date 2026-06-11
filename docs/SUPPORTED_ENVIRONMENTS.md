@@ -30,10 +30,13 @@ These are the environments the template is designed and tested to support.
 - `setup.bat` for project creation
 - Git Bash or WSL for running shipped shell scripts such as `bootstrap-mcp.sh`, `check-drift.sh`, and `sync-template.sh`
 - PowerShell-to-Git-Bash path normalization is supported for template-owned scripts
+- Template-owned shell scripts must route OS, architecture, and temp-path behavior through `scripts/lib/platform.sh`
+- Raw `uname`, `/tmp`, and `mktemp` are not allowed outside the shared platform helper
 
 ## Not A Supported Assumption
 
 - plain `cmd.exe` without Git Bash or WSL for running the shipped shell tooling
+- Linux filesystem, temp directory, shell, or command behavior on Windows unless explicitly detected first
 - project-level Codex model or effort defaults
 - copying untracked maintainer files as part of bootstrap
 
@@ -48,5 +51,6 @@ Current release validation covers:
 - Codex route validation: `node scripts/test-codex-routing.js`
 - Production standard validation: `node scripts/validate-production-standard.js`
 - Spec Kit snapshot validation: `node scripts/validate-spec-kit.js`
+- Text/platform policy validation: `node scripts/validate-text-policy.js`
 - optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`
 - downstream migration dry-runs via `downstream-census.sh`

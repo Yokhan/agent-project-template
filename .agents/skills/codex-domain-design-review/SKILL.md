@@ -12,10 +12,11 @@ Read `.claude/skills/domain-design-review/SKILL.md` and `.claude/library/domain/
 ## Review Focus
 
 1. User task fit and information hierarchy.
-2. Token and component reuse.
-3. Layout consistency across target viewports.
-4. Interaction states: default, hover, active, focus, disabled, loading, error, empty.
-5. Accessibility: contrast, focus visibility, labels, keyboard flow.
-6. Visual defects: overlap, overflow, one-note palette, unstable dimensions.
+2. Subtraction audit: Keep, Remove, Collapse, Move, then Add only after subtraction.
+3. Token and component reuse.
+4. Layout consistency across target viewports.
+5. Interaction states: default, hover, active, focus, disabled, loading, error, empty.
+6. Accessibility: contrast, focus visibility, labels, keyboard flow.
+7. Visual defects: overlap, overflow, one-note palette, unstable dimensions.
 
 Lead with concrete defects, affected screens/components, and the smallest useful fix.

@@ -24,7 +24,7 @@ if [ -z "${NODE:-}" ]; then
 fi
 
 # Template version check
-TEMPLATE_VERSION="4.0.2"
+TEMPLATE_VERSION="4.0.3"
 CLAUDE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || true)
 if [ -z "$CLAUDE_VERSION" ]; then
     CLAUDE_VERSION="unknown"
@@ -41,15 +41,12 @@ WARNINGS=0
 ERRORS=0
 
 # 1. Check if docs are stale (>30 days)
-echo "[1/11] Checking document freshness..."
+echo "[1/12] Checking document freshness..."
 if [ -d docs ]; then
   for doc in docs/*.md; do
     [ -f "$doc" ] || continue
-    if [ "$(uname)" = "Darwin" ]; then
-      age=$(( ($(date +%s) - $(stat -f %m "$doc")) / 86400 ))
-    else
-      age=$(( ($(date +%s) - $(stat -c %Y "$doc" 2>/dev/null || echo $(date +%s))) / 86400 ))
-    fi
+    mtime=$(_stat_mtime "$doc" 2>/dev/null || date +%s)
+    age=$(( ($(date +%s) - mtime) / 86400 ))
     if [ "$age" -gt 30 ]; then
       echo "  ⚠️  $doc not updated in $age days"
       WARNINGS=$((WARNINGS + 1))
@@ -67,7 +64,7 @@ if [ -d src ] && [ -d docs ]; then
 fi
 
 # 2. Check CLAUDE.md size
-echo "[2/11] Checking CLAUDE.md size..."
+echo "[2/12] Checking CLAUDE.md size..."
 if [ -f CLAUDE.md ]; then
   lines=$(wc -l < CLAUDE.md)
   if [ "$lines" -gt 300 ]; then
@@ -79,7 +76,7 @@ if [ -f CLAUDE.md ]; then
 fi
 
 # 3. Check lessons.md size (>50 = time to promote)
-echo "[3/11] Checking lessons.md..."
+echo "[3/12] Checking lessons.md..."
 if [ -f tasks/lessons.md ]; then
   entries=$(grep -c "^### " tasks/lessons.md 2>/dev/null) || entries=0
   if [ "$entries" -gt 50 ]; then
@@ -91,7 +88,7 @@ if [ -f tasks/lessons.md ]; then
 fi
 
 # 4. Check for files > 375 lines in src/
-echo "[4/11] Checking file sizes in src/..."
+echo "[4/12] Checking file sizes in src/..."
 if [ -d src ]; then
   find src -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.js" -o -name "*.jsx" \) | while read -r file; do
     lines=$(wc -l < "$file")
@@ -102,7 +99,7 @@ if [ -d src ]; then
 fi
 
 # 5. Check module entry points exist
-echo "[5/11] Checking module entry points..."
+echo "[5/12] Checking module entry points..."
 if [ -d src/features ]; then
   find src/features -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     found=0
@@ -116,7 +113,7 @@ if [ -d src/features ]; then
 fi
 
 # 6. Check architecture boundaries
-echo "[6/11] Checking architecture boundaries..."
+echo "[6/12] Checking architecture boundaries..."
 if command -v npx &> /dev/null && [ -f .dependency-cruiser.js ]; then
   npx dependency-cruiser src --output-type err 2>/dev/null || echo "  ⚠️  Boundary violations detected"
 else
@@ -124,7 +121,7 @@ else
 fi
 
 # 7. Check for secrets in tracked files
-echo "[7/11] Scanning for potential secrets..."
+echo "[7/12] Scanning for potential secrets..."
 if git rev-parse --git-dir > /dev/null 2>&1; then
   secrets=$(grep -rlE '(sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|-----BEGIN.*(RSA|EC|DSA))' src/ 2>/dev/null || true)
   if [ -n "$secrets" ]; then
@@ -135,8 +132,17 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
   fi
 fi
 
-# 8. Check template manifest integrity
-echo "[8/11] Checking template manifest..."
+# 8. Check text and platform policy
+echo "[8/12] Checking text and platform policy..."
+if node scripts/validate-text-policy.js >/dev/null 2>&1; then
+  echo "  OK: Text policy validates"
+else
+  echo "  ERROR: Text policy validation failed"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# 9. Check template manifest integrity
+echo "[9/12] Checking template manifest..."
 MANIFEST=".template-manifest.json"
 if [ -f "$MANIFEST" ]; then
   # Validate JSON
@@ -192,8 +198,8 @@ else
   echo "  ℹ️  No $MANIFEST found (sync not configured)"
 fi
 
-# 9. Check template rules not modified locally (read-only enforcement)
-echo "[9/11] Checking template rules integrity..."
+# 10. Check template rules not modified locally (read-only enforcement)
+echo "[10/12] Checking template rules integrity..."
 if [ -f "$MANIFEST" ]; then
   RULE_DRIFT=0
   for rule_file in .claude/rules/*.md .claude/library/*/*.md .claude/agents/*.md .agents/skills/*/SKILL.md .agents/skills/*/agents/openai.yaml .agents/skills/*/references/*.md .codex/agents/*.toml; do
@@ -226,8 +232,8 @@ else
   echo "  ℹ️  No manifest — cannot check rule integrity"
 fi
 
-# 10. Check tool registry health
-echo "[10/11] Checking tool registry..."
+# 11. Check tool registry health
+echo "[11/12] Checking tool registry..."
 REGISTRY="_reference/tool-registry.md"
 if [ -f "$REGISTRY" ]; then
   # Check for stale entries (referenced paths that don't exist)
@@ -289,7 +295,7 @@ else
   fi
 fi
 
-echo "[11/11] Checking trust defaults..."
+echo "[12/12] Checking trust defaults..."
 if git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1; then
   echo "  ❌ .claude/settings.local.json is tracked. It must stay local-only."
   ERRORS=$((ERRORS + 1))

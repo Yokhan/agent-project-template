@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-06-11 for template `4.0.2` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-06-11 for template `4.0.3` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -17,6 +17,7 @@ Last reviewed: 2026-06-11 for template `4.0.2` local validation. Remote GitHub A
 - [ ] `node scripts/validate-production-standard.js`
 - [ ] `node scripts/validate-agent-sot.js`
 - [ ] `node scripts/validate-spec-kit.js`
+- [ ] `node scripts/validate-text-policy.js`
 - [ ] `bash scripts/generate-project-spec.sh --write`
 - [ ] `bash scripts/scan-project.sh --report`
 
@@ -42,6 +43,7 @@ Last reviewed: 2026-06-11 for template `4.0.2` local validation. Remote GitHub A
 - [ ] `PROJECT_SPEC.md` and `_reference/tool-registry.md` can be regenerated from scripts instead of placeholders
 - [ ] Session-start uses compact summaries, not raw markdown dumps
 - [ ] No project-level Codex defaults override IDE/user-level model or effort settings
+- [ ] No mojibake, replacement characters, mixed line endings, raw `uname`, raw `/tmp`, or raw `mktemp` outside `scripts/lib/platform.sh`
 - [ ] `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md` match the shipped contract
 - [ ] `_reference/spec-kit/manifest.json` matches the intended stable Spec Kit ref; run `bash scripts/sync-spec-kit.sh --check` before cutting the release
 - [ ] `tasks/goal.md` and `templates/project-starter/tasks/goal.md` carry the v4 goal-loop contract

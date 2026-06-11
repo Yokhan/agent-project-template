@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.0.2 -->
+<!-- Template Version: 4.0.3 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -201,6 +201,8 @@ At task start, read these project files to understand context:
 - No "you're right!" without logging WHY
 - No surface-level analysis ("works"=HTTP 200 is NOT analysis)
 - No writing files in non-UTF-8 encoding — ALL files must be UTF-8 without BOM (see docs/SHARED_CONVENTIONS.md)
+- No mojibake, replacement characters, or mixed line endings in tracked text — run `node scripts/validate-text-policy.js`
+- No raw `uname`, `/tmp`, or `mktemp` outside `scripts/lib/platform.sh` — use platform helpers so Windows is never treated like Linux
 
 ## Verification Before Completion
 
@@ -261,4 +263,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.0.2
+4.0.3
