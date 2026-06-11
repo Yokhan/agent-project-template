@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.0.1
-git push origin v4.0.1
+git tag v4.0.2
+git push origin v4.0.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -46,7 +46,9 @@ Version `4.0.0` changes the agent operating contract:
 
 Version `4.0.1` is a compatible patch release that keeps `.github/workflows/release-template.yml` source-only, ships only `.github/workflows/validate-template.yml` to downstream projects, and validates this in setup/sync smoke tests.
 
-Downstream projects should sync `v4.0.1` with a dry run first and review local `project-*` skills, auth flows, design systems, and task files before applying.
+Version `4.0.2` is a compatible patch release that keeps source-only starter and bootstrap files out of generated-project sync, specifically `templates/project-starter/*`, `setup.sh`, and `setup.bat`.
+
+Downstream projects should sync `v4.0.2` with a dry run first and review local `project-*` skills, auth flows, design systems, and task files before applying.
 
 ## Release Gate
 
@@ -80,8 +82,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.0.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.0.1
+bash scripts/sync-template.sh --from-git --ref v4.0.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.0.2
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

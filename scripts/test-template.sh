@@ -230,8 +230,12 @@ echo "Sync regression smoke:"
 if is_template_source_repo; then
   SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
+  SYNC_SOURCE_ONLY_PROJECT="template-source-only-sync-smoke-$RANDOM-$$"
+  SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
   cleanup_sync_smoke() {
-    rm -rf "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply"
+    rm -rf \
+      "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
+      "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply"
   }
   run_empty_manifest_sync_smoke() {
     local project="$1"
@@ -264,8 +268,28 @@ if is_template_source_repo; then
     grep -q '"_reference/spec-kit/upstream/templates/commands/specify.md"' "$project/.template-manifest.json"
     grep -q '"integrations/spec-kit/README.md"' "$project/.template-manifest.json"
   }
+  run_source_only_sync_smoke() {
+    local project="$1"
+    local output="$2"
+
+    bash setup.sh "$project" >/dev/null 2>&1
+
+    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" --dry-run > "$output" 2>&1
+    ! grep -q "WOULD ADD: templates/" "$output"
+    ! grep -q "WOULD ADD: setup.sh" "$output"
+    ! grep -q "WOULD ADD: setup.bat" "$output"
+
+    bash scripts/sync-template.sh "$TEMPLATE_DIR" --project-dir "$project" > "$output.apply" 2>&1
+    [ ! -e "$project/templates" ] &&
+      [ ! -f "$project/setup.sh" ] &&
+      [ ! -f "$project/setup.bat" ] &&
+      ! grep -q '"templates/' "$project/.template-manifest.json" &&
+      ! grep -q '"setup.sh"' "$project/.template-manifest.json" &&
+      ! grep -q '"setup.bat"' "$project/.template-manifest.json"
+  }
   trap cleanup_sync_smoke EXIT
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
+  check "sync-template keeps source-only files out of generated projects" run_source_only_sync_smoke "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT"
   cleanup_sync_smoke
   trap - EXIT
 else

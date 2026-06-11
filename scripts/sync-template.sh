@@ -187,6 +187,13 @@ get_hash() {
   fi
 }
 
+is_source_only_path() {
+  case "$1" in
+    templates/*|setup.sh|setup.bat|.github/workflows/release-template.yml) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # --- Validation ---
 if [ -z "$TEMPLATE_PATH" ]; then
   echo "Error: Template path required. Run with --help for usage."
@@ -344,6 +351,7 @@ if [ ! -f "$MANIFEST" ]; then
         basename_f=$(basename "$f")
         case "$basename_f" in project-*) continue ;; esac
         case "$f" in .claude/skills/project-*/*|.agents/skills/project-*/*) continue ;; esac
+        is_source_only_path "$f" && continue
 
         hash=$(get_hash "$f")
         cat=$(get_category "$f")
@@ -406,7 +414,7 @@ if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
 fi
 
 # --- Counters ---
-UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0
+UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0; SOURCE_ONLY_MANIFEST=0
 
 # --- Phase A: Update template files in manifest ---
 echo "--- Phase A: Updating template files ---"
@@ -437,6 +445,11 @@ while IFS='|' read -r filepath old_hash category; do
       continue
       ;;
   esac
+  if is_source_only_path "$filepath"; then
+    SOURCE_ONLY_MANIFEST=$((SOURCE_ONLY_MANIFEST + 1))
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
 
   template_file="$TEMPLATE_PATH/$filepath"
 
@@ -509,6 +522,7 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" "
         continue
         ;;
     esac
+    is_source_only_path "$rel_path" && continue
 
     # Check if already in manifest (C1: use env vars for Python)
     in_manifest=$(_node -e "
@@ -559,7 +573,7 @@ for dir in .codex/agents .agents/skills .claude/rules .claude/agents .claude/ski
 done
 
 # --- Update manifest ---
-if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
+if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES + SOURCE_ONLY_MANIFEST)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
   echo "--- Updating manifest ---"
   _node -e "
 const fs=require('fs'),path=require('path'),{execSync}=require('child_process');
@@ -568,12 +582,19 @@ const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
 m.template_version=newVer;m.updated=syncDate;
 function toPosix(fp){return fp.split(path.sep).join('/').replace(/\/+/g,'/');}
 function cleanHash(hash){return String(hash||'').replace(/^[\\\\/]+/,'');}
+function isSourceOnlyPath(fp){
+  return fp==='setup.sh' ||
+    fp==='setup.bat' ||
+    fp==='.github/workflows/release-template.yml' ||
+    fp.startsWith('templates/');
+}
 
 const normalizedFiles={};
 for(const[rawFp,rawInfo]of Object.entries(m.files||{})){
   const fp=toPosix(rawFp);
   if(fp==='.claude/settings.local.json')continue;
   if(fp.startsWith('docs/.setup-leak-sentinel-'))continue;
+  if(isSourceOnlyPath(fp))continue;
   if(rawInfo.category!=='project'&&!fs.existsSync(fp))continue;
   const info={...rawInfo};
   if(info.hash)info.hash=cleanHash(info.hash);
@@ -603,8 +624,8 @@ function getCategory(fp){
 function addManagedFile(fp){
   if(!fp||m.files[fp])return;
   if(fp==='.claude/settings.local.json')return;
-  if(fp==='.github/workflows/release-template.yml')return;
   if(fp.startsWith('docs/.setup-leak-sentinel-'))return;
+  if(isSourceOnlyPath(fp))return;
   const base=path.basename(fp);
   if(base.startsWith('project-'))return;
   if(!fs.existsSync(fp)||!fs.statSync(fp).isFile())return;

@@ -88,4 +88,6 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Verified green: `node scripts/validate-codex-skills.js`, `node scripts/test-codex-routing.js`, `node scripts/validate-production-standard.js`, `node scripts/validate-agent-sot.js`, `bash scripts/check-drift.sh`, `bash scripts/sync-agents.sh`, `bash scripts/validate-template.sh`, `bash scripts/test-template.sh`, `bash scripts/test-hooks.sh`.
 
 ## Immediate Next Step
-- Commit and push patch release `v4.0.1`, then verify GitHub Actions and release artifact.
+- Fix the post-release sync boundary bug found after `v4.0.1` and ship it as `v4.0.2`: `sync-template.sh` must not add source-only `templates/project-starter/*`, `setup.sh`, or `setup.bat` to generated projects.
+- Add regression coverage proving generated-project sync keeps those files out.
+- If green, publish `v4.0.2` instead of rewriting the published `v4.0.1` tag.
