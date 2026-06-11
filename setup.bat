@@ -61,7 +61,7 @@ powershell -NoProfile -Command ^
   "$projectRoot = (Resolve-Path $env:RAW_PROJECT_DIR).Path;" ^
   "$payloadPrefixes = @('.agents/','.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
   "$payloadFiles = @('.editorconfig','.env.example','.gitattributes','.gitignore','.mcp.json','AGENTS.md','CLAUDE.md','CONTRIBUTING.md','ecosystem.md','Makefile','PROJECT_SPEC.md','README.md','SECURITY.md','SETUP_GUIDE.md','upgrade-project.sh');" ^
-  "$excludePatterns = @('.claude/settings.local.json','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
+  "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
   "$starterOverrides = @('tasks/current.md','tasks/goal.md','tasks/.research-cache.md','tasks/lessons.md');" ^
   "$candidateMap = @{};" ^
   "foreach ($rel in (& git -C $templateRoot ls-files)) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^
@@ -108,7 +108,7 @@ echo [2/6] Generating template manifest...
 cd "%PROJECT_DIR%"
 powershell -NoProfile -Command ^
   "$today = (Get-Date -Format 'yyyy-MM-dd');" ^
-  "$templateVersion = '4.0.0';" ^
+  "$templateVersion = '4.0.1';" ^
   "try {" ^
   "  $versionMatch = Select-String -Path (Join-Path '%TEMPLATE_DIR%' 'AGENTS.md') -Pattern 'Template Version:\s*([0-9.]+)' -ErrorAction Stop | Select-Object -First 1;" ^
   "  if ($versionMatch.Matches.Count -gt 0) { $templateVersion = $versionMatch.Matches[0].Groups[1].Value }" ^
@@ -177,7 +177,7 @@ powershell -NoProfile -Command ^
   "  'docs/SUPPORTED_ENVIRONMENTS.md'," ^
   "  'docs/*.md.template'," ^
   "  '_reference/*.md'," ^
-  "  '.github/workflows/*.yml'" ^
+  "  '.github/workflows/validate-template.yml'" ^
   ");" ^
   "$projectPatterns = @(" ^
   "  'tasks/*'," ^
@@ -247,7 +247,7 @@ if errorlevel 1 (
 ) else (
     git update-index --chmod=+x scripts/check-drift.sh >nul 2>&1
     git add -A >nul 2>&1
-    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$match = Select-String -Path 'AGENTS.md' -Pattern 'Template Version:\s*([0-9.]+)' | Select-Object -First 1; if ($match -and $match.Matches.Count -gt 0) { $match.Matches[0].Groups[1].Value } else { '4.0.0' }"`) do set "TEMPLATE_VERSION=%%i"
+    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$match = Select-String -Path 'AGENTS.md' -Pattern 'Template Version:\s*([0-9.]+)' | Select-Object -First 1; if ($match -and $match.Matches.Count -gt 0) { $match.Matches[0].Groups[1].Value } else { '4.0.1' }"`) do set "TEMPLATE_VERSION=%%i"
     git commit -m "chore: initialize project from agent-project-template v%TEMPLATE_VERSION%" >nul 2>&1
     echo Git repository initialized with initial commit.
 )

@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/AGENTS.md" 2>/dev/null | head -n 1)
-[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="4.0.0"
+[ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="4.0.1"
 
 copy_entry() {
   local rel_path="$1"
@@ -37,7 +37,7 @@ is_payload_path() {
 
 is_excluded_payload_path() {
   case "$1" in
-    .claude/settings.local.json|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
+    .claude/settings.local.json|.github/workflows/release-template.yml|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -195,7 +195,7 @@ generate_manifest() {
       docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
       _reference/*.md) echo "template" ;;
       .github/*) echo "template" ;;
-      .github/workflows/*.yml) echo "template" ;;
+      .github/workflows/validate-template.yml) echo "template" ;;
       .editorconfig) echo "template" ;;
       .env.example) echo "template" ;;
       .gitattributes) echo "template" ;;
@@ -266,7 +266,7 @@ generate_manifest() {
     "docs/"*.md.template
     "_reference/"*.md
     ".github/"*.template
-    ".github/workflows/"*.yml
+    ".github/workflows/validate-template.yml"
     ".editorconfig"
     ".env.example"
     ".gitattributes"

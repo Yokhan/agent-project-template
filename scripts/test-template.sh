@@ -56,7 +56,7 @@ check ".codex/hooks.json valid JSON" node -e "const h=JSON.parse(require('fs').r
 check ".gitignore" test -f .gitignore
 check ".gitattributes" test -f .gitattributes
 check ".env.example" test -f .env.example
-check ".github/workflows/release-template.yml" test -f .github/workflows/release-template.yml
+source_only_check ".github/workflows/release-template.yml" test -f .github/workflows/release-template.yml
 check "tasks/lessons.md" test -f tasks/lessons.md
 check "tasks/current.md" test -f tasks/current.md
 check "tasks/goal.md" test -f tasks/goal.md
@@ -187,7 +187,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(mktemp)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/release-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -209,7 +209,8 @@ if is_template_source_repo; then
       [ -f "$project/scripts/sync-spec-kit.sh" ] &&
       [ -f "$project/scripts/validate-agent-sot.js" ] &&
       [ -f "$project/scripts/validate-spec-kit.js" ] &&
-      [ -f "$project/.github/workflows/release-template.yml" ] &&
+      [ -f "$project/.github/workflows/validate-template.yml" ] &&
+      [ ! -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&
       [ -f "$project/scripts/validate-codex-skills.js" ] &&

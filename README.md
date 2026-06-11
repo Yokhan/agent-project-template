@@ -1,6 +1,6 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v4.0.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.0.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.0.1** | Patch release: keeps the template release workflow source-only, ships validation workflow to downstream projects, and validates downstream-safe bootstrap/sync behavior |
 | **4.0.0** | Production Product Standard, goal-like planning contract, design-system/product UX workflows, cross-project lesson promotion, router gates, and validators |
 | **3.7.0** | Codex-native skills, subagent fan-out, validators, OpenAI model guidance, and setup/sync delivery for the Codex execution layer |
 | **3.6.0** | Production-ready bootstrap contract, tracked-only payload, living PROJECT_SPEC/tool registry, AgentOS compatibility, and release hardening |

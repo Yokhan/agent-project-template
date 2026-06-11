@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-06-11 for template `4.0.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-06-11 for template `4.0.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 

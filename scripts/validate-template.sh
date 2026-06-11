@@ -8,6 +8,10 @@ set -euo pipefail
 ERRORS=0
 WARNINGS=0
 
+is_template_source_repo() {
+  grep -Eq '^- Name: agent-project-template$' PROJECT_SPEC.md 2>/dev/null
+}
+
 echo "=== Template Validation ==="
 echo ""
 
@@ -190,7 +194,6 @@ REQUIRED_FILES=(
   "scripts/codex-route-task.js"
   "scripts/test-codex-routing.js"
   "scripts/test-codex-subagents-live.sh"
-  ".github/workflows/release-template.yml"
   "_reference/README.md"
   "_reference/tool-registry.md"
   "_reference/agent-sot/README.md"
@@ -216,6 +219,16 @@ for f in "${REQUIRED_FILES[@]}"; do
     ERRORS=$((ERRORS + 1))
   fi
 done
+if is_template_source_repo; then
+  if [ ! -f ".github/workflows/release-template.yml" ]; then
+    echo "  ERROR: Missing source-only release workflow: .github/workflows/release-template.yml"
+    ERRORS=$((ERRORS + 1))
+  else
+    echo "  OK: source-only release workflow present"
+  fi
+else
+  echo "  OK: source-only release workflow skipped for downstream"
+fi
 echo "  Checked ${#REQUIRED_FILES[@]} required files"
 if ! node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); for (const event of ['SessionStart','PreToolUse','PostToolUse','Stop']) { if (!Array.isArray(h.hooks?.[event]) || !h.hooks[event][0]?.hooks?.[0]?.command) process.exit(1); }" >/dev/null 2>&1; then
   echo "  ERROR: .codex/hooks.json must use Codex nested hook command schema"

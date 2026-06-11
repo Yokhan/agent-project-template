@@ -88,4 +88,4 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Verified green: `node scripts/validate-codex-skills.js`, `node scripts/test-codex-routing.js`, `node scripts/validate-production-standard.js`, `node scripts/validate-agent-sot.js`, `bash scripts/check-drift.sh`, `bash scripts/sync-agents.sh`, `bash scripts/validate-template.sh`, `bash scripts/test-template.sh`, `bash scripts/test-hooks.sh`.
 
 ## Immediate Next Step
-- Review the diff, commit the branch, push it, and run remote CI before tagging `v4.0.0`.
+- Commit and push patch release `v4.0.1`, then verify GitHub Actions and release artifact.

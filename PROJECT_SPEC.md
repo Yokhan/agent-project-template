@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, and verification contract.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Review the diff, commit the branch, push it, and run remote CI before tagging `v4.0.0`.
+- Next: Commit and push patch release `v4.0.1`, then verify GitHub Actions and release artifact.
 
 ## Last Scan
 2026-06-11
