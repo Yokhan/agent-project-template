@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-06-12 for template `4.1.0`; product/business outcome priority, text policy, and platform policy are enforced by validators.
+Last reviewed: 2026-06-12 for template `4.1.1`; product/business outcome priority, text policy, platform policy, and CI runtime hygiene are enforced by validators.
 
 ## Product And Business Outcome Priority
 
@@ -106,6 +106,10 @@ Both agents check before presenting implementation:
 2. Use `_detect_os`, `_detect_arch`, `_is_windows`, `_temp_file`, and `_temp_dir` instead of raw `uname`, `/tmp`, or direct `mktemp`.
 3. Keep raw platform probes inside `scripts/lib/platform.sh` only.
 4. On Windows, resolve Git Bash/PowerShell behavior explicitly. Do not assume `bash`, POSIX paths, or Linux temp directories exist in the parent process environment.
+
+## GitHub Actions Runtime Policy
+
+Template-owned GitHub workflows and CI templates must use Node 24-compatible official actions. Release and validation jobs must disable unnecessary `setup-node` package-manager cache because they run with repository tokens and do not install packages.
 5. Update Unix and Windows paths together when changing template setup, sync, or validation behavior.
 
 ## Entry Point Naming Convention

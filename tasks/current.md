@@ -86,10 +86,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Working branch: `feature/template-v4-production-product-standard`
 - v4 production standard, product goal loop, design-system workflow, product UX audit, cross-project lesson promotion, text/platform policy, and UI Subtraction Gate are implemented in shared rules, Codex skills, router, starter files, and validators.
 - v4.0.3 has been published as the text/platform policy and UI Subtraction Gate patch release.
-- v4.1.0 is in progress as a minor release for product-user and app-specific business KPI priority across plans, improvements, routing, and validation.
+- v4.1.0 has been published as the product-user and app-specific business KPI priority minor release.
+- v4.1.1 is in progress as a patch release for GitHub Actions Node 24-compatible workflow updates.
 
 ## Immediate Next Step
-- Finish the v4.1.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Finish the v4.1.1 release gate, commit, tag, push, and verify the GitHub release workflow without the Node 20 actions warning.
 
 ## Plan - v4.1.0 Product/Business Outcome Priority
 
@@ -125,3 +126,35 @@ Make every plan and improvement start from product-user value and app-specific b
 
 ### Plan B
 If router changes create broad regressions, keep route output backwards-compatible and enforce the rule through `validate-production-standard.js` plus shared rules, then defer deeper routing changes to a later patch.
+
+## Plan - v4.1.1 GitHub Actions Node 24 Runtime
+
+### Goal
+Remove the upcoming GitHub Actions Node 20 runtime risk from template-owned release and validation workflows before downstream teams inherit it.
+
+### Product Goal Link
+- Final outcome: template-derived projects can validate and release without CI runtime deprecation warnings or surprise runner migration failures.
+- Current step: update official GitHub actions, Node version, CI template defaults, regression smoke, and release docs.
+- Quality bar preserved: release workflow keeps `contents: write` only where needed and disables unnecessary package-manager cache.
+- Out of scope for this step: changing project app dependencies or introducing new CI providers.
+
+### Complexity Estimate
+- Size: S
+- Files to modify: about 9
+- Risk: HIGH because release workflow changes must be proven by a real tag-triggered GitHub run.
+
+### File Architecture
+- `.github/workflows/release-template.yml` - source-only release workflow.
+- `.github/workflows/validate-template.yml` - shipped validation workflow.
+- `.github/ci.yml.template` - optional starter CI template.
+- `scripts/test-template.sh` - regression check for Node 24-compatible workflow actions.
+- README/release/checklist/version files - `4.1.1` release alignment.
+
+### Implementation Order
+1. Update workflows/templates to Node 24-compatible official actions.
+2. Add smoke check against old Node 20 action/runtime references.
+3. Bump patch version and regenerate project spec.
+4. Run release gate, then tag and verify GitHub release.
+
+### Plan B
+If latest major actions introduce runner or credential behavior changes, use the smallest Node 24-compatible major that avoids the warning and preserves current workflow behavior.

@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-06-12 for template `4.1.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-06-12 for template `4.1.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -55,6 +55,7 @@ Last reviewed: 2026-06-12 for template `4.1.0` local validation. Remote GitHub A
 
 - [ ] README/setup flow matches shipped behavior
 - [ ] CI workflow covers validation scripts plus Linux/Windows bootstrap smoke
+- [ ] GitHub workflows and CI templates use Node 24-compatible actions; release/validation jobs disable unnecessary setup-node package-manager cache
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
 - [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`

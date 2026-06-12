@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Finish the v4.1.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Next: Finish the v4.1.1 release gate, commit, tag, push, and verify the GitHub release workflow without the Node 20 actions warning.
 
 ## Last Scan
 2026-06-12

@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.1.0
-git push origin v4.1.0
+git tag v4.1.1
+git push origin v4.1.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -52,7 +52,9 @@ Version `4.0.3` is a compatible patch release that adds fail-hard text/platform 
 
 Version `4.1.0` is a compatible minor release that makes product-user experience and app-specific business outcomes the first priority for plans and improvements. Agents must name the user/business outcome before technical work and treat refactors, tooling, and architecture cleanup as second-order unless they directly unlock or protect revenue, loyalty, retention, conversion, activation, support load, or another application KPI.
 
-Downstream projects should sync `v4.1.0` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, and business/product planning conventions before applying.
+Version `4.1.1` is a compatible patch release that updates GitHub workflows and CI templates to Node 24-compatible actions before the GitHub Actions Node 20 runner migration.
+
+Downstream projects should sync `v4.1.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -86,8 +88,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.1.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.1.0
+bash scripts/sync-template.sh --from-git --ref v4.1.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.1.1
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

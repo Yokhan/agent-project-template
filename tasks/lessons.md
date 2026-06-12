@@ -43,6 +43,16 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-06-12 - GitHub Actions runtime drift needs a template gate
+**Track**: PROCESS
+**Severity**: P2
+**Error**: Release workflow succeeded but emitted a GitHub Actions warning that `actions/checkout@v4` and `actions/setup-node@v4` still ran on the deprecated Node 20 action runtime.
+**Root cause**: Template release checks validated scripts and payload shape but did not scan workflow action majors or Node runtime defaults.
+**Rule**: Template-owned GitHub workflows and CI templates must use Node 24-compatible official actions. Release and validation jobs should disable unnecessary `setup-node` package-manager cache when no packages are installed and repository tokens are available.
+**Applies to**: .github workflows, CI templates, test-template smoke, release gate
+**Category**: tooling
+**Status**: ACTIVE
+
 ### 2026-06-12 - Product outcomes outrank technical perfection
 **Track**: PROCESS
 **Severity**: P1

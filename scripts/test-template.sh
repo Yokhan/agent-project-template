@@ -48,6 +48,10 @@ validate_text_policy_rejects_mojibake() {
   rm -f "$fixture"
   return 0
 }
+github_workflows_use_node24_actions() {
+  ! grep -R -E 'actions/(checkout|setup-node)@v4' .github &&
+    ! grep -R -E "node-version:[[:space:]]*['\"]?20" .github
+}
 
 echo "=== Template Smoke Test: $TEMPLATE_DIR ==="
 echo ""
@@ -188,6 +192,7 @@ check "README has no localhost:3333 references" bash -c "! grep -q 'localhost:33
 check "README has no Command Center section" bash -c "! grep -q '## Command Center' README.md"
 check "SETUP_GUIDE has no legacy --from sync syntax" bash -c "! grep -q 'sync-template\\.sh --from ' SETUP_GUIDE.md"
 check "SETUP_GUIDE has no Python 3 bootstrap prerequisite" bash -c "! grep -q 'Python 3' SETUP_GUIDE.md"
+check "GitHub workflows use Node24-compatible actions" github_workflows_use_node24_actions
 check "No tracked local Claude settings" bash -c '! git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1'
 check "Codex config has no user-owned defaults" bash -c "! grep -Eq '^(model|model_reasoning_effort|approval_policy|sandbox_mode)\\s*=' .codex/config.toml"
 check "downstream-census --json" bash -c 'bash scripts/downstream-census.sh --no-sync --json "$PWD" 2>/dev/null | node -e "const text=require(\"fs\").readFileSync(0,\"utf8\").trim(); JSON.parse(text || \"[]\")"'
@@ -306,11 +311,11 @@ if is_template_source_repo; then
     local hash
 
     mkdir -p "$project"
-    printf '%s\n' '# Local Claude' '<!-- Template Version: 4.1.0 -->' > "$project/CLAUDE.md"
+    printf '%s\n' '# Local Claude' '<!-- Template Version: 4.1.1 -->' > "$project/CLAUDE.md"
     hash="$(_get_hash "$project/CLAUDE.md")"
     printf '%s\n' \
       '{' \
-      '  "template_version": "4.1.0",' \
+      '  "template_version": "4.1.1",' \
       '  "created": "2000-01-01",' \
       '  "updated": "2000-01-01",' \
       '  "template_remote": "",' \
