@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.0.3 -->
+<!-- Template Version: 4.1.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -18,6 +18,8 @@ Speed OK: XS+LOW, covered by tests, following approved plan.
 
 Real product work is never treated as MVP/prototype work unless the user explicitly asks for a disposable experiment. Bounded implementation steps are fine; lowering the final product quality bar is not.
 
+Plans and improvements prioritize the real product user's experience and app-specific business outcomes first: revenue, monetization, conversion, activation, retention, loyalty, support load, or the KPI that matters for that application. Technical perfection, refactors, tooling, and architecture cleanup come second unless they directly unlock, protect, or measurably improve those outcomes.
+
 Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
 1. `.claude/library/product/production-product-standard.md`
@@ -26,6 +28,7 @@ Before product, design, auth, data, game, docs, deployment, template, or M+ work
 Maintain a goal-like contract:
 
 - Final outcome: what the finished product lets the end user do.
+- Product/business priority: which user experience and app-specific KPI this step improves or protects.
 - Quality bar: UX, safety, privacy, reliability, performance, accessibility, design-system, data, docs, and domain tone.
 - Current step: the smallest valuable reversible move toward that final outcome.
 - Dependencies and risks: what could block or lower the final product.
@@ -163,7 +166,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.0.3 — Run `bash scripts/check-drift.sh` to verify health.
+4.1.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

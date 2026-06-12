@@ -1,6 +1,6 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v4.0.3-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.1.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v3.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v3.8.0
+bash scripts/sync-template.sh --from-git --ref v4.1.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.1.0
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.1.0** | Minor release: product-user experience and app-specific business outcomes now outrank technical perfection in plans, improvements, routing, skills, and validators |
 | **4.0.3** | Patch release: fail-hard text/platform policy, no-mojibake gate, Windows-safe shell helpers, generalized UI Subtraction Gate, and faster sync regression smoke |
 | **4.0.2** | Patch release: keeps source-only starter/bootstrap files out of generated-project sync and adds regression coverage for that boundary |
 | **4.0.1** | Patch release: keeps the template release workflow source-only, ships validation workflow to downstream projects, and validates downstream-safe bootstrap/sync behavior |

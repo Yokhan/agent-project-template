@@ -20,6 +20,7 @@ description: "Review any plan, decision, or task against strategic thinking prin
 
 ### Phase 2: Orient
 - **Commander's Intent**: What is the user's ultimate objective? Not the task — the PURPOSE.
+- **Product/Business Priority**: Which real product user, user experience outcome, and app-specific revenue, loyalty, retention, conversion, activation, or KPI does this improve?
 - **Center of Gravity**: What is the ONE thing that, if addressed, makes everything else easier?
 - **Bottleneck**: What is currently limiting throughput? (Theory of Constraints)
 - **Phase Detection**: Is this genesis (explore), improvement (optimize), stabilization (harden), or retirement (remove)?
@@ -27,6 +28,7 @@ description: "Review any plan, decision, or task against strategic thinking prin
 
 ### Phase 3: Decide
 - **Highest Leverage**: Which intervention produces most result for least effort?
+- **Outcome Before Technical Neatness**: Is technical work directly unlocking, protecting, or measurably improving the user/business outcome?
 - **Reversibility**: Can this be undone? Prefer reversible actions.
 - **Positive-Sum**: Does this create value without destroying value elsewhere?
 - **Victory Conditions**: What does success look like? How will we measure it?
@@ -122,6 +124,7 @@ Before completing any significant task, verify NONE of these apply:
 
 - [ ] **Tunnel Vision** — Am I completing the literal task while ignoring the obvious larger problem?
 - [ ] **Local Optimization** — Am I making one thing better while making the whole worse?
+- [ ] **Technical Perfection Drift** — Am I improving code/tooling/architecture without a clear user or business outcome?
 - [ ] **Wrong Problem** — Am I solving what was asked or what actually needs solving?
 - [ ] **Ignoring the Constraint** — Am I improving non-bottlenecks?
 - [ ] **Rigid Plan Execution** — Am I following a plan that reality has invalidated?

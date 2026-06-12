@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.0.3 -->
+<!-- Template Version: 4.1.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -18,6 +18,8 @@ Speed OK: XS+LOW, covered by tests, following approved plan.
 
 Real product work is never treated as MVP/prototype work unless the user explicitly asks for a disposable experiment. Bounded implementation steps are fine; lowering the final product quality bar is not.
 
+Plans and improvements prioritize the real product user's experience and app-specific business outcomes first: revenue, monetization, conversion, activation, retention, loyalty, support load, or the KPI that matters for that application. Technical perfection, refactors, tooling, and architecture cleanup come second unless they directly unlock, protect, or measurably improve those outcomes.
+
 Before state-changing product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
 1. `.claude/library/product/production-product-standard.md`
@@ -26,6 +28,7 @@ Before state-changing product, design, auth, data, game, docs, deployment, templ
 Maintain a goal-like contract:
 
 - Final outcome: what the finished product lets the end user do.
+- Product/business priority: which user experience and app-specific KPI this step improves or protects.
 - Quality bar: UX, safety, privacy, reliability, performance, accessibility, design-system, data, docs, and domain tone.
 - Current step: the smallest valuable reversible move toward that final outcome.
 - Dependencies and risks: what could block or lower the final product.
@@ -87,7 +90,7 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Security: HIGH risk by default; map actors/data/trust boundaries; patch narrowly; prove exploit path is closed.
 - Design/UI: system -> tokens -> components -> screens; no hardcoded visual values; cover default/hover/active/focus/disabled/loading/error/empty; screenshot or viewport-check before closeout.
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
-- Strategy/ambiguous: use `$codex-strategic-review`; optimize for user victory over local task completion; compare at least one alternative; choose the next smallest reversible move.
+- Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
@@ -263,4 +266,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.0.3
+4.1.0

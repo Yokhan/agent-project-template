@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.0.3
-git push origin v4.0.3
+git tag v4.1.0
+git push origin v4.1.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -50,7 +50,9 @@ Version `4.0.2` is a compatible patch release that keeps source-only starter and
 
 Version `4.0.3` is a compatible patch release that adds fail-hard text/platform policy enforcement, blocks mojibake and unsafe shell OS assumptions, generalizes the UI Subtraction Gate for all UI work, and optimizes sync regression smoke coverage.
 
-Downstream projects should sync `v4.0.3` with a dry run first and review local `project-*` skills, auth flows, design systems, and task files before applying.
+Version `4.1.0` is a compatible minor release that makes product-user experience and app-specific business outcomes the first priority for plans and improvements. Agents must name the user/business outcome before technical work and treat refactors, tooling, and architecture cleanup as second-order unless they directly unlock or protect revenue, loyalty, retention, conversion, activation, support load, or another application KPI.
+
+Downstream projects should sync `v4.1.0` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -84,8 +86,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.0.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.0.3
+bash scripts/sync-template.sh --from-git --ref v4.1.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.1.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

@@ -122,6 +122,13 @@ function main() {
     planRequired: true,
   });
 
+  testRoute("optimize roadmap for revenue, loyalty, retention, conversion, and app KPI", {
+    modes: ["product-goal"],
+    skills: ["codex-product-goal", "codex-strategic-review"],
+    qualityGates: ["user-business-outcome-link", "quality-bar"],
+    planRequired: true,
+  });
+
   testRoute("изучи косяки последней недели и преврати уроки в правила шаблона", {
     modes: ["lessons", "template"],
     skills: ["codex-cross-project-lessons", "codex-template-sync"],

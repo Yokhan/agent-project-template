@@ -22,6 +22,13 @@ const REQUIRED_TEXT = [
   { file: "AGENTS.md", text: "language of the user's request" },
   { file: "CLAUDE.md", text: "Production Product Standard" },
   { file: "CLAUDE.md", text: "language of the user's request" },
+  { file: "AGENTS.md", text: "app-specific business outcomes first" },
+  { file: "CLAUDE.md", text: "app-specific business outcomes first" },
+  { file: ".claude/library/product/production-product-standard.md", text: "Product Outcome Priority" },
+  { file: ".claude/library/process/product-goal-loop.md", text: "Product/Business Priority" },
+  { file: ".agents/skills/codex-product-goal/SKILL.md", text: "app-specific KPI" },
+  { file: ".agents/skills/codex-strategic-review/SKILL.md", text: "product user" },
+  { file: "scripts/codex-route-task.js", text: "user-business-outcome-link" },
   { file: ".claude/library/product/production-product-standard.md", text: "MVP/prototype" },
   { file: ".claude/library/process/product-goal-loop.md", text: "This is not a \"final slice\" model" },
   { file: ".claude/library/domain/domain-design-system.md", text: "Rendered Geometry Gate" },
@@ -30,6 +37,11 @@ const REQUIRED_TEXT = [
 ];
 
 const ROUTE_CASES = [
+  {
+    task: "optimize plan for revenue, retention, loyalty, and business KPI",
+    skills: ["codex-product-goal", "codex-strategic-review"],
+    gates: ["product-goal-artifact", "user-business-outcome-link"],
+  },
   {
     task: "запрети MVP мышление и веди как goal",
     skills: ["codex-product-goal"],
@@ -98,6 +110,12 @@ function assertRoute(routeCase) {
   }
   if (!route.productionBar?.noMvpByDefault) {
     addError(`${routeCase.task}: productionBar.noMvpByDefault must be true`);
+  }
+  if (route.productionBar?.outcomePriority !== "product-user-and-app-specific-business-kpis-first") {
+    addError(`${routeCase.task}: productionBar.outcomePriority must prioritize product user and business KPIs`);
+  }
+  if (!route.qualityGates?.includes("user-business-outcome-link")) {
+    addError(`${routeCase.task}: qualityGates must include user-business-outcome-link`);
   }
   for (const skill of routeCase.skills) {
     assertIncludes(route.skills, skill, `${routeCase.task} skills`);

@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-06-11 for template `4.0.3` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-06-12 for template `4.1.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -47,6 +47,7 @@ Last reviewed: 2026-06-11 for template `4.0.3` local validation. Remote GitHub A
 - [ ] `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md` match the shipped contract
 - [ ] `_reference/spec-kit/manifest.json` matches the intended stable Spec Kit ref; run `bash scripts/sync-spec-kit.sh --check` before cutting the release
 - [ ] `tasks/goal.md` and `templates/project-starter/tasks/goal.md` carry the v4 goal-loop contract
+- [ ] Product/business outcome priority is present in shared rules, agent entrypoints, skills, routing, and validators
 - [ ] Router output includes `planContract`, `productionBar`, `languagePolicy`, and `qualityGates`
 - [ ] Design-system work has token, composition trace, Storybook/equivalent, and rendered-geometry gates
 

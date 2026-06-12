@@ -3,6 +3,9 @@
 ## Final Outcome
 Describe what the finished product lets the end user do.
 
+## Product/Business Priority
+Name the primary product user, the user experience outcome, and the app-specific revenue, loyalty, retention, conversion, activation, support-load, or KPI impact when relevant. Technical improvements must directly support this priority.
+
 ## Quality Bar
 - UX:
 - Safety:

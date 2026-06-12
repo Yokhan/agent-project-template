@@ -15,16 +15,18 @@ Read:
 ## Process
 
 1. State the user's real outcome in the user's language.
-2. Preserve the final product goal and quality bar.
-3. Define the current bounded step without pretending it completes the whole product.
-4. List dependencies, risks, and honest out-of-scope items.
-5. Update `tasks/current.md` before edits for M+ work.
-6. Update `tasks/goal.md` only when the final outcome or quality bar changes.
-7. Verify the user outcome, not just file changes.
+2. Name the product user and product/business outcome before the technical approach.
+3. Preserve the final product goal and quality bar.
+4. Define the current bounded step without pretending it completes the whole product.
+5. List dependencies, risks, and honest out-of-scope items.
+6. Update `tasks/current.md` before edits for M+ work.
+7. Update `tasks/goal.md` only when the final outcome, product/business priority, or quality bar changes.
+8. Verify the user outcome, not just file changes.
 
 ## Gates
 
 - Do not use MVP/prototype reasoning unless explicitly requested.
+- Technical improvements must directly unlock, protect, or measurably improve user experience, revenue, loyalty, retention, conversion, activation, support load, or another app-specific KPI.
 - Do not lower UX, security, privacy, data, or architecture quality to make the step easier.
 - Plans, audits, and final reports use the language of the user's request.
 - Partial work must be reported as partial with the next dependency.

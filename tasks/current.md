@@ -3,7 +3,7 @@
 Last updated: 2026-06-11
 
 ## Goal
-Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, and verification contract.
+Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 
 ## User Wants
 - No MVP/prototype mindset unless the user explicitly asks for a throwaway experiment.
@@ -11,6 +11,7 @@ Prepare `agent-project-template` v4 so agents stop treating real product work as
 - Do not invent "final product slices" as a rigid concept. Slices already happen because agent turns and context are limited; the important contract is that every slice preserves the final product goal and does not lower the intended quality.
 - Plans, audits, and reports must use the language of the user's request.
 - Lessons from the last week across BUFF IT, design system, auth, CallService, SmartCart, docs, and GATES must become reusable template behavior.
+- Any plan or improvement must prioritize the real product user's experience and app-specific business outcomes: revenue instruments, loyalty, retention, conversion, activation, and business KPIs. Technical perfection is second-order unless it directly protects or unlocks those outcomes.
 
 ## Route
 - Route: `design+template+feature+strategy`
@@ -83,10 +84,44 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 
 ## Current Status
 - Working branch: `feature/template-v4-production-product-standard`
-- v4 production standard, product goal loop, design-system workflow, product UX audit, and cross-project lesson promotion are implemented in shared rules, Codex skills, router, starter files, and validators.
-- v4.0.2 has been published as the sync-boundary hotfix.
-- v4.0.3 is in progress as a patch release for fail-hard text/platform policy, no-mojibake gates, Windows-safe shell helpers, generalized UI Subtraction Gate, and faster sync regression smoke.
-- Verified green so far: `node scripts/validate-text-policy.js`, `node scripts/validate-codex-skills.js`, `node scripts/test-codex-routing.js`, `bash scripts/validate-template.sh`, `bash scripts/test-template.sh`.
+- v4 production standard, product goal loop, design-system workflow, product UX audit, cross-project lesson promotion, text/platform policy, and UI Subtraction Gate are implemented in shared rules, Codex skills, router, starter files, and validators.
+- v4.0.3 has been published as the text/platform policy and UI Subtraction Gate patch release.
+- v4.1.0 is in progress as a minor release for product-user and app-specific business KPI priority across plans, improvements, routing, and validation.
 
 ## Immediate Next Step
-- Finish the v4.0.3 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Finish the v4.1.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+
+## Plan - v4.1.0 Product/Business Outcome Priority
+
+### Goal
+Make every plan and improvement start from product-user value and app-specific business outcomes before technical optimization.
+
+### Product Goal Link
+- Final outcome: template-derived projects get agents that improve real product outcomes, not just code shape or internal tooling.
+- Current step: add shared rules, entrypoint summaries, skills, router metadata, validator checks, and release docs for the priority contract.
+- Quality bar preserved: concise hot memory, shared SOT, downstream sync compatibility, text/platform policy, and release verification.
+- Out of scope for this step: applying the released template to downstream projects.
+
+### Complexity Estimate
+- Size: M
+- Files to modify: about 15
+- Risk: HIGH because this changes agent operating behavior and release metadata.
+
+### File Architecture
+- `.claude/library/product/production-product-standard.md` - canonical rule for product/business outcome priority.
+- `.claude/library/process/product-goal-loop.md` - plan/goal artifact contract.
+- `AGENTS.md`, `CLAUDE.md` - concise hot-memory pointers.
+- `.agents/skills/codex-product-goal/SKILL.md`, `.agents/skills/codex-strategic-review/SKILL.md` - Codex skill gates.
+- `scripts/codex-route-task.js`, `scripts/validate-production-standard.js`, `scripts/test-codex-routing.js` - enforcement and smoke coverage.
+- `tasks/goal.md`, `templates/project-starter/tasks/goal.md` - durable goal template fields.
+- README/release/checklist/version files - `4.1.0` release alignment.
+
+### Implementation Order
+1. Update shared product/goal rules.
+2. Update agent entrypoints and Codex skills.
+3. Add router/validator smoke coverage.
+4. Update version/release docs.
+5. Run release gate and publish `v4.1.0`.
+
+### Plan B
+If router changes create broad regressions, keep route output backwards-compatible and enforce the rule through `validate-production-standard.js` plus shared rules, then defer deeper routing changes to a later patch.

@@ -306,11 +306,11 @@ if is_template_source_repo; then
     local hash
 
     mkdir -p "$project"
-    printf '%s\n' '# Local Claude' '<!-- Template Version: 4.0.3 -->' > "$project/CLAUDE.md"
+    printf '%s\n' '# Local Claude' '<!-- Template Version: 4.1.0 -->' > "$project/CLAUDE.md"
     hash="$(_get_hash "$project/CLAUDE.md")"
     printf '%s\n' \
       '{' \
-      '  "template_version": "4.0.3",' \
+      '  "template_version": "4.1.0",' \
       '  "created": "2000-01-01",' \
       '  "updated": "2000-01-01",' \
       '  "template_remote": "",' \

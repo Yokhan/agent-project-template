@@ -3,6 +3,9 @@
 ## Final Outcome
 `agent-project-template` generates and maintains production-grade agent-ready projects where Codex and Claude preserve final product intent, route work consistently, plan risky work, and verify user-facing outcomes instead of shipping prototype-quality drift.
 
+## Product/Business Priority
+The primary user is the downstream product team or operator using a generated project. Every plan or improvement should first improve that team's product-user experience or app-specific business outcomes: safer delivery, faster path to value, adoption, retention, lower support load, revenue instruments, loyalty, conversion, activation, or the KPI the application actually uses. Technical cleanup is justified only when it directly protects or unlocks those outcomes.
+
 ## Quality Bar
 - UX: agents verify full user journeys, dead ends, states, and return paths for product surfaces.
 - Safety: high-risk work uses explicit route, risk, rollback, and verification gates.

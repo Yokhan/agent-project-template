@@ -7,11 +7,22 @@ MVP/prototype thinking is banned by default for real product work.
 
 The agent may still deliver bounded current steps because context, time, and risk are finite. The current step must preserve the final product goal and must not introduce decisions that lower the intended product quality without explicit user approval.
 
+## Product Outcome Priority
+
+For any plan, roadmap, refactor, optimization, or improvement, prioritize the product's real users and the app-specific business outcomes before technical perfection.
+
+- First name the user experience improvement and, when relevant, the revenue, monetization, conversion, activation, retention, loyalty, support-load, sales, or other KPI the application actually uses.
+- Treat technical elegance, architecture neatness, tooling upgrades, framework changes, and cleanup as second-order work unless they directly unlock, protect, or measurably improve those product/business outcomes.
+- Prefer the smallest reversible technical step that improves or protects the outcome.
+- Defer, shrink, or reframe technical work that cannot explain its user/business impact.
+- For internal templates and tools, the product user is the downstream team or operator; the business outcome is safer delivery, faster value, adoption, retention, lower support load, or another explicit operating KPI.
+
 ## Required Product Bar
 
 Before changing state for product work, state or infer:
 
 - Final user outcome: what the end user should be able to do when the product is complete.
+- Product/business priority: which user experience and app-specific business KPI this step improves or protects.
 - Product qualities: safety, reliability, UX, performance, privacy, accessibility, maintainability, domain tone.
 - Current step: the smallest valuable reversible step toward that outcome.
 - Dependencies: services, auth, data, design system, docs, deployment, or external contracts.
@@ -28,6 +39,7 @@ Do not use these as internal justification:
 - "HTTP 200 means it works."
 - "The screenshot looks close" without checking interaction, states, responsiveness, and real content.
 - "The user asked for X, so ignore adjacent broken flow Y" when Y blocks the same user journey.
+- "This is technically cleaner" without a clear link to user experience, revenue, loyalty, retention, or an app-specific KPI.
 
 Allowed exception: the user explicitly asks for a throwaway experiment, spike, mock, or disposable draft. Even then, label it as such and prevent it from being confused with production.
 
@@ -36,6 +48,7 @@ Allowed exception: the user explicitly asks for a throwaway experiment, spike, m
 A bounded step is acceptable when it is honest:
 
 - It moves one real product capability forward.
+- It can explain the user/business outcome before the technical mechanism.
 - It does not create fake dead-end UX.
 - It keeps future production constraints visible.
 - It has a rollback or follow-up path.

@@ -29,6 +29,9 @@ The artifact must stay concise and include:
 ## Final Outcome
 [What the finished product lets the end user do.]
 
+## Product/Business Priority
+[Primary product user, user experience outcome, and app-specific revenue, loyalty, retention, conversion, activation, or KPI impact when relevant.]
+
 ## Quality Bar
 [UX, security, privacy, performance, design-system, data, docs, domain constraints.]
 
@@ -50,10 +53,12 @@ The artifact must stay concise and include:
 1. Restore: read `tasks/goal.md` and `tasks/current.md`.
 2. State intent: "User wants", "Success means", "I will verify by".
 3. Route: run the project router and load only route-selected skills/rules.
-4. Plan: write the current step, dependencies, tests, and rollback into `tasks/current.md`.
+4. Plan: write the current step, product/business outcome link, dependencies, tests, and rollback into `tasks/current.md`.
 5. Execute: implement the step without lowering the final quality bar.
 6. Verify: prove behavior through tests, browser/screenshot checks, contract checks, or deployment smoke, depending on domain.
 7. Update: mark completed steps, log durable lessons, and update `tasks/goal.md` only when the product goal or quality bar actually changed.
+
+Before choosing a technical improvement, name the product user and the business outcome it improves or protects. Technical perfection, refactoring, tooling, and architecture cleanup are valid only when they directly support user experience, revenue, loyalty, retention, activation, risk reduction, or another app-specific KPI.
 
 ## Product Slice Discipline
 

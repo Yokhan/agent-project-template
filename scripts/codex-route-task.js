@@ -92,6 +92,17 @@ const ROUTES = [
   {
     mode: "product-goal",
     pattern:
+      /business|kpi|revenue|monetization|money|conversion|activation|retention|loyalty|sales|pricing|support load/i,
+    skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
+    pipeline: "product planning",
+    subagents: ["pr_explorer", "reviewer"],
+    rules: ["product", "review"],
+    gates: ["product-goal-artifact", "quality-bar", "current-step", "language-match"],
+    risk: "MEDIUM",
+  },
+  {
+    mode: "product-goal",
+    pattern:
       /product goal|final outcome|quality bar|production|prod|finish|continue|done right|mvp|prototype|goal|roadmap|продакшн|прод|продукт|цель|финал|качеств|доделай|продолжай|мвп|прототип|роадмап/i,
     skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
     pipeline: "product planning",
@@ -322,6 +333,8 @@ function getPlanContract(selected, risk) {
       ? "read-or-create tasks/goal.md for M+ product work"
       : "read tasks/goal.md when present",
     approval: risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
+    outcomePriority:
+      "name product-user experience and app-specific business KPI before technical work",
   };
 }
 function getProductionBar(selected) {
@@ -331,11 +344,23 @@ function getProductionBar(selected) {
     noMvpByDefault: true,
     currentStepAllowed: true,
     preserveFinalOutcome: true,
+    outcomePriority: "product-user-and-app-specific-business-kpis-first",
+    technicalWorkCondition:
+      "must-unblock-protect-or-measurably-improve-user-business-outcome",
+    businessOutcomes: [
+      "revenue",
+      "loyalty",
+      "retention",
+      "conversion",
+      "activation",
+      "support-load",
+      "app-specific-kpi",
+    ],
     appliesToModes: modes,
   };
 }
 function getQualityGates(selected, risk, shouldUseProductGoal = false) {
-  const base = ["success-criteria", "verification-evidence", "confidence-and-doubt"];
+  const base = ["success-criteria", "user-business-outcome-link", "verification-evidence", "confidence-and-doubt"];
   const riskGates = risk === "HIGH" || risk === "CRITICAL"
     ? ["rollback-or-plan-b", "route-state-written"]
     : [];
@@ -404,7 +429,7 @@ function formatSummary(route) {
     `SUBAGENTS: ${route.subagents.join(", ") || "none"}`,
     `ORCHESTRATOR: ${route.orchestrator.owner} (${route.orchestrator.codexRole})`,
     `PLAN: ${route.planContract.required ? "required" : "optional"} | ${route.planContract.language}`,
-    `PRODUCT_BAR: ${route.productionBar.default} | no_mvp=${route.productionBar.noMvpByDefault}`,
+    `PRODUCT_BAR: ${route.productionBar.default} | outcome=${route.productionBar.outcomePriority} | no_mvp=${route.productionBar.noMvpByDefault}`,
     `GATES: ${route.qualityGates.join(", ")}`,
     `RULES: ${route.sharedRules.join(", ")}`,
     route.needsFreshDocs

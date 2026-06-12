@@ -43,6 +43,16 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-06-12 - Product outcomes outrank technical perfection
+**Track**: PROCESS
+**Severity**: P1
+**Error**: Plans and improvements could optimize technical cleanliness, architecture, tooling, or process without first proving a better experience for the product user or a stronger app-specific business outcome.
+**Root cause**: The production-product standard named quality broadly, but did not explicitly rank user experience, revenue instruments, loyalty, retention, conversion, activation, and application KPIs above technical perfection.
+**Rule**: Every plan or improvement must name the product user and user/business outcome before the technical mechanism. Refactors, tooling, architecture cleanup, and optimization are valid when they directly unlock, protect, or measurably improve that outcome.
+**Applies to**: product-goal loop, strategic review, template planning, technical improvements, design work
+**Category**: workflow
+**Status**: ACTIVE
+
 ### 2026-06-11 - Mojibake and Linux assumptions need hard gates
 **Track**: PROCESS
 **Severity**: P1
