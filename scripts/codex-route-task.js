@@ -125,7 +125,7 @@ const ROUTES = [
   {
     mode: "release",
     pattern:
-      /release|tag|version|changelog|publish|github release|deploy|релиз|верси|тег|опубликуй|выкат/i,
+      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|верси|тег|опубликуй|выкат/i,
     skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
     pipeline: "release",
     subagents: ["tester", "reviewer", "security_reviewer"],

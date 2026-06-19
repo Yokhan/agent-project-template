@@ -7,6 +7,8 @@ A usable system must let agents and humans compose product UI without guessing s
 
 Root `DESIGN.md`, when present, is the project-owned visual contract that agents read before making design decisions. It summarizes the active token/component language without replacing implementation tokens, Storybook, or Figma libraries.
 
+The design system must declare whether each surface is operating in product register, brand register, or mixed register. Product register prioritizes task clarity, state coverage, density, and user/business outcomes. Brand register can carry stronger art direction, but still needs proof, offer clarity, conversion, and loyalty impact.
+
 ## Required Layers
 
 1. Foundations: color, typography, spacing, radius, shadow, motion, grid, breakpoints, z-index.
@@ -68,6 +70,7 @@ Landing style is not enough for product UI. A production-ready system also needs
 ## Review Questions
 
 - Can a new product page be assembled without inventing styles?
+- Is the surface being reviewed in the correct product or brand register?
 - Does every non-atomic component depend on lower layers?
 - Are all numbers named tokens?
 - Does mobile use less chrome and still preserve tap targets?

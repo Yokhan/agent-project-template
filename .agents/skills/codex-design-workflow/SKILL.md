@@ -9,6 +9,8 @@ Read:
 
 - `.claude/library/domain/domain-design-pipeline.md`
 - `.claude/library/domain/domain-design-system.md` for design-system, Storybook, component-library, or token work.
+- `references/design-command-modes.md` for M+ design work, command-mode requests, register selection, critique, hardening, or polish.
+- `references/design-checks.md` for compact browser, accessibility, overflow, and motion checks.
 
 ## Required Phases
 
@@ -37,18 +39,12 @@ Read:
 
 ## Command Modes
 
-- `shape`: clarify product job, surface, constraints, and visual lane before edits.
-- `craft`: implement a confirmed UI change end to end.
-- `audit`: technical quality scan for accessibility, responsiveness, token drift, and anti-patterns.
-- `critique`: UX/design review with severity, user impact, and next action.
-- `distill`: remove, collapse, or move UI before adding anything.
-- `harden`: edge cases, i18n, overflow, loading/error/empty, long data, slow/offline states.
-- `polish`: final alignment, spacing, density, hierarchy, and visual consistency pass.
-- `adapt`: mobile/desktop viewport and touch-target adaptation.
-- `clarify`: labels, error copy, instructions, and support/empty state text.
-- `typeset/layout`: typography and spatial rhythm fixes.
+Use the smallest mode that matches the request:
 
-Use the smallest mode that matches the request. Modes select workflow depth; they do not lower the production bar.
+- `shape`, `craft`, `audit`, `critique`, `distill`
+- `harden`, `polish`, `adapt`, `clarify`, `typeset/layout`
+
+Read `references/design-command-modes.md` before using a mode for M+ work or when the task needs register-aware judgment. Modes select workflow depth; they do not lower the production bar.
 
 ## Hardening Evidence
 

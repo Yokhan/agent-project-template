@@ -56,6 +56,26 @@ Before design/UI work, check root `DESIGN.md` when present.
 - If `DESIGN.md` is missing in a product with UI work, create or request a starter design context before broad visual changes.
 - Never overwrite a project `DESIGN.md` during template sync or design refresh without explicit product-owner approval.
 
+### Register Gate
+
+Choose the design register before judging or changing UI:
+
+- Product register: apps, dashboards, admin tools, settings, forms, workflow surfaces, commerce systems, and game systems. Design serves the user's current job, scan speed, error reduction, retention, activation, conversion, loyalty, support load, or another app-specific KPI.
+- Brand register: landing pages, campaigns, portfolios, venues, launches, editorial pages, and public marketing. Design carries recognition, memorability, trust, proof, offer clarity, conversion, and loyalty.
+- Mixed register: product surfaces with public brand pressure. The product user's next action and app-specific KPI still outrank visual novelty.
+
+Do not review product UI as if it were a campaign page. Do not review a brand surface as if memorability and proof were optional.
+
+### Critique Ordering
+
+For critique and audit, inspect the actual UI, screenshot, or flow before reading deterministic validator output when possible.
+
+Human judgment before deterministic findings:
+
+- First decide whether the surface serves the current user job and business outcome.
+- Then run the subtraction gate and register-aware review.
+- Then use validator output as evidence for concrete fixes.
+
 ### Token-First
 NEVER hardcode visual values. Always bind to tokens/variables:
 - Colors → design token or CSS variable (never raw hex in code or Figma)
@@ -159,7 +179,9 @@ Use the smallest mode that matches the request instead of running the whole pipe
 - `clarify`: labels, error copy, instructions, and support/empty state text.
 - `typeset/layout`: typography and spatial rhythm fixes.
 
-Modes do not weaken the production bar. They only pick the most direct path to the same token, component, subtraction, hardening, and rendered-evidence gates.
+Modes do not weaken the production bar. They only pick the most direct path to the same register, token, component, subtraction, hardening, and rendered-evidence gates.
+
+Mode output must name the chosen register, product user, user/business outcome, rendered evidence or residual risk, confidence, and the main doubt for M+ work.
 
 ## State Coverage (mandatory)
 

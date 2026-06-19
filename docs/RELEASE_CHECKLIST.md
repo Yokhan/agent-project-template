@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-06-19 for template `4.2.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-06-19 for template `4.3.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -55,6 +55,7 @@ Last reviewed: 2026-06-19 for template `4.2.0` local validation. Remote GitHub A
 - [ ] Router output includes `planContract`, `productionBar`, `languagePolicy`, and `qualityGates`
 - [ ] Design-system work has token, composition trace, Storybook/equivalent, and rendered-geometry gates
 - [ ] Design work has durable design context, command modes, hardening evidence, and deterministic design-policy checks
+- [ ] Design work has product/brand register gates, command-mode reference coverage, critique ordering, and KPI-aware routing smoke
 
 ## Release Decision
 

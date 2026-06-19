@@ -88,10 +88,55 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.0.3 has been published as the text/platform policy and UI Subtraction Gate patch release.
 - v4.1.0 has been published as the product-user and app-specific business KPI priority minor release.
 - v4.1.1 has been published as the GitHub Actions Node 24-compatible workflow patch release.
-- v4.2.0 design production upgrade is implemented locally and is in release-gate validation.
+- v4.2.0 has been published as the production design QA minor release.
+- v4.3.0 design pipeline and skill upgrade is in progress.
 
 ## Immediate Next Step
-- Finish the v4.2.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Finish the v4.3.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+
+## Plan - v4.3.0 Design Pipeline And Skill Upgrade
+
+### User Request
+Сделать следующую версию шаблона с обновлениями дизайн-пайплайна и design skills поверх уже выпущенного `v4.2.0`, не потеряв существующие проверки.
+
+### Goal
+Выпустить `v4.3.0`, где AI agents быстрее приходят к production design за счет register-aware решения, подробных design command modes, правильного порядка critique и regression coverage для KPI/conversion задач.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that can choose the right design operation, improve product UI faster, and keep visual decisions tied to user experience and app-specific business KPIs.
+- Product/business priority: reduce design correction loops, protect conversion/activation/retention/loyalty-sensitive UI, and prevent support-load regressions from unclear product surfaces.
+- Current step: add workflow/skill/reference improvements and release them as a minor template version.
+- Quality bar preserved: `v4.2.0` hard design-policy validator, hook notifications, root `DESIGN.md`, text/mojibake policy, Windows-safe platform policy, and template sync ownership all remain active.
+- Out of scope: adding subjective taste rules to the hard validator, adopting Impeccable as a mandatory dependency, or overwriting downstream `DESIGN.md` files.
+
+### Architecture
+- `.agents/skills/codex-design-workflow/references/design-command-modes.md` - detailed progressive-disclosure design mode and register reference.
+- `.agents/skills/codex-design-workflow/SKILL.md` - short hot skill that routes M+ mode work to the reference.
+- `.agents/skills/codex-domain-design-review/SKILL.md` - critique ordering and product/brand register review.
+- `.agents/skills/codex-design-system-workflow/SKILL.md` - design-system register awareness.
+- `.claude/library/domain/domain-design-pipeline.md` - shared register gate and critique ordering.
+- `.claude/library/domain/domain-design-system.md` - register-aware design-system contract.
+- `scripts/codex-route-task.js`, `scripts/test-codex-routing.js` - regression fix so `conversion KPI` does not match `version` release routing.
+- `scripts/validate-production-standard.js`, `scripts/test-template.sh` - v4.3 contract enforcement.
+
+### Verification
+- `node scripts/validate-production-standard.js`
+- `node scripts/validate-codex-skills.js`
+- `node scripts/validate-codex-agents.js`
+- `node scripts/test-codex-routing.js`
+- `node scripts/validate-design-policy.js`
+- `node scripts/test-design-policy.js`
+- `node scripts/validate-agent-sot.js`
+- `node scripts/validate-spec-kit.js`
+- `node scripts/validate-text-policy.js`
+- Git Bash `scripts/validate-template.sh`
+- Git Bash `scripts/test-template.sh`
+- Git Bash `scripts/check-drift.sh`
+- Git Bash `scripts/test-hooks.sh`
+- Git Bash `scripts/sync-agents.sh`
+
+### Plan B
+If the new design reference causes skill validation or sync payload regressions, keep the register gate in shared rules and defer the reference to a patch after reducing its surface. Do not weaken the existing `v4.2.0` validator/hook layer.
 
 ## Plan - v4.1.0 Product/Business Outcome Priority
 

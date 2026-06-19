@@ -1,6 +1,6 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v4.2.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.3.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.2.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.2.0
+bash scripts/sync-template.sh --from-git --ref v4.3.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.3.0
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.3.0** | Minor release: design pipeline and skill upgrade with register-aware product/brand decision gates, detailed design command-mode reference, critique ordering that treats validators as evidence, and router regression coverage for conversion/KPI tasks |
 | **4.2.0** | Minor release: production design QA upgrade with root `DESIGN.md` starter context, project-owned `design-policy.ignore`, design workflow command modes, hard design-policy validator, default Codex design-policy hook notifications, and browser/visual hardening gates |
 | **4.1.1** | Patch release: GitHub workflows and CI templates now use Node 24-compatible actions and disable unnecessary setup-node package-manager cache in template validation/release jobs |
 | **4.1.0** | Minor release: product-user experience and app-specific business outcomes now outrank technical perfection in plans, improvements, routing, skills, and validators |

@@ -85,6 +85,24 @@ function main() {
     risk: "MEDIUM",
   });
 
+  testRoute("critique distill harden brand/product register UI pipeline for conversion KPI", {
+    modes: ["design", "product-goal"],
+    skills: [
+      "codex-design-workflow",
+      "codex-domain-design-review",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: [
+      "token-contract",
+      "state-coverage",
+      "responsive-check",
+      "user-business-outcome-link",
+    ],
+    planRequired: true,
+    risk: "MEDIUM",
+  });
+
   testRoute("доработай дизайн-систему: токены, Storybook, атомы, молекулы и формы", {
     modes: ["design-system"],
     skills: ["codex-design-system-workflow", "codex-design-workflow"],

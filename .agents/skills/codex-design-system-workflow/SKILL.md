@@ -9,11 +9,12 @@ Read:
 
 - `.claude/library/domain/domain-design-system.md`
 - `.claude/library/domain/domain-design-pipeline.md`
+- `.agents/skills/codex-design-workflow/references/design-command-modes.md` when the system change affects register, mode selection, hardening, polish, or critique.
 - `_reference/tool-registry.md`
 
 ## Required Flow
 
-1. Foundations: confirm root `DESIGN.md` when present, then tokens for color, typography, spacing, radius, motion, layout, and control sizes.
+1. Foundations: confirm root `DESIGN.md` when present, choose product or brand register, then tokens for color, typography, spacing, radius, motion, layout, and control sizes.
 2. Atoms: confirm primitive controls and states.
 3. Molecules: compose from atoms and tokens only.
 4. Organisms: compose from lower layers and expose a dependency trace.
