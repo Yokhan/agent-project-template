@@ -52,6 +52,67 @@ github_workflows_use_node24_actions() {
   ! grep -R -E 'actions/(checkout|setup-node)@v4' .github &&
     ! grep -R -E "node-version:[[:space:]]*['\"]?20" .github
 }
+validate_release_facing_doc_counts() {
+  node <<'NODE'
+const fs = require("fs");
+
+const countDirs = (directory) =>
+  fs.readdirSync(directory, { withFileTypes: true }).filter((entry) => entry.isDirectory()).length;
+const countFiles = (directory, extension) =>
+  fs.readdirSync(directory).filter((entry) => entry.endsWith(extension)).length;
+const countFilesRecursive = (directory, extension) =>
+  fs.readdirSync(directory, { withFileTypes: true }).reduce((total, entry) => {
+    const fullPath = `${directory}/${entry.name}`;
+    if (entry.isDirectory()) return total + countFilesRecursive(fullPath, extension);
+    return total + (entry.name.endsWith(extension) ? 1 : 0);
+  }, 0);
+
+const readme = fs.readFileSync("README.md", "utf8");
+const claude = fs.readFileSync("CLAUDE.md", "utf8");
+const counts = new Map([
+  ["Rules", countFiles(".claude/rules", ".md") + countFilesRecursive(".claude/library", ".md")],
+  ["Hooks", countFiles(".claude/hooks", ".sh")],
+  ["Claude Skills", countDirs(".claude/skills")],
+  ["Codex Skills", countDirs(".agents/skills")],
+  ["Codex Subagents", countFiles(".codex/agents", ".toml")],
+  ["Agents", countFiles(".claude/agents", ".md")],
+  ["Commands", countFiles(".claude/commands", ".md")],
+  ["Scripts", fs.readdirSync("scripts").filter((entry) => fs.statSync(`scripts/${entry}`).isFile()).length],
+]);
+
+if (!readme.startsWith("# Agent Project Template v4")) {
+  throw new Error("README title must use the current major version");
+}
+
+for (const [label, count] of counts) {
+  const expected = `| **${label}** | ${count} |`;
+  if (!readme.includes(expected)) {
+    throw new Error(`README count mismatch for ${label}; expected row prefix: ${expected}`);
+  }
+}
+
+const commandNames = fs.readdirSync(".claude/commands")
+  .filter((entry) => entry.endsWith(".md"))
+  .map((entry) => entry.replace(/\.md$/, ""))
+  .sort();
+const commandSectionMatch = claude.match(/## Commands \((\d+)\)\n([\s\S]*?)\n\n## /);
+if (!commandSectionMatch) {
+  throw new Error("CLAUDE.md command section not found");
+}
+const headingCount = Number(commandSectionMatch[1]);
+if (headingCount !== commandNames.length) {
+  throw new Error(`CLAUDE.md command count ${headingCount} != ${commandNames.length}`);
+}
+const listed = Array.from(commandSectionMatch[2].matchAll(/\/[a-z0-9-]+/g))
+  .map((match) => match[0].slice(1))
+  .sort();
+const missing = commandNames.filter((name) => !listed.includes(name));
+const extra = listed.filter((name) => !commandNames.includes(name));
+if (missing.length > 0 || extra.length > 0) {
+  throw new Error(`CLAUDE.md commands mismatch; missing=${missing.join(",")} extra=${extra.join(",")}`);
+}
+NODE
+}
 
 echo "=== Template Smoke Test: $TEMPLATE_DIR ==="
 echo ""
@@ -189,6 +250,7 @@ echo ""
 echo "File sizes:"
 check "CLAUDE.md <=300 lines" bash -c '[ $(wc -l < CLAUDE.md) -le 300 ]'
 check "AGENTS.md <=32KB" bash -c '[ $(wc -c < AGENTS.md) -le 32768 ]'
+check "README and CLAUDE release-facing counts match filesystem" validate_release_facing_doc_counts
 
 echo ""
 echo "Entry points:"

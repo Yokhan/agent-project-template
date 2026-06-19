@@ -89,10 +89,31 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.1.0 has been published as the product-user and app-specific business KPI priority minor release.
 - v4.1.1 has been published as the GitHub Actions Node 24-compatible workflow patch release.
 - v4.2.0 has been published as the production design QA minor release.
-- v4.3.0 design pipeline and skill upgrade is in progress.
+- v4.3.0 has been published as the design pipeline and skill upgrade minor release.
+- v4.3.1 documentation drift patch is in progress.
 
 ## Immediate Next Step
-- Finish the v4.3.0 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Finish the v4.3.1 release gate, commit, tag, push, and verify the GitHub release workflow.
+
+## Plan - v4.3.1 Documentation Drift Patch
+
+### User Request
+Доделать хвост после критической проверки `v4.3.0`: исправить README/CLAUDE drift и выпустить patch.
+
+### Goal
+Выпустить `v4.3.1`, где release-facing docs честно отражают shipped template surface, а release gate ловит будущие расхождения.
+
+### Product Goal Link
+- Final outcome: downstream teams can trust release docs when deciding whether and how to sync the template.
+- Product/business priority: reduce upgrade confusion, support load, and rollout mistakes caused by inaccurate capability counts or nonexistent commands.
+- Current step: fix README/CLAUDE counts/title, add regression check, bump patch version, and publish release.
+- Quality bar preserved: no sync boundary changes, no weakening of `v4.3.0` design pipeline, text/mojibake and Windows-safe policies remain hard gates.
+- Out of scope: reorganizing README architecture or adding new capabilities.
+
+### Verification
+- `bash scripts/test-template.sh` must fail on README/CLAUDE count drift.
+- Full release gate must pass before tag.
+- Windows `setup.bat` smoke confirms `4.3.1` generated manifest and project-owned design files.
 
 ## Plan - v4.3.0 Design Pipeline And Skill Upgrade
 

@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.3.0 -->
+<!-- Template Version: 4.3.1 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -119,10 +119,10 @@ Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enab
 8. **Before creating**: search_design_system — does it already exist?
 Violation = revert and redo. Full pipeline: `.claude/library/domain/domain-design-pipeline.md`
 
-## Commands (24)
+## Commands (23)
 /setup-project, /implement, /commit-push-pr, /review, /refactor, /sprint, /brain-sync, /weekly,
 /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all,
-/audit, /audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
+/audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
 
 ## Self-Improvement
 After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMENT/MISUNDERSTANDING).
@@ -166,7 +166,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.3.0 — Run `bash scripts/check-drift.sh` to verify health.
+4.3.1 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

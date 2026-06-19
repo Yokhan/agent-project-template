@@ -1,6 +1,6 @@
-# Agent Project Template v3
+# Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.3.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.3.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.3.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.0
+bash scripts/sync-template.sh --from-git --ref v4.3.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.3.1
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -174,14 +174,14 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 25 | 6 process + 7 technical + 4 meta + 8 domain guards |
-| **Hooks** | 7 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate |
+| **Rules** | 24 | Shared library rules plus router entrypoint |
+| **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
-| **Codex Skills** | 37 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Skills** | 41 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
 | **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
-| **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
-| **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
-| **Scripts** | 40 | validation, route selection, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Agents** | 11 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler, and supporting specialists |
+| **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
+| **Scripts** | 43 | validation, route selection, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.3.1** | Patch release: fixes README/CLAUDE documentation drift and adds regression coverage so release-facing counts and command lists match the shipped template surface |
 | **4.3.0** | Minor release: design pipeline and skill upgrade with register-aware product/brand decision gates, detailed design command-mode reference, critique ordering that treats validators as evidence, and router regression coverage for conversion/KPI tasks |
 | **4.2.0** | Minor release: production design QA upgrade with root `DESIGN.md` starter context, project-owned `design-policy.ignore`, design workflow command modes, hard design-policy validator, default Codex design-policy hook notifications, and browser/visual hardening gates |
 | **4.1.1** | Patch release: GitHub workflows and CI templates now use Node 24-compatible actions and disable unnecessary setup-node package-manager cache in template validation/release jobs |
