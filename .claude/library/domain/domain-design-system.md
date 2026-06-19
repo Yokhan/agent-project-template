@@ -20,6 +20,24 @@ The design system must declare whether each surface is operating in product regi
 
 Every higher layer must declare which lower-layer tokens/components it uses. If a needed value has no token, stop and add/request the token instead of hardcoding.
 
+## Screen Anatomy Contract
+
+Every full screen, template, and full-page Storybook/Figma example starts from the same layered frame contract before product UI is placed:
+
+1. Root frame: viewport/min-height, isolation, overflow, base surface, and base text color.
+2. Base background: flat fill, gradient, image/media slot, or another approved surface token.
+3. Background composition: absolute decorative or media layer independent from content spacing.
+4. Content frame: safe-area, responsive padding, max-width/grid, column model, and allowed organisms.
+5. Overlay layer: modal, drawer, toast, sticky action, or temporary system layer only when the scenario needs it.
+
+Headers, heroes, forms, cards, product rails, docs content, and account panels live inside the content frame. Background images, gradients, decorative shapes, and texture layers must not define content spacing or grid behavior.
+
+Bounded vs edge-to-edge rule:
+
+- Visible bounded surfaces (glass, cards, panels, modals, framed media) own internal padding, radius, border/effect tokens, and content-slot rules.
+- Edge-to-edge content sections use the page grid/content frame directly and must not be wrapped in fake cards just to create spacing.
+- Atomic stories show the atom itself without unrelated frames. Molecule/organism/template stories may add only the minimum wrapper needed to demonstrate the real composition contract.
+
 ## Contract Tables
 
 Storybook, docs, or Figma must expose tables for:
@@ -30,6 +48,7 @@ Storybook, docs, or Figma must expose tables for:
 - Control sizes: height, min width, touch target, icon size, padding.
 - Motion: duration, easing, transform distance, opacity rules.
 - Layout: page width, grid columns, mobile padding, desktop padding, safe areas.
+- Screen anatomy: root frame, base background, background composition, content frame, overlay layer, and bounded/edge-to-edge usage.
 
 ## Composition Trace
 
@@ -40,6 +59,7 @@ Each molecule, organism, and template should have a visible or testable composit
 - Child components used.
 - States supported.
 - Responsive behavior.
+- Screen anatomy role, when the component participates in a template or screen.
 - Known exclusions.
 
 This prevents hidden raw values and makes review possible without manually measuring everything.

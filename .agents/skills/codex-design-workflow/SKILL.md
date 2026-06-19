@@ -31,11 +31,24 @@ Read:
 - No raw visual values when tokens or variables exist.
 - No raw shapes when a component exists.
 - Every container uses layout mode, flexbox, or grid.
+- Every full screen starts from screen anatomy: root frame, base background, independent background composition, content frame, and optional overlay layer.
 - Interactive controls account for default, hover, active, focus, disabled, loading, error, and empty states where applicable.
 - Text must not overlap or overflow at target viewports.
 - Molecules and larger components must declare lower-layer token/component dependencies.
 - Design-system work must expose foundation tables and Storybook or equivalent inspectable stories.
 - Screens must pass the subtraction gate before adding panels, persistent lists, banners, advice blocks, or secondary controls.
+
+## Screen Anatomy Gate
+
+For full-screen UI, app shells, landing pages, docs pages, auth pages, dashboards, and Storybook full-page examples:
+
+1. Name the root frame: viewport/min-height, isolation, overflow, base surface, and base text color.
+2. Name the base background: flat fill, gradient, image/media slot, or another approved tokenized surface.
+3. Name the background composition: decorative/media layer independent from content spacing.
+4. Name the content frame: safe-area, responsive padding, max-width/grid, column model, and allowed organisms.
+5. Name the overlay layer policy: modals, drawers, toasts, sticky actions, or none.
+
+Bounded surfaces and edge-to-edge sections use different layout rules. If the boundary is visible (glass/card/panel/modal/framed media), the surface owns internal padding and content slots. If the boundary is not visible, content aligns to the content frame/grid and must not be wrapped in a fake card just to create spacing.
 
 ## Command Modes
 

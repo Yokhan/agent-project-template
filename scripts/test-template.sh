@@ -113,6 +113,66 @@ if (missing.length > 0 || extra.length > 0) {
 }
 NODE
 }
+validate_screen_anatomy_contract() {
+  node <<'NODE'
+const fs = require("fs");
+
+const required = new Map([
+  [".claude/library/domain/domain-design-pipeline.md", [
+    "### Screen Anatomy First",
+    "Root frame:",
+    "Base background:",
+    "Background composition:",
+    "Content frame:",
+    "Overlay layer:",
+    "Visible bounded surfaces",
+    "Edge-to-edge"
+  ]],
+  [".claude/library/domain/domain-design-system.md", [
+    "## Screen Anatomy Contract",
+    "Root frame:",
+    "Base background:",
+    "Background composition:",
+    "Content frame:",
+    "Overlay layer:",
+    "Atomic stories show the atom itself"
+  ]],
+  [".agents/skills/codex-design-workflow/SKILL.md", [
+    "## Screen Anatomy Gate",
+    "Every full screen starts from screen anatomy",
+    "root frame",
+    "background composition",
+    "content frame",
+    "overlay layer"
+  ]],
+  [".agents/skills/codex-design-system-workflow/SKILL.md", [
+    "## Screen Anatomy Contract",
+    "Atom isolation",
+    "root frame",
+    "base background",
+    "background composition",
+    "content frame",
+    "overlay layer"
+  ]],
+  [".agents/skills/codex-design-workflow/references/design-command-modes.md", [
+    "name screen anatomy layers",
+    "root frame",
+    "base background",
+    "background composition",
+    "content frame",
+    "overlay policy"
+  ]],
+]);
+
+for (const [file, terms] of required) {
+  const text = fs.readFileSync(file, "utf8");
+  const missing = terms.filter((term) => !text.includes(term));
+  if (missing.length > 0) {
+    throw new Error(`${file} missing design screen anatomy terms: ${missing.join(", ")}`);
+  }
+}
+NODE
+}
 
 echo "=== Template Smoke Test: $TEMPLATE_DIR ==="
 echo ""
@@ -190,6 +250,7 @@ check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
 check "test-design-policy" node scripts/test-design-policy.js
+check "screen anatomy contract is enforced in design rules and skills" validate_screen_anatomy_contract
 check "validate-agent-sot" node scripts/validate-agent-sot.js
 check "validate-spec-kit" node scripts/validate-spec-kit.js
 check "validate-text-policy" node scripts/validate-text-policy.js
@@ -341,11 +402,15 @@ if is_template_source_repo; then
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
   SYNC_SOURCE_ONLY_PROJECT="template-source-only-sync-smoke-$RANDOM-$$"
   SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
+  SYNC_GIT_TEMPLATE_FIXTURE="template-sync-git-fixture-$RANDOM-$$"
+  SYNC_GIT_DRY_RUN_PROJECT="template-git-dry-run-smoke-$RANDOM-$$"
+  SYNC_GIT_DRY_RUN_OUTPUT="$SYNC_GIT_DRY_RUN_PROJECT.out"
   cleanup_sync_smoke() {
     rm -rf \
       "$SYNC_TEMPLATE_FIXTURE" \
       "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
-      "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply"
+      "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply" \
+      "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" "$SYNC_GIT_DRY_RUN_OUTPUT"
   }
   create_sync_template_fixture() {
     local template="$1"
@@ -439,10 +504,32 @@ if is_template_source_repo; then
       ! grep -q '"setup.sh"' "$project/.template-manifest.json" &&
       ! grep -q '"setup.bat"' "$project/.template-manifest.json"
   }
+  run_from_git_dry_run_smoke() {
+    local template="$1"
+    local project="$2"
+    local output="$3"
+
+    create_sync_template_fixture "$template"
+    git -C "$template" init -q
+    git -C "$template" add .
+    git -C "$template" -c user.name="Template Smoke" -c user.email="template-smoke@example.invalid" commit -q -m "fixture"
+    git -C "$template" tag v9.9.9
+
+    write_trackable_manifest "$project"
+    git -C "$project" init -q
+    git -C "$project" remote add template "$(cd "$template" && pwd)"
+
+    bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" --dry-run > "$output" 2>&1
+    grep -q "Fetching template preview from" "$output"
+    grep -q "WOULD UPDATE: CLAUDE.md" "$output"
+    grep -q "(Dry run" "$output"
+    grep -q '# Local Claude' "$project/CLAUDE.md"
+  }
   trap cleanup_sync_smoke EXIT
   create_sync_template_fixture "$SYNC_TEMPLATE_FIXTURE"
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
   check "sync-template keeps source-only files out of generated projects" run_source_only_sync_smoke "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT"
+  check "sync-template --from-git --dry-run shows real sync preview" run_from_git_dry_run_smoke "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" "$SYNC_GIT_DRY_RUN_OUTPUT"
   cleanup_sync_smoke
   trap - EXIT
 else

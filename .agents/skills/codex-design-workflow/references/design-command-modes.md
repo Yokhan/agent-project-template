@@ -49,6 +49,7 @@ Rules:
 
 - Use system -> tokens -> components -> screens.
 - Search existing tokens/components/styles before creating new ones.
+- For full screens, name the root frame, base background, background composition, content frame, and overlay policy before placing UI.
 - Keep the current mode's best next action before long lists or secondary diagnostics.
 - Verify rendered output. If a browser or screenshot is unavailable, state the residual risk.
 
@@ -89,6 +90,7 @@ Rules:
 ### adapt
 
 - Preserve the primary action across mobile, desktop, touch, keyboard, and reduced-motion contexts.
+- Preserve screen anatomy across viewports: the content frame may change grid and padding, but background composition cannot become the layout source.
 - Keep mobile main tap targets at least 52px high unless the platform design system has a stricter standard.
 - Reset scroll on major mode changes when stale scroll would hide the new primary action.
 
@@ -111,5 +113,6 @@ Design plans, audits, and final reports must:
 - match the user's language;
 - name the product user and user/business outcome;
 - state the chosen register and mode;
+- name screen anatomy layers for full-screen work;
 - report rendered evidence or residual risk;
 - state confidence and the main doubt.

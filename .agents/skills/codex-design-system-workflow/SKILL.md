@@ -19,8 +19,9 @@ Read:
 3. Molecules: compose from atoms and tokens only.
 4. Organisms: compose from lower layers and expose a dependency trace.
 5. Templates: define responsive layout and density rules.
-6. Screens/stories: use real product data and navigation states.
-7. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
+6. Screen anatomy: every full screen starts with root frame, base background, independent background composition, content frame, and optional overlay layer before product components are placed.
+7. Screens/stories: use real product data and navigation states.
+8. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
 
 ## No Raw Values
 
@@ -32,6 +33,24 @@ Root `DESIGN.md` is a project-owned visual context file. Update it when visual d
 
 - Foundations tables: typography, spacing, radius, motion, layout.
 - Atom states: default, hover, active, focus, disabled, loading, error, empty where applicable.
+- Atom isolation: stories show the atom itself without unrelated frames, labels, or decorative wrappers unless the wrapper is part of the atom contract.
 - Molecule composition traces.
 - Organism and template responsive examples.
+- Screen anatomy tables for full-page templates and screens.
 - Product forms, account/auth, empty/loading/error, service gateway, docs/help surfaces when relevant.
+
+## Screen Anatomy Contract
+
+Every screen, template, and full-page Storybook example must declare:
+
+- Root frame: viewport/min-height, isolation, overflow, base surface, and base text color.
+- Base background: flat fill, gradient, image/media slot, or another approved surface token.
+- Background composition: decorative/media layer independent from content spacing.
+- Content frame: safe-area, responsive padding, max-width/grid, column model, and allowed organisms.
+- Overlay layer: modals, drawers, toasts, sticky actions, only when the scenario needs them.
+
+Bounded vs edge-to-edge rule:
+
+- Visible bounded surfaces (glass, cards, panels, modals, framed media) own internal padding, radius, border/effect tokens, and content-slot rules.
+- Edge-to-edge content sections use the page grid/content frame directly and do not get fake card padding.
+- If a screen cannot name these layers, stop before styling. Do not place headers, heroes, forms, service cards, or docs content directly into a naked `main` or story shell.

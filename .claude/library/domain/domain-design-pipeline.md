@@ -98,6 +98,24 @@ Build screens by composing existing components, not by drawing new ones:
 - Override props/slots/variants — don't recreate from scratch
 - If a component doesn't support what you need → extend it, don't bypass it
 
+### Screen Anatomy First
+
+Before placing content on any full screen, name and build the screen layers:
+
+1. Root frame: viewport/min-height, isolation, overflow, base surface, and base text color.
+2. Base background: flat fill, gradient, image/media slot, or another approved surface token.
+3. Background composition: absolute decorative or media layer independent from content spacing.
+4. Content frame: safe-area, responsive padding, max-width/grid, column model, and allowed organisms.
+5. Overlay layer: modal, drawer, toast, sticky action, or temporary system layer only when the scenario needs it.
+
+Headers, heroes, forms, service rails, product cards, docs content, and account panels live inside the content frame. Background images, gradients, decorative shapes, and texture layers must not define content spacing or grid behavior.
+
+Frame rule:
+
+- Visible bounded surfaces (glass, cards, panels, modals, framed media) need internal padding, border/radius/effect tokens, and a declared content slot.
+- Edge-to-edge or naked content sections use the page grid/content frame directly and do not get fake card padding.
+- If a story or screen cannot name the root frame, background, content frame, and overlay policy, stop before styling.
+
 ### Subtraction-First
 Before improving a screen, decide what should be removed, hidden, collapsed, or moved. Do not start by adding panels.
 
@@ -118,7 +136,7 @@ Every design task follows this pipeline. No phase may be skipped.
 
 | Phase | Name | What |
 |-------|------|------|
-| 0 | **CONTEXT** | User journey, product/business priority, `DESIGN.md`, device/viewport |
+| 0 | **CONTEXT** | User journey, product/business priority, `DESIGN.md`, register, screen anatomy, device/viewport |
 | 1 | **ANALYZE** | 5-lens + UI Subtraction Gate |
 | 2 | **REFERENCE** | Find gold-standard, deep-inspect structure |
 | 3 | **BOM** | Bill of Materials — list ALL component instances needed |
@@ -182,6 +200,7 @@ Use the smallest mode that matches the request instead of running the whole pipe
 Modes do not weaken the production bar. They only pick the most direct path to the same register, token, component, subtraction, hardening, and rendered-evidence gates.
 
 Mode output must name the chosen register, product user, user/business outcome, rendered evidence or residual risk, confidence, and the main doubt for M+ work.
+For full-screen work, it must also name the screen anatomy layers or explicitly mark the missing layer as a blocker.
 
 ## State Coverage (mandatory)
 
@@ -224,6 +243,7 @@ Use Playwright screenshot snapshots, Storybook visual tests, Chromatic, or equiv
 [ ] Every spacing/padding bound to a token?
 [ ] Every effect uses an effect style?
 [ ] Every container has layout mode set?
+[ ] Full-screen work declares root frame, background composition, content frame, and overlay policy?
 [ ] No fixed sizing where HUG/FILL is appropriate?
 [ ] No placeholder text? (real content or realistic data)
 [ ] Screenshot taken and visually verified?

@@ -90,10 +90,32 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.1.1 has been published as the GitHub Actions Node 24-compatible workflow patch release.
 - v4.2.0 has been published as the production design QA minor release.
 - v4.3.0 has been published as the design pipeline and skill upgrade minor release.
-- v4.3.1 documentation drift patch is in progress.
+- v4.3.1 has been published as the documentation drift patch release.
+- v4.3.2 screen anatomy and git dry-run preview patch is in progress.
 
 ## Immediate Next Step
-- Finish the v4.3.1 release gate, commit, tag, push, and verify the GitHub release workflow.
+- Finish the v4.3.2 release gate, commit, tag, push, and verify downstream PA sync.
+
+## Plan - v4.3.2 Screen Anatomy And Git Dry-Run Patch
+
+### User Request
+Preserve the valuable PA/BUFF IT screen anatomy design-system lessons, make the abstract v4.3 design rules more operational, release a new template version, and then update PA to that version.
+
+### Goal
+Release `v4.3.2`, where full-screen UI work must name root frame, base background, background composition, content frame, and overlay policy before styling, and where git-based template dry-runs show real downstream sync changes.
+
+### Product Goal Link
+- Final outcome: downstream agents can build and audit production UI from concrete screen contracts instead of vague design prose.
+- Product/business priority: reduce design correction loops, broken Storybook contracts, layout drift, and unsafe template rollouts.
+- Current step: merge screen anatomy into shared design rules and Codex skills, add regression checks, fix git dry-run preview, release the tag, and apply it to PA.
+- Quality bar preserved: no MVP thinking, no loss of v4.3 register/mode/hardening rules, no `--force` downstream sync.
+- Out of scope: rewriting every downstream project design system in this release.
+
+### Verification
+- `bash scripts/test-template.sh` must fail if screen anatomy/root-frame terms disappear.
+- `bash scripts/test-template.sh` must prove `sync-template.sh --from-git --dry-run` shows a real sync preview.
+- Full release gate must pass before tag.
+- PA must update from the released tag with design conflicts resolved manually.
 
 ## Plan - v4.3.1 Documentation Drift Patch
 

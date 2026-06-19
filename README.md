@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.3.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.3.2-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.3.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.1
+bash scripts/sync-template.sh --from-git --ref v4.3.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.3.2
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.3.2** | Patch release: makes screen anatomy/root-frame contracts mandatory in design rules and skills, adds regression coverage for those contracts, and makes `sync-template.sh --from-git --dry-run` show the real sync preview |
 | **4.3.1** | Patch release: fixes README/CLAUDE documentation drift and adds regression coverage so release-facing counts and command lists match the shipped template surface |
 | **4.3.0** | Minor release: design pipeline and skill upgrade with register-aware product/brand decision gates, detailed design command-mode reference, critique ordering that treats validators as evidence, and router regression coverage for conversion/KPI tasks |
 | **4.2.0** | Minor release: production design QA upgrade with root `DESIGN.md` starter context, project-owned `design-policy.ignore`, design workflow command modes, hard design-policy validator, default Codex design-policy hook notifications, and browser/visual hardening gates |

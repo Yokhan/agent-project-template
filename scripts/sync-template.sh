@@ -117,14 +117,10 @@ if [ "$FROM_GIT" = true ]; then
     fi
 
     if [ "$DRY_RUN" = true ]; then
-        echo "Would fetch from: $TEMPLATE_REMOTE"
-        [ -n "$TEMPLATE_REF" ] && echo "Would use template ref: $TEMPLATE_REF"
-        echo "Run without --dry-run to actually fetch and sync."
-        exit 0
+        echo "Fetching template preview from $TEMPLATE_REMOTE..."
+    else
+        echo "Fetching template updates from $TEMPLATE_REMOTE..."
     fi
-
-    # actual fetch only happens when not dry-run
-    echo "Fetching template updates from $TEMPLATE_REMOTE..."
     if [ -n "$TEMPLATE_REF" ]; then
         git fetch template --depth 1 "$TEMPLATE_REF" 2>/dev/null || { echo "Error: Cannot fetch template ref: $TEMPLATE_REF"; exit 1; }
     else

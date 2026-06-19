@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.3.1
-git push origin v4.3.1
+git tag v4.3.2
+git push origin v4.3.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -60,7 +60,9 @@ Version `4.3.0` is a compatible minor release that upgrades the production desig
 
 Version `4.3.1` is a compatible patch release that fixes release-facing README/CLAUDE documentation drift and adds a regression gate so shipped counts and command lists match the real template filesystem.
 
-Downstream projects should sync `v4.3.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
+Version `4.3.2` is a compatible patch release that promotes the concrete screen anatomy/root-frame contract into the shared design pipeline and Codex design skills, adds regression coverage so future releases cannot drop it, and fixes `sync-template.sh --from-git --dry-run` so it shows the real sync preview from a git ref before modifying downstream projects.
+
+Downstream projects should sync `v4.3.2` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -96,8 +98,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.3.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.1
+bash scripts/sync-template.sh --from-git --ref v4.3.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.3.2
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
