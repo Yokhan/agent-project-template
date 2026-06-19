@@ -109,6 +109,9 @@ case "$EVENT" in
       if [[ -x "$HOOKS_DIR/check-encoding.sh" ]]; then
         bash "$HOOKS_DIR/check-encoding.sh" || true
       fi
+      if [[ -f "$PROJECT_DIR/scripts/validate-design-policy.js" ]]; then
+        node "$PROJECT_DIR/scripts/validate-design-policy.js" --hook || true
+      fi
     fi
     # Run session audit logger
     if [[ -x "$HOOKS_DIR/session-audit.sh" ]]; then

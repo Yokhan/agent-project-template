@@ -13,7 +13,7 @@ _Not set yet._
 
 ## Immediate Next Step
 1. Run `/setup-project` and answer the stack/setup questions.
-2. Fill `PROJECT_SPEC.md` and `ecosystem.md` with real project context.
+2. Fill `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/goal.md`, and root `DESIGN.md` with real project context.
 3. Rewrite this file so it reflects the active task, current status, and next step.
 
 ## Constraints

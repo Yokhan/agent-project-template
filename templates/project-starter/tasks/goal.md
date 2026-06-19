@@ -13,7 +13,7 @@ Name the primary product user, the user experience outcome, and the app-specific
 - Reliability:
 - Performance:
 - Accessibility:
-- Design system:
+- Design system: keep root `DESIGN.md` current with visual tokens, component behavior, and design guardrails.
 - Data/API:
 - Docs:
 - Domain tone:

@@ -13,7 +13,7 @@ Read:
 
 ## Required Flow
 
-1. Foundations: confirm tokens for color, typography, spacing, radius, motion, layout, and control sizes.
+1. Foundations: confirm root `DESIGN.md` when present, then tokens for color, typography, spacing, radius, motion, layout, and control sizes.
 2. Atoms: confirm primitive controls and states.
 3. Molecules: compose from atoms and tokens only.
 4. Organisms: compose from lower layers and expose a dependency trace.
@@ -24,6 +24,8 @@ Read:
 ## No Raw Values
 
 If a needed value has no token, stop and add/request the token. Do not invent local values inside larger components.
+
+Root `DESIGN.md` is a project-owned visual context file. Update it when visual direction, token meaning, component behavior, or guardrails change; do not use template sync to overwrite an existing project `DESIGN.md`.
 
 ## Required Stories
 

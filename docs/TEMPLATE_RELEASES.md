@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.1.1
-git push origin v4.1.1
+git tag v4.2.0
+git push origin v4.2.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -54,7 +54,9 @@ Version `4.1.0` is a compatible minor release that makes product-user experience
 
 Version `4.1.1` is a compatible patch release that updates GitHub workflows and CI templates to Node 24-compatible actions before the GitHub Actions Node 20 runner migration.
 
-Downstream projects should sync `v4.1.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, and business/product planning conventions before applying.
+Version `4.2.0` is a compatible minor release that adds production design QA infrastructure: root `DESIGN.md` starter context, project-owned `design-policy.ignore`, design workflow command modes, a hard design-policy validator with fixtures, default Codex design-policy hook notifications, and browser/visual hardening gates. Existing downstream `DESIGN.md` and `design-policy.ignore` files are project-owned and must not be overwritten by template sync.
+
+Downstream projects should sync `v4.2.0` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -70,6 +72,8 @@ node scripts/test-codex-routing.js
 node scripts/validate-codex-skills.js
 node scripts/validate-codex-agents.js
 node scripts/validate-production-standard.js
+node scripts/validate-design-policy.js
+node scripts/test-design-policy.js
 ```
 
 Also run a generated-project smoke when the payload changes:
@@ -88,8 +92,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.1.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.1.1
+bash scripts/sync-template.sh --from-git --ref v4.2.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.2.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

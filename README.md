@@ -1,6 +1,6 @@
 # Agent Project Template v3
 
-[![Template Version](https://img.shields.io/badge/template-v4.1.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.2.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.1.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.1.1
+bash scripts/sync-template.sh --from-git --ref v4.2.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.2.0
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -181,7 +181,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
 | **Agents** | 10 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler |
 | **Commands** | 16 | /setup-project, /implement, /commit, /review, /refactor, /sprint, /brain-sync, /weekly, /status, /rollback, /onboard, /update-template, /hotfix, /retrospective, /sync-all, /audit-tools |
-| **Scripts** | 38 | validation, route selection, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 40 | validation, route selection, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.2.0** | Minor release: production design QA upgrade with root `DESIGN.md` starter context, project-owned `design-policy.ignore`, design workflow command modes, hard design-policy validator, default Codex design-policy hook notifications, and browser/visual hardening gates |
 | **4.1.1** | Patch release: GitHub workflows and CI templates now use Node 24-compatible actions and disable unnecessary setup-node package-manager cache in template validation/release jobs |
 | **4.1.0** | Minor release: product-user experience and app-specific business outcomes now outrank technical perfection in plans, improvements, routing, skills, and validators |
 | **4.0.3** | Patch release: fail-hard text/platform policy, no-mojibake gate, Windows-safe shell helpers, generalized UI Subtraction Gate, and faster sync regression smoke |

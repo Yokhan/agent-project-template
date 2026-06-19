@@ -8,7 +8,7 @@ These files and directories are part of the generated project payload:
 
 - `.agents/`, `.claude/`, `.codex/`, `.github/`, `.vscode/extensions.json`
 - `_reference/`, `brain/`, `docs/`, `integrations/`, `mcp-servers/`, `scripts/`, `tasks/`, `tests/`
-- Root project files such as `AGENTS.md`, `CLAUDE.md`, `README.md`, `SETUP_GUIDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `.mcp.json`
+- Root project files such as `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`, `design-policy.ignore`, `README.md`, `SETUP_GUIDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `.mcp.json`
 
 Bootstrap copies only tracked files plus starter overlays from `templates/project-starter/`.
 
@@ -39,6 +39,8 @@ Template-owned files are updated by `sync-template.sh` and should be treated as 
 Project-owned files are expected to evolve per repo and are preserved by template sync:
 
 - `CLAUDE.md`
+- `DESIGN.md`
+- `design-policy.ignore`
 - `PROJECT_SPEC.md`
 - `ecosystem.md`
 - `tasks/`

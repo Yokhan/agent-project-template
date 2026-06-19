@@ -87,10 +87,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4 production standard, product goal loop, design-system workflow, product UX audit, cross-project lesson promotion, text/platform policy, and UI Subtraction Gate are implemented in shared rules, Codex skills, router, starter files, and validators.
 - v4.0.3 has been published as the text/platform policy and UI Subtraction Gate patch release.
 - v4.1.0 has been published as the product-user and app-specific business KPI priority minor release.
-- v4.1.1 is in progress as a patch release for GitHub Actions Node 24-compatible workflow updates.
+- v4.1.1 has been published as the GitHub Actions Node 24-compatible workflow patch release.
+- v4.2.0 design production upgrade is implemented locally and is in release-gate validation.
 
 ## Immediate Next Step
-- Finish the v4.1.1 release gate, commit, tag, push, and verify the GitHub release workflow without the Node 20 actions warning.
+- Finish the v4.2.0 release gate, commit, tag, push, and verify the GitHub release workflow.
 
 ## Plan - v4.1.0 Product/Business Outcome Priority
 
@@ -158,3 +159,192 @@ Remove the upcoming GitHub Actions Node 20 runtime risk from template-owned rele
 
 ### Plan B
 If latest major actions introduce runner or credential behavior changes, use the smallest Node 24-compatible major that avoids the warning and preserves current workflow behavior.
+
+## Queued Plan - v4.2.0 Design Production Upgrade
+
+### User Request
+Подробно спланировать внедрение улучшений из Impeccable/Design.md research так, чтобы ускорить достижение production design quality с AI agents и не потерять уже сделанные наработки шаблона.
+
+### Goal
+Добавить в template v4.2.0 операционный слой production design QA: долговременный design context, командные режимы design skill, deterministic design checks, browser/visual hardening и release gates.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that produce and verify product UI faster, stay on brand, preserve user value/business KPI priority, and avoid AI-design drift.
+- Product/business priority: improve downstream delivery speed, product-user trust, conversion/activation/retention-sensitive UI quality, lower redesign/support load, and reduce repeated design correction loops.
+- Current step: plan and then implement template-owned design workflow improvements without changing downstream project-owned files.
+- Quality bar preserved: v4.1.0 product/business priority stays first; v4.1.1 runtime release work remains intact; text/mojibake/platform policies remain hard gates.
+- Out of scope for this step: adopting Impeccable as a mandatory external dependency, replacing Figma workflow, changing user-level Codex config, or applying the upgrade to every downstream project.
+
+### Preservation Gates
+- Do not replace or weaken `.claude/library/product/production-product-standard.md`.
+- Do not replace the existing UI Subtraction Gate; extend it only when the extension improves user decision clarity.
+- Do not remove token-first, component-first, 8-state, Storybook/equivalent, rendered-geometry, or product UX audit requirements.
+- Keep `tasks/goal.md` product/business outcome priority unchanged unless the final outcome truly changes.
+- Preserve `project-*` overlays and downstream-owned files in template sync.
+- All new scripts must be cross-platform Node or use existing platform helpers; no raw Linux-only `/tmp`, `mktemp`, `uname`, or shell assumptions.
+- All tracked text must stay UTF-8 without BOM, with no mojibake, replacement characters, or mixed line endings.
+- New design checks must support a baseline/ignore path so known intentional exceptions do not create permanent noise.
+- New design hooks and validators must notify the user clearly when they fire: rule id, file, evidence, why it matters for product/design quality, and how to tune or ignore with a reason.
+
+### Resolved Decisions
+- Design context location: root `DESIGN.md` in generated projects for best Google DESIGN.md and agent-tool compatibility.
+- Validator mode: hard gate in v4.2.0, with user-facing notifications and tuning data whenever a rule fires.
+- Hook policy: default Codex hook for UI edits in v4.2.0, wired only to conservative deterministic checks and cross-platform Node paths.
+- Release order: finish and publish `v4.1.1` first, then start `v4.2.0`. `v4.1.1` means the already-planned GitHub Actions Node 24 patch release: run the release gate, commit/tag/push, and verify the GitHub release workflow no longer emits Node 20 runtime warnings.
+
+### Architecture
+- `templates/project-starter/DESIGN.md` - root starter design context following a lightweight Google DESIGN.md-compatible shape.
+- `templates/project-starter/tasks/goal.md` - link product/business priority to design context without duplicating it.
+- `.claude/library/domain/domain-design-pipeline.md` - add design context, command-mode routing, hardening, and deterministic QA gates.
+- `.claude/library/domain/domain-design-system.md` - add design token contract expectations for DESIGN.md, Storybook, and visual regression.
+- `.agents/skills/codex-design-workflow/SKILL.md` - add submodes: shape, craft, audit, critique, distill, harden, polish, adapt, clarify, typeset/layout.
+- `.agents/skills/codex-design-system-workflow/SKILL.md` - add DESIGN.md/token extraction/update responsibilities.
+- `.agents/skills/codex-product-ux-audit/SKILL.md` - connect design changes to activation, conversion, retention, loyalty, support-load, or app-specific KPI.
+- `scripts/validate-design-policy.js` - deterministic starter validator for universal design rules.
+- `.codex/hooks.json` template/starter hook coverage where applicable - default UI-edit hook that runs the design validator after relevant edits.
+- `scripts/validate-production-standard.js` - ensure v4.2 design gates do not regress product/business priority.
+- `scripts/test-template.sh` and Windows-equivalent coverage where present - include new starter files and design validator smoke.
+- `docs/TEMPLATE_RELEASES.md`, `docs/RELEASE_CHECKLIST.md`, `README.md`, version files - document v4.2.0 release and downstream migration.
+
+### Implementation Slices
+
+#### Slice 1 - Design Context Contract
+Goal: give agents a durable visual source of truth before they design.
+
+Tasks:
+- Define where template-owned design context lives and how it coexists with `tasks/goal.md`.
+- Add starter `DESIGN.md` with machine-readable tokens plus human-readable rules.
+- Add rules for scan mode versus seed mode:
+  - scan mode extracts existing tokens/components when a project has UI code;
+  - seed mode asks only the minimum strategic visual questions when no UI exists.
+- Require explicit user confirmation before overwriting an existing downstream `DESIGN.md`.
+
+Verification:
+- Template validator confirms starter design context is shipped.
+- Text policy passes.
+- Documentation explains that `tasks/goal.md` owns product/business intent while `DESIGN.md` owns visual decisions.
+
+#### Slice 2 - Design Skill Command Modes
+Goal: make design work faster by naming the exact operation instead of running one broad manual every time.
+
+Tasks:
+- Extend `codex-design-workflow` with command-like modes:
+  - `shape`: clarify product job, surface, constraints, and visual lane before edits.
+  - `craft`: implement a confirmed UI change end to end.
+  - `audit`: technical quality scan for accessibility, responsiveness, token drift, and anti-patterns.
+  - `critique`: UX/design review with severity, user impact, and next action.
+  - `distill`: remove, collapse, or move UI before adding anything.
+  - `harden`: edge cases, i18n, overflow, loading/error/empty, long data, slow/offline states.
+  - `polish`: final alignment, spacing, density, hierarchy, and visual consistency pass.
+  - `adapt`: mobile/desktop viewport and touch-target adaptation.
+  - `clarify`: labels, error copy, instructions, and support/empty state text.
+  - `typeset/layout`: typography and spatial rhythm fixes.
+- Keep modes as local workflow language first; do not add a new command runner unless validation needs it.
+
+Verification:
+- `node scripts/validate-codex-skills.js`
+- Route tests prove design requests still resolve to the design pipeline and product goal gates.
+
+#### Slice 3 - Deterministic Design Policy Validator
+Goal: catch repeated design failures without relying only on LLM taste.
+
+Tasks:
+- Add `scripts/validate-design-policy.js` as a hard-gate validator for conservative deterministic checks.
+- Include user-facing notification output for every finding:
+  - severity and rule id;
+  - file and evidence;
+  - product/design impact;
+  - exact next action;
+  - ignore/baseline instruction requiring a reason.
+- Start with universal checks only and do not add subjective taste rules until fixtures prove low false-positive risk:
+  - tracked UI files do not introduce obvious raw hardcoded visual values when tokens exist;
+  - no nested-card patterns in known UI examples;
+  - no gradient text default;
+  - no obvious text overflow fixtures;
+  - no skipped heading fixtures where static HTML is available;
+  - no mojibake in design context files;
+  - no platform-unsafe shell paths in new design tooling.
+- Add `design-policy.ignore` or equivalent baseline with reason and optional expiry.
+- Add default Codex UI-edit hook after the validator is stable enough to run in the local template gate.
+- Hook must be cross-platform Node, scoped to relevant UI/design files, and must not assume Linux shell behavior.
+
+Verification:
+- Validator has passing and failing fixtures.
+- `node scripts/validate-design-policy.js`
+- `node scripts/validate-text-policy.js`
+- `bash scripts/test-template.sh`
+- Manual hook smoke confirms a UI fixture edit triggers a visible design-policy notification.
+
+#### Slice 4 - Browser/Visual Hardening Gate
+Goal: make "looks good" mean rendered evidence, not static confidence.
+
+Tasks:
+- Add a required hardening checklist for M+ UI work:
+  - desktop and mobile screenshots;
+  - `getBoundingClientRect()` or equivalent geometry checks for important controls;
+  - long text and long-word stress;
+  - empty/loading/error states;
+  - slow/offline or API error behavior where relevant;
+  - 200 percent zoom/text scaling check when feasible;
+  - reduced-motion behavior for animated surfaces.
+- Document when Playwright screenshot snapshots, Storybook visual tests, or Chromatic are recommended.
+- Keep heavyweight visual regression optional unless the project already uses it.
+
+Verification:
+- Design workflow docs require evidence and residual doubt.
+- Existing design-system skill still requires Storybook/equivalent and rendered geometry.
+
+#### Slice 5 - Template Sync And Release Integration
+Goal: ship v4.2.0 without breaking downstream sync or current release flow.
+
+Tasks:
+- Update sync allowlists/manifests for new template-owned files only.
+- Preserve `project-*` overlays.
+- Update release docs with migration notes:
+  - new projects get starter `DESIGN.md`;
+  - existing projects should not have their design context overwritten;
+  - deterministic design policy checks are hard gates in the template;
+  - existing projects can tune noise with explicit baseline/ignore entries instead of disabling the gate.
+- Bump version to `4.2.0`.
+- Keep v4.1.1 Node 24 workflow changes intact.
+
+Verification:
+- `node scripts/validate-production-standard.js`
+- `node scripts/validate-codex-skills.js`
+- `node scripts/test-codex-routing.js`
+- `node scripts/validate-agent-sot.js`
+- `node scripts/validate-text-policy.js`
+- `node scripts/validate-design-policy.js`
+- `bash scripts/validate-template.sh`
+- `bash scripts/test-template.sh`
+- `bash scripts/check-drift.sh`
+
+### Approach Choice
+Chosen approach: implement an internal template-native design QA layer inspired by Impeccable and Google DESIGN.md.
+
+Rejected alternative: make Impeccable a mandatory dependency. Reason: it adds external release/runtime risk, possible subjective false positives, and cross-platform hook risk. The template should first encode stable invariants locally and leave external tools optional.
+
+Rejected alternative: only add more prose to the design skill. Reason: prose improves intent but does not catch regressions. The missing production-speed layer is deterministic checks plus durable context.
+
+### Rollback Plan
+- Each slice lands in its own commit.
+- If validator noise is too high, do not disable the whole gate; demote or remove the noisy rule, add a focused fixture, or require an explicit ignore/baseline entry with a reason.
+- If root `DESIGN.md` causes sync ambiguity, keep root location for new projects and add stricter overwrite protection for existing projects instead of silently moving the file.
+- If route changes regress existing behavior, keep command modes in skills only and defer router expansion.
+
+### Remaining Clarifications During Implementation
+- Which first validator rules are objective enough for hard-fail status in the initial commit?
+- Which file patterns count as UI/design files for the default hook without scanning unrelated backend/docs changes?
+- What exact notification format is least noisy while still giving enough evidence to tune rules quickly?
+
+### First Safe Slice
+Completed: `v4.1.1` was already published. v4.2.0 Slice 1 through Slice 4 are implemented locally: root `DESIGN.md`, project-owned `design-policy.ignore`, design command modes, hard design policy validator, default Codex hook notification, and browser/visual hardening gate.
+
+### Release Gate Status
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: Git Bash `scripts/test-template.sh`
+- Passed: Windows `setup.bat` smoke for `DESIGN.md` and `design-policy.ignore` project-owned manifest categories.
+- Remaining before tag: full final release gate after version/project spec regeneration.

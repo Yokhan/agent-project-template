@@ -1,0 +1,8 @@
+# Design policy intentional exceptions.
+# Format:
+# <rule-id> <path-glob> <reason>
+#
+# Example:
+# design/no-gradient-text src/legacy-marketing.css approved-campaign-art-direction
+#
+# Do not use this file to hide production bugs. Each exception needs a specific reason.

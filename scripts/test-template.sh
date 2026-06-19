@@ -91,6 +91,8 @@ check "tasks/current.md" test -f tasks/current.md
 check "tasks/goal.md" test -f tasks/goal.md
 source_only_check "starter tasks/current.md" test -f templates/project-starter/tasks/current.md
 source_only_check "starter tasks/goal.md" test -f templates/project-starter/tasks/goal.md
+source_only_check "starter DESIGN.md" test -f templates/project-starter/DESIGN.md
+source_only_check "starter design-policy.ignore" test -f templates/project-starter/design-policy.ignore
 source_only_check "starter .research-cache.md" test -f templates/project-starter/tasks/.research-cache.md
 source_only_check "starter lessons.md" test -f templates/project-starter/tasks/lessons.md
 source_only_check "starter tasks/audit/.gitkeep" test -f templates/project-starter/tasks/audit/.gitkeep
@@ -103,6 +105,8 @@ check "scripts/validate-codex-agents.js" test -f scripts/validate-codex-agents.j
 check "scripts/validate-codex-skills.js" test -f scripts/validate-codex-skills.js
 check "scripts/validate-agent-sot.js" test -f scripts/validate-agent-sot.js
 check "scripts/validate-production-standard.js" test -f scripts/validate-production-standard.js
+check "scripts/validate-design-policy.js" test -f scripts/validate-design-policy.js
+check "scripts/test-design-policy.js" test -f scripts/test-design-policy.js
 check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
 check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
@@ -123,6 +127,7 @@ check "core Codex model guidance skill" test -f .agents/skills/codex-openai-mode
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
+check "test-design-policy" node scripts/test-design-policy.js
 check "validate-agent-sot" node scripts/validate-agent-sot.js
 check "validate-spec-kit" node scripts/validate-spec-kit.js
 check "validate-text-policy" node scripts/validate-text-policy.js
@@ -220,7 +225,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -231,7 +236,11 @@ if is_template_source_repo; then
       [ -f "$project/.claude/library/product/production-product-standard.md" ] &&
       [ -f "$project/.claude/library/process/product-goal-loop.md" ] &&
       [ -f "$project/.claude/library/domain/domain-design-system.md" ] &&
+      [ -f "$project/DESIGN.md" ] &&
+      [ -f "$project/design-policy.ignore" ] &&
       [ -f "$project/tasks/goal.md" ] &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['DESIGN.md']?.category!=='project') process.exit(1)" "$project" &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['design-policy.ignore']?.category!=='project') process.exit(1)" "$project" &&
       [ -f "$project/_reference/agent-sot/sources.json" ] &&
       [ -f "$project/_reference/spec-kit/manifest.json" ] &&
       [ -f "$project/integrations/spec-kit/README.md" ] &&

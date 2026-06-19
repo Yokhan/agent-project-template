@@ -131,6 +131,8 @@ powershell -NoProfile -Command ^
   "  'upgrade-project.sh'," ^
   "  'AGENTS.md'," ^
   "  'CLAUDE.md'," ^
+  "  'DESIGN.md'," ^
+  "  'design-policy.ignore'," ^
   "  'PROJECT_SPEC.md'," ^
   "  'ecosystem.md'," ^
   "  '.gitignore'," ^
@@ -187,6 +189,8 @@ powershell -NoProfile -Command ^
   "  param([string]$path)" ^
   "  switch -Wildcard ($path.Replace('\','/')) {" ^
   "    'CLAUDE.md' { 'project'; break }" ^
+  "    'DESIGN.md' { 'project'; break }" ^
+  "    'design-policy.ignore' { 'project'; break }" ^
   "    'PROJECT_SPEC.md' { 'project'; break }" ^
   "    'ecosystem.md' { 'project'; break }" ^
   "    'tasks/*' { 'project'; break }" ^

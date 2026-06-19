@@ -47,6 +47,15 @@ See `brain/03-knowledge/domains/product-design-ux.md`, `graphic-design-and-writi
 
 ## Core Principles
 
+### Durable Design Context
+Before design/UI work, check root `DESIGN.md` when present.
+
+- `tasks/goal.md` owns user value, product/business priority, KPI impact, dependencies, and current step.
+- `DESIGN.md` owns visual direction, tokens, typography, layout scale, component behavior, and visual guardrails.
+- If `DESIGN.md` exists, preserve it unless the user explicitly asks to update visual direction.
+- If `DESIGN.md` is missing in a product with UI work, create or request a starter design context before broad visual changes.
+- Never overwrite a project `DESIGN.md` during template sync or design refresh without explicit product-owner approval.
+
 ### Token-First
 NEVER hardcode visual values. Always bind to tokens/variables:
 - Colors → design token or CSS variable (never raw hex in code or Figma)
@@ -89,7 +98,7 @@ Every design task follows this pipeline. No phase may be skipped.
 
 | Phase | Name | What |
 |-------|------|------|
-| 0 | **CONTEXT** | User journey, design language, device/viewport |
+| 0 | **CONTEXT** | User journey, product/business priority, `DESIGN.md`, device/viewport |
 | 1 | **ANALYZE** | 5-lens + UI Subtraction Gate |
 | 2 | **REFERENCE** | Find gold-standard, deep-inspect structure |
 | 3 | **BOM** | Bill of Materials — list ALL component instances needed |
@@ -135,6 +144,23 @@ Mobile/game additions:
 
 Design reviews must include: Keep, Remove, Collapse, Move, Add only after subtraction.
 
+## Design Work Modes
+
+Use the smallest mode that matches the request instead of running the whole pipeline at maximum weight:
+
+- `shape`: clarify product job, surface, constraints, and visual lane before edits.
+- `craft`: implement a confirmed UI change end to end.
+- `audit`: technical quality scan for accessibility, responsiveness, token drift, and anti-patterns.
+- `critique`: UX/design review with severity, user impact, and next action.
+- `distill`: remove, collapse, or move UI before adding anything.
+- `harden`: edge cases, i18n, overflow, loading/error/empty, long data, slow/offline states.
+- `polish`: final alignment, spacing, density, hierarchy, and visual consistency pass.
+- `adapt`: mobile/desktop viewport and touch-target adaptation.
+- `clarify`: labels, error copy, instructions, and support/empty state text.
+- `typeset/layout`: typography and spatial rhythm fixes.
+
+Modes do not weaken the production bar. They only pick the most direct path to the same token, component, subtraction, hardening, and rendered-evidence gates.
+
 ## State Coverage (mandatory)
 
 Every interactive element must have these states designed:
@@ -151,6 +177,21 @@ Every interactive element must have these states designed:
 | Empty | No data |
 
 Not all states apply everywhere. But the designer must DECIDE which apply — not ignore them.
+
+## Browser And Visual Hardening Gate
+
+For M+ UI work, product surfaces, forms, dashboards, app shells, and design-system primitives, verify real rendered behavior before closeout:
+
+- Capture or inspect desktop and mobile viewports.
+- Check important controls with `getBoundingClientRect()` or equivalent geometry evidence.
+- Stress long text, long words, large numbers, empty data, many items, and short labels.
+- Verify loading, error, empty, disabled, focus, hover, active, and default states where applicable.
+- Check slow/offline/API error behavior when the UI depends on network data.
+- Check 200 percent zoom or text scaling when feasible.
+- Respect `prefers-reduced-motion` for animated surfaces.
+- Document residual doubt when a browser, Storybook, or screenshot check is unavailable.
+
+Use Playwright screenshot snapshots, Storybook visual tests, Chromatic, or equivalent visual regression only when the project already uses them or the surface is high-value enough to justify the added tool.
 
 ## Self-Audit Gate (after every creation step)
 

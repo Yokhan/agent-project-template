@@ -61,7 +61,7 @@ const ROUTES = [
   {
     mode: "design",
     pattern:
-      /design|figma|ui|ux|css|layout|visual|component|responsive|accessib|screen|mockup|дизайн|фигма|макет|экран|интерфейс|стиль/i,
+      /design|figma|ui|ux|css|layout|visual|component|responsive|accessib|screen|mockup|shape|craft|critique|distill|harden|polish|adapt|clarify|typeset|colorize|bolder|quieter|дизайн|фигма|макет|экран|интерфейс|стиль/i,
     skills: ["codex-design-workflow", "codex-domain-design-review"],
     pipeline: "design",
     subagents: ["design_reviewer", "tester", "reviewer"],

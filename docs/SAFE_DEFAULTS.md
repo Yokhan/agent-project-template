@@ -22,11 +22,11 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 ## Bootstrap Defaults
 
 - `setup.sh` and `setup.bat` copy only tracked project-facing files.
-- Starter overlays reset `tasks/current.md`, `tasks/goal.md`, `tasks/.research-cache.md`, `tasks/lessons.md`, and empty knowledge/audit folders.
+- Starter overlays reset root `DESIGN.md`, `design-policy.ignore`, `tasks/current.md`, `tasks/goal.md`, `tasks/.research-cache.md`, `tasks/lessons.md`, and empty knowledge/audit folders.
 - Maintainer logs, local fixtures, dependency artifacts, and machine-specific settings are excluded from generated projects.
 
 ## Update Contract
 
 - `sync-template.sh` updates template-owned files from the manifest.
-- `project-*` files, `.agents/skills/project-*`, `.codex/agents/project-*`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
+- `project-*` files, `.agents/skills/project-*`, `.codex/agents/project-*`, `CLAUDE.md`, `DESIGN.md`, `design-policy.ignore`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
 - When both local and template versions changed, sync writes `*.template-new` instead of overwriting silently.

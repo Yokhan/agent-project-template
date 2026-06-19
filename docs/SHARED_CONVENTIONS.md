@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-06-12 for template `4.1.1`; product/business outcome priority, text policy, platform policy, and CI runtime hygiene are enforced by validators.
+Last reviewed: 2026-06-19 for template `4.2.0`; product/business outcome priority, text policy, platform policy, CI runtime hygiene, and production design QA are enforced by validators.
 
 ## Product And Business Outcome Priority
 

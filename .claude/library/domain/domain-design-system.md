@@ -5,6 +5,8 @@ Design systems are production contracts, not collections of nice-looking screens
 
 A usable system must let agents and humans compose product UI without guessing spacing, typography, radius, motion, states, copy density, or component dependencies.
 
+Root `DESIGN.md`, when present, is the project-owned visual contract that agents read before making design decisions. It summarizes the active token/component language without replacing implementation tokens, Storybook, or Figma libraries.
+
 ## Required Layers
 
 1. Foundations: color, typography, spacing, radius, shadow, motion, grid, breakpoints, z-index.

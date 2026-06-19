@@ -318,6 +318,8 @@ if [ ! -f "$MANIFEST" ]; then
       "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" \
       "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" \
       "_reference/spec-kit/upstream/templates/commands/*.md" \
+      "DESIGN.md" \
+      "design-policy.ignore" \
       "docs/AGENT_PIPELINES.md" \
       "docs/CODEX_FANOUT_PATTERNS.md" \
       "docs/CODEX_SKILLS_AUDIT.md" \
@@ -612,7 +614,7 @@ for(const[fp,info]of Object.entries(m.files||{})){
 }
 
 function getCategory(fp){
-  if(fp==='CLAUDE.md'||fp==='PROJECT_SPEC.md'||fp==='ecosystem.md'||fp.startsWith('tasks/')||fp.startsWith('brain/'))return 'project';
+  if(fp==='CLAUDE.md'||fp==='DESIGN.md'||fp==='design-policy.ignore'||fp==='PROJECT_SPEC.md'||fp==='ecosystem.md'||fp.startsWith('tasks/')||fp.startsWith('brain/'))return 'project';
   if(fp==='.gitignore'||fp==='.mcp.json'||fp.startsWith('.vscode/'))return 'hybrid';
   return 'template';
 }
@@ -658,7 +660,7 @@ for(const d of ['integrations/spec-kit','_reference/agent-sot','_reference/spec-
   addManagedTree(d);
 }
 
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','CLAUDE.md','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','CLAUDE.md','DESIGN.md','design-policy.ignore','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
 for(const fp of rootFiles){
   if(!fs.existsSync(fp)||m.files[fp])continue;
   const h=getHash(fp);

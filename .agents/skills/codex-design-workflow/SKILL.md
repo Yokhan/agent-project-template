@@ -12,7 +12,7 @@ Read:
 
 ## Required Phases
 
-1. Context: user journey, viewport, design language, constraints.
+1. Context: user journey, viewport, product/business priority, root `DESIGN.md` when present, design language, constraints.
 2. Analyze: art direction, UX, UI, flow, behavior.
    - Run the UI Subtraction Gate before BOM or any new panel/control.
 3. Reference: inspect existing product/system or gold-standard references.
@@ -24,6 +24,8 @@ Read:
 
 ## Hard Gates
 
+- `tasks/goal.md` owns product/business priority; root `DESIGN.md` owns visual direction and guardrails.
+- Do not overwrite a project `DESIGN.md` without explicit product-owner approval.
 - No raw visual values when tokens or variables exist.
 - No raw shapes when a component exists.
 - Every container uses layout mode, flexbox, or grid.
@@ -32,6 +34,35 @@ Read:
 - Molecules and larger components must declare lower-layer token/component dependencies.
 - Design-system work must expose foundation tables and Storybook or equivalent inspectable stories.
 - Screens must pass the subtraction gate before adding panels, persistent lists, banners, advice blocks, or secondary controls.
+
+## Command Modes
+
+- `shape`: clarify product job, surface, constraints, and visual lane before edits.
+- `craft`: implement a confirmed UI change end to end.
+- `audit`: technical quality scan for accessibility, responsiveness, token drift, and anti-patterns.
+- `critique`: UX/design review with severity, user impact, and next action.
+- `distill`: remove, collapse, or move UI before adding anything.
+- `harden`: edge cases, i18n, overflow, loading/error/empty, long data, slow/offline states.
+- `polish`: final alignment, spacing, density, hierarchy, and visual consistency pass.
+- `adapt`: mobile/desktop viewport and touch-target adaptation.
+- `clarify`: labels, error copy, instructions, and support/empty state text.
+- `typeset/layout`: typography and spatial rhythm fixes.
+
+Use the smallest mode that matches the request. Modes select workflow depth; they do not lower the production bar.
+
+## Hardening Evidence
+
+For M+ UI work, product surfaces, forms, dashboards, app shells, and design-system primitives, close out with real rendered evidence:
+
+- desktop and mobile viewport check;
+- geometry check for important controls;
+- long text, long word, large number, empty data, and many-item stress;
+- loading, error, empty, disabled, focus, hover, active, and default states where applicable;
+- slow/offline/API error behavior when the UI depends on network data;
+- 200 percent zoom or text scaling when feasible;
+- reduced-motion behavior for animated surfaces.
+
+If browser, Storybook, or screenshot evidence is unavailable, state the residual risk instead of calling the UI production-ready.
 
 ## UI Subtraction Gate
 

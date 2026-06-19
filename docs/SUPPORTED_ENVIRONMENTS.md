@@ -50,6 +50,8 @@ Current release validation covers:
 - Codex agent validation: `node scripts/validate-codex-agents.js`
 - Codex route validation: `node scripts/test-codex-routing.js`
 - Production standard validation: `node scripts/validate-production-standard.js`
+- Design context validation through the starter root `DESIGN.md` contract
+- Design policy validation: `node scripts/validate-design-policy.js` and `node scripts/test-design-policy.js`
 - Spec Kit snapshot validation: `node scripts/validate-spec-kit.js`
 - Text/platform policy validation: `node scripts/validate-text-policy.js`
 - optional quota-consuming Codex subagent runtime check: `scripts/test-codex-subagents-live.sh --yes`

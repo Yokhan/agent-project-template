@@ -78,6 +78,13 @@ function main() {
     risk: "MEDIUM",
   });
 
+  testRoute("polish harden typeset product surface", {
+    modes: ["design"],
+    skills: ["codex-design-workflow", "codex-domain-design-review"],
+    qualityGates: ["token-contract", "state-coverage", "responsive-check"],
+    risk: "MEDIUM",
+  });
+
   testRoute("доработай дизайн-систему: токены, Storybook, атомы, молекулы и формы", {
     modes: ["design-system"],
     skills: ["codex-design-system-workflow", "codex-design-workflow"],

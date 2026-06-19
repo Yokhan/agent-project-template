@@ -207,6 +207,8 @@ generate_manifest() {
       upgrade-project.sh) echo "template" ;;
       AGENTS.md) echo "template" ;;
       CLAUDE.md) echo "project" ;;
+      DESIGN.md) echo "project" ;;
+      design-policy.ignore) echo "project" ;;
       PROJECT_SPEC.md) echo "project" ;;
       ecosystem.md) echo "project" ;;
       tasks/*) echo "project" ;;
@@ -278,6 +280,8 @@ generate_manifest() {
     "upgrade-project.sh"
     "AGENTS.md"
     "CLAUDE.md"
+    "DESIGN.md"
+    "design-policy.ignore"
     "PROJECT_SPEC.md"
     "ecosystem.md"
     ".mcp.json"
