@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.3.3-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.3.4-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.3.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.3
+bash scripts/sync-template.sh --from-git --ref v4.3.4 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.3.4
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.3.4** | Patch release: makes production-standard validation downstream-aware so generated projects do not need source-only `templates/project-starter/*` files while the template source still checks them |
 | **4.3.3** | Patch release: includes design-policy test fixtures in template sync delivery so downstream `test-design-policy` works without manual fixture copying |
 | **4.3.2** | Patch release: makes screen anatomy/root-frame contracts mandatory in design rules and skills, adds regression coverage for those contracts, and makes `sync-template.sh --from-git --dry-run` show the real sync preview |
 | **4.3.1** | Patch release: fixes README/CLAUDE documentation drift and adds regression coverage so release-facing counts and command lists match the shipped template surface |

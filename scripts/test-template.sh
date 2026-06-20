@@ -367,6 +367,7 @@ if is_template_source_repo; then
       [ -f "$project/tests/fixtures/design-policy/pass/basic.css" ] &&
       [ -f "$project/tests/fixtures/design-policy/fail/gradient-text.css" ] &&
       (cd "$project" && node scripts/test-design-policy.js >/dev/null) &&
+      (cd "$project" && node scripts/validate-production-standard.js >/dev/null) &&
       [ -f "$project/tasks/goal.md" ] &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['DESIGN.md']?.category!=='project') process.exit(1)" "$project" &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['design-policy.ignore']?.category!=='project') process.exit(1)" "$project" &&

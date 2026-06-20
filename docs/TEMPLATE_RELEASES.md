@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.3.3
-git push origin v4.3.3
+git tag v4.3.4
+git push origin v4.3.4
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -64,7 +64,9 @@ Version `4.3.2` is a compatible patch release that promotes the concrete screen 
 
 Version `4.3.3` is a compatible patch release that includes design-policy test fixtures in template sync delivery so downstream `test-design-policy` works after normal sync without manual fixture copying.
 
-Downstream projects should sync `v4.3.3` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
+Version `4.3.4` is a compatible patch release that makes production-standard validation downstream-aware so generated projects do not need source-only `templates/project-starter/*` files while the template source still checks them.
+
+Downstream projects should sync `v4.3.4` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
 
 ## Release Gate
 

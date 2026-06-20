@@ -10,14 +10,17 @@ const REQUIRED_FILES = [
   ".claude/library/process/product-goal-loop.md",
   ".claude/library/domain/domain-design-system.md",
   "tasks/goal.md",
-  "templates/project-starter/tasks/goal.md",
-  "templates/project-starter/DESIGN.md",
-  "templates/project-starter/design-policy.ignore",
   ".agents/skills/codex-product-goal/SKILL.md",
   ".agents/skills/codex-design-system-workflow/SKILL.md",
   ".agents/skills/codex-design-workflow/references/design-command-modes.md",
   ".agents/skills/codex-product-ux-audit/SKILL.md",
   ".agents/skills/codex-cross-project-lessons/SKILL.md",
+];
+
+const SOURCE_ONLY_REQUIRED_FILES = [
+  "templates/project-starter/tasks/goal.md",
+  "templates/project-starter/DESIGN.md",
+  "templates/project-starter/design-policy.ignore",
 ];
 
 const REQUIRED_TEXT = [
@@ -46,9 +49,12 @@ const REQUIRED_TEXT = [
   { file: ".agents/skills/codex-design-workflow/references/design-command-modes.md", text: "Product register" },
   { file: ".agents/skills/codex-design-workflow/references/design-command-modes.md", text: "Human judgment first, validator output second" },
   { file: ".agents/skills/codex-domain-design-review/SKILL.md", text: "Automated findings are evidence, not the design verdict" },
-  { file: "templates/project-starter/DESIGN.md", text: "tasks/goal.md` owns product intent" },
   { file: "scripts/validate-design-policy.js", text: "Design policy notification" },
   { file: "tasks/goal.md", text: "Final Outcome" },
+];
+
+const SOURCE_ONLY_REQUIRED_TEXT = [
+  { file: "templates/project-starter/DESIGN.md", text: "tasks/goal.md` owns product intent" },
   { file: "templates/project-starter/tasks/goal.md", text: "Quality Bar" },
 ];
 
@@ -91,6 +97,15 @@ function addError(message) {
 
 function readText(filePath) {
   return fs.readFileSync(filePath, "utf8");
+}
+
+function isTemplateSourceRepo() {
+  const specPath = path.join(process.cwd(), "PROJECT_SPEC.md");
+  if (!fs.existsSync(specPath)) {
+    return false;
+  }
+  const hasSourceOnlyStarter = fs.existsSync(path.join(process.cwd(), "templates/project-starter"));
+  return hasSourceOnlyStarter && readText(specPath).split(/\r?\n/).some((line) => line.trim() === "- Name: agent-project-template");
 }
 
 function assertFile(relativePath) {
@@ -145,8 +160,18 @@ function main() {
   for (const filePath of REQUIRED_FILES) {
     assertFile(filePath);
   }
+  if (isTemplateSourceRepo()) {
+    for (const filePath of SOURCE_ONLY_REQUIRED_FILES) {
+      assertFile(filePath);
+    }
+  }
   for (const requirement of REQUIRED_TEXT) {
     assertText(requirement);
+  }
+  if (isTemplateSourceRepo()) {
+    for (const requirement of SOURCE_ONLY_REQUIRED_TEXT) {
+      assertText(requirement);
+    }
   }
   for (const routeCase of ROUTE_CASES) {
     assertRoute(routeCase);
