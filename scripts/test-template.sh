@@ -349,7 +349,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -364,6 +364,9 @@ if is_template_source_repo; then
       [ -f "$project/.agents/skills/codex-design-workflow/references/design-command-modes.md" ] &&
       [ -f "$project/DESIGN.md" ] &&
       [ -f "$project/design-policy.ignore" ] &&
+      [ -f "$project/tests/fixtures/design-policy/pass/basic.css" ] &&
+      [ -f "$project/tests/fixtures/design-policy/fail/gradient-text.css" ] &&
+      (cd "$project" && node scripts/test-design-policy.js >/dev/null) &&
       [ -f "$project/tasks/goal.md" ] &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['DESIGN.md']?.category!=='project') process.exit(1)" "$project" &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['design-policy.ignore']?.category!=='project') process.exit(1)" "$project" &&
@@ -419,7 +422,9 @@ if is_template_source_repo; then
       "$template/scripts" \
       "$template/docs" \
       "$template/_reference/spec-kit" \
-      "$template/templates/project-starter/tasks"
+      "$template/templates/project-starter/tasks" \
+      "$template/tests/fixtures/design-policy/pass" \
+      "$template/tests/fixtures/design-policy/fail"
 
     printf '%s\n' '# Fixture Claude' '<!-- Template Version: 9.9.9 -->' > "$template/CLAUDE.md"
     printf '%s\n' '*.log' > "$template/.gitignore"
@@ -430,6 +435,8 @@ if is_template_source_repo; then
     printf '%s\n' '# source-only unix setup fixture' > "$template/setup.sh"
     printf '%s\r\n' '@echo off' 'rem source-only windows setup fixture' > "$template/setup.bat"
     printf '%s\n' '# source-only starter task fixture' > "$template/templates/project-starter/tasks/current.md"
+    printf '%s\n' '.fixture-pass { color: var(--color-text); }' > "$template/tests/fixtures/design-policy/pass/basic.css"
+    printf '%s\n' '.fixture-fail { background: linear-gradient(red, blue); background-clip: text; }' > "$template/tests/fixtures/design-policy/fail/gradient-text.css"
   }
   write_empty_trackable_manifest() {
     local project="$1"
@@ -476,11 +483,13 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: .gitignore" "$output"
     grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
+    grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output"
 
     bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1
     grep -q '"CLAUDE.md"' "$project/.template-manifest.json"
     grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json"
     grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json"
+    grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json"
     ! grep -q '"templates/' "$project/.template-manifest.json"
     ! grep -q '"setup.sh"' "$project/.template-manifest.json"
     ! grep -q '"setup.bat"' "$project/.template-manifest.json"

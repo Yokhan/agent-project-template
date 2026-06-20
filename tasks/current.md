@@ -91,10 +91,10 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.2.0 has been published as the production design QA minor release.
 - v4.3.0 has been published as the design pipeline and skill upgrade minor release.
 - v4.3.1 has been published as the documentation drift patch release.
-- v4.3.2 screen anatomy and git dry-run preview patch is in progress.
+- v4.3.3 design fixture sync patch is in progress.
 
 ## Immediate Next Step
-- Finish the v4.3.2 release gate, commit, tag, push, and verify downstream PA sync.
+- Finish the v4.3.3 release gate, commit, tag, push, and verify downstream PA sync.
 
 ## Plan - v4.3.2 Screen Anatomy And Git Dry-Run Patch
 

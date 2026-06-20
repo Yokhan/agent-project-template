@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-06-19 for template `4.3.2`; product/business outcome priority, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, git dry-run sync preview, and release-facing documentation count checks are enforced by validators.
+Last reviewed: 2026-06-20 for template `4.3.3`; product/business outcome priority, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, design-policy fixture sync delivery, git dry-run sync preview, and release-facing documentation count checks are enforced by validators.
 
 ## Product And Business Outcome Priority
 
