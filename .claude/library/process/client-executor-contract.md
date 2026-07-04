@@ -83,6 +83,25 @@ Internal activity is not a useful result by itself. Research, setup, or drafting
 can be a valid step only when it produces a decision, evidence, or reusable
 artifact the client can inspect.
 
+## Progressive JPEG Delivery
+
+For M+, HIGH-risk, template, release, product, design, auth, data, game, docs,
+deployment, status, replan, and closeout work, use progressive JPEG delivery:
+show a useful low-resolution version of the result early, then sharpen it with
+evidence.
+
+A progressive JPEG update must name:
+
+- first useful view: what the client can already inspect, use, or decide from;
+- next sharpened layer: what evidence, check, slice, or artifact comes next;
+- rough edges: what is intentionally incomplete, uncertain, or not verified yet;
+- replan trigger: which fact would change scope, deadline, quality bar, or path.
+
+Do not disappear until the final answer when the client needs control. Do not
+pretend the low-resolution view is the finished result. If the final delivery
+time is unknown, give the next verifiable checkpoint instead of inventing a
+deadline.
+
 ## Status Shape
 
 Status updates should answer:
@@ -95,6 +114,22 @@ Status updates should answer:
 Avoid vague progress words when the client needs a decision. If the final
 delivery time is unknown, give the next verifiable checkpoint instead of fake
 certainty.
+
+For longer work, status must read like a progressive JPEG:
+
+```text
+Current view:
+What is already visible and useful.
+
+Next sharpened layer:
+What evidence or artifact comes next.
+
+Rough edge:
+What is still incomplete or uncertain.
+
+Replan trigger:
+What would change the path.
+```
 
 ## Replan Shape
 

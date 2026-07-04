@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-04 for template `4.4.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-07-04 for template `4.4.2` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -53,6 +53,7 @@ Last reviewed: 2026-07-04 for template `4.4.1` local validation. Remote GitHub A
 - [ ] Design policy findings include rule id, file, evidence, impact, next action, and ignore/baseline tuning guidance
 - [ ] Product/business outcome priority is present in shared rules, agent entrypoints, skills, routing, and validators
 - [ ] Client-executor accountability, anti-sycophancy, and no-fake-completion evidence gates are present in shared rules, agent entrypoints, skills, routing, and validators
+- [ ] Progressive JPEG delivery gate is present in shared rules, AGENTS/CLAUDE, Codex planning skills, writing rules, and production-standard validator checks
 - [ ] Router output includes `planContract`, `productionBar`, `languagePolicy`, and `qualityGates`
 - [ ] Design-system work has token, composition trace, Storybook/equivalent, and rendered-geometry gates
 - [ ] Design work has durable design context, command modes, hardening evidence, and deterministic design-policy checks

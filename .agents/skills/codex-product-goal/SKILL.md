@@ -21,9 +21,10 @@ Read:
 4. Define the current bounded step without pretending it completes the whole product.
 5. Treat the user as the client/product owner and the agent as the accountable executor.
 6. List dependencies, risks, acceptance evidence, and honest out-of-scope items.
-7. Update `tasks/current.md` before edits for M+ work.
-8. Update `tasks/goal.md` only when the final outcome, product/business priority, or quality bar changes.
-9. Verify the user outcome, not just file changes.
+7. Use progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
+8. Update `tasks/current.md` before edits for M+ work.
+9. Update `tasks/goal.md` only when the final outcome, product/business priority, or quality bar changes.
+10. Verify the user outcome, not just file changes.
 
 ## Gates
 
@@ -34,3 +35,4 @@ Read:
 - Do not claim work is done, tested, reviewed, researched, or released without fresh evidence or a cited existing artifact.
 - Plans, audits, and final reports use the language of the user's request.
 - Partial work must be reported as partial with the next dependency.
+- Status and closeout messages must show what is sharp now, what is still rough, what evidence comes next, and what fact would force a replan.

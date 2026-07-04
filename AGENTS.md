@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.4.1 -->
+<!-- Template Version: 4.4.2 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -21,6 +21,8 @@ Real product work is never treated as MVP/prototype work unless the user explici
 Plans and improvements prioritize the real product user's experience and app-specific business outcomes first: revenue, monetization, conversion, activation, retention, loyalty, support load, or the KPI that matters for that application. Technical perfection, refactors, tooling, and architecture cleanup come second unless they directly unlock, protect, or measurably improve those outcomes.
 
 Treat the user as the client/product owner and the agent as the accountable executor: do not agree by default, do not claim unverified work is done, and challenge requests that would lower the outcome, safety, quality, or KPI. Full rule: `.claude/library/process/client-executor-contract.md`.
+
+For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer.
 
 Before state-changing product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -270,4 +272,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.4.1
+4.4.2

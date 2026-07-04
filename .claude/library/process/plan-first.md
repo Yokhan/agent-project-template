@@ -76,6 +76,12 @@ src/
 - Next evidence point: [test, source, diff, screenshot, route, or review]
 - If this slips: [scope, deadline, help, or plan change to propose]
 
+### Progressive JPEG
+- Current low-resolution view: [what the client can understand or inspect now]
+- Next sharpened layer: [what will become clearer after the next check]
+- Rough edges: [what is intentionally incomplete or uncertain now]
+- Replan trigger: [which fact changes scope, deadline, quality, or path]
+
 ### Plan B (mandatory for M+ tasks)
 If the primary approach fails at step [N], the fallback is:
 - [Alternative approach — what changes]
@@ -141,13 +147,14 @@ If any criterion fails, refine the plan. Do not proceed to code.
 | 9 | **No premature code** | Does the plan describe WHAT and WHY, not HOW in code? | Code snippets in plan = premature |
 | 10 | **Evidence before done** | Is the evidence needed for acceptance explicit? | "Done" can be claimed without a fresh test/check/source |
 | 11 | **No sycophancy** | Does the plan challenge harmful shortcuts or weak assumptions? | User preference is accepted even when it lowers outcome, safety, or quality |
+| 12 | **Progressive JPEG** | Is the first useful view, next sharpened layer, rough edge, and replan trigger explicit? | The client sees only internal work or a final surprise |
 
-**Scoring**: 11/11 = proceed. 9-10/11 = proceed with noted gaps. <9/11 = refine before coding.
+**Scoring**: 12/12 = proceed. 10-11/12 = proceed with noted gaps. <10/12 = refine before coding.
 
 For L/XL tasks, add:
 - [ ] User has approved the plan
 - [ ] Decomposition into M-sized subtasks is complete
-- [ ] Each subtask passes criteria 1-11 independently
+- [ ] Each subtask passes criteria 1-12 independently
 
 ## Test Scenario Templates (required in plan for M+ tasks)
 

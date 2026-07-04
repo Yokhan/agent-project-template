@@ -95,9 +95,62 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.3.4 has been published as the downstream production-standard validator patch release.
 - v4.4.0 has been published as the client-executor accountability minor release.
 - v4.4.1 has been published as the GitHub entrypoint patch release.
+- v4.4.2 progressive JPEG client-control patch release is in progress.
 
 ## Immediate Next Step
-- No active release task. Next work should start from a fresh route and preserve the `v4.4.1` GitHub entrypoint contract.
+- Finish the v4.4.2 release gate, commit, tag, push, and verify the GitHub release.
+
+## Plan - Progressive JPEG Client Control Gate
+
+### User Request
+Усилить интеграцию принципов из текстов Ильяхова, потому что сейчас не чувствуется даже принцип progressive JPEG. Дожать с умом; спорные моменты выносить пользователю на согласование.
+
+### Goal
+Сделать progressive JPEG не cold note, а обязательным hot-path поведением для M+/HIGH/template/product планов, статусов, перепланирований и closeout: агент сначала показывает полезную грубую картинку результата, затем следующий проверяемый слой, и заранее называет триггер перепланирования.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that keep the client in control during work instead of going silent until a final answer.
+- Product/business priority: fewer correction loops, lower support load, faster acceptance decisions, and higher trust in agent-managed product/template work.
+- Current step: add a compact progressive JPEG/client-control gate to shared rules and Codex skills, then cover it with validator smoke.
+- Quality bar preserved: no broad natural-language ban-list, no fake exact deadlines, no weakening of v4.4.1 release-entrypoint checks, text/platform policy, or release gates.
+- Out of scope: hard-validating every user-facing sentence or forcing exact calendar deadlines when the honest answer is only the next evidence checkpoint.
+
+### Strategy
+1. Promote the principle from `brain/03-knowledge/...` into `.claude/library/process/client-executor-contract.md`.
+2. Wire it into `plan-first`, `product-goal-loop`, `writing`, and Codex planning/decomposition/strategy skills.
+3. Add validator checks in `scripts/validate-production-standard.js` so future edits cannot silently remove it.
+4. Run focused template checks before deciding whether to publish a patch release.
+
+### Progressive JPEG Acceptance
+- Plans must name the first useful visible result, not only internal preparation.
+- Status updates must name current state, next visible result, evidence/checkpoint, and risk/replan trigger.
+- Closeouts must distinguish what is sharp/verified now from what remains rough, deferred, or uncertain.
+- Agents must not promise exact deadlines when they only know the next verifiable checkpoint.
+
+### Plan B
+If the new rule makes hot instructions too bulky or validators too brittle, keep the gate in shared rules and skills but remove broad text checks. Do not turn contextual writing guidance into a naive word ban.
+
+### Current View
+- Sharp now: progressive JPEG delivery is present in `AGENTS.md`, `CLAUDE.md`, shared client-executor/planning/product-goal/writing rules, and Codex product-goal/strategic/decompose skills.
+- Next sharpened layer: run the full template release gate and publish `v4.4.2`.
+- Rough edge: behavioral quality still depends on agents loading the route-selected rules; the validator proves the gate exists, not that every future answer will be perfect.
+- Replan trigger: if release tests fail due to instruction size or brittle wording checks, reduce the hard validator to exact shared-rule/skill anchors instead of adding prose bans.
+
+### Release Gate Results
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/sync-agents.sh`
 
 ## Plan - v4.4.1 GitHub Entrypoint Patch Release
 

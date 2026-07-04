@@ -102,6 +102,17 @@ Use this order unless the user asked for something else:
 3. `Что это даёт` — the practical result for the project, team, or user
 4. `Чего ожидать дальше` — next effect, remaining external step, or operating guidance
 
+For M+, HIGH-risk, template, product, design, release, or long-running work,
+also preserve the progressive JPEG shape:
+
+- what is sharp now: verified result or inspectable artifact;
+- what is still rough: incomplete, deferred, uncertain, or not yet verified;
+- next sharpened layer: the next evidence point, decision, test, or release step;
+- replan trigger: what would change the path or require client approval.
+
+Do not hide rough edges to make a report feel complete. The client should see
+the usable picture now and understand what will become clearer next.
+
 ### Style Markers
 
 - Plain words over abstract nouns

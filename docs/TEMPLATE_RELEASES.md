@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.4.1
-git push origin v4.4.1
+git tag v4.4.2
+git push origin v4.4.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -38,14 +38,14 @@ Patch releases are for compatible fixes to rules, skills, hooks, scripts, and do
 When an agent receives only the repository URL, it must not guess from `main`.
 
 1. Open the latest stable release: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the release tag shown there. Current stable tag: `v4.4.1`.
+2. Use the release tag shown there. Current stable tag: `v4.4.2`.
 3. For downstream sync, use `scripts/sync-template.sh --from-git --ref <tag>`.
 4. Run `--dry-run` before applying the tag.
 
 New project from a stable release:
 
 ```bash
-git clone --branch v4.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.4.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -54,8 +54,8 @@ Existing generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.4.1
+bash scripts/sync-template.sh --from-git --ref v4.4.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.2
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -97,7 +97,9 @@ Version `4.4.0` is a compatible minor release that adds the client-executor acco
 
 Version `4.4.1` is a compatible patch release that makes the GitHub README/release entrypoint agent-safe. It adds latest-release lookup, pinned release install/sync commands, explicit `main` versus release-tag guidance, and smoke coverage so future releases cannot silently drift back to stale tag examples.
 
-Downstream projects should sync `v4.4.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, and business/product planning conventions before applying.
+Version `4.4.2` is a compatible patch release that promotes the Ilyakhov/progressive JPEG planning principles from cold knowledge into hot agent behavior. Plans, statuses, replans, closeouts, and Codex planning skills must show the first useful view, next sharpened evidence layer, rough edges, and replan trigger instead of hiding internal work until a final answer.
+
+Downstream projects should sync `v4.4.2` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -133,8 +135,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.4.1
+bash scripts/sync-template.sh --from-git --ref v4.4.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.2
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

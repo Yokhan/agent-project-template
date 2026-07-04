@@ -58,7 +58,7 @@ The artifact must stay concise and include:
 1. Restore: read `tasks/goal.md` and `tasks/current.md`.
 2. State intent: "User wants", "Success means", "I will verify by".
 3. Route: run the project router and load only route-selected skills/rules.
-4. Plan: write the current step, product/business outcome link, dependencies, tests, and rollback into `tasks/current.md`.
+4. Plan: write the current step, product/business outcome link, dependencies, tests, rollback, and progressive JPEG checkpoint into `tasks/current.md`.
 5. Execute: implement the step without lowering the final quality bar.
 6. Verify: prove behavior through tests, browser/screenshot checks, contract checks, source links, or deployment smoke, depending on domain.
 7. Update: mark completed steps, log durable lessons, and update `tasks/goal.md` only when the product goal or quality bar actually changed.
@@ -68,6 +68,20 @@ Before choosing a technical improvement, name the product user and the business 
 Do not claim `Done` unless the verification evidence exists. If evidence is
 missing, label the step `Partial`, name the exact gap, and state the next
 verification action.
+
+## Progressive JPEG Checkpoint
+
+For M+ work and all status/replan/closeout messages, the current step must give
+the client a useful low-resolution view before the final result:
+
+- Current view: what is already inspectable, usable, or decidable.
+- Next sharpened layer: which evidence, artifact, or behavior will become clear next.
+- Rough edge: what remains incomplete, uncertain, or unverified.
+- Replan trigger: which new fact changes scope, deadline, quality bar, or path.
+
+If only internal setup happened, report it as internal setup and name the first
+client-visible result. Do not call setup, research, or drafting a delivered
+product result unless it creates an inspectable decision point.
 
 ## Product Slice Discipline
 
