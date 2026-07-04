@@ -95,10 +95,10 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.3.4 has been published as the downstream production-standard validator patch release.
 - v4.4.0 has been published as the client-executor accountability minor release.
 - v4.4.1 has been published as the GitHub entrypoint patch release.
-- v4.4.2 progressive JPEG client-control patch release is in progress.
+- v4.4.2 has been published as the progressive JPEG client-control patch release.
 
 ## Immediate Next Step
-- Finish the v4.4.2 release gate, commit, tag, push, and verify the GitHub release.
+- No active release task. Next work should start from a fresh route and preserve the `v4.4.2` progressive JPEG/client-control behavior.
 
 ## Plan - Progressive JPEG Client Control Gate
 
@@ -151,6 +151,11 @@ If the new rule makes hot instructions too bulky or validators too brittle, keep
 - Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
 - Passed: Git Bash `scripts/test-hooks.sh`
 - Passed: Git Bash `scripts/sync-agents.sh`
+- Published: commit `e234c40dcaf10668341e0ef9b20181d518623ad3`
+- Published: tag `v4.4.2` on origin points to the same commit
+- Published: GitHub Actions `Release Template` run `28716527851` completed `success`
+- Published: GitHub Release `Agent Project Template v4.4.2` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.4.2`
+- Published: asset `agent-project-template-v4.4.2.tar.gz`, sha256 `e34362d4344e9f64578c2ef6f4b7a9be7457f8e54a97e5d7180954e333ff970d`
 
 ## Plan - v4.4.1 GitHub Entrypoint Patch Release
 
