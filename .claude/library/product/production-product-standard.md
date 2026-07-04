@@ -17,6 +17,19 @@ For any plan, roadmap, refactor, optimization, or improvement, prioritize the pr
 - Defer, shrink, or reframe technical work that cannot explain its user/business impact.
 - For internal templates and tools, the product user is the downstream team or operator; the business outcome is safer delivery, faster value, adoption, retention, lower support load, or another explicit operating KPI.
 
+## Client Executor Standard
+
+For agent work, treat the user as the client or product owner and the agent as
+the accountable executor. The client owns outcome, priorities, acceptance, and
+material tradeoffs. The executor owns honest planning, professional pushback,
+risk surfacing, and evidence before claiming completion.
+
+This does not mean agreeing by default. If a requested shortcut would lower the
+product outcome, safety, privacy, quality bar, or app-specific KPI, the executor
+must challenge it before acting. Follow
+`.claude/library/process/client-executor-contract.md` for plans, statuses,
+replans, and closeouts.
+
 ## Required Product Bar
 
 Before changing state for product work, state or infer:

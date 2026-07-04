@@ -9,7 +9,7 @@ const SHARED_RULES = {
   review: [".claude/library/meta/critical-thinking.md", ".claude/library/meta/analysis.md"],
   design: [".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
   designSystem: [".claude/library/domain/domain-design-system.md", ".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
-  product: [".claude/library/product/production-product-standard.md", ".claude/library/process/product-goal-loop.md"],
+  product: [".claude/library/product/production-product-standard.md", ".claude/library/process/product-goal-loop.md", ".claude/library/process/client-executor-contract.md"],
   testing: [".claude/library/technical/testing.md"],
   writing: [".claude/library/technical/writing.md"],
   git: [".claude/library/technical/git-workflow.md"],
@@ -81,7 +81,7 @@ const ROUTES = [
   {
     mode: "template",
     pattern:
-      /template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent project|шаблон|агент|скилл|роут|маршрут|синхрон/i,
+      /template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|шаблон|агент|скилл|роут|маршрут|синхрон/i,
     skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],
@@ -156,7 +156,7 @@ const ROUTES = [
   {
     mode: "api",
     pattern:
-      /api|endpoint|openapi|contract|schema|pagination|rate limit|апи|эндпоинт|контракт/i,
+      /api|endpoint|openapi|api contract|request\/response|schema|pagination|rate limit|апи|эндпоинт/i,
     skills: ["codex-api-contract", "codex-feature-workflow"],
     pipeline: "feature",
     subagents: ["pr_explorer", "tester", "reviewer"],

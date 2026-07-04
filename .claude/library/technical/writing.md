@@ -79,6 +79,20 @@ The report is NOT a build log, tool transcript, or file inventory.
 7. Separate done from not done. If something still depends on an external step, say it directly and once.
 8. Prefer short paragraphs. Use lists only when the content is inherently list-shaped.
 
+### Executor Evidence Rule
+
+For client-facing implementation, debugging, review, migration, release, and
+template work, follow `.claude/library/process/client-executor-contract.md`.
+
+Do not claim tests passed, research was checked, review was completed, a release
+was published, or work is done unless the report includes fresh evidence or a
+specific existing artifact. If the evidence is missing, say "not verified" and
+name the next check.
+
+When the user's requested approach would lower product outcome, safety, privacy,
+quality, or app-specific KPI, push back before presenting the work as accepted.
+Professional disagreement is part of the service.
+
 ### Default Closeout Structure
 
 Use this order unless the user asked for something else:

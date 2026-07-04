@@ -1,6 +1,6 @@
 # Plan-First Protocol — Architecture Before Code
 
-For product, design, auth, data, game, docs, deployment, template, or M+ work, read `.claude/library/process/product-goal-loop.md` and `.claude/library/product/production-product-standard.md` before planning.
+For product, design, auth, data, game, docs, deployment, template, or M+ work, read `.claude/library/process/product-goal-loop.md`, `.claude/library/product/production-product-standard.md`, and `.claude/library/process/client-executor-contract.md` before planning.
 
 Plans, audits, and reports must use the language of the user's request.
 
@@ -70,6 +70,12 @@ src/
 - [Risk 1] → [Mitigation]
 - [Risk 2] → [Mitigation]
 
+### Client Checkpoint
+- Acceptance: [what the client can accept or reject]
+- First useful result: [decision, evidence, or artifact; not only internal work]
+- Next evidence point: [test, source, diff, screenshot, route, or review]
+- If this slips: [scope, deadline, help, or plan change to propose]
+
 ### Plan B (mandatory for M+ tasks)
 If the primary approach fails at step [N], the fallback is:
 - [Alternative approach — what changes]
@@ -133,13 +139,15 @@ If any criterion fails, refine the plan. Do not proceed to code.
 | 7 | **Reversibility** | Can this be reverted with `git revert`? If not, is rollback plan documented? | Irreversible change without rollback plan = fail |
 | 8 | **Plan B exists** | Is there a concrete alternative if primary approach fails? | "We'll figure it out" = fail |
 | 9 | **No premature code** | Does the plan describe WHAT and WHY, not HOW in code? | Code snippets in plan = premature |
+| 10 | **Evidence before done** | Is the evidence needed for acceptance explicit? | "Done" can be claimed without a fresh test/check/source |
+| 11 | **No sycophancy** | Does the plan challenge harmful shortcuts or weak assumptions? | User preference is accepted even when it lowers outcome, safety, or quality |
 
-**Scoring**: 9/9 = proceed. 7-8/9 = proceed with noted gaps. <7/9 = refine before coding.
+**Scoring**: 11/11 = proceed. 9-10/11 = proceed with noted gaps. <9/11 = refine before coding.
 
 For L/XL tasks, add:
 - [ ] User has approved the plan
 - [ ] Decomposition into M-sized subtasks is complete
-- [ ] Each subtask passes criteria 1-9 independently
+- [ ] Each subtask passes criteria 1-11 independently
 
 ## Test Scenario Templates (required in plan for M+ tasks)
 

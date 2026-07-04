@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.3.4-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.4.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -78,8 +78,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 For pinned release rollout, sync from a tag:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.3.4 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.4
+bash scripts/sync-template.sh --from-git --ref v4.4.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.0
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -174,7 +174,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 24 | Shared library rules plus router entrypoint |
+| **Rules** | 25 | Shared library rules plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
 | **Codex Skills** | 41 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
@@ -279,6 +279,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.4.0** | Minor release: adds the client-executor accountability contract, anti-sycophancy rules, no-fake-completion evidence gates, research note, Codex skill wiring, and route/validator regression coverage |
 | **4.3.4** | Patch release: makes production-standard validation downstream-aware so generated projects do not need source-only `templates/project-starter/*` files while the template source still checks them |
 | **4.3.3** | Patch release: includes design-policy test fixtures in template sync delivery so downstream `test-design-policy` works without manual fixture copying |
 | **4.3.2** | Patch release: makes screen anatomy/root-frame contracts mandatory in design rules and skills, adds regression coverage for those contracts, and makes `sync-template.sh --from-git --dry-run` show the real sync preview |

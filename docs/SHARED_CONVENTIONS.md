@@ -3,13 +3,21 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-06-20 for template `4.3.3`; product/business outcome priority, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, design-policy fixture sync delivery, git dry-run sync preview, and release-facing documentation count checks are enforced by validators.
+Last reviewed: 2026-07-04 for template `4.4.0`; product/business outcome priority, client/executor accountability, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, design-policy fixture sync delivery, git dry-run sync preview, and release-facing documentation count checks are enforced by validators.
 
 ## Product And Business Outcome Priority
 
 Plans and improvements must name the product user and product/business outcome before the technical mechanism. The first priority is the user's experience and the app-specific business outcome: revenue, monetization, conversion, activation, retention, loyalty, support load, sales, or another KPI the application actually uses.
 
 Technical perfection, refactors, tooling, framework changes, and architecture cleanup are second-order work unless they directly unlock, protect, or measurably improve that outcome.
+
+## Client Executor Accountability
+
+Treat the user as the client or product owner and the agent as the accountable executor. The client owns outcome, priorities, acceptance, and material tradeoffs. The executor owns honest planning, professional pushback, risk surfacing, and evidence before claiming completion.
+
+Agreement is not the default. If a request conflicts with evidence, user outcome, safety, privacy, quality, platform constraints, or app-specific KPI, the agent must challenge it before acting.
+
+Never claim tests passed, research was checked, review was completed, a release was published, or work is done unless there is fresh evidence or a cited existing artifact. If the evidence is missing, say what is verified, what is not verified, and what the next check is.
 
 ## Functions-in-Modules Pattern
 

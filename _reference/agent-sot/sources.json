@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-05-26",
+  "checked_at": "2026-07-04",
   "policy": {
     "refresh_after_days": 30,
     "do_not_vendor_third_party_docs": true,
@@ -24,7 +24,7 @@
       "trust": "primary",
       "title": "OpenAI Codex AGENTS.md guide",
       "url": "https://developers.openai.com/codex/guides/agents-md",
-      "last_checked": "2026-06-11",
+      "last_checked": "2026-07-04",
       "requires_fresh_check": true,
       "local_conclusion": "AGENTS.md is project guidance discovered by Codex with a 32 KiB default limit; keep it concise and route to deeper docs."
     },
@@ -34,7 +34,7 @@
       "trust": "primary",
       "title": "OpenAI Codex skills",
       "url": "https://developers.openai.com/codex/skills",
-      "last_checked": "2026-06-11",
+      "last_checked": "2026-07-04",
       "requires_fresh_check": true,
       "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
     },

@@ -21,7 +21,7 @@ MODES=""
 
 # PRODUCT GOAL / PRODUCTION STANDARD
 if echo "$TASK" | grep -qiE "product.goal|final.outcome|quality.bar|production|prod|mvp|prototype|goal|roadmap|continue|finish|цель|финал|качество|доделай|продолжай|прототип"; then
-  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/plan-first.md"
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/client-executor-contract.md $LIB/process/plan-first.md"
   MODES="$MODES product"
 fi
 
@@ -39,13 +39,13 @@ fi
 
 # DESIGN
 if echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen|дизайн|макет|фигма|экран|интерфейс|стиль"; then
-  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/client-executor-contract.md $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES design"
 fi
 
 # DESIGN SYSTEM
 if echo "$TASK" | grep -qiE "design.system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component.library|spacing|radius|typography|rendered.geometry|bounding|дизайн-систем|сторибук|токен|атом|молекул|организм|отступ|скругл|типограф"; then
-  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/domain/domain-design-system.md $LIB/domain/domain-design-pipeline.md"
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/client-executor-contract.md $LIB/domain/domain-design-system.md $LIB/domain/domain-design-pipeline.md"
   MODES="$MODES design-system"
 fi
 
@@ -68,8 +68,8 @@ if echo "$TASK" | grep -qiE "commit|push|pr|pull.request|merge|branch|release|de
 fi
 
 # TEMPLATE / CODEX ROUTING
-if echo "$TASK" | grep -qiE "template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent.project|шаблон|агент|скилл|роут|маршрут|синхрон"; then
-  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/meta/critical-thinking.md $LIB/technical/testing.md $LIB/technical/git-workflow.md"
+if echo "$TASK" | grep -qiE "template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent.project|client-executor|accountable.executor|anti-?sycophancy|sycophancy|fake.work|fake.completion|falsif|pretend.completed|no.fake|шаблон|агент|скилл|роут|маршрут|синхрон"; then
+  FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/client-executor-contract.md $LIB/meta/critical-thinking.md $LIB/technical/testing.md $LIB/technical/git-workflow.md"
   MODES="$MODES template"
 fi
 
@@ -81,7 +81,7 @@ fi
 
 # PLAN
 if echo "$TASK" | grep -qiE "plan|strategy|architect|roadmap|estimate|decompose|breakdown|спланируй|декомпозируй|разбей|оцени сложность|архитектур"; then
-  FILES="$FILES $LIB/meta/strategic-thinking.md $LIB/process/plan-first.md $LIB/conflict/conflict-resolution.md"
+  FILES="$FILES $LIB/meta/strategic-thinking.md $LIB/process/plan-first.md $LIB/process/client-executor-contract.md $LIB/conflict/conflict-resolution.md"
   MODES="$MODES plan"
 fi
 

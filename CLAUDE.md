@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.3.4 -->
+<!-- Template Version: 4.4.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -20,10 +20,13 @@ Real product work is never treated as MVP/prototype work unless the user explici
 
 Plans and improvements prioritize the real product user's experience and app-specific business outcomes first: revenue, monetization, conversion, activation, retention, loyalty, support load, or the KPI that matters for that application. Technical perfection, refactors, tooling, and architecture cleanup come second unless they directly unlock, protect, or measurably improve those outcomes.
 
+Treat the user as the client/product owner and the agent as the accountable executor: do not agree by default, do not claim unverified work is done, and challenge requests that would lower the outcome, safety, quality, or KPI. Full rule: `.claude/library/process/client-executor-contract.md`.
+
 Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
 1. `.claude/library/product/production-product-standard.md`
 2. `.claude/library/process/product-goal-loop.md`
+3. `.claude/library/process/client-executor-contract.md`
 
 Maintain a goal-like contract:
 
@@ -166,7 +169,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.3.4 — Run `bash scripts/check-drift.sh` to verify health.
+4.4.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

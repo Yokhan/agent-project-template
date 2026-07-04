@@ -8,6 +8,7 @@ const REQUIRED_FILES = [
   "CLAUDE.md",
   ".claude/library/product/production-product-standard.md",
   ".claude/library/process/product-goal-loop.md",
+  ".claude/library/process/client-executor-contract.md",
   ".claude/library/domain/domain-design-system.md",
   "tasks/goal.md",
   ".agents/skills/codex-product-goal/SKILL.md",
@@ -30,11 +31,20 @@ const REQUIRED_TEXT = [
   { file: "CLAUDE.md", text: "language of the user's request" },
   { file: "AGENTS.md", text: "app-specific business outcomes first" },
   { file: "CLAUDE.md", text: "app-specific business outcomes first" },
+  { file: "docs/SHARED_CONVENTIONS.md", text: "Client Executor Accountability" },
   { file: ".claude/library/product/production-product-standard.md", text: "Product Outcome Priority" },
+  { file: ".claude/library/product/production-product-standard.md", text: "Client Executor Standard" },
   { file: ".claude/library/process/product-goal-loop.md", text: "Product/Business Priority" },
+  { file: ".claude/library/process/product-goal-loop.md", text: "client-executor-contract.md" },
+  { file: ".claude/library/process/client-executor-contract.md", text: "No Fake Completion" },
+  { file: ".claude/library/process/client-executor-contract.md", text: "Anti-Sycophancy Rules" },
+  { file: ".claude/library/process/client-executor-contract.md", text: "evidence before claiming work is done" },
   { file: ".agents/skills/codex-product-goal/SKILL.md", text: "app-specific KPI" },
+  { file: ".agents/skills/codex-product-goal/SKILL.md", text: "fresh evidence" },
   { file: ".agents/skills/codex-strategic-review/SKILL.md", text: "product user" },
+  { file: ".agents/skills/codex-strategic-review/SKILL.md", text: "sycophancy" },
   { file: "scripts/codex-route-task.js", text: "user-business-outcome-link" },
+  { file: "scripts/codex-route-task.js", text: "client-executor" },
   { file: ".claude/library/product/production-product-standard.md", text: "MVP/prototype" },
   { file: ".claude/library/process/product-goal-loop.md", text: "This is not a \"final slice\" model" },
   { file: ".claude/library/domain/domain-design-system.md", text: "Rendered Geometry Gate" },
@@ -59,6 +69,11 @@ const SOURCE_ONLY_REQUIRED_TEXT = [
 ];
 
 const ROUTE_CASES = [
+  {
+    task: "agent template client-executor contract anti-sycophancy no fake completion",
+    skills: ["codex-template-sync", "codex-product-goal", "codex-strategic-review"],
+    gates: ["template-boundary", "verification-evidence"],
+  },
   {
     task: "optimize plan for revenue, retention, loyalty, and business KPI",
     skills: ["codex-product-goal", "codex-strategic-review"],

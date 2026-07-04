@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.3.4
-git push origin v4.3.4
+git tag v4.4.0
+git push origin v4.4.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -66,7 +66,9 @@ Version `4.3.3` is a compatible patch release that includes design-policy test f
 
 Version `4.3.4` is a compatible patch release that makes production-standard validation downstream-aware so generated projects do not need source-only `templates/project-starter/*` files while the template source still checks them.
 
-Downstream projects should sync `v4.3.4` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, and business/product planning conventions before applying.
+Version `4.4.0` is a compatible minor release that adds the client-executor accountability contract, anti-sycophancy rules, no-fake-completion evidence gates, research notes, Codex skill wiring, and route/validator regression coverage. Agents treat the user as the client/product owner and the agent as the accountable executor: they must not agree by default, must not claim unverified work is done, and must challenge requests that lower product outcome, safety, quality, or app-specific KPI.
+
+Downstream projects should sync `v4.4.0` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -102,8 +104,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.3.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.3.3
+bash scripts/sync-template.sh --from-git --ref v4.4.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

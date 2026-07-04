@@ -140,6 +140,26 @@ function main() {
     risk: "HIGH",
   });
 
+  testRoute("agent template client-executor contract anti-sycophancy no fake completion", {
+    modes: ["template"],
+    skills: [
+      "codex-template-sync",
+      "codex-skill-maintenance",
+      "codex-test-rules",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "verification-evidence"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("update API contract request/response pagination", {
+    modes: ["api"],
+    skills: ["codex-api-contract", "codex-feature-workflow"],
+    risk: "MEDIUM",
+  });
+
   testRoute("запрети MVP мышление и веди задачу как /goal с финальным качеством продукта", {
     modes: ["product-goal"],
     skills: ["codex-product-goal", "codex-strategic-review"],

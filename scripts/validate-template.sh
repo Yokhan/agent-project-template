@@ -188,6 +188,7 @@ REQUIRED_FILES=(
   "docs/SUPPORTED_ENVIRONMENTS.md"
   ".claude/library/product/production-product-standard.md"
   ".claude/library/process/product-goal-loop.md"
+  ".claude/library/process/client-executor-contract.md"
   ".claude/library/domain/domain-design-system.md"
   "integrations/spec-kit/README.md"
   "scripts/validate-codex-skills.js"

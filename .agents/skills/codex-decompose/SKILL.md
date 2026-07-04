@@ -13,6 +13,10 @@ Read `.claude/skills/decompose/SKILL.md` for detailed patterns.
 2. Identify independent deliverables and dependencies.
 3. Split into 3-5 tasks that can each be verified.
 4. Define the first safe slice.
-5. State what is deferred and why.
+5. Define the acceptance evidence for each slice.
+6. State what is deferred and why.
 
 Do not start broad edits before the first slice is clear.
+Do not call an internal checkpoint a completed client result unless the user can inspect, accept, or decide from it.
+
+For client-facing decomposition, follow `.claude/library/process/client-executor-contract.md`.

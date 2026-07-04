@@ -5,6 +5,11 @@ Keep long product work coherent across turns, compaction, agents, and downstream
 
 This is not a "final slice" model. Agents naturally split work into bounded steps. The goal loop preserves the final product target while each step stays small, reversible, and verifiable.
 
+For client-facing plans, status, replans, and closeouts, also follow
+`.claude/library/process/client-executor-contract.md`: the user owns outcome,
+priority, and acceptance; the agent owns honest execution, risk surfacing,
+professional pushback, and evidence before claiming work is done.
+
 ## When Required
 
 Use this loop for:
@@ -55,10 +60,14 @@ The artifact must stay concise and include:
 3. Route: run the project router and load only route-selected skills/rules.
 4. Plan: write the current step, product/business outcome link, dependencies, tests, and rollback into `tasks/current.md`.
 5. Execute: implement the step without lowering the final quality bar.
-6. Verify: prove behavior through tests, browser/screenshot checks, contract checks, or deployment smoke, depending on domain.
+6. Verify: prove behavior through tests, browser/screenshot checks, contract checks, source links, or deployment smoke, depending on domain.
 7. Update: mark completed steps, log durable lessons, and update `tasks/goal.md` only when the product goal or quality bar actually changed.
 
 Before choosing a technical improvement, name the product user and the business outcome it improves or protects. Technical perfection, refactoring, tooling, and architecture cleanup are valid only when they directly support user experience, revenue, loyalty, retention, activation, risk reduction, or another app-specific KPI.
+
+Do not claim `Done` unless the verification evidence exists. If evidence is
+missing, label the step `Partial`, name the exact gap, and state the next
+verification action.
 
 ## Product Slice Discipline
 

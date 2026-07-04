@@ -91,10 +91,109 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.2.0 has been published as the production design QA minor release.
 - v4.3.0 has been published as the design pipeline and skill upgrade minor release.
 - v4.3.1 has been published as the documentation drift patch release.
-- v4.3.3 design fixture sync patch is in progress.
+- v4.3.3 has been published as the design fixture sync patch release.
+- v4.3.4 has been published as the downstream production-standard validator patch release.
+- v4.4.0 client-executor accountability minor release is in progress.
 
 ## Immediate Next Step
-- Finish the v4.3.3 release gate, commit, tag, push, and verify downstream PA sync.
+- Finish the v4.4.0 release gate, commit, tag, push, and verify the release tag.
+
+## Plan - v4.4.0 Client Executor Accountability Release
+
+### User Request
+Release the client-executor accountability, anti-sycophancy, and no-fake-completion template update.
+
+### Goal
+Publish `v4.4.0`, where template-derived agents treat the user as the client/product owner and the agent as an accountable executor that must challenge harmful requests and prove completion with evidence.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that preserve final product intent while reducing false "done" reports and agreeable-but-wrong execution.
+- Product/business priority: safer delivery, lower support load, higher trust in agent-managed product work, and fewer correction loops.
+- Current step: bump version/release docs, regenerate `PROJECT_SPEC.md`, run release gates, commit, tag, and push `v4.4.0`.
+- Quality bar preserved: existing v4.3.4 downstream-aware validation, text/mojibake policy, Windows platform policy, design-policy gates, sync trust boundaries, and release smoke remain active.
+- Out of scope: applying `v4.4.0` to every downstream project after the tag.
+
+### Verification
+- Full local template gate before commit/tag.
+- Git tag `v4.4.0` exists locally and is pushed to `origin`.
+- GitHub release workflow is triggered by the pushed tag; remote asset completion is a follow-up check after CI finishes.
+
+### Release Gate Results
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`134/134`)
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-agent-sot.js`
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: Windows `setup.bat` smoke after staging tracked payload
+
+## Plan - Client Executor Contract And Anti-Sycophancy
+
+### User Request
+Сделать так, чтобы агент воспринимал себя как ответственного исполнителя, пользователя - как заказчика, но не начал поддакивать, фальсифицировать работу или скрывать отсутствие проверок. Проверить научные источники и Reddit перед внедрением.
+
+### Goal
+Добавить в шаблон контракт "заказчик/исполнитель", который усиливает честное планирование, evidence-first статусы и профессиональное несогласие с пользователем, если запрос вредит результату.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that are accountable to the user's outcome, not merely agreeable or busy.
+- Product/business priority: safer delivery, lower support load, fewer false "done" reports, higher trust in agent-driven product work.
+- Current step: add a shared client-executor rule, wire it into product goal/planning/writing/skills, add regression checks, and preserve existing v4.3.4 gates.
+- Quality bar preserved: no MVP/prototype drift, no weakening of mojibake/platform/design/release validators, no bloated startup instructions.
+- Out of scope for this step: releasing a new tag unless explicitly requested after validation.
+
+### Complexity Estimate
+- Size: M
+- Files to create: 2
+- Files to modify: about 10
+- Risk: HIGH because this changes agent operating behavior.
+
+### File Architecture
+- `.claude/library/process/client-executor-contract.md` - shared source of truth for the role contract, anti-sycophancy, and no-fake-completion rules.
+- `brain/03-knowledge/communication/client-executor-anti-sycophancy-research.md` - cold research note with scientific/OpenAI/Reddit evidence and local conclusions.
+- `.claude/library/process/product-goal-loop.md` - load the contract for M+ product/template work.
+- `.claude/library/process/plan-first.md` - add plan reality and acceptance checkpoint rules.
+- `.claude/library/technical/writing.md` - add evidence-first client-facing report rules.
+- `.agents/skills/codex-product-goal/SKILL.md`, `.agents/skills/codex-strategic-review/SKILL.md`, `.agents/skills/codex-decompose/SKILL.md` - route relevant Codex work through the contract.
+- `AGENTS.md`, `CLAUDE.md` - one short hot-memory pointer only.
+- `scripts/codex-route-task.js`, `scripts/test-codex-routing.js`, `scripts/validate-production-standard.js`, `scripts/test-template.sh` - regression coverage.
+
+### Implementation Order
+1. Add research note and shared contract.
+2. Wire the contract into product goal, plan-first, writing, and Codex skills.
+3. Add routing and validator smoke coverage, including the prior `contract` misroute regression.
+4. Run focused validation and report remaining release status.
+
+### Risks And Mitigations
+- Sycophancy risk -> require challenge-before-action when user request conflicts with evidence, safety, quality, or product outcome.
+- Fake completion risk -> require fresh evidence before claiming done, tests passed, reviewed, researched, or released.
+- Over-ceremony risk -> apply full contract to M+/HIGH/template/product work; keep XS tasks lightweight.
+- Research overreach risk -> treat Reddit as qualitative signal, not best-practice evidence.
+
+### Plan B
+If routing changes create broad regressions, keep the shared rule and skill references, then defer router pattern changes to a patch. Do not weaken the no-fake-completion rule.
+
+### Verification Results
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-agent-sot.js`
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-template.sh`
+- Passed with existing freshness warnings only: Git Bash `scripts/check-drift.sh`
+
+### Status
+- Done: client-executor shared rule, anti-sycophancy/no-fake-completion gates, research note, skill wiring, router regression, and validator coverage.
+- Not done: release commit/tag/push. This step intentionally integrated and verified the behavior without publishing a new template tag.
 
 ## Plan - v4.3.2 Screen Anatomy And Git Dry-Run Patch
 
