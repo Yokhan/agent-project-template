@@ -217,6 +217,12 @@ bash scripts/check-drift.sh
 
 ## Обновление шаблона
 
+### Если агенту дали только ссылку на GitHub
+1. Откройте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest
+2. Возьмите tag из релиза. Текущий стабильный tag: `v4.4.1`.
+3. Для обычных проектов используйте release tag, а не `main`.
+4. Перед применением всегда запускайте `--dry-run`.
+
 ### Один проект
 ```bash
 bash scripts/sync-template.sh /path/to/agent-project-template
@@ -224,11 +230,14 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 ### Из git-релиза шаблона
 ```bash
-bash scripts/sync-template.sh --from-git --ref v3.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v3.8.0
+git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.1
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.
+
+`main` используйте только для разработки шаблона или явного canary-роллаута. Для нормального downstream-обновления нужен release tag.
 
 ### Все проекты
 ```bash

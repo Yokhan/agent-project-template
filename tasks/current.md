@@ -93,10 +93,60 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.3.1 has been published as the documentation drift patch release.
 - v4.3.3 has been published as the design fixture sync patch release.
 - v4.3.4 has been published as the downstream production-standard validator patch release.
-- v4.4.0 client-executor accountability minor release is in progress.
+- v4.4.0 has been published as the client-executor accountability minor release.
+- v4.4.1 GitHub entrypoint patch release is in progress.
 
 ## Immediate Next Step
-- Finish the v4.4.0 release gate, commit, tag, push, and verify the release tag.
+- Make the GitHub README/release entrypoint agent-safe, bump to `v4.4.1`, run the release gate, commit, tag, push, and verify the GitHub release.
+
+## Plan - v4.4.1 GitHub Entrypoint Patch Release
+
+### User Request
+Доработать GitHub/repo entrypoint: если агенту дали только ссылку на репозиторий, он должен понять актуальную стабильную версию, что скачивать, когда использовать tag, и когда нельзя брать `main`.
+
+### Goal
+Выпустить `v4.4.1`, где README, setup guide и release docs дают агентам короткий pinned-tag путь: `releases/latest` -> `vX.Y.Z` -> `sync-template.sh --from-git --ref <tag>`.
+
+### Product Goal Link
+- Final outcome: downstream teams can hand an agent only the repository URL and get a safe, reproducible template install or sync without guessing between `main`, archives, local paths, and release tags.
+- Product/business priority: lower upgrade confusion and support load, fewer stale-template installs, safer downstream rollout, and faster adoption of released template behavior.
+- Current step: update release-facing docs, add regression coverage for the GitHub entrypoint, bump patch version, and publish `v4.4.1`.
+- Quality bar preserved: no sync boundary changes, no weakening of tracked-only payload, text/mojibake policy, Windows platform policy, design-policy gates, or client-executor evidence rules.
+- Out of scope: changing the underlying sync algorithm or applying the new tag to every downstream project.
+
+### Strategy
+- Put the agent-safe instructions in README first, because GitHub renders it when only the repo link is shared.
+- Keep `docs/TEMPLATE_RELEASES.md` as the deeper release contract.
+- Update `SETUP_GUIDE.md` because it still contains an old pinned tag example.
+- Add a `scripts/test-template.sh` smoke so future releases fail if the README loses `releases/latest`, pinned `--ref`, or the normal-project warning against `main`.
+
+### Verification
+- `node scripts/validate-text-policy.js`
+- `node scripts/test-codex-routing.js`
+- `node scripts/validate-agent-sot.js`
+- Git Bash `scripts/validate-template.sh`
+- Git Bash `scripts/test-template.sh`
+- Git Bash `scripts/check-drift.sh`
+- Remote tag/release verification after push.
+
+### Release Gate Results
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-spec-kit.js`
+
+### Plan B
+If the release gate shows broad doc/version drift, keep the README entrypoint fix and reduce the release to a documentation-only patch. Do not change sync behavior in this patch.
 
 ## Plan - v4.4.0 Client Executor Accountability Release
 

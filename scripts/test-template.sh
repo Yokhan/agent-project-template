@@ -113,6 +113,53 @@ if (missing.length > 0 || extra.length > 0) {
 }
 NODE
 }
+validate_agent_safe_github_entrypoint() {
+  node <<'NODE'
+const fs = require("fs");
+
+const read = (file) => fs.readFileSync(file, "utf8");
+const readme = read("README.md");
+const setupGuide = read("SETUP_GUIDE.md");
+const releases = read("docs/TEMPLATE_RELEASES.md");
+const allReleaseDocs = `${readme}\n${setupGuide}\n${releases}`;
+
+const badgeMatch = readme.match(/template-v([0-9]+\.[0-9]+\.[0-9]+)-blue/);
+if (!badgeMatch) {
+  throw new Error("README template version badge not found");
+}
+
+const tag = `v${badgeMatch[1]}`;
+const required = [
+  ["README latest release link", readme, "https://github.com/Yokhan/agent-project-template/releases/latest"],
+  ["README stable tag", readme, `Current stable tag: \`${tag}\``],
+  ["README pinned clone", readme, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
+  ["README pinned sync dry-run", readme, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
+  ["README pinned sync apply", readme, `bash scripts/sync-template.sh --from-git --ref ${tag}`],
+  ["README main warning", readme, "`main` is for template development and explicit canary rollout only"],
+  ["SETUP_GUIDE latest release link", setupGuide, "https://github.com/Yokhan/agent-project-template/releases/latest"],
+  ["SETUP_GUIDE stable tag", setupGuide, `Текущий стабильный tag: \`${tag}\``],
+  ["SETUP_GUIDE pinned sync dry-run", setupGuide, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
+  ["SETUP_GUIDE main warning", setupGuide, "`main` используйте только для разработки шаблона или явного canary-роллаута"],
+  ["TEMPLATE_RELEASES latest release link", releases, "https://github.com/Yokhan/agent-project-template/releases/latest"],
+  ["TEMPLATE_RELEASES stable tag", releases, `Current stable tag: \`${tag}\``],
+  ["TEMPLATE_RELEASES pinned sync dry-run", releases, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
+  ["TEMPLATE_RELEASES main warning", releases, "Use `main` only for template development, explicit canary rollout"],
+];
+
+const missing = required.filter(([, text, expected]) => !text.includes(expected));
+if (missing.length > 0) {
+  throw new Error(`Agent-safe GitHub entrypoint missing: ${missing.map(([label]) => label).join(", ")}`);
+}
+
+if (/v3\.8\.0/.test(allReleaseDocs)) {
+  throw new Error("Release-facing docs still contain stale v3.8.0 examples");
+}
+
+if (/git clone https:\/\/github\.com\/Yokhan\/agent-project-template\.git agent-project-template/.test(readme)) {
+  throw new Error("README contains branchless clone command; use a pinned release tag");
+}
+NODE
+}
 validate_screen_anatomy_contract() {
   node <<'NODE'
 const fs = require("fs");
@@ -320,6 +367,7 @@ check "README has no start.sh references" bash -c "! grep -q 'start\\.sh' README
 check "README has no start.bat references" bash -c "! grep -q 'start\\.bat' README.md"
 check "README has no localhost:3333 references" bash -c "! grep -q 'localhost:3333' README.md"
 check "README has no Command Center section" bash -c "! grep -q '## Command Center' README.md"
+check "README/SETUP_GUIDE release entrypoint is agent-safe" validate_agent_safe_github_entrypoint
 check "SETUP_GUIDE has no legacy --from sync syntax" bash -c "! grep -q 'sync-template\\.sh --from ' SETUP_GUIDE.md"
 check "SETUP_GUIDE has no Python 3 bootstrap prerequisite" bash -c "! grep -q 'Python 3' SETUP_GUIDE.md"
 check "GitHub workflows use Node24-compatible actions" github_workflows_use_node24_actions

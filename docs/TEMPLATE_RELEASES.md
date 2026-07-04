@@ -25,13 +25,40 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.4.0
-git push origin v4.4.0
+git tag v4.4.1
+git push origin v4.4.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
 
 Patch releases are for compatible fixes to rules, skills, hooks, scripts, and docs. Minor releases can add new skills, agents, release flows, or routing behavior. Major releases can change sync contracts, project ownership boundaries, or the default agent operating contract.
+
+## GitHub Link Handoff For Agents
+
+When an agent receives only the repository URL, it must not guess from `main`.
+
+1. Open the latest stable release: <https://github.com/Yokhan/agent-project-template/releases/latest>
+2. Use the release tag shown there. Current stable tag: `v4.4.1`.
+3. For downstream sync, use `scripts/sync-template.sh --from-git --ref <tag>`.
+4. Run `--dry-run` before applying the tag.
+
+New project from a stable release:
+
+```bash
+git clone --branch v4.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+cd agent-project-template
+bash setup.sh my-project
+```
+
+Existing generated project:
+
+```bash
+git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.1
+```
+
+Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
 
 ## v4 Production Standard Notes
 
@@ -68,7 +95,9 @@ Version `4.3.4` is a compatible patch release that makes production-standard val
 
 Version `4.4.0` is a compatible minor release that adds the client-executor accountability contract, anti-sycophancy rules, no-fake-completion evidence gates, research notes, Codex skill wiring, and route/validator regression coverage. Agents treat the user as the client/product owner and the agent as the accountable executor: they must not agree by default, must not claim unverified work is done, and must challenge requests that lower product outcome, safety, quality, or app-specific KPI.
 
-Downstream projects should sync `v4.4.0` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, and business/product planning conventions before applying.
+Version `4.4.1` is a compatible patch release that makes the GitHub README/release entrypoint agent-safe. It adds latest-release lookup, pinned release install/sync commands, explicit `main` versus release-tag guidance, and smoke coverage so future releases cannot silently drift back to stale tag examples.
+
+Downstream projects should sync `v4.4.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, and business/product planning conventions before applying.
 
 ## Release Gate
 
@@ -104,13 +133,13 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.4.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.4.0
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.1
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
 
-## Downstream Update From Main
+## Canary Update From Main
 
 Use the branch path only for early rollout or canary projects:
 

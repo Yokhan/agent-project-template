@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-04 for template `4.4.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-07-04 for template `4.4.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -69,4 +69,5 @@ Last reviewed: 2026-07-04 for template `4.4.0` local validation. Remote GitHub A
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
 - [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`
+- [ ] README, SETUP_GUIDE, and docs/TEMPLATE_RELEASES show the current stable release tag, link to `/releases/latest`, and warn that `main` is for canary/template development only
 - [ ] AgentOS rollout notes state whether AgentOS is the orchestrator or the project uses Codex parent orchestration

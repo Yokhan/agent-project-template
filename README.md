@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.4.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.4.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -9,10 +9,36 @@ Self-deploying AI-agent optimized project template with **MCP-based dynamic rule
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
 > Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md) • Template releases: [docs/TEMPLATE_RELEASES.md](docs/TEMPLATE_RELEASES.md)
 
+## If An Agent Only Has This GitHub Link
+
+Use the latest stable release, not `main`, for normal projects:
+
+1. Open: <https://github.com/Yokhan/agent-project-template/releases/latest>
+2. Use the tag shown there. Current stable tag: `v4.4.1`.
+3. For existing generated projects, sync with `--from-git --ref <tag>` and run `--dry-run` first.
+
+Create a new project from the stable tag:
+
+```bash
+git clone --branch v4.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+cd agent-project-template
+bash setup.sh my-project
+```
+
+Update an existing generated project from the stable tag:
+
+```bash
+git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.1
+```
+
+`main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
+
 ## Quick Start
 
 ```bash
-git clone https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -64,22 +90,26 @@ If you are operating from the template repo instead of inside the child project,
 bash /path/to/agent-project-template/scripts/sync-template.sh /path/to/agent-project-template --project-dir /path/to/my-project --dry-run
 ```
 
-### Automatic updates (git-based)
-If the template is hosted in a git repository, projects automatically track it:
+### Pinned release updates (git-based)
+If the template is hosted in a git repository, prefer release tags for normal project rollout:
 ```bash
-# Check for updates (no changes made)
-bash scripts/sync-template.sh --from-git --dry-run
+# Check the latest release tag first
+# https://github.com/Yokhan/agent-project-template/releases/latest
 
-# Apply updates
-bash scripts/sync-template.sh --from-git
+# Preview the pinned release
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+
+# Apply the pinned release
+bash scripts/sync-template.sh --from-git --ref v4.4.1
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
-For pinned release rollout, sync from a tag:
+### Canary updates from `main`
+Use branch-based sync only for template development, early rollout, or canary projects where untagged changes are intentional:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref v4.4.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.4.0
+bash scripts/sync-template.sh --from-git --dry-run
+bash scripts/sync-template.sh --from-git
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -98,7 +128,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git
+bash scripts/sync-template.sh --from-git --ref v4.4.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.4.1
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -279,6 +310,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.4.1** | Patch release: makes the GitHub README/release entrypoint agent-safe with latest-release lookup, pinned tag install/sync commands, and explicit `main` versus release-tag guidance |
 | **4.4.0** | Minor release: adds the client-executor accountability contract, anti-sycophancy rules, no-fake-completion evidence gates, research note, Codex skill wiring, and route/validator regression coverage |
 | **4.3.4** | Patch release: makes production-standard validation downstream-aware so generated projects do not need source-only `templates/project-starter/*` files while the template source still checks them |
 | **4.3.3** | Patch release: includes design-policy test fixtures in template sync delivery so downstream `test-design-policy` works without manual fixture copying |
