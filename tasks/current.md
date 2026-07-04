@@ -94,10 +94,10 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.3.3 has been published as the design fixture sync patch release.
 - v4.3.4 has been published as the downstream production-standard validator patch release.
 - v4.4.0 has been published as the client-executor accountability minor release.
-- v4.4.1 GitHub entrypoint patch release is in progress.
+- v4.4.1 has been published as the GitHub entrypoint patch release.
 
 ## Immediate Next Step
-- Make the GitHub README/release entrypoint agent-safe, bump to `v4.4.1`, run the release gate, commit, tag, push, and verify the GitHub release.
+- No active release task. Next work should start from a fresh route and preserve the `v4.4.1` GitHub entrypoint contract.
 
 ## Plan - v4.4.1 GitHub Entrypoint Patch Release
 
@@ -144,6 +144,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Passed: `node scripts/validate-design-policy.js`
 - Passed: `node scripts/test-design-policy.js`
 - Passed: `node scripts/validate-spec-kit.js`
+- Published: commit `462e5b926ec6a964738a56fa4c90ef535eaf3de1`
+- Published: tag `v4.4.1` on origin points to the same commit
+- Published: GitHub Actions `Release Template` run `28706246735` completed `success`
+- Published: GitHub Release `Agent Project Template v4.4.1` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.4.1`
+- Published: asset `agent-project-template-v4.4.1.tar.gz`, sha256 `dd8ed1ed7ebf88bfd5f4f6caed7f3b9bb997a611fce69826ca3a99269d30256a`
 
 ### Plan B
 If the release gate shows broad doc/version drift, keep the README entrypoint fix and reduce the release to a documentation-only patch. Do not change sync behavior in this patch.
