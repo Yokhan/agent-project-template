@@ -139,7 +139,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Passed: Git Bash `scripts/test-hooks.sh`
 - Passed: Git Bash `scripts/test-template.sh` (`135/135`)
 - Passed: Git Bash `scripts/sync-agents.sh`
-- Not done yet: commit, tag, push, and remote GitHub release verification.
+- Published: commit `41c563a4b715b4d76c0de4cb895ff33e006c050f`
+- Published: tag `v4.5.0` on origin points to the same commit
+- Published: GitHub Actions `Release Template` run `28737895466` completed `success`
+- Published: GitHub Release `Agent Project Template v4.5.0` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.5.0`
+- Published: asset `agent-project-template-v4.5.0.tar.gz`, sha256 `7aa4dbf93f3fca20b5172d31c462e5d7893fef40ac39780bb32cd074c62681c7`
 
 ## Plan - Main Agent File Control And Systemic Error Gate
 
