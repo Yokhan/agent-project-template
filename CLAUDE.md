@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.4.2 -->
+<!-- Template Version: 4.5.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -59,9 +59,13 @@ Not configured yet.
 
 **Agent infrastructure SOT:** before changing `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, routing, or template sync behavior, read `docs/AGENT_CONTEXT_SOT.md` and check `_reference/agent-sot/sources.json`. If a source is stale or behavior-sensitive, browse the canonical URL first. Run `node scripts/validate-agent-sot.js`.
 
+**SOT conflict protocol:** if two plausible sources of truth conflict, do not choose silently. Name the sources, classify authority (user instruction > project-owned `project-*` or AgentOS graph > repo SOT docs > shared template rules > historical notes > examples), then ask the user with 2-3 options when authority is ambiguous or the choice changes product behavior, safety, data, release, or architecture.
+
+**Thinking tools gate:** for M+, HIGH-risk, ambiguous, architecture, template, design, product, marketing, or repeated-failure work, use system map + TRIZ contradiction + Sun Tzu/stratagem terrain check + plan reality check before choosing the path. Phrase conflicts as "need X without causing Y", list existing resources, map terrain/competitors/center of gravity/favorable ground, name the next verifiable checkpoint, and replan explicitly when assumptions break. Do not use strategy language to justify deception, dark patterns, or user-hostile manipulation.
+
 **On every new task**:
 1. User gives task (any language, any jargon)
-2. YOU extract English keywords: task type + domain + action
+2. YOU extract task type + domain + action + semantic intent, not only literal keywords
 3. Call `get_context(keywords="...")` → default depth=brief (~50 tokens: mode + agent + file list)
 4. For M+ tasks: `get_context(keywords="...", depth="normal")` → includes full rule text
 5. For L/XL or unfamiliar domain: `depth="full"` → rules + lessons + git + registry + ecosystem
@@ -71,6 +75,26 @@ Not configured yet.
 **After compaction**: `get_active_rules()`
 **Fallback (no MCP)**: `bash scripts/route-task.sh "<keywords>"` + Read listed files
 **Manual**: `/mode-code` `/mode-design` `/mode-review` `/mode-research` `/mode-write` `/mode-fix` `/mode-plan`
+
+Codex route fallback uses exact patterns plus semantic intent scoring in `scripts/lib/codex-route-intents.js`. Misroutes must be fixed in the intent model with regression fixtures, not only by adding one literal keyword.
+
+## Task Formulation Examples
+
+Translate vague requests into execution contracts:
+
+| User says | Agent formulates | Behavior |
+| --- | --- | --- |
+| `сделай нормально` | Production flow + quality bar + verification | Inspect flow, plan, implement, verify user path |
+| `почини ошибку` | Symptom + broken link + regression guard | Reproduce, diagnose root cause, patch boundary |
+| `обнови шаблон` | Downstream-safe template sync/release | Preserve `project-*`, run template gates |
+| `улучши дизайн` | One user job + KPI + rendered evidence | Subtract first, use tokens/components, viewport-check |
+| `проверь` | Findings-first review | Severity, evidence, impact, smallest fix |
+| `спланируй` | Decision-ready plan | First useful result, options, risk, replan trigger |
+| `когда будет готово?` | Reliable forecast | Give next verifiable checkpoint; do not invent final certainty |
+| `план поехал` | Replan shape | Old assumption, reality, impact, options, recommendation |
+| `требования конфликтуют` | TRIZ contradiction | Need X without Y; resources, separation options, recommendation |
+| `проверь маркетинг` | GTM/communication review | ICP, positioning, offer, funnel, channel, proof, measurement, ethics |
+| `примени Сунь-цзы/стратагемы` | Competitive strategy | Terrain, center of gravity, asymmetry, timing, no dark patterns |
 
 ## Session Start
 1. `bash scripts/context-restore.sh` — shows mode, task, lessons, git state
@@ -134,6 +158,9 @@ After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMEN
 BUG or KNOWLEDGE_GAP → log to tasks/lessons.md with Track (BUG/KNOWLEDGE/PATTERN/PROCESS) + Severity (P0-P3).
 When >50 entries → promote via `/weekly`.
 
+## Systemic Error Analysis
+When an error, failed check, regression, or correction appears, classify it before patching: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict. For repeated, boundary, architecture, or HIGH-risk failures, name the broken link, root-cause hypothesis, smallest systemic fix, and regression guard before editing. Ask the user before applying a systemic fix that changes scope, ownership, release, timeline, or quality bar.
+
 ## Token Economy
 - Trust skills/memory over re-reading. Don't re-read files you read this session.
 - Only read files you WILL use. Parallelize independent tool calls.
@@ -171,7 +198,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.4.2 — Run `bash scripts/check-drift.sh` to verify health.
+4.5.0 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

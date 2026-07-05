@@ -98,7 +98,108 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.4.2 has been published as the progressive JPEG client-control patch release.
 
 ## Immediate Next Step
-- No active release task. Next work should start from a fresh route and preserve the `v4.4.2` progressive JPEG/client-control behavior.
+- Finish and release `v4.5.0`: semantic intent routing, release docs/version bump, full gate, commit, tag, push, and GitHub release verification.
+
+## Plan - v4.5.0 Semantic Intent Routing Release
+
+### User Request
+Доделать routing так, чтобы маршруты вызывались не только по ключевикам, а по смыслу задачи; это касается всех route categories. Поднять версию до `4.5.0` и зарелизить.
+
+### Goal
+Сделать Codex router устойчивым к разным формулировкам: exact regex остаётся быстрым слоем, но смысловые группы в `scripts/lib/codex-route-intents.js` должны вызывать правильные skills/gates даже без старого literal keyword.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that choose the right workflow from user intent instead of brittle keyword coincidence.
+- Product/business priority: fewer misroutes, fewer correction loops, better marketing/product/security/design routing, lower support load, and safer releases.
+- Current step: add semantic intent scoring, route output transparency, regression fixtures, validator anchors, version/release docs, and release gate.
+- Quality bar preserved: no external LLM dependency in release infrastructure; no project-owned overlays touched; no weakening of text/platform, SOT, client-executor, progressive JPEG, design, or sync gates.
+- Out of scope: replacing the router with a runtime embedding/LLM classifier.
+
+### Current View
+- Sharp now: `scripts/codex-route-task.js` reports `MATCHES: exact=... | semantic=...`; semantic-only fixtures route bugfix, security, design, product-UX, marketing, API, migration, and lessons correctly.
+- Next sharpened layer: complete version bump/release docs and full release gate.
+- Rough edge: semantic scoring is concept-based, not a true embedding model; future misroutes should update intent groups plus regression fixtures.
+- Replan trigger: if semantic scoring creates broad false positives, tighten thresholds or split high-risk route concepts before release.
+
+### Verification Results
+- Passed so far: `node scripts/test-codex-routing.js`
+- Passed so far: `node scripts/validate-production-standard.js` (`144` checks)
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/validate-text-policy.js` (`423` files scanned)
+- Passed: `git diff --check`
+- Passed: Git Bash `scripts/generate-project-spec.sh --write`
+- Passed: Git Bash `scripts/scan-project.sh --report`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Not done yet: commit, tag, push, and remote GitHub release verification.
+
+## Plan - Main Agent File Control And Systemic Error Gate
+
+### User Request
+Добавить в основной агентский файл: проверку единого SOT, протокол конфликта двух SOT с обращением к пользователю и вариантами решений, больше практических примеров формулировки задач из референсов, и системный анализ ошибок вместо локального патча "здесь и сейчас".
+
+### Goal
+Сделать `AGENTS.md` более поведенческим: агент должен видеть, как формулировать задачи, как действовать при конфликте источников правды, и когда обязан искать системную причину ошибки.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that preserve the correct source of truth and fix root causes, not isolated symptoms.
+- Product/business priority: fewer regressions, lower support load, safer template/project changes, faster acceptance because the agent asks for a decision when authority conflicts.
+- Current step: update `AGENTS.md`, mirror critical shared behavior into `CLAUDE.md`/SOT docs, add validator anchors, and run focused checks.
+- Quality bar preserved: no release tag until explicitly requested; no fake single-SOT resolution when authority is ambiguous; no bloated copy of long references into hot memory.
+- Out of scope: redesigning the whole routing system or adding a new task runner.
+
+### First Useful View
+- Add hot rules for SOT conflict, task formulation examples, and systemic error analysis.
+
+### Next Sharpened Layer
+- Validate with agent SOT, production-standard, text-policy, and sync-agents checks.
+
+### Rough Edges
+- These rules improve behavior, but cannot prove every future agent will choose the right option without observing real tasks.
+
+### Replan Trigger
+- If `AGENTS.md` approaches the 32KB limit or validators become brittle, move examples into shared docs and keep only a compact pointer in hot memory.
+
+### Current View
+- Sharp now: `AGENTS.md` includes SOT Conflict Protocol, Task Formulation Examples, Systemic Error Analysis, and Thinking Tools Gate with TRIZ contradiction + plan reality check; `CLAUDE.md` mirrors the critical dual-agent behavior.
+- Next sharpened layer: validate the route regression that previously misclassified the `AGENTS`/SOT request as `review`.
+- Rough edge: this is implemented locally, but not released as a new tag.
+- Replan trigger: if the examples feel too broad in real use, move detailed examples to a shared reference and keep only the command contract in hot memory.
+
+### Audit Finding - Reasoning Tools Gap
+- The previous exact request `усилить AGENTS основной файл... SOT... references... системный анализ...` routed as `review/MEDIUM` instead of `template/HIGH`, so it loaded only `codex-audit` and missed template/strategy/product-goal gates.
+- TRIZ/contradiction thinking was present only indirectly through strategic-thinking references; no hot rule, Codex skill, or validator anchor required it.
+- Ilyakhov examples lived in `brain/03-knowledge/communication/ilyakhov-planning-principles.md`; the earlier local recommendation said not to add the note directly to `AGENTS.md`. That conflicted with the later product-owner request for concrete examples in the main agent file, so the decision is now recorded as compact hot-path examples plus cold full note.
+- Fixed locally: router patterns, routing tests, AGENTS/CLAUDE hot rules, Codex strategic-review skill, shared strategic-thinking rule, Ilyakhov note, and validators.
+- Follow-up audit: Sun Tzu existed only in the old Claude strategic-review/full docs; Codex hot skill and validators did not require Sun Tzu/stratagem terrain thinking.
+- Follow-up audit: marketing/business/communication skills existed, but marketing/positioning/funnel/offers in Russian or English routed to generic review instead of a marketer/GTM lens.
+- Follow-up audit: release routing had a Russian false positive because bare `тег` matched inside `стратегический`, so strategic requests could incorrectly load release gates.
+- Fixed locally: added marketing/GTM route, marketer gates, Sun Tzu/stratagem triggers, false-positive route regression tests, and validator anchors.
+
+### Verification Results
+- Passed: exact missed route now returns `template/HIGH` with template, product-goal, strategic-review, and SOT gates.
+- Passed: TRIZ/agent-file route returns `template+review+strategy/HIGH`.
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-production-standard.js` (`112` checks)
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-text-policy.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `git diff --check`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Not done: no commit, no version bump, no release tag.
+- Follow-up Sun Tzu/marketing route patch passed: exact marketing route returns `marketing+review`, Sun Tzu/stratagem route returns `review+strategy` without release, and strategic overview no longer false-matches release.
+- Passed after follow-up: `node scripts/test-codex-routing.js`, `node scripts/validate-production-standard.js` (`129` checks), `node scripts/validate-agent-sot.js`, `node scripts/validate-text-policy.js`, `node scripts/validate-codex-skills.js`, `git diff --check`, Git Bash `scripts/validate-template.sh`, Git Bash `scripts/test-template.sh` (`135/135`), Git Bash `scripts/sync-agents.sh`, Git Bash `scripts/check-drift.sh` with existing freshness warnings only.
 
 ## Plan - Progressive JPEG Client Control Gate
 

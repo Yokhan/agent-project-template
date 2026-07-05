@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.4.2 -->
+<!-- Template Version: 4.5.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -77,13 +77,36 @@ Codex reads `AGENTS.md` once at session start as project guidance. Keep this fil
 Before any file edit, release, template change, security work, design work, or M+ task:
 
 1. Run: `node scripts/codex-route-task.js "<user request>" --summary --write-state`
-2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Skills:** names | **Subagents:** names | **Orchestrator:** owner.
+2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Matches:** exact/semantic | **Skills:** names | **Subagents:** names | **Orchestrator:** owner.
 3. Follow the returned skills/rules. Do not scan every skill or reread broad docs.
 4. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
+
+Routing is not keyword-only. `scripts/codex-route-task.js` uses exact patterns plus semantic intent scoring from `scripts/lib/codex-route-intents.js`. If a task is misrouted, fix the route intent model and add a regression fixture instead of only adding one literal keyword.
 
 ### Agent Infrastructure SOT
 
 Before changing `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, routing, or template sync behavior, read `docs/AGENT_CONTEXT_SOT.md` and check `_reference/agent-sot/sources.json`. If a source is stale or behavior-sensitive, browse the canonical URL first. Run `node scripts/validate-agent-sot.js` before closeout.
+
+### SOT Conflict Protocol
+
+There must be one active source of truth for each decision surface. If two plausible SOTs conflict, do not choose silently.
+
+1. Name the conflicting sources and the exact conflict.
+2. Classify authority: user instruction > project-owned `project-*` or AgentOS task graph > repo SOT docs > shared template rules > historical notes > examples.
+3. If authority is still ambiguous or the choice changes product behavior, safety, data, release, or architecture, stop and ask the user with 2-3 options and a recommendation.
+4. Record the chosen SOT in `tasks/current.md`, `tasks/goal.md`, AgentOS state, or the relevant `project-*` file so the conflict does not repeat.
+
+Use this shape:
+
+```text
+SOT conflict:
+- Source A says:
+- Source B says:
+- Impact:
+- Options:
+- Recommendation:
+- I need your decision on:
+```
 
 ### Route Operating Rules
 
@@ -97,16 +120,74 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
+- Marketing/GTM: use `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
 - Fan-out: spawn read-only subagents first for M+ tasks; parent consolidates and edits. Use `implementer` only for exact, non-overlapping files.
+
+### Systemic Error Analysis
+
+When an error, failed check, regression, or user correction appears, do not patch only the local symptom unless it is XS and isolated.
+
+Before fixing, classify the failure:
+
+- Local typo or one-off input issue: fix narrowly and verify.
+- Broken contract between modules, docs, agents, hooks, routes, or SOTs: map the contract and fix the boundary.
+- Repeated error or second failed attempt: stop, diagnose root cause, update plan, and add/adjust a guard.
+- Architecture or workflow smell: name the violated dependency, ownership, or feedback loop before editing.
+
+Use the systemic debug shape:
+
+```text
+Observed failure:
+Immediate symptom:
+Likely broken link:
+Root cause hypothesis:
+Smallest systemic fix:
+Regression guard:
+```
+
+Prefer a root-cause fix plus a regression guard over a local workaround. If the systemic fix changes scope, timeline, ownership, or quality bar, ask the user before applying it.
+
+### Thinking Tools Gate
+
+For M+, HIGH-risk, ambiguous, template, architecture, design, product, or repeated-failure work, use explicit thinking tools before choosing the fix.
+
+1. System map: name the real user outcome, app-specific KPI, active SOTs, contracts between files/agents/tools, bottleneck, and feedback loop.
+2. TRIZ contradiction gate: when requirements fight, phrase the contradiction as "we need X without causing Y"; list existing resources; try separation by time, place, scope, mode, or user segment; prefer an ideal final result where the harmful tradeoff disappears instead of splitting the difference.
+3. Sun Tzu / stratagem terrain check: know the terrain, alternatives, competitors, constraints, center of gravity, and favorable ground; prefer winning without direct confrontation; use asymmetry and timing, not deception, dark patterns, or user-hostile manipulation.
+4. Plan Reality Check: plan only after understanding result, user, business outcome, dependencies, critical path, parallel work, external risks, and real deadline reason.
+5. Treat plans as forecasts, not promises: name the first useful iteration, the next verifiable checkpoint, and the first signal that the plan is drifting.
+6. If the plan breaks, replan explicitly: old assumption, new reality, impact, options, recommendation, and what needs user approval.
+7. No hidden drift: if time, budget, risk, or quality changes, tell the user before continuing silently.
+
+Do not turn these tools into theater. If they do not change the decision, keep the note short. If they reveal a product, SOT, scope, deadline, or quality-bar conflict, ask the user with options.
 
 ### User Context
 - User communicates in Russian (primary) and English (technical)
 - Prefers direct communication, technical depth, no fluff
 - Values: working code over perfect code, but hates regressions
 - Common request patterns: "сделай X", "почини Y", "проверь Z"
+
+### Task Formulation Examples
+
+Use these examples to translate vague requests into an execution contract. They are adapted from the project SOT references: Spec Kit (`spec -> plan -> tasks`), Boris Tane (`plan as contract`), Ian Bull (`boundaries and change review`), HumanLayer/12-factor agents (`explicit context and control flow`), TRIZ contradiction framing, and the internal Ilyakhov planning note.
+
+| User says | Agent should formulate | Expected behavior |
+| --- | --- | --- |
+| `сделай нормально` | "User wants the product flow to meet the production quality bar. Success means the primary user can complete [flow] with verified happy/error/empty states." | Ask only for missing product intent; otherwise inspect flow, plan, implement, verify. |
+| `почини ошибку` | "User wants the observed failure removed and the broken link identified. Success means the symptom is gone and a regression guard covers the root cause." | Reproduce or document why blocked, map root cause, patch boundary, add/identify guard. |
+| `обнови шаблон` | "User wants downstream-safe template behavior. Success means template-owned files update without touching project-owned overlays and release/sync checks pass." | Route template-sync, preserve `project-*`, run template gates, report release status honestly. |
+| `улучши дизайн` | "User wants the current screen to serve one user job better and protect the app-specific KPI." | Run subtraction first, use tokens/components, verify rendered desktop/mobile states. |
+| `проверь` | "User wants a findings-first review with severity, evidence, user/business impact, and smallest fix." | Do not summarize first; list concrete defects, gaps, residual risk. |
+| `спланируй` | "User wants a decision-ready plan: first useful result, dependencies, options, risks, evidence, and replan trigger." | Give a progressive JPEG plan, not a task dump. |
+| `когда будет готово?` | "User wants a reliable forecast. If the final date is unknown, success means the next verifiable checkpoint is concrete." | Do not invent certainty; give dependency, checkpoint, confidence, and what would move the date. |
+| `план поехал` | "User wants control restored: old assumption, new reality, impact, options, and recommendation." | Replan before continuing; ask for approval when scope, date, cost, or quality changes. |
+| `становится дольше/дороже` | "User wants hidden effort drift surfaced before more budget or attention is spent." | State time/risk/quality cost, options, and recommendation; do not report motion as value. |
+| `требования конфликтуют` | "User wants the contradiction solved, not averaged: need X without causing Y." | Use TRIZ contradiction gate; propose separation/resource options and recommend the least harmful reversible move. |
+| `проверь маркетинг` | "User wants a GTM/communication review tied to revenue or another app-specific KPI." | Check ICP, positioning, offer, funnel/buyer journey, channels, proof, measurement, and ethical risks before rewriting copy. |
+| `примени Сунь-цзы/стратагемы` | "User wants competitive strategy, not ornamental quotes." | Map terrain, center of gravity, asymmetry, timing, and favorable ground; reject deception or dark patterns. |
 
 ## Shared Rules (Single Source of Truth)
 
@@ -272,4 +353,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.4.2
+4.5.0

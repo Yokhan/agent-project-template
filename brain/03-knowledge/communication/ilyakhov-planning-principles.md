@@ -247,7 +247,11 @@ needs a decision.
 
 ## Integration Recommendation
 
-Use this note as cold knowledge now. Do not add it directly to `AGENTS.md`.
+Superseded integration decision, 2026-07-05: keep this full note as cold
+knowledge, but promote compact behavior shapes into `AGENTS.md`, `CLAUDE.md`,
+shared strategic rules, and planning skills. The older recommendation to avoid
+`AGENTS.md` still applies to the full note text, not to short hot-path examples
+that the product owner explicitly requested.
 
 Good next integration points:
 

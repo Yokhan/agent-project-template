@@ -17,8 +17,12 @@ Read `.claude/skills/strategic-review/SKILL.md` for the full checklist when need
 6. Call out irreversible choices and weak assumptions.
 7. Check for sycophancy: do not accept the user's proposed path if it lowers evidence quality, safety, privacy, product outcome, or app-specific KPI.
 8. Check for fake completion risk: name what evidence must exist before the work can be called done.
-9. Check progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
-10. Recommend the next smallest valuable move.
+9. Apply the TRIZ contradiction gate when constraints conflict: phrase "need X without causing Y", list existing resources, try separation by time/place/scope/mode/user segment, and prefer an ideal final result over a weak compromise.
+10. Apply the Sun Tzu / stratagem terrain check for competitive strategy: map terrain, alternatives, competitors, constraints, center of gravity, timing, asymmetry, and favorable ground; prefer winning without direct confrontation; reject deception, dark patterns, or user-hostile manipulation.
+11. For marketing/GTM work, include marketer lens: ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, proof, CAC/LTV/ROAS/conversion measurement, and ethical risk.
+12. Apply the Ilyakhov plan reality check for client-facing plans: plan after understanding, first useful iteration, next verifiable checkpoint, explicit replan when assumptions break, and no hidden budget or effort drift.
+13. Check progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
+14. Recommend the next smallest valuable move.
 
 For client-facing plans, status, replans, and closeouts, follow
 `.claude/library/process/client-executor-contract.md`.

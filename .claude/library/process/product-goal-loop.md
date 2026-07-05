@@ -99,9 +99,16 @@ Never call a partial step "done" just because the code compiles.
 After user correction:
 
 1. Classify the failure: misunderstanding, product gap, design gap, technical bug, process gap, or stale context.
-2. Update `tasks/lessons.md` when the failure is reusable.
-3. Re-check the goal and current step before editing again.
-4. State what changed in the plan.
+2. Classify the shape: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict.
+3. For repeated, boundary, architecture, or HIGH-risk failures, name the broken link, root-cause hypothesis, smallest systemic fix, and regression guard before editing.
+4. Update `tasks/lessons.md` when the failure is reusable.
+5. Re-check the goal and current step before editing again.
+6. State what changed in the plan.
+
+Do not keep patching local symptoms when the same error points to a broken
+module boundary, stale SOT, missing validator, weak architecture, or failed
+feedback loop. Fix the system path or ask for a product-owner decision when the
+systemic fix changes scope, ownership, release, timeline, or quality bar.
 
 ## Verification Examples
 

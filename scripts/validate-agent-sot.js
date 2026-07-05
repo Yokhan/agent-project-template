@@ -53,7 +53,13 @@ const REQUIRED_SOURCE_IDS = [
 
 const requiredMentions = [
   ["AGENTS.md", "docs/AGENT_CONTEXT_SOT.md"],
+  ["AGENTS.md", "SOT Conflict Protocol"],
+  ["AGENTS.md", "Thinking Tools Gate"],
   ["CLAUDE.md", "docs/AGENT_CONTEXT_SOT.md"],
+  ["CLAUDE.md", "SOT conflict protocol"],
+  ["CLAUDE.md", "Thinking tools gate"],
+  ["docs/AGENT_CONTEXT_SOT.md", "SOT Conflict Protocol"],
+  ["docs/AGENT_CONTEXT_SOT.md", "ask the user with 2-3 options"],
   ["scripts/validate-template.sh", "validate-agent-sot.js"],
   ["scripts/test-template.sh", "validate-agent-sot"],
   ["scripts/check-drift.sh", "validate-agent-sot"],

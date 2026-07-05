@@ -2,6 +2,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { getIntentMatch } = require("./lib/codex-route-intents.js");
 const STATE_PATH = path.join("tasks", ".active-codex-route.json");
 const SHARED_RULES = {
   base: [".claude/library/process/context-first.md", ".claude/library/process/research-first.md", ".claude/library/process/self-verification.md"],
@@ -81,7 +82,7 @@ const ROUTES = [
   {
     mode: "template",
     pattern:
-      /template|agents\.md|claude\.md|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|шаблон|агент|скилл|роут|маршрут|синхрон/i,
+      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|ilyakhov|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон/i,
     skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],
@@ -98,6 +99,28 @@ const ROUTES = [
     subagents: ["pr_explorer", "reviewer"],
     rules: ["product", "review"],
     gates: ["product-goal-artifact", "quality-bar", "current-step", "language-match"],
+    risk: "MEDIUM",
+  },
+  {
+    mode: "marketing",
+    pattern:
+      /marketing|go-?to-?market|gtm|positioning|campaign|funnel|offer|copywriting|brand awareness|demand gen|lead gen|lead magnet|ICP|buyer journey|customer journey|roas|cac|ltv|маркет|позиционир|кампан|воронк|оффер|лид|аудитор|покупател|сообщени|месседж|бренд|перформанс|канал|дистрибуц/i,
+    skills: [
+      "codex-domain-communication-review",
+      "codex-domain-business-review",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    pipeline: "go-to-market",
+    subagents: ["pr_explorer", "reviewer"],
+    rules: ["product", "writing", "review"],
+    gates: [
+      "audience-icp",
+      "positioning-offer-clarity",
+      "journey-or-funnel-fit",
+      "channel-distribution-plan",
+      "measurement-and-ethics",
+    ],
     risk: "MEDIUM",
   },
   {
@@ -125,7 +148,7 @@ const ROUTES = [
   {
     mode: "release",
     pattern:
-      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|верси|тег|опубликуй|выкат/i,
+      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/i,
     skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
     pipeline: "release",
     subagents: ["tester", "reviewer", "security_reviewer"],
@@ -204,7 +227,7 @@ const ROUTES = [
   {
     mode: "review",
     pattern:
-      /review|audit|check|inspect|analyze|evaluate|проверь|аудит|разбери|оцени|посмотри/i,
+      /review|audit|check|inspect|analyze|evaluate|провер|аудит|разбери|оцени|посмотри/i,
     skills: ["codex-audit"],
     pipeline: "review",
     subagents: ["pr_explorer", "reviewer", "tester"],
@@ -214,7 +237,7 @@ const ROUTES = [
   {
     mode: "strategy",
     pattern:
-      /strategy|roadmap|plan|decompose|brainstorm|risk|стратег|план|декомпоз|разбей|риск/i,
+      /strategy|roadmap|plan|decompose|brainstorm|risk|triz|contradiction|mental model|ideal final result|sun tzu|art of war|stratagem|terrain|competitive strategy|стратег|план|декомпоз|разбей|риск|триз|противореч|образ мысл|идеальн\w*\s+результ|сунь|цзы|стратагем|конкурентн\w*\s+стратег|ландшафт/i,
     skills: ["codex-strategic-review", "codex-decompose"],
     pipeline: "planning",
     subagents: ["pr_explorer", "reviewer"],
@@ -320,7 +343,7 @@ function needsStrategicReview(selected, risk, artifacts) {
     artifacts.some((artifact) => artifact.name !== "template-native");
 }
 function needsProductGoal(selected, risk) {
-  const productModes = new Set(["product-goal", "product-ux", "design-system", "template", "release", "strategy", "lessons"]);
+  const productModes = new Set(["product-goal", "product-ux", "design-system", "marketing", "template", "release", "strategy", "lessons"]);
   return risk !== "LOW" && selected.some((route) => productModes.has(route.mode));
 }
 function getPlanContract(selected, risk) {
@@ -374,15 +397,33 @@ function getQualityGates(selected, risk, shouldUseProductGoal = false) {
     ...selected.flatMap((route) => route.gates || []),
   ]);
 }
+function getMatchedRoutes(task) {
+  return ROUTES.map((route) => {
+    const exact = route.pattern.test(task);
+    const intent = getIntentMatch(route.mode, task);
+    return { exact, intent, route };
+  }).filter((match) => match.exact || match.intent.isMatch);
+}
 function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
-  const matches = ROUTES.filter((route) => route.pattern.test(task));
+  const matches = getMatchedRoutes(task);
   const defaultMode = /сделай|сделать|do it|make it/i.test(task)
     ? "feature"
     : "review";
-  const selected = matches.length > 0
+  const selectedMatches = matches.length > 0
     ? matches
-    : [ROUTES.find((route) => route.mode === defaultMode)];
+    : [{ exact: false, intent: { isMatch: false, score: 0, threshold: 0 }, route: ROUTES.find((route) => route.mode === defaultMode) }];
+  const selected = selectedMatches.map((match) => match.route);
+  const semanticMatches = unique(
+    selectedMatches
+      .filter((match) => !match.exact && match.intent.isMatch)
+      .map((match) => match.route.mode),
+  );
+  const exactMatches = unique(
+    selectedMatches
+      .filter((match) => match.exact)
+      .map((match) => match.route.mode),
+  );
   const artifacts = detectArtifacts(cwd);
   const riskOrder = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
   const risk = selected.reduce(
@@ -414,6 +455,9 @@ function getRoute(task, options = {}) {
     planContract: getPlanContract(selected, risk),
     productionBar: getProductionBar(selected),
     languagePolicy: "plans-audits-status-and-final-reports-match-user-request-language",
+    matchPolicy: "exact-patterns-plus-semantic-intent-scoring",
+    exactMatches,
+    semanticMatches,
     qualityGates: getQualityGates(selected, risk, shouldUseProductGoal),
     needsFreshDocs: selected.some((route) => route.needsFreshDocs),
     artifacts,
@@ -425,6 +469,7 @@ function formatSummary(route) {
     `ROUTE: ${route.modes.join("+")}`,
     `PIPELINE: ${route.pipeline}`,
     `RISK: ${route.risk}`,
+    `MATCHES: exact=${route.exactMatches.join("+") || "none"} | semantic=${route.semanticMatches.join("+") || "none"}`,
     `SKILLS: ${route.skills.join(", ")}`,
     `SUBAGENTS: ${route.subagents.join(", ") || "none"}`,
     `ORCHESTRATOR: ${route.orchestrator.owner} (${route.orchestrator.codexRole})`,

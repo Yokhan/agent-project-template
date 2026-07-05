@@ -18,6 +18,12 @@ function testRoute(task, expectations) {
   for (const mode of expectations.modes || []) {
     assertIncludes(route.modes, mode, `${task} modes`);
   }
+  for (const mode of expectations.notModes || []) {
+    assert(
+      !route.modes.includes(mode),
+      `${task} modes: expected no ${mode}, got ${route.modes.join(", ")}`,
+    );
+  }
   for (const skill of expectations.skills || []) {
     assertIncludes(route.skills, skill, `${task} skills`);
   }
@@ -51,6 +57,12 @@ function testRoute(task, expectations) {
       `${task} plan required`,
     );
   }
+  for (const mode of expectations.semanticMatches || []) {
+    assertIncludes(route.semanticMatches || [], mode, `${task} semantic matches`);
+  }
+  for (const mode of expectations.exactMatches || []) {
+    assertIncludes(route.exactMatches || [], mode, `${task} exact matches`);
+  }
 }
 
 function withTempProject(setup, callback) {
@@ -71,6 +83,20 @@ function main() {
     risk: "MEDIUM",
   });
 
+  testRoute("после обновления форма зависает и раньше это работало", {
+    modes: ["bugfix"],
+    skills: ["codex-debug"],
+    semanticMatches: ["bugfix"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("кто-то может получить чужие данные из сессии", {
+    modes: ["security", "product-ux"],
+    skills: ["codex-security-audit", "codex-strategic-review"],
+    semanticMatches: ["security"],
+    risk: "HIGH",
+  });
+
   testRoute("сделай дизайн экрана и figma mockup", {
     modes: ["design", "figma"],
     skills: ["codex-design-workflow", "codex-figma-workflow"],
@@ -83,6 +109,21 @@ function main() {
     skills: ["codex-design-workflow", "codex-domain-design-review"],
     qualityGates: ["token-contract", "state-coverage", "responsive-check"],
     risk: "MEDIUM",
+  });
+
+  testRoute("страница выглядит кустарно и пользователи не доверяют", {
+    modes: ["design"],
+    skills: ["codex-design-workflow"],
+    semanticMatches: ["design"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("люди начинают путь, бросают его и не могут вернуться к ценности", {
+    modes: ["product-ux"],
+    skills: ["codex-product-ux-audit"],
+    qualityGates: ["entry-to-value-flow", "return-path"],
+    semanticMatches: ["product-ux"],
+    planRequired: true,
   });
 
   testRoute("critique distill harden brand/product register UI pipeline for conversion KPI", {
@@ -140,6 +181,97 @@ function main() {
     risk: "HIGH",
   });
 
+  testRoute("усилить AGENTS основной файл: единый SOT conflict protocol, больше примеров формулировки задач из references, системный анализ ошибок вместо локальных фиксов", {
+    modes: ["template"],
+    skills: [
+      "codex-template-sync",
+      "codex-agent-router",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "sot-validation", "product-goal-artifact"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("проверь куда делся образ мысли ТРИЗ в основном агентском файле", {
+    modes: ["template", "strategy"],
+    skills: [
+      "codex-template-sync",
+      "codex-agent-router",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("проверь стратагемы и Сунь-цзы для конкурентной стратегии", {
+    modes: ["review", "strategy"],
+    notModes: ["release"],
+    skills: ["codex-audit", "codex-strategic-review"],
+    planRequired: true,
+    risk: "MEDIUM",
+  });
+
+  testRoute("стратегический обзор продукта и рынка", {
+    modes: ["strategy"],
+    notModes: ["release"],
+    skills: ["codex-strategic-review"],
+    planRequired: true,
+    risk: "MEDIUM",
+  });
+
+  testRoute("маркетологи должны проверить позиционирование, оффер, воронку и кампанию", {
+    modes: ["marketing", "review"],
+    skills: [
+      "codex-domain-communication-review",
+      "codex-domain-business-review",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: [
+      "audience-icp",
+      "positioning-offer-clarity",
+      "journey-or-funnel-fit",
+      "measurement-and-ethics",
+      "product-goal-artifact",
+    ],
+    planRequired: true,
+    risk: "MEDIUM",
+  });
+
+  testRoute("marketing positioning campaign funnel offer ICP", {
+    modes: ["marketing"],
+    skills: ["codex-domain-communication-review", "codex-domain-business-review"],
+    qualityGates: ["audience-icp", "channel-distribution-plan"],
+    planRequired: true,
+    risk: "MEDIUM",
+  });
+
+  testRoute("пользователи не покупают повторно, деньги теряются, нужно понять где ломается путь", {
+    modes: ["marketing", "product-goal"],
+    skills: ["codex-domain-communication-review", "codex-domain-business-review"],
+    qualityGates: ["audience-icp", "journey-or-funnel-fit", "user-business-outcome-link"],
+    semanticMatches: ["marketing"],
+    planRequired: true,
+  });
+
+  testRoute("протокол между клиентом и сервисом разошелся, поля не совместимы", {
+    modes: ["api"],
+    skills: ["codex-api-contract"],
+    semanticMatches: ["api"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("переносим данные в новое хранилище без простоя и с откатом", {
+    modes: ["migration"],
+    skills: ["codex-migrate", "codex-strategic-review"],
+    semanticMatches: ["migration"],
+    risk: "HIGH",
+  });
+
   testRoute("agent template client-executor contract anti-sycophancy no fake completion", {
     modes: ["template"],
     skills: [
@@ -180,6 +312,13 @@ function main() {
     qualityGates: ["lesson-classification", "validator-or-route-check"],
     planRequired: true,
     risk: "HIGH",
+  });
+
+  testRoute("нужно сохранить вывод из повторяющегося провала и поставить защиту на следующий раз", {
+    modes: ["lessons"],
+    skills: ["codex-cross-project-lessons", "codex-strategic-review"],
+    semanticMatches: ["lessons"],
+    planRequired: true,
   });
 
   testRoute("выпусти release v3.8.0 и tag чтобы проекты качали релиз", {

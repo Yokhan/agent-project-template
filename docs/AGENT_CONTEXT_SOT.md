@@ -20,6 +20,35 @@ Do not paste full third-party documentation into the repo. Store URLs, dates,
 small notes, and local conclusions. User-provided local specs may be stored as
 originals when explicitly supplied.
 
+## SOT Conflict Protocol
+
+Every decision surface must have one active source of truth. When two plausible
+sources conflict, agents must not resolve the conflict silently.
+
+Authority order:
+
+1. Current user instruction or explicit product-owner decision.
+2. Project-owned overlays: `project-*` files, AgentOS Strategy/Tactic/Plan/Todo/Gate, project specs, accepted ADRs.
+3. Repository SOT docs: this file, `_reference/agent-sot/sources.json`, `PROJECT_SPEC.md`, `tasks/goal.md`, `tasks/current.md`.
+4. Shared template rules in `.claude/library/` and route-selected Codex skills.
+5. Historical notes, examples, research notes, and release history.
+
+If authority is still ambiguous, or if choosing one source changes product
+behavior, safety, privacy, data, release, architecture, or ownership, ask the user with 2-3 options and a recommendation. After the decision, record the
+chosen SOT in the relevant durable place so the same conflict does not recur.
+
+Use this shape:
+
+```text
+SOT conflict:
+- Source A says:
+- Source B says:
+- Impact:
+- Options:
+- Recommendation:
+- I need your decision on:
+```
+
 ## Architecture
 
 ### Hot Memory

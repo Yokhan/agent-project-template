@@ -15,7 +15,9 @@ For any file edit, M+ task, template work, release, design, security task, or am
 node scripts/codex-route-task.js "<user request>" --summary --write-state
 ```
 
-State the returned modes, skills, pipeline, subagents, risk, and orchestrator before editing. If the route reports `agentos`, treat AgentOS as the orchestrator and Codex as the worker.
+State the returned modes, exact/semantic matches, skills, pipeline, subagents, risk, and orchestrator before editing. If the route reports `agentos`, treat AgentOS as the orchestrator and Codex as the worker.
+
+Routing is not keyword-only. `scripts/codex-route-task.js` combines exact patterns with semantic intent scoring from `scripts/lib/codex-route-intents.js`. When a task is misrouted, update the relevant intent groups and add a regression fixture instead of only adding one literal keyword.
 
 Before edits, state a compact strategy for ambiguous, M+, HIGH risk, template, release, security, design, or cross-project work:
 
@@ -31,6 +33,7 @@ If the route includes `$codex-strategic-review`, use it before choosing the impl
 - Security: `$codex-security-audit`.
 - UI/Figma: `$codex-design-workflow`, `$codex-figma-workflow`.
 - Product goal/current-step continuity: `$codex-product-goal`.
+- Marketing, GTM, positioning, funnel, campaigns, offer, ICP, and sales messaging: `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, `$codex-strategic-review`.
 - Design system, Storybook, tokens, component contracts: `$codex-design-system-workflow`.
 - Product UX flow/dead-end checks: `$codex-product-ux-audit`.
 - Repeated downstream mistakes and template promotion: `$codex-cross-project-lessons`.
