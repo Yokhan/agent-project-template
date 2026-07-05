@@ -97,9 +97,10 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.4.1 has been published as the GitHub entrypoint patch release.
 - v4.4.2 has been published as the progressive JPEG client-control patch release.
 - v4.5.0 has been published as the semantic intent routing minor release.
+- v4.5.1 has been published as the progressive JPEG implementation gate patch release.
 
 ## Immediate Next Step
-- Patch and release `v4.5.1`: make progressive JPEG an implementation gate, not only a client-status/reporting shape.
+- Downstream projects should sync `v4.5.1` with `scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run` before applying.
 
 ## Plan - v4.5.1 Progressive JPEG Implementation Gate
 
@@ -147,6 +148,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - Passed: Git Bash `scripts/test-hooks.sh`
 - Passed: Git Bash `scripts/test-template.sh` (`135/135`)
 - Passed: Git Bash `scripts/sync-agents.sh`
+- Published: commit `5e91d62aa8995f9e0b15bf90c2d5943b8a4d5366`
+- Published: tag `v4.5.1` on origin points to the same commit
+- Published: GitHub Actions `Release Template` run `28754220908` completed `success`
+- Published: GitHub Release `Agent Project Template v4.5.1` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.5.1`
+- Published: asset `agent-project-template-v4.5.1.tar.gz`, sha256 `41366ef81d541a787cde6efdb729edda900d0b65a89ec6d9be0541c8a886a0d9`
 
 ## Plan - v4.5.0 Semantic Intent Routing Release
 
