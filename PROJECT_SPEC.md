@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Patch and release `v4.5.2`: clarify progressive JPEG as an LLM-native object readiness method with a required final product plan, 1% executable production function, readiness levels, and cross-domain examples.
+- Next: Downstream projects should sync `v4.5.2` with `scripts/sync-template.sh --from-git --ref v4.5.2 --dry-run` before applying.
 
 ## Last Scan
 2026-07-05

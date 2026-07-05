@@ -98,9 +98,10 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.4.2 has been published as the progressive JPEG client-control patch release.
 - v4.5.0 has been published as the semantic intent routing minor release.
 - v4.5.1 has been published as the progressive JPEG implementation gate patch release.
+- v4.5.2 has been published as the progressive object readiness patch release.
 
 ## Immediate Next Step
-- Patch and release `v4.5.2`: clarify progressive JPEG as an LLM-native object readiness method with a required final product plan, 1% executable production function, readiness levels, and cross-domain examples.
+- Downstream projects should sync `v4.5.2` with `scripts/sync-template.sh --from-git --ref v4.5.2 --dry-run` before applying.
 
 ## Plan - v4.5.2 Progressive Object Readiness
 
@@ -149,6 +150,11 @@ Make the template teach and enforce object readiness levels across domains: game
 - Passed: Git Bash `scripts/test-hooks.sh`
 - Passed: Git Bash `scripts/test-template.sh` (`135/135`)
 - Passed: Git Bash `scripts/sync-agents.sh`
+- Published: commit `3fdd8bad256c0b64adb6dba0cb5c993696fbace9`
+- Published: tag `v4.5.2` on origin points to the same commit
+- Published: GitHub Actions `Release Template` run `28754954123` completed `success`
+- Published: GitHub Release `Agent Project Template v4.5.2` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.5.2`
+- Published: asset `agent-project-template-v4.5.2.tar.gz`, sha256 `ae90ca62c0ef3a612ce6c6c595183c71959f91ceaf5aa0b9f59786a92480bead`
 
 ## Plan - v4.5.1 Progressive JPEG Implementation Gate
 
