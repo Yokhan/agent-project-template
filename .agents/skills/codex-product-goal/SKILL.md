@@ -22,9 +22,10 @@ Read:
 5. Treat the user as the client/product owner and the agent as the accountable executor.
 6. List dependencies, risks, acceptance evidence, and honest out-of-scope items.
 7. Use progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
-8. Update `tasks/current.md` before edits for M+ work.
-9. Update `tasks/goal.md` only when the final outcome, product/business priority, or quality bar changes.
-10. Verify the user outcome, not just file changes.
+8. For known final capabilities, require an end-state skeleton: 1% callable hooks, slots, contracts, feature flags, no-op stubs, or dev-only debug signals when the architecture depends on them.
+9. Update `tasks/current.md` before edits for M+ work.
+10. Update `tasks/goal.md` only when the final outcome, product/business priority, or quality bar changes.
+11. Verify the user outcome, not just file changes.
 
 ## Gates
 
@@ -33,6 +34,8 @@ Read:
 - Do not lower UX, security, privacy, data, or architecture quality to make the step easier.
 - Do not agree by default when a request conflicts with evidence, product outcome, safety, quality, or app-specific KPI.
 - Do not claim work is done, tested, reviewed, researched, or released without fresh evidence or a cited existing artifact.
+- Do not use legacy harness proof as a substitute for the product model unless it protects the current product path.
+- Do not fake user-visible readiness for a 1% callable stub; mark rough edges honestly.
 - Plans, audits, and final reports use the language of the user's request.
 - Partial work must be reported as partial with the next dependency.
 - Status and closeout messages must show what is sharp now, what is still rough, what evidence comes next, and what fact would force a replan.

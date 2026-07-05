@@ -60,9 +60,15 @@ Each molecule, organism, and template should have a visible or testable composit
 - States supported.
 - Responsive behavior.
 - Screen anatomy role, when the component participates in a template or screen.
+- Known future behavior exposed through end-state skeleton slots, handlers,
+  events, states, or feature flags when the product direction is already known.
 - Known exclusions.
 
 This prevents hidden raw values and makes review possible without manually measuring everything.
+
+If a known future capability is not implemented yet, expose it as a 1% callable
+stub, no-op, dev-only debug signal, or explicit unavailable boundary. Do not
+pretend the state is production-ready for product users.
 
 ## Rendered Geometry Gate
 

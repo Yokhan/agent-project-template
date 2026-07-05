@@ -67,6 +67,31 @@ A bounded step is acceptable when it is honest:
 - It has a rollback or follow-up path.
 - It reports remaining gaps as gaps, not as completed product behavior.
 
+## Progressive JPEG Implementation Gate
+
+Progressive JPEG is not only a reporting format. It also controls implementation
+shape.
+
+For a known final product direction, the first meaningful implementation should
+use an end-state skeleton:
+
+- Components, screens, services, and workflows expose the final slots,
+  handlers, contracts, routes, flags, state names, and integration boundaries
+  that are already accepted as product direction.
+- Future behavior may be only 1% ready, but it must be callable when the
+  architecture depends on it.
+- A 1% callable capability can be a typed no-op, explicit stub, feature-flagged
+  path, dev-only debug signal, placeholder event, or honest
+  `not implemented yet` boundary.
+- User-visible UI must not pretend the capability is complete. Debug notices
+  stay developer-facing or explicitly marked as unavailable.
+- Do not build a legacy harness, proof proxy, or compatibility scaffold instead
+  of the product model unless that scaffold directly protects the current
+  product path.
+
+Absent architecture for known future behavior is a product risk. Honest rough
+internals behind a stable product-shaped contract are acceptable.
+
 ## Domain Examples
 
 ### UI/Product

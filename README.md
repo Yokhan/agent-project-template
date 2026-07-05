@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.5.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.5.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -14,13 +14,13 @@ Self-deploying AI-agent optimized project template with **MCP-based dynamic rule
 Use the latest stable release, not `main`, for normal projects:
 
 1. Open: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the tag shown there. Current stable tag: `v4.5.0`.
+2. Use the tag shown there. Current stable tag: `v4.5.1`.
 3. For existing generated projects, sync with `--from-git --ref <tag>` and run `--dry-run` first.
 
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.5.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.5.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -29,8 +29,8 @@ Update an existing generated project from the stable tag:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.0
+bash scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.5.1
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -38,7 +38,7 @@ bash scripts/sync-template.sh --from-git --ref v4.5.0
 ## Quick Start
 
 ```bash
-git clone --branch v4.5.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.5.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -97,10 +97,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.5.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.5.0
+bash scripts/sync-template.sh --from-git --ref v4.5.1
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -128,8 +128,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.5.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.0
+bash scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.5.1
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -310,6 +310,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.5.1** | Patch release: makes progressive JPEG an implementation gate, so known final product capabilities use an end-state skeleton with 1% callable hooks/stubs/contracts instead of legacy harness proof |
 | **4.5.0** | Minor release: adds semantic intent scoring to Codex routing so routes trigger from task meaning, not only exact keywords; includes marketer/GTM, Sun Tzu/stratagem, TRIZ, SOT, and systemic-error regression coverage |
 | **4.4.2** | Patch release: makes Ilyakhov/progressive JPEG client-control behavior mandatory in hot planning, status, replan, closeout, and Codex skill paths, with validator coverage |
 | **4.4.1** | Patch release: makes the GitHub README/release entrypoint agent-safe with latest-release lookup, pinned tag install/sync commands, and explicit `main` versus release-tag guidance |

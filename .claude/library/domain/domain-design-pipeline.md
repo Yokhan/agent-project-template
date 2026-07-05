@@ -97,6 +97,12 @@ Build screens by composing existing components, not by drawing new ones:
 - Assemble from component instances
 - Override props/slots/variants — don't recreate from scratch
 - If a component doesn't support what you need → extend it, don't bypass it
+- For accepted future behavior, extend the component with an end-state
+  skeleton: named slots, states, handlers, props, events, or feature flags can
+  be 1% callable with honest stubs, but the component contract should not omit
+  known final capabilities.
+- Do not show fake completed behavior to users. Stubbed interactions must be
+  dev-only, explicitly unavailable, or safely no-op until implemented.
 
 ### Screen Anatomy First
 
@@ -246,6 +252,7 @@ Use Playwright screenshot snapshots, Storybook visual tests, Chromatic, or equiv
 [ ] Full-screen work declares root frame, background composition, content frame, and overlay policy?
 [ ] No fixed sizing where HUG/FILL is appropriate?
 [ ] No placeholder text? (real content or realistic data)
+[ ] Known future behavior represented as 1% callable component slots/states/handlers when needed?
 [ ] Screenshot taken and visually verified?
 ```
 

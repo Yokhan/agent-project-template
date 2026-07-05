@@ -286,6 +286,43 @@ function main() {
     risk: "HIGH",
   });
 
+  testRoute("пропиши progressive JPEG правило: продуктовая сущность сразу имеет будущую форму на 1% callable, без legacy harness proof", {
+    modes: ["template", "product-goal"],
+    skills: [
+      "codex-template-sync",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact", "verification-evidence"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("компонент должен сразу содержать будущие функции на 1 процент и прокидывать debug что тут работает а не доказывать старый harness", {
+    modes: ["feature", "product-goal"],
+    skills: [
+      "codex-feature-workflow",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["user-business-outcome-link", "product-goal-artifact"],
+    semanticMatches: ["product-goal"],
+    planRequired: true,
+  });
+
+  testRoute("пропиши себе что компонент сразу содержит будущие функции на 1 процент и debug а не доказывает harness", {
+    modes: ["template", "product-goal", "feature"],
+    skills: [
+      "codex-template-sync",
+      "codex-product-goal",
+      "codex-strategic-review",
+      "codex-feature-workflow",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
   testRoute("update API contract request/response pagination", {
     modes: ["api"],
     skills: ["codex-api-contract", "codex-feature-workflow"],

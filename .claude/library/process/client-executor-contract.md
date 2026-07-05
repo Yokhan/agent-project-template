@@ -102,6 +102,22 @@ pretend the low-resolution view is the finished result. If the final delivery
 time is unknown, give the next verifiable checkpoint instead of inventing a
 deadline.
 
+## Progressive JPEG Implementation Meaning
+
+For product, feature, design, game, data, API, and template implementation work,
+progressive JPEG also means the artifact is shaped like the intended final
+product from the first useful slice.
+
+The executor should not spend a slice proving an old harness when the product
+needs the future model. If the final component or workflow is already known,
+create the end-state skeleton and make known future capabilities 1% callable:
+slots, handlers, contracts, routes, state names, feature flags, no-op stubs,
+placeholder events, or dev-only debug signals.
+
+This is not permission to fake completion. The client should see what is sharp,
+what is rough, and which calls are stubs. Product users must not see a completed
+promise for behavior that does not exist.
+
 ## Status Shape
 
 Status updates should answer:

@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Finish and release `v4.5.0`: semantic intent routing, release docs/version bump, full gate, commit, tag, push, and GitHub release verification.
+- Next: Patch and release `v4.5.1`: make progressive JPEG an implementation gate, not only a client-status/reporting shape.
 
 ## Last Scan
 2026-07-05

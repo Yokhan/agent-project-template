@@ -96,9 +96,57 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.4.0 has been published as the client-executor accountability minor release.
 - v4.4.1 has been published as the GitHub entrypoint patch release.
 - v4.4.2 has been published as the progressive JPEG client-control patch release.
+- v4.5.0 has been published as the semantic intent routing minor release.
 
 ## Immediate Next Step
-- Finish and release `v4.5.0`: semantic intent routing, release docs/version bump, full gate, commit, tag, push, and GitHub release verification.
+- Patch and release `v4.5.1`: make progressive JPEG an implementation gate, not only a client-status/reporting shape.
+
+## Plan - v4.5.1 Progressive JPEG Implementation Gate
+
+### User Request
+Исправить повторяющуюся ошибку: агенты трактуют progressive JPEG как "доказать harness" или отчитаться слоями, вместо того чтобы сразу строить продуктовую сущность в будущей форме. Компонент/фича должны с первого полезного слоя иметь известные будущие функции как вызываемые 1% контракты, хотя полная реализация может быть позже.
+
+### Goal
+Сделать правило end-state skeleton обязательным для product/feature/design/template work: если финальная способность уже известна, первый слой должен включать ее безопасный callable hook/slot/handler/contract с честным stub/no-op/dev debug сигналом, а не отсутствующую архитектурную точку.
+
+### Product Goal Link
+- Final outcome: downstream teams get agents that shape product components toward the final product from the first implementation pass.
+- Product/business priority: fewer rebuilds, fewer fake proof cycles, faster route to real product behavior, lower support/correction load.
+- Current step: update shared rules, Codex skills, validator anchors, route regression, release docs, and patch version.
+- Quality bar preserved: no fake user-visible readiness; debug placeholders must be explicit, safe, and not leak as completed product behavior.
+- Out of scope: changing downstream product code or forcing stubs for speculative capabilities that are not part of the accepted product direction.
+
+### Strategy
+- Goal -> encode progressive JPEG as implementation architecture: end-state skeleton plus 1% callable capabilities.
+- Constraints -> preserve v4.5 semantic routing, SOT rules, text/platform gates, project-owned overlays, and release flow.
+- Approach -> patch hot rules and workflow skills, add validator smoke and routing regression, then publish as `v4.5.1`.
+- Verification -> route tests, production-standard validator, skill/agent validators, text/platform checks, template gate, tag/release verification.
+- Risk/Doubt -> the rule must not encourage fake production behavior; the guard will require honest stubs/no-ops and explicit rough edges.
+
+### Current View
+- Sharp now: shared rules, AGENTS/CLAUDE, Codex product/feature/design/design-system/decompose/strategic skills, route intents, route fixtures, and production-standard anchors now encode progressive JPEG implementation as end-state skeleton plus 1% callable capabilities.
+- Next sharpened layer: commit, tag `v4.5.1`, push, and verify the GitHub release artifact.
+- Rough edge: this changes agent behavior but does not modify downstream product code until projects sync the tag.
+- Replan trigger: if release workflow fails remotely, fix the release workflow or docs without moving the tag.
+
+### Verification Results
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-production-standard.js` (`182` checks)
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/validate-text-policy.js` (`423` files scanned)
+- Passed: `git diff --check`
+- Passed: Git Bash `scripts/generate-project-spec.sh --write`
+- Passed: Git Bash `scripts/scan-project.sh --report`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/sync-agents.sh`
 
 ## Plan - v4.5.0 Semantic Intent Routing Release
 

@@ -64,6 +64,8 @@ const INTENT_GROUPS = {
     [/outcome|goal|quality bar|done right|production ready|final/i, /исход|цель|планк\w*\s+кач|нормальн|продакшн|финал/i],
     [/revenue|retention|loyalty|activation|conversion|support load|kpi/i, /выруч|удержан|лояльн|активац|конверс|нагрузк\w*\s+поддерж|kpi|деньг/i],
     [/user value|customer value|business result|product owner|customer|user/i, /ценност\w*\s+польз|ценност\w*\s+клиент|бизнес.*результ|владелец\s+продукт|пользовател|клиент/i],
+    [/end-state|future shape|future capability|accepted future|product model|final shape/i, /будущ\w*\s+(форм|функц|способност)|сразу\s+содерж|продуктов\w*\s+(модел|сущност|смысл)|финальн\w*\s+форм/i],
+    [/callable|hook|slot|handler|stub|no-op|debug|harness|proof/i, /вызыва|хук|слот|обработчик|стаб|заглуш|debug|дебаг|харнесс|harness|доказ/i],
   ],
   "product-ux": [
     [/start|return|complete|continue|abandon|drop|stuck/i, /начина|возвращ|заверш|продолж|броса|отвалива|застрева/i],
@@ -93,6 +95,7 @@ const INTENT_GROUPS = {
     [/agent behavior|instruction|routing|context|source of truth|template/i, /поведен\w*\s+агент|инструкц|роутинг|контекст|источник\s+правд|шаблон/i],
     [/agents file|claude file|skill|subagent|hook|sync/i, /агентск\w*\s+файл|claude|скилл|сабагент|хук|синхрон/i],
     [/downstream|starter|release infrastructure|validator/i, /даунстрим|стартер|релизн\w*\s+инфраструктур|валидатор/i],
+    [/write this into yourself|remember this rule|agent must|agent should/i, /пропиши\s+себе|запиши\s+себе|агент\s+долж|нейросет\w*\s+долж/i],
   ],
   testing: [
     [/coverage|assert|fixture|regression guard|test gap/i, /покрыт|ассерт|фикстур|регрессионн\w*\s+защит|тестов\w*\s+дыр/i],

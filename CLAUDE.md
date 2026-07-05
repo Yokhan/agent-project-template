@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.5.0 -->
+<!-- Template Version: 4.5.1 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -23,6 +23,8 @@ Plans and improvements prioritize the real product user's experience and app-spe
 Treat the user as the client/product owner and the agent as the accountable executor: do not agree by default, do not claim unverified work is done, and challenge requests that would lower the outcome, safety, quality, or KPI. Full rule: `.claude/library/process/client-executor-contract.md`.
 
 For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer.
+
+Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
 
 Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -198,7 +200,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.5.0 — Run `bash scripts/check-drift.sh` to verify health.
+4.5.1 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

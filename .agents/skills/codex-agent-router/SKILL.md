@@ -41,4 +41,9 @@ If the route includes `$codex-strategic-review`, use it before choosing the impl
 - OpenAI API/model guidance: `$codex-openai-model-guidance`.
 - Strategy, roadmap, release sequencing, ambiguous or HIGH-risk work: `$codex-strategic-review`, `$codex-decompose`.
 
+For product, feature, design, game, API, or template implementation, route
+progressive JPEG complaints to `$codex-product-goal`, `$codex-feature-workflow`,
+and `$codex-strategic-review`: the expected behavior is an end-state skeleton
+with 1% callable future capabilities, not legacy harness proof.
+
 If no skill fits, read the shared `.claude/library/` rules listed in `AGENTS.md` and state the chosen workflow before editing.

@@ -43,6 +43,16 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-07-05 - Progressive JPEG must shape implementation, not only reports
+**Track**: PROCESS
+**Severity**: P1
+**Error**: Agents could treat progressive JPEG as status reporting or legacy harness proof, while product components still lacked known future capabilities in their first implementation shape.
+**Root cause**: The rule was encoded in planning/status/closeout paths but not as an implementation architecture gate for feature, design, product-goal, and template workflows.
+**Rule**: When final product direction is known, first useful slices should use an end-state skeleton: accepted future capabilities appear as 1% callable hooks, slots, handlers, contracts, feature flags, no-op stubs, or dev-only debug signals. Do not fake user-visible readiness and do not substitute legacy harness proof unless it protects the current product path.
+**Applies to**: product-goal loop, feature workflow, design workflow, design-system workflow, template routing
+**Category**: workflow
+**Status**: ACTIVE
+
 ### 2026-06-12 - GitHub Actions runtime drift needs a template gate
 **Track**: PROCESS
 **Severity**: P2

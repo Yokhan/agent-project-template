@@ -83,6 +83,28 @@ If only internal setup happened, report it as internal setup and name the first
 client-visible result. Do not call setup, research, or drafting a delivered
 product result unless it creates an inspectable decision point.
 
+## Progressive JPEG Implementation Gate
+
+When the task changes product behavior, architecture, components, screens,
+services, or workflows, progressive JPEG also means the implementation keeps the
+final product shape visible from the first useful slice.
+
+Before coding, name known future capabilities that belong to the accepted final
+outcome. For each one, decide whether it needs a 1% callable contract now:
+
+- Include it now when later work would otherwise have to replace the component,
+  route, data shape, state model, or service boundary.
+- Keep it out when the capability is speculative or not part of the accepted
+  product direction.
+- If included, make it honest: no-op, explicit stub, feature flag, dev-only
+  debug signal, placeholder event, or `not implemented yet` boundary.
+- Do not expose a fake completed action to the product user.
+- Do not spend the slice proving a legacy harness unless it protects the current
+  product path or prevents a real regression.
+
+The goal is a low-resolution version of the future product, not a separate demo
+path that must be thrown away.
+
 ## Product Slice Discipline
 
 Current steps must not pretend to be the whole product. Use these labels:

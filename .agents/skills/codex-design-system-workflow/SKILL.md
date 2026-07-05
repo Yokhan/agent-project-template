@@ -20,8 +20,9 @@ Read:
 4. Organisms: compose from lower layers and expose a dependency trace.
 5. Templates: define responsive layout and density rules.
 6. Screen anatomy: every full screen starts with root frame, base background, independent background composition, content frame, and optional overlay layer before product components are placed.
-7. Screens/stories: use real product data and navigation states.
-8. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
+7. End-state skeleton: accepted future behavior is exposed through 1% callable slots, states, handlers, events, or feature flags when it belongs to the final component contract.
+8. Screens/stories: use real product data and navigation states.
+9. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
 
 ## No Raw Values
 
@@ -38,6 +39,7 @@ Root `DESIGN.md` is a project-owned visual context file. Update it when visual d
 - Organism and template responsive examples.
 - Screen anatomy tables for full-page templates and screens.
 - Product forms, account/auth, empty/loading/error, service gateway, docs/help surfaces when relevant.
+- End-state skeleton stories or notes for accepted future capabilities that are stubbed, feature-flagged, no-op, or dev-debug only.
 
 ## Screen Anatomy Contract
 

@@ -20,7 +20,7 @@ Read:
 3. Reference: inspect existing product/system or gold-standard references.
 4. BOM: list tokens, components, states, assets, and content.
 5. Discover: search existing components, tokens, and styles.
-6. Compose: build tokens -> components -> screens.
+6. Compose: build tokens -> components -> screens, using an end-state skeleton for accepted future interactions.
 7. Validate: screenshot or browser check, responsive check, contrast, overflow, 8-state coverage, and rendered geometry for important components.
 8. Iterate: fix deviations and re-check.
 
@@ -33,10 +33,12 @@ Read:
 - Every container uses layout mode, flexbox, or grid.
 - Every full screen starts from screen anatomy: root frame, base background, independent background composition, content frame, and optional overlay layer.
 - Interactive controls account for default, hover, active, focus, disabled, loading, error, and empty states where applicable.
+- Accepted future behavior has 1% callable component slots, states, handlers, events, or feature flags when later slices depend on that contract.
 - Text must not overlap or overflow at target viewports.
 - Molecules and larger components must declare lower-layer token/component dependencies.
 - Design-system work must expose foundation tables and Storybook or equivalent inspectable stories.
 - Screens must pass the subtraction gate before adding panels, persistent lists, banners, advice blocks, or secondary controls.
+- Stubbed UI behavior must be dev-only, explicitly unavailable, or safe no-op. Do not make product users believe incomplete behavior is production-ready.
 
 ## Screen Anatomy Gate
 

@@ -17,7 +17,18 @@ Read:
 1. Search existing modules, registry entries, templates, and lessons.
 2. Define success criteria and risk.
 3. Plan file architecture before edits.
-4. Keep business logic in importable modules.
-5. Implement in small batches.
-6. Add focused tests for the planned scenarios.
-7. Run verification and update docs/registry when public behavior changes.
+4. For accepted future capabilities, design the end-state skeleton before code: callable handlers, contracts, states, routes, flags, or no-op stubs can be 1% ready, but the architecture point should exist when later slices depend on it.
+5. Keep business logic in importable modules.
+6. Implement in small batches.
+7. Add focused tests for the planned scenarios.
+8. Run verification and update docs/registry when public behavior changes.
+
+## Progressive JPEG Implementation
+
+Do not build a temporary proof path when the product direction is already known.
+The first slice should be a low-resolution version of the future product:
+
+- known capability present as a callable contract;
+- internal behavior may be stubbed, feature-flagged, no-op, or dev-debug only;
+- product users must not see fake completed behavior;
+- speculative capabilities stay out until accepted.

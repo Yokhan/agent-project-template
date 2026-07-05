@@ -82,7 +82,7 @@ const ROUTES = [
   {
     mode: "template",
     pattern:
-      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|ilyakhov|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон/i,
+      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|ilyakhov|write this into yourself|remember this rule|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон|пропиши\s+себе|запиши\s+себе/i,
     skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],
