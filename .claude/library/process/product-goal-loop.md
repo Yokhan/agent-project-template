@@ -92,6 +92,9 @@ final product shape visible from the first useful slice.
 Before coding, name known future capabilities that belong to the accepted final
 outcome. For each one, decide whether it needs a 1% callable contract now:
 
+- If the final product plan is missing, stop implementation and create or
+  propose the plan first. The plan must name the final outcome, object
+  inventory, public contracts, dependencies, states, and acceptance checks.
 - Include it now when later work would otherwise have to replace the component,
   route, data shape, state model, or service boundary.
 - Keep it out when the capability is speculative or not part of the accepted
@@ -104,6 +107,21 @@ outcome. For each one, decide whether it needs a 1% callable contract now:
 
 The goal is a low-resolution version of the future product, not a separate demo
 path that must be thrown away.
+
+Verification order for object readiness:
+
+1. Final plan exists.
+2. Object inventory matches the plan.
+3. The 1% object performs its production function in the smallest honest way.
+4. Remaining gaps are classified by detail depth, integration, tests, polish, or
+   production hardening.
+
+For example, a game actor should spawn and expose planned components,
+interfaces, variables, animation hooks, interaction hooks, and debug-callable
+methods before its combat/animation details are complete. A site should expose
+the real shell, route structure, contact path, and honest placeholder promise
+before the full app exists. A book should expose the thesis, structure, chapter
+slots, and sample voice before all chapters are written.
 
 ## Product Slice Discipline
 

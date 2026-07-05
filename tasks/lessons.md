@@ -294,3 +294,13 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Applies to**: test-template.sh, setup.sh payload, downstream health checks
 **Category**: testing
 **Status**: ACTIVE
+
+### 2026-07-05 - Progressive JPEG requires final-plan object readiness
+**Track**: PROCESS
+**Severity**: P1
+**Error**: The template described progressive JPEG as an end-state skeleton, but agents could still treat the first useful slice as a proof harness, isolated stub, or partial fragment.
+**Root cause**: The rule did not explicitly require a final product plan, object inventory, smallest production function, and readiness-level verification before judging implementation depth.
+**Rule**: For product/feature/design/game/text/project work, progressive JPEG means plan first, then a whole product-shaped object at low detail. If the final plan is missing, gate implementation and create/propose it first. At 1% readiness, all accepted future classes/components/interfaces/routes/sections/functions/contracts must exist or be callable, and the object must perform its smallest honest production function with explicit placeholder/debug behavior.
+**Applies to**: production-product-standard, product-goal-loop, client-executor-contract, Codex product/feature/design/decompose/strategic skills, release validators
+**Category**: process
+**Status**: ACTIVE

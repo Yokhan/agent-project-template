@@ -114,9 +114,17 @@ create the end-state skeleton and make known future capabilities 1% callable:
 slots, handlers, contracts, routes, state names, feature flags, no-op stubs,
 placeholder events, or dev-only debug signals.
 
+If the final plan is not known, the executor must gate implementation and
+create/propose the plan first. The plan should identify the final production
+function, object inventory, public contracts, dependencies, states, and
+acceptance checks. A 1% object is not a random fragment; it is the whole planned object at low detail.
+
 This is not permission to fake completion. The client should see what is sharp,
 what is rough, and which calls are stubs. Product users must not see a completed
 promise for behavior that does not exist.
+
+When reviewing the result, check object completeness against the final plan
+before judging implementation depth.
 
 ## Status Shape
 

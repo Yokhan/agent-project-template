@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.5.1
-git push origin v4.5.1
+git tag v4.5.2
+git push origin v4.5.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -38,14 +38,14 @@ Patch releases are for compatible fixes to rules, skills, hooks, scripts, and do
 When an agent receives only the repository URL, it must not guess from `main`.
 
 1. Open the latest stable release: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the release tag shown there. Current stable tag: `v4.5.1`.
+2. Use the release tag shown there. Current stable tag: `v4.5.2`.
 3. For downstream sync, use `scripts/sync-template.sh --from-git --ref <tag>`.
 4. Run `--dry-run` before applying the tag.
 
 New project from a stable release:
 
 ```bash
-git clone --branch v4.5.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.5.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -54,8 +54,8 @@ Existing generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.1
+bash scripts/sync-template.sh --from-git --ref v4.5.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.5.2
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -103,7 +103,9 @@ Version `4.5.0` is a compatible minor release that adds semantic intent scoring 
 
 Version `4.5.1` is a compatible patch release that makes progressive JPEG an implementation gate. Known final product capabilities should appear from the first useful slice as an end-state skeleton with 1% callable hooks, slots, contracts, flags, no-op stubs, or dev-only debug signals. Do not substitute legacy harness proof unless it protects the current product path, and do not fake user-visible readiness.
 
-Downstream projects should sync `v4.5.1` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, and any project-specific routing assumptions before applying.
+Version `4.5.2` is a compatible patch release that clarifies progressive JPEG as final-plan-gated object readiness. If the final product plan is missing, agents must gate implementation and create/propose the plan first. At 1% readiness the whole planned object exists at low detail, all accepted classes/components/interfaces/routes/sections/functions/contracts are present or callable, and the object performs its smallest honest production function with explicit debug or placeholder behavior.
+
+Downstream projects should sync `v4.5.2` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -139,8 +141,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.1
+bash scripts/sync-template.sh --from-git --ref v4.5.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.5.2
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

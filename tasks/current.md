@@ -100,7 +100,55 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.1 has been published as the progressive JPEG implementation gate patch release.
 
 ## Immediate Next Step
-- Downstream projects should sync `v4.5.1` with `scripts/sync-template.sh --from-git --ref v4.5.1 --dry-run` before applying.
+- Patch and release `v4.5.2`: clarify progressive JPEG as an LLM-native object readiness method with a required final product plan, 1% executable production function, readiness levels, and cross-domain examples.
+
+## Plan - v4.5.2 Progressive Object Readiness
+
+### User Request
+Clarify that progressive JPEG means an LLM should first plan the final product object, then create the whole product-shaped object skeleton at 1% readiness: all accepted classes, components, interfaces, variables, functions, routes, sections, and placeholders exist and are callable/executable. If the final plan is missing, the agent must gate the work and force/propose creation of that plan because later plan changes intentionally change the object.
+
+### Goal
+Make the template teach and enforce object readiness levels across domains: game actor, site/app, text/book, and project/module. At 1% readiness the object must still perform its production function in the smallest honest way.
+
+### Product Goal Link
+- Final outcome: downstream agents produce complete product-shaped scaffolds first, then refine detail level, instead of creating throwaway fragments.
+- Product/business priority: less rebuild churn, clearer acceptance, faster production convergence, fewer correction loops, and safer downstream sync.
+- Current step: update shared rules, Codex skills, route fixtures, validators, version docs, and release `v4.5.2`.
+- Quality bar preserved: no speculative architecture; no fake user-visible readiness; final plan is required before full object skeleton creation.
+- Out of scope: implementing a new generator or modifying downstream Unreal/game/site projects.
+
+### Strategy
+- Goal -> encode progressive JPEG as final-plan-gated object readiness.
+- Constraints -> preserve v4.5.1 end-state skeleton, v4.5 semantic routing, SOT, text/platform, and sync gates.
+- Approach -> add concise hot rule plus detailed examples in existing shared rules and skills, then validator/route coverage and patch release.
+- Verification -> route tests, production-standard validator, skill/agent validators, text/platform checks, template gate, release workflow.
+- Risk/Doubt -> if the rule is too broad, agents may over-scaffold speculative futures; the wording must require an accepted final plan and reject unknown/speculative capabilities.
+
+### Current View
+- Sharp now: AGENTS/CLAUDE, shared production/product-goal/client-executor rules, Codex product/feature/design/design-system/decompose/strategic/communication skills, route fixtures, validators, and release docs now define progressive JPEG as final-plan object readiness.
+- Behavior: if the final plan is missing, implementation gates on creating/proposing the plan; if the plan exists, the 1% object must include the planned inventory and execute its smallest honest production function before detail depth is judged.
+- Examples covered: Unreal/game actor, site/app, book/text, and project/module.
+- Rough edge: this changes template behavior and shipped guidance; downstream projects must sync `v4.5.2` before their agents inherit it.
+- Replan trigger: if route or release validation treats speculative capabilities as mandatory, tighten the rule around accepted final plans before tagging.
+
+### Verification Results
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-production-standard.js` (`213` checks)
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/validate-text-policy.js` (`423` files scanned)
+- Passed: `git diff --check`
+- Passed: Git Bash `scripts/generate-project-spec.sh --write`
+- Passed: Git Bash `scripts/scan-project.sh --report`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`135/135`)
+- Passed: Git Bash `scripts/sync-agents.sh`
 
 ## Plan - v4.5.1 Progressive JPEG Implementation Gate
 

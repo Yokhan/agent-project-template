@@ -323,6 +323,38 @@ function main() {
     risk: "HIGH",
   });
 
+  testRoute("сделай LLM агента для Unreal Engine actor персонажа: на 1% готовности создать классы компоненты анимации интерфейсы переменные функции по финальному плану", {
+    modes: ["template", "product-goal", "feature"],
+    skills: [
+      "codex-template-sync",
+      "codex-product-goal",
+      "codex-feature-workflow",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact", "user-business-outcome-link"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("если финального плана нет, агент должен блокировать реализацию и создать план объекта, потом проверять полноту по плану и уровень детализации", {
+    modes: ["template", "product-goal", "strategy"],
+    skills: [
+      "codex-template-sync",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
+  testRoute("сайт на 1% должен выполнять продакшн функцию показывать контакты и coming soon приложение", {
+    modes: ["product-goal"],
+    skills: ["codex-product-goal", "codex-strategic-review"],
+    qualityGates: ["product-goal-artifact", "user-business-outcome-link"],
+    planRequired: true,
+  });
+
   testRoute("update API contract request/response pagination", {
     modes: ["api"],
     skills: ["codex-api-contract", "codex-feature-workflow"],

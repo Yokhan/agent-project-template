@@ -75,6 +75,10 @@ shape.
 For a known final product direction, the first meaningful implementation should
 use an end-state skeleton:
 
+- If the final product plan is missing, do not create the full skeleton yet.
+  Gate the work and create or propose a plan first: final outcome, object
+  inventory, public contracts, dependencies, states, and acceptance checks. In
+  Spec Kit or Kiro-like flows, `spec -> plan -> tasks` owns this contract.
 - Components, screens, services, and workflows expose the final slots,
   handlers, contracts, routes, flags, state names, and integration boundaries
   that are already accepted as product direction.
@@ -83,6 +87,11 @@ use an end-state skeleton:
 - A 1% callable capability can be a typed no-op, explicit stub, feature-flagged
   path, dev-only debug signal, placeholder event, or honest
   `not implemented yet` boundary.
+- At 1% readiness, the object must still perform its production function in the
+  smallest honest form. A site shows contacts or a "coming soon" app shell; a
+  game actor spawns and responds with debug actions; a book has the real
+  structure and a useful synopsis; a module exposes its public API and safe
+  placeholder behavior.
 - User-visible UI must not pretend the capability is complete. Debug notices
   stay developer-facing or explicitly marked as unavailable.
 - Do not build a legacy harness, proof proxy, or compatibility scaffold instead
@@ -91,6 +100,47 @@ use an end-state skeleton:
 
 Absent architecture for known future behavior is a product risk. Honest rough
 internals behind a stable product-shaped contract are acceptable.
+
+## Object Readiness Levels
+
+Review progressive JPEG objects in this order:
+
+1. Plan: is there an accepted final product plan and object inventory?
+2. Completeness: does the object contain every planned class, component,
+   interface, variable, function, route, section, state, and contract that must
+   exist for the final shape?
+3. Executability: does the object perform its production function, even with
+   honest placeholders or debug output?
+4. Detail depth: how much of each planned capability is implemented,
+   integrated, tested, and polished?
+
+Readiness levels:
+
+| Level | Meaning | Acceptance |
+| --- | --- | --- |
+| 1% | Whole object skeleton exists from the final plan. All accepted future capabilities are callable or present as honest stubs. | Primary production function works in the smallest honest way. |
+| 10% | Critical path is wired with debug/no-op internals and basic integration points. | Agent can exercise the main path and see debug evidence. |
+| 30% | Main behavior has rough real implementation for happy path. | Product user can complete a narrow real flow with known rough edges. |
+| 60% | Important states, errors, edge cases, and integrations are implemented. | The object survives realistic use beyond the happy path. |
+| 90% | Production hardening, UX polish, accessibility, performance, privacy, and observability are mostly complete. | Release blockers are known and small. |
+| 100% | Verified production behavior matches the final plan. | Done means shipped-quality evidence exists, not only code or prose. |
+
+Examples:
+
+- Unreal/game actor: 1% means the actor class, components, animation component,
+  interaction interfaces, planned variables, input/event handlers, state names,
+  and debug-callable methods exist. The actor can spawn and report actions such
+  as `Attack requested` or `Interact hook reached`.
+- Site/app: 1% means the shell, routes, core sections, contact/sales path,
+  empty/loading/error placeholders, analytics/feature flags where planned, and
+  deployment entry point exist. If the app is not ready, the site still shows
+  contacts and an honest "coming soon" product promise.
+- Book/text: 1% means the title, thesis, table of contents, chapter slots,
+  argument map, sources/placeholders, editorial voice, and sample section exist.
+  The text can already communicate the core promise.
+- Project/module: 1% means public API, directory structure, contracts, config,
+  adapters, commands, tests or smoke placeholders, and observability/debug
+  boundaries exist. Calls return safe placeholders instead of missing modules.
 
 ## Domain Examples
 

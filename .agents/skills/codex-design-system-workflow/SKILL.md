@@ -20,9 +20,10 @@ Read:
 4. Organisms: compose from lower layers and expose a dependency trace.
 5. Templates: define responsive layout and density rules.
 6. Screen anatomy: every full screen starts with root frame, base background, independent background composition, content frame, and optional overlay layer before product components are placed.
-7. End-state skeleton: accepted future behavior is exposed through 1% callable slots, states, handlers, events, or feature flags when it belongs to the final component contract.
-8. Screens/stories: use real product data and navigation states.
-9. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
+7. Plan gate: broad component skeleton work requires the final component contract or a plan step first.
+8. End-state skeleton: accepted future behavior is exposed through 1% callable slots, states, handlers, events, or feature flags when it belongs to the final component contract.
+9. Screens/stories: use real product data and navigation states.
+10. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
 
 ## No Raw Values
 

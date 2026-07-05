@@ -81,6 +81,9 @@ src/
 - Next sharpened layer: [what will become clearer after the next check]
 - Rough edges: [what is intentionally incomplete or uncertain now]
 - Replan trigger: [which fact changes scope, deadline, quality, or path]
+- Final object plan: [accepted object inventory, contracts, states, functions,
+  dependencies, and production function; if missing, planning is the current
+  step]
 - Implementation shape: [known future capabilities included as 1% callable
   hooks/stubs/contracts, and which speculative capabilities are intentionally
   excluded]

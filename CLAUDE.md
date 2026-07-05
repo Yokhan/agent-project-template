@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.5.1 -->
+<!-- Template Version: 4.5.2 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -24,7 +24,7 @@ Treat the user as the client/product owner and the agent as the accountable exec
 
 For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer.
 
-Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
+Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. If the final product plan is missing, gate implementation and create/propose the plan first. At 1% readiness, the object still performs its production function in the smallest honest way. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
 
 Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -200,7 +200,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.5.1 — Run `bash scripts/check-drift.sh` to verify health.
+4.5.2 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.
