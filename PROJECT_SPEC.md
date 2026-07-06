@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Patch and release `v4.5.3`: define the progressive layer replacement pipeline so obsolete wrong iterations, disabled scaffolds, and stale placeholders are deleted, replaced, or time-boxed for migration instead of being preserved as hidden legacy.
+- Next: Downstream projects should sync `v4.5.3` with `scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run` before applying.
 
 ## Last Scan
 2026-07-06
