@@ -25,6 +25,9 @@
 - Framework code (React renders, Express routing)
 - Simple getters/setters
 - Type system (that's what typecheck is for)
+- Stale implementation paths whose only requirement is "must not ship". Delete
+  the stale path instead, and test the intended public contract plus absence of
+  obsolete routes/flags only when that absence is a product or safety contract.
 
 ## Test Execution
 - ALWAYS run relevant tests after making changes

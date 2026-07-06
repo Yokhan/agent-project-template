@@ -103,6 +103,9 @@ Build screens by composing existing components, not by drawing new ones:
   known final capabilities.
 - Do not show fake completed behavior to users. Stubbed interactions must be
   dev-only, explicitly unavailable, or safely no-op until implemented.
+- When a later UI layer supersedes an earlier one, remove or replace stale
+  hidden panels, disabled controls, obsolete stories, old routes, skipped
+  checks, and release-only harnesses before claiming the next readiness level.
 
 ### Screen Anatomy First
 

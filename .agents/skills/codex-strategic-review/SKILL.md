@@ -24,7 +24,9 @@ Read `.claude/skills/strategic-review/SKILL.md` for the full checklist when need
 13. Check progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
 14. Check progressive JPEG implementation: known future product capabilities should have an end-state skeleton and 1% callable contracts instead of being absent or replaced by legacy harness proof.
 15. Check object readiness: if no final plan exists, recommend a plan gate before implementation; if a 1% object exists, review inventory completeness before detail depth.
-16. Recommend the next smallest valuable move.
+16. Check progressive layer replacement: wrong earlier iterations, obsolete stubs, disabled branches, stale flags, skipped tests, and release-only harnesses should be deleted, replaced, or time-boxed as migration scaffolding with a removal condition.
+17. Check project-slice reporting: tagged working documents need fresh `PROGRESSIVE_STATUS` headers and a current `node scripts/progressive-status.js` slice before closeout.
+18. Recommend the next smallest valuable move.
 
 For client-facing plans, status, replans, and closeouts, follow
 `.claude/library/process/client-executor-contract.md`.

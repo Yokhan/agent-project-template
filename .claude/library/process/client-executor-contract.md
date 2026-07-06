@@ -126,6 +126,12 @@ promise for behavior that does not exist.
 When reviewing the result, check object completeness against the final plan
 before judging implementation depth.
 
+When a later layer supersedes an earlier one, the executor must retire the old layer instead of preserving it as hidden legacy. Wrong iterations, obsolete
+stubs, commented-out paths, disabled branches, stale flags, skipped tests, and
+release-only exclusion harnesses should be replaced or deleted in the same
+slice. Keep only placeholders that still belong to the final plan and temporary
+migration scaffolding with an explicit removal condition.
+
 ## Status Shape
 
 Status updates should answer:
@@ -154,6 +160,22 @@ What is still incomplete or uncertain.
 Replan trigger:
 What would change the path.
 ```
+
+When the project has tagged working documents, include the current project
+slice from `node scripts/progressive-status.js`. Use aligned ASCII bars so the
+client sees the current detail level at a glance:
+
+```text
+dimension    bar                    pct
+readiness    [##############------]  70%
+plan         [####################] 100%
+inventory    [################----]  80%
+production   [############--------]  60%
+cleanup      [##############------]  70%
+```
+
+Do not send a final closeout for changed tagged docs until
+`node scripts/progressive-status.js --check` passes.
 
 ## Replan Shape
 

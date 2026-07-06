@@ -83,6 +83,23 @@ If only internal setup happened, report it as internal setup and name the first
 client-visible result. Do not call setup, research, or drafting a delivered
 product result unless it creates an inspectable decision point.
 
+For M+, template, release, product, design, docs, game, or long-running work
+with tagged working documents, include the progressive project slice from:
+
+```bash
+node scripts/progressive-status.js
+```
+
+The slice should be shown as a monospace table with aligned ASCII bars for
+readiness, plan, inventory, production, and cleanup. Before closeout, run:
+
+```bash
+node scripts/progressive-status.js --check
+```
+
+If a tagged working document changed but its `PROGRESSIVE_STATUS` header did not
+change, the work is not ready to hand off.
+
 ## Progressive JPEG Implementation Gate
 
 When the task changes product behavior, architecture, components, screens,
@@ -115,6 +132,21 @@ Verification order for object readiness:
 3. The 1% object performs its production function in the smallest honest way.
 4. Remaining gaps are classified by detail depth, integration, tests, polish, or
    production hardening.
+5. Superseded layers are removed, replaced, or time-boxed as migration
+   scaffolding before the next readiness level is claimed.
+
+Progressive layer replacement gate:
+
+- Keep placeholders only when they still belong to the accepted final plan and
+  remain callable, honest, and tracked as the next readiness target.
+- Replace or delete wrong earlier iterations, obsolete scaffolds, disabled
+  branches, stale feature flags, commented-out old implementations, skipped
+  tests, and release-only exclusions.
+- Do not add tests that merely prove stale code is disabled. Tests should assert
+  the intended final contract and, when useful, the absence of obsolete paths.
+- Allow temporary migration or rollback scaffolding only when it protects live
+  users, data, or compatibility, stays outside the normal product path, and has
+  an explicit removal condition.
 
 For example, a game actor should spawn and expose planned components,
 interfaces, variables, animation hooks, interaction hooks, and debug-callable

@@ -48,6 +48,46 @@ validate_text_policy_rejects_mojibake() {
   rm -f "$fixture"
   return 0
 }
+validate_progressive_status_rejects_stale_header() {
+  local fixture_repo
+  local script_path
+  fixture_repo="$(_temp_dir progressive-status-fixture)"
+  script_path="$TEMPLATE_DIR/scripts/progressive-status.js"
+
+  (
+    cd "$fixture_repo"
+    git init -q
+    git config user.email "template-smoke@example.invalid"
+    git config user.name "Template Smoke"
+    cat > work.md <<'EOF'
+<!-- PROGRESSIVE_STATUS
+id: fixture-work
+status: active
+updated: 2026-07-06
+readiness: 10
+plan: 10
+inventory: 10
+production: 10
+cleanup: 10
+tags: progressive-jpeg,fixture
+next: first check
+-->
+
+# Work
+
+Initial body.
+EOF
+    git add work.md
+    git commit -q -m "fixture"
+    printf '%s\n' "" "Changed body without status header update." >> work.md
+    if node "$script_path" --check --path work.md >/dev/null 2>&1; then
+      exit 1
+    fi
+  )
+  local status=$?
+  rm -rf "$fixture_repo"
+  return "$status"
+}
 github_workflows_use_node24_actions() {
   ! grep -R -E 'actions/(checkout|setup-node)@v4' .github &&
     ! grep -R -E "node-version:[[:space:]]*['\"]?20" .github
@@ -278,6 +318,7 @@ check "scripts/validate-design-policy.js" test -f scripts/validate-design-policy
 check "scripts/test-design-policy.js" test -f scripts/test-design-policy.js
 check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
 check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
+check "scripts/progressive-status.js" test -f scripts/progressive-status.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
 check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
@@ -303,6 +344,8 @@ check "validate-agent-sot" node scripts/validate-agent-sot.js
 check "validate-spec-kit" node scripts/validate-spec-kit.js
 check "validate-text-policy" node scripts/validate-text-policy.js
 check "validate-text-policy rejects mojibake" validate_text_policy_rejects_mojibake
+check "progressive-status validates headers" node scripts/progressive-status.js --check
+check "progressive-status rejects stale headers" validate_progressive_status_rejects_stale_header
 
 echo ""
 echo "Codex subagents:"
@@ -398,7 +441,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -438,7 +481,8 @@ if is_template_source_repo; then
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
       [ -f "$project/scripts/validate-codex-agents.js" ] &&
       [ -f "$project/scripts/validate-codex-skills.js" ] &&
-      [ -f "$project/scripts/validate-production-standard.js" ]
+      [ -f "$project/scripts/validate-production-standard.js" ] &&
+      [ -f "$project/scripts/progressive-status.js" ]
   }
   trap cleanup_smoke EXIT
   printf 'sentinel\n' > "$SMOKE_SENTINEL"

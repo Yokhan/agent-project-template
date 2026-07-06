@@ -304,3 +304,13 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Applies to**: production-product-standard, product-goal-loop, client-executor-contract, Codex product/feature/design/decompose/strategic skills, release validators
 **Category**: process
 **Status**: ACTIVE
+
+### 2026-07-06 - Progressive JPEG needs machine-readable status slices
+**Track**: PROCESS
+**Severity**: P1
+**Error**: Agents could update active working documents while leaving the reported progressive JPEG status unchanged, so iteration reports stopped reflecting the real project detail level.
+**Root cause**: The status/reporting rule was prose-only. There was no tool-readable header, cache, or hard gate connecting changed work documents to updated readiness status.
+**Rule**: Active working documents may opt into `PROGRESSIVE_STATUS`. Iteration reports should include the project slice from `node scripts/progressive-status.js`, and closeout must run `node scripts/progressive-status.js --check`. If a tagged document changed but its status header did not, the work is not ready to hand off.
+**Applies to**: tasks/current.md, product-goal-loop, client-executor-contract, production-product-standard, Codex product/feature/decompose/strategic skills, release validators
+**Category**: process
+**Status**: ACTIVE

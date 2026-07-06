@@ -355,6 +355,18 @@ function main() {
     planRequired: true,
   });
 
+  testRoute("прогрессивный JPEG старые неправильные итерации заглушки и косяки не сохранять выключенными а удалять заменять мигрировать", {
+    modes: ["template", "lessons"],
+    skills: [
+      "codex-template-sync",
+      "codex-product-goal",
+      "codex-strategic-review",
+    ],
+    qualityGates: ["template-boundary", "product-goal-artifact", "verification-evidence"],
+    planRequired: true,
+    risk: "HIGH",
+  });
+
   testRoute("update API contract request/response pagination", {
     modes: ["api"],
     skills: ["codex-api-contract", "codex-feature-workflow"],

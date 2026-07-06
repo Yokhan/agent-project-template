@@ -1,6 +1,19 @@
+<!-- PROGRESSIVE_STATUS
+id: template-v4.5.3-progressive-status
+status: active
+updated: 2026-07-06
+readiness: 90
+plan: 100
+inventory: 90
+production: 90
+cleanup: 90
+tags: progressive-jpeg,template,release
+next: commit, tag, push, and verify release v4.5.3
+-->
+
 # Current Task - Template v4 Production Product Standard
 
-Last updated: 2026-06-11
+Last updated: 2026-07-06
 
 ## Goal
 Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
@@ -101,7 +114,55 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.2 has been published as the progressive object readiness patch release.
 
 ## Immediate Next Step
-- Downstream projects should sync `v4.5.2` with `scripts/sync-template.sh --from-git --ref v4.5.2 --dry-run` before applying.
+- Patch and release `v4.5.3`: define the progressive layer replacement pipeline so obsolete wrong iterations, disabled scaffolds, and stale placeholders are deleted, replaced, or time-boxed for migration instead of being preserved as hidden legacy.
+
+## Plan - v4.5.3 Progressive Layer Replacement Pipeline
+
+### User Request
+Correct the progressive JPEG workflow so agents stop preserving wrong earlier iterations, bad placeholders, commented-out old paths, or tests whose only purpose is to keep stale code out of release. The expected behavior is to replace, delete, migrate, and clean obsolete layers as the object sharpens.
+
+### Goal
+Make progressive JPEG an object evolution pipeline: every sharpening pass must audit superseded artifacts and remove or replace anything that no longer belongs to the accepted final plan, then report the current project detail level as a tool-readable status slice.
+
+### Product Goal Link
+- Final outcome: downstream agents converge toward production objects without accumulating hidden legacy, dead branches, and disabled scaffolds.
+- Product/business priority: lower correction loops, lower maintenance/support load, fewer release surprises, and faster production readiness for generated products.
+- Current step: update hot rules, shared product/process rules, Codex skills, progressive status script, validator anchors, route regression, version docs, and release `v4.5.3`.
+- Quality bar preserved: keep valid 1% placeholders only when they are accepted by the final plan, callable, honest, and tracked as the next readiness target.
+- Out of scope: deleting downstream project code before projects sync and apply the released template.
+
+### Strategy
+- Goal -> encode cleanup as part of progressive JPEG, not optional polish.
+- Constraints -> preserve v4.5.2 final-plan object readiness and avoid deleting real migration/rollback scaffolding that protects live users.
+- Approach -> add a replacement pipeline: plan -> build layer -> superseded-layer audit -> replace/delete/migrate -> absence verification -> project-slice report -> next detail layer.
+- Verification -> progressive status check, production-standard validator, route tests, skill/agent validators, text/platform checks, template gate, release workflow.
+- Risk/Doubt -> too-aggressive deletion can break real migrations; rule must allow time-boxed, named temporary scaffolding only when it protects rollback/migration and is outside the normal product path.
+
+### Current View
+- Sharp now: shared product/process/client-executor rules, AGENTS/CLAUDE hot rules, Codex product/feature/design/design-system/decompose/strategic/router skills, design rules, route fixtures, validators, release docs, starter task status, and the new `scripts/progressive-status.js` gate are updated for progressive layer replacement and project-slice reporting.
+- Behavior: after each sharpening pass, agents must audit superseded layers and delete, replace, or time-box old artifacts before claiming the next readiness level; iteration reports can include an aligned ASCII slice from `node scripts/progressive-status.js`.
+- Rough edge: this is template behavior only until downstream projects sync `v4.5.3`.
+- Replan trigger: if remote release validation fails, fix the workflow/docs without moving the tag.
+
+### Verification Results
+- Passed: `node scripts/progressive-status.js --check`
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-production-standard.js` (`252` checks)
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/validate-text-policy.js` (`423` files scanned)
+- Passed: `git diff --check`
+- Passed: Git Bash `scripts/generate-project-spec.sh --write`
+- Passed: Git Bash `scripts/scan-project.sh --report`
+- Passed: Git Bash `scripts/check-drift.sh` with existing freshness warnings only
+- Passed: Git Bash `scripts/test-hooks.sh`
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`138/138`)
+- Passed: Git Bash `scripts/validate-template.sh`
 
 ## Plan - v4.5.2 Progressive Object Readiness
 

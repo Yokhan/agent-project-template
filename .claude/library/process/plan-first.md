@@ -87,6 +87,8 @@ src/
 - Implementation shape: [known future capabilities included as 1% callable
   hooks/stubs/contracts, and which speculative capabilities are intentionally
   excluded]
+- Replacement/cleanup: [superseded stubs, wrong iterations, disabled branches,
+  old tests, stale flags, or release-only harnesses to delete/replace/migrate]
 
 ### Plan B (mandatory for M+ tasks)
 If the primary approach fails at step [N], the fallback is:

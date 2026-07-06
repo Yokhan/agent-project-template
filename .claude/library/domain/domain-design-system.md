@@ -70,6 +70,12 @@ If a known future capability is not implemented yet, expose it as a 1% callable
 stub, no-op, dev-only debug signal, or explicit unavailable boundary. Do not
 pretend the state is production-ready for product users.
 
+When the component sharpens, retire superseded design-system layers. Remove or
+replace obsolete variants, stale stories, disabled controls, hidden panels,
+release-only exclusion harnesses, and feature flags that no longer belong to the
+final component contract. Keep temporary migration scaffolding only with an
+explicit removal condition.
+
 ## Rendered Geometry Gate
 
 Static token references are not enough. Run browser or Storybook checks that compare rendered `getBoundingClientRect()` and computed styles against token values for important components.

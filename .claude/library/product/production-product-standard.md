@@ -101,6 +101,91 @@ use an end-state skeleton:
 Absent architecture for known future behavior is a product risk. Honest rough
 internals behind a stable product-shaped contract are acceptable.
 
+## Progressive Layer Replacement Pipeline
+
+Progressive JPEG is an evolution pipeline, not a permission to accumulate old
+wrong layers.
+
+After every sharpening pass, run a superseded-layer audit:
+
+1. Compare the current object to the accepted final plan and object inventory.
+2. Classify every previous stub, placeholder, proof harness, disabled branch,
+   feature flag, commented path, skipped test, compatibility adapter, and debug
+   route as one of:
+   - `keep and refine`: still belongs to the final plan and remains callable,
+     honest, and tracked as a readiness target;
+   - `replace now`: superseded by the new product path and must be rewired to
+     the current object;
+   - `delete now`: wrong iteration, dead code, obsolete placeholder, stale
+     scaffold, or release-only exclusion;
+   - `temporary migration`: required to protect live data, rollback,
+     compatibility, or user safety, with an owner, expiry condition, and removal
+     check.
+3. Delete or replace obsolete layers in the same slice before calling the layer
+   sharper.
+4. Update tests to assert the intended final contract and absence of obsolete
+   paths. Do not add tests whose main purpose is "this stale path is disabled
+   and should not enter release."
+5. Verify absence: search for obsolete names, disabled dead branches,
+   commented-out old implementations, skipped tests, unreachable routes, and
+   stale feature flags tied to the removed layer.
+
+Only final-plan placeholders may survive between iterations. A placeholder is
+valid only when it is part of the accepted object inventory, callable, honest to
+developers/users, and attached to the next readiness target. A wrong earlier
+iteration is not technical debt to preserve; it is product drift to remove.
+
+Temporary migration scaffolding is the exception, not the default. It must
+protect a real live transition or rollback path, stay outside the normal product
+path, and carry a removal condition. If it has no removal condition, it is
+obsolete code.
+
+## Progressive Status Headers And Project Slice
+
+Working documents that drive active product, design, template, release, game,
+or long-form writing work should carry a machine-readable status header:
+
+```markdown
+<!-- PROGRESSIVE_STATUS
+id: stable-work-id
+status: planned|active|partial|blocked|done|stale
+updated: YYYY-MM-DD
+readiness: 0-100
+plan: 0-100
+inventory: 0-100
+production: 0-100
+cleanup: 0-100
+tags: progressive-jpeg,domain-name
+next: next visible evidence point
+-->
+```
+
+The header is the fast tool-readable source for the current progressive JPEG
+layer. When a tagged working document changes, its header must change in the
+same work slice. A changed document with an unchanged `PROGRESSIVE_STATUS`
+header is a stale status and must fail the handoff gate.
+
+Use `node scripts/progressive-status.js` to scan headers, refresh the local
+`.session-cache/progressive-status.json`, and print a project slice. Use
+`node scripts/progressive-status.js --check` before closeout for M+, template,
+release, product, design, docs, or game work that touched tagged documents.
+
+Iteration reports should include the project slice instead of a vague progress
+claim:
+
+```text
+dimension    bar                    pct
+readiness    [##############------]  70%
+plan         [####################] 100%
+inventory    [################----]  80%
+production   [############--------]  60%
+cleanup      [##############------]  70%
+```
+
+The slice is a control surface: the client can see the current detail level,
+what sharpened, what remains rough, and whether cleanup is keeping pace with
+new detail.
+
 ## Object Readiness Levels
 
 Review progressive JPEG objects in this order:

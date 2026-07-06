@@ -82,7 +82,18 @@ const ROUTES = [
   {
     mode: "template",
     pattern:
-      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|ilyakhov|write this into yourself|remember this rule|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон|пропиши\s+себе|запиши\s+себе/i,
+      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|progressive layer|superseded layer|disabled legacy|stale placeholder|release-only harness|ilyakhov|write this into yourself|remember this rule|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон|пропиши\s+себе|запиши\s+себе|прогрессивн\w*\s+(?:jpeg|джипег)|джипег|стар\w*\s+итерац|выключенн\w*\s+legacy|устаревш\w*\s+заглуш/i,
+    skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
+    pipeline: "template maintenance",
+    subagents: ["pr_explorer", "tester", "reviewer"],
+    rules: ["product", "review", "testing", "git"],
+    gates: ["template-boundary", "sot-validation", "sync-regression", "release-gate"],
+    risk: "HIGH",
+  },
+  {
+    mode: "template",
+    pattern:
+      /(?:progressive\s+jpeg|progressive\s+layer|jpeg|\u0434\u0436\u0438\u043f\u0435\u0433).*(?:old|wrong|stale|obsolete|disabled|placeholder|stub|harness|\u0441\u0442\u0430\u0440|\u043d\u0435\u043f\u0440\u0430\u0432|\u0437\u0430\u0433\u043b\u0443\u0448|\u043a\u043e\u0441\u044f\u043a|\u0432\u044b\u043a\u043b\u044e\u0447)|(?:old|wrong|stale|obsolete|disabled|placeholder|stub|harness|\u0441\u0442\u0430\u0440|\u043d\u0435\u043f\u0440\u0430\u0432|\u0437\u0430\u0433\u043b\u0443\u0448|\u043a\u043e\u0441\u044f\u043a|\u0432\u044b\u043a\u043b\u044e\u0447).*(?:progressive\s+jpeg|progressive\s+layer|jpeg|\u0434\u0436\u0438\u043f\u0435\u0433)/iu,
     skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
     pipeline: "template maintenance",
     subagents: ["pr_explorer", "tester", "reviewer"],

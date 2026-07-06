@@ -19,10 +19,13 @@ Read:
 3. Plan file architecture before edits.
 4. If the final object plan is missing, stop implementation and create/propose it first.
 5. For accepted future capabilities, design the end-state skeleton before code: callable handlers, contracts, states, routes, flags, or no-op stubs can be 1% ready, but the architecture point should exist when later slices depend on it.
-6. Keep business logic in importable modules.
-7. Implement in small batches.
-8. Add focused tests for the planned scenarios.
-9. Run verification and update docs/registry when public behavior changes.
+6. Before sharpening a later layer, identify superseded wrong stubs, disabled branches, old tests, stale flags, and release-only harnesses.
+7. Keep business logic in importable modules.
+8. Implement in small batches.
+9. Replace or delete obsolete layers in the same slice; keep only final-plan placeholders or time-boxed migration scaffolding.
+10. Update any `PROGRESSIVE_STATUS` working-doc headers touched by the slice and check them with `node scripts/progressive-status.js --check`.
+11. Add focused tests for the intended final contract and absence of obsolete paths when useful.
+12. Run verification and update docs/registry when public behavior changes.
 
 ## Progressive JPEG Implementation
 
@@ -34,5 +37,7 @@ The first slice should be a low-resolution version of the future product:
 - the 1% object still performs the production function in the smallest honest way;
 - product users must not see fake completed behavior;
 - speculative capabilities stay out until accepted.
+- old wrong layers are not preserved as disabled legacy; delete, replace, or time-box them with an explicit removal condition.
 
 Verify object completeness against the final plan before judging detail depth.
+Then verify the old layer is gone or intentionally time-boxed before claiming the next readiness level.

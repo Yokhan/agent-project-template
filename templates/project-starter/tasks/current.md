@@ -1,3 +1,16 @@
+<!-- PROGRESSIVE_STATUS
+id: starter-current-task
+status: planned
+updated: 2026-07-06
+readiness: 1
+plan: 0
+inventory: 0
+production: 0
+cleanup: 0
+tags: progressive-jpeg,current-task
+next: run setup-project and replace this bootstrap handoff
+-->
+
 # Current Task
 
 ## Goal

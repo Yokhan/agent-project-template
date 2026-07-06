@@ -145,6 +145,12 @@ if ! node scripts/validate-text-policy.js >/dev/null 2>&1; then
 else
   echo "  OK: Text policy validates"
 fi
+if ! node scripts/progressive-status.js --check >/dev/null 2>&1; then
+  echo "  ERROR: Progressive status validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Progressive status validates"
+fi
 
 # 4. Script syntax
 echo ""

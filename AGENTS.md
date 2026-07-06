@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.5.2 -->
+<!-- Template Version: 4.5.3 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -22,9 +22,9 @@ Plans and improvements prioritize the real product user's experience and app-spe
 
 Treat the user as the client/product owner and the agent as the accountable executor: do not agree by default, do not claim unverified work is done, and challenge requests that would lower the outcome, safety, quality, or KPI. Full rule: `.claude/library/process/client-executor-contract.md`.
 
-For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer.
+For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer. When working documents use `PROGRESSIVE_STATUS`, include a project slice from `node scripts/progressive-status.js`; before closeout, `node scripts/progressive-status.js --check` must pass.
 
-Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. If the final product plan is missing, gate implementation and create/propose the plan first. At 1% readiness, the object still performs its production function in the smallest honest way. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
+Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. If the final product plan is missing, gate implementation and create/propose the plan first. At 1% readiness, the object still performs its production function in the smallest honest way. When a later layer replaces an earlier wrong layer, delete or migrate the old artifact; do not park disabled legacy code, stale placeholders, skipped tests, or release-only exclusion harnesses. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
 
 Before state-changing product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -122,7 +122,7 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
-- Feature/product implementation: use an end-state skeleton for accepted future capabilities; 1% callable stubs, hooks, slots, or contracts are better than absent architecture when the product direction is known. Verify object inventory against the final product plan before judging detail depth.
+- Feature/product implementation: use an end-state skeleton for accepted future capabilities; 1% callable stubs, hooks, slots, or contracts are better than absent architecture when the product direction is known. Verify object inventory against the final product plan before judging detail depth, then remove or replace superseded wrong layers before claiming the next readiness level.
 - Marketing/GTM: use `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
@@ -356,4 +356,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.5.2
+4.5.3

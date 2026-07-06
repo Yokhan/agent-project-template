@@ -21,7 +21,8 @@ Read:
 4. BOM: list tokens, components, states, assets, content, and accepted future interactions from the final plan.
 5. Discover: search existing components, tokens, and styles.
 6. Compose: build tokens -> components -> screens, using an end-state skeleton for accepted future interactions.
-7. Validate: screenshot or browser check, responsive check, contrast, overflow, 8-state coverage, and rendered geometry for important components.
+7. Replace/cleanup: delete, replace, or time-box superseded wrong UI layers, stale disabled controls, obsolete routes, old stories, and release-only exclusion harnesses.
+8. Validate: screenshot or browser check, responsive check, contrast, overflow, 8-state coverage, rendered geometry for important components, and absence of obsolete UI paths.
 8. Iterate: fix deviations and re-check.
 
 ## Hard Gates
@@ -35,6 +36,7 @@ Read:
 - Interactive controls account for default, hover, active, focus, disabled, loading, error, and empty states where applicable.
 - Accepted future behavior has 1% callable component slots, states, handlers, events, or feature flags when later slices depend on that contract.
 - If the screen/component final plan is missing, gate broad implementation and create/propose the plan first.
+- Later layers must retire old wrong UI layers. Do not preserve stale disabled controls, hidden panels, skipped stories, or commented layouts as the normal path.
 - Text must not overlap or overflow at target viewports.
 - Molecules and larger components must declare lower-layer token/component dependencies.
 - Design-system work must expose foundation tables and Storybook or equivalent inspectable stories.

@@ -17,12 +17,16 @@ Read `.claude/skills/decompose/SKILL.md` for detailed patterns.
 6. Define the acceptance evidence, rough edges, and replan trigger for each slice.
 7. Define which accepted future capabilities need 1% callable hooks, contracts, states, events, flags, or no-op stubs in the first slice.
 8. Define the object readiness level for each slice: 1%, 10%, 30%, 60%, 90%, or 100%.
-9. State what is deferred and why.
+9. Define the replacement/cleanup gate for each slice: what previous stubs, wrong iterations, tests, flags, routes, or harnesses must be deleted, replaced, or time-boxed.
+10. Define which working docs need `PROGRESSIVE_STATUS` and what project-slice bar should change after the slice.
+11. State what is deferred and why.
 
 Do not start broad edits before the first slice is clear.
 Do not call an internal checkpoint a completed client result unless the user can inspect, accept, or decide from it.
 Use progressive JPEG delivery: each slice should sharpen the user's visible picture, not only move hidden internal setup forward.
 Use progressive JPEG implementation: each slice should preserve the future product shape when that shape is known, without faking completed behavior.
 If the final product plan is missing, the first slice is the plan, not a partial object.
+If a later slice supersedes an earlier wrong layer, the slice must retire that layer instead of preserving it as disabled legacy.
+For tagged working docs, each slice must update the header and pass `node scripts/progressive-status.js --check`.
 
 For client-facing decomposition, follow `.claude/library/process/client-executor-contract.md`.
