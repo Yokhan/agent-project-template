@@ -314,3 +314,13 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Applies to**: tasks/current.md, product-goal-loop, client-executor-contract, production-product-standard, Codex product/feature/decompose/strategic skills, release validators
 **Category**: process
 **Status**: ACTIVE
+
+### 2026-07-06 - Source-only validator anchors must stay source-only
+**Track**: BUG
+**Severity**: P2
+**Error**: The v4.5.3 setup payload smoke failed after adding a validation anchor for `templates/project-starter/tasks/current.md`.
+**Root cause**: The anchor was added to the downstream-required `REQUIRED_TEXT` list instead of the template-source-only `SOURCE_ONLY_REQUIRED_TEXT` list. Generated projects correctly do not ship `templates/project-starter/*`, so their validator failed despite a correct payload boundary.
+**Rule**: When adding validator anchors for starter/bootstrap/template-source files, classify them as source-only before running setup/sync smoke. The template source should verify them; generated projects should not be required to contain them.
+**Applies to**: validate-production-standard.js, test-template.sh, setup payload smoke, sync-template downstream validation
+**Category**: testing
+**Status**: ACTIVE
