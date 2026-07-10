@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-v4.6.0-adaptive-fanout
-status: active
+status: done
 updated: 2026-07-10
-readiness: 90
+readiness: 100
 plan: 100
 inventory: 100
-production: 90
+production: 100
 cleanup: 100
 tags: progressive-jpeg,template,release,gpt-5.6,subagents
-next: run the final release gate, publish tag v4.6.0, and verify the GitHub release
+next: downstream projects should dry-run sync v4.6.0 before applying it
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -115,7 +115,7 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
 
 ## Immediate Next Step
-- Run the final release gate, publish `v4.6.0`, and verify the GitHub release artifact.
+- Downstream projects should run `scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run` before applying the release.
 
 ## Plan - v4.6.0 Adaptive GPT-5.6 Fan-Out
 
@@ -151,7 +151,7 @@ Make downstream Codex work faster and more reliable by routing independent explo
 - Sharp now: semantic routing distinguishes research about release pages/diagrams from state-changing release work in Russian and English.
 - Sharp now: setup and sync manage JavaScript route helpers on Windows and Unix; v4.5 unmanaged helpers are migrated before their hashes are accepted.
 - Sharp now: downstream setup, empty-manifest recovery, source-only exclusion, legacy-helper migration, and from-git preview pass in a generated project.
-- Rough edge: the local commit, tag, remote workflow, and release asset are not yet published.
+- Published: source commit `40c72265cf91056fb5d63f766ca212279a4e07f5`, tag `v4.6.0`, workflow `29077360521`, and the release archive are live.
 - Replan trigger: any final gate or GitHub workflow failure blocks the tag or release claim.
 
 ### Verification Results
@@ -173,6 +173,9 @@ Make downstream Codex work faster and more reliable by routing independent explo
 - Passed: `node scripts/validate-spec-kit.js`
 - Passed: `node scripts/progressive-status.js --check`
 - Passed: `git diff --check`
+- Published: GitHub Actions `Release Template` run `29077360521` completed `success`
+- Published: GitHub Release `Agent Project Template v4.6.0` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.6.0`
+- Published: asset `agent-project-template-v4.6.0.tar.gz`, sha256 `6e27b98aeccda549eb51188acbf6cf1cd4da1b02c6b2b6759df2d350f4bdbbb1`
 
 ## Plan - v4.5.3 Progressive Layer Replacement Pipeline
 
