@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_DIR="$ROOT_DIR/scripts"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
-MODEL="${CODEX_LIVE_MODEL:-gpt-5.3-codex-spark}"
+MODEL="${CODEX_LIVE_MODEL:-gpt-5.6-terra}"
 OUTPUT_FILE=""
 ERROR_FILE=""
 
@@ -20,7 +20,7 @@ Runs a live Codex CLI smoke test that spawns the repo-scoped pr_explorer agent.
 This consumes Codex quota. Set CODEX_LIVE_TEST=1 instead of --yes if desired.
 
 Optional:
-  CODEX_LIVE_MODEL=model-name   Override model, default gpt-5.3-codex-spark
+  CODEX_LIVE_MODEL=model-name   Override model, default gpt-5.6-terra
 EOF
 }
 

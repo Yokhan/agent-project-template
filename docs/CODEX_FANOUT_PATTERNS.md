@@ -1,6 +1,6 @@
 # Codex Fan-Out Patterns
 
-Date: 2026-05-19
+Date: 2026-07-09
 
 ## Purpose
 
@@ -17,6 +17,55 @@ reuse the best Spec Kit ideas in a flexible way:
   write-capable work.
 - Keep the parent Codex thread responsible for sequencing, consolidation, and final
   verification.
+
+The user does not need to request subagents explicitly. After routing, the
+parent evaluates the returned `fanout` contract and automatically starts useful
+independent lanes when they improve wall-clock time, evidence, or context
+isolation. The parent reports who was spawned and why. Explicit user opt-out
+always wins.
+
+## Agent Policy Source Of Truth
+
+`scripts/codex-agent-policy.js` owns the template's role, model, reasoning,
+sandbox, fan-out limit, and parent-default boundaries. Files under
+`.codex/agents/*.toml` are runtime declarations validated against that policy.
+
+| Role | Model | Effort | Default use |
+| --- | --- | --- | --- |
+| `pr_explorer` | GPT-5.6 Terra | `medium` | Repository map and dependency trace |
+| `docs_researcher` | GPT-5.6 Terra | `medium` | Fresh official documentation |
+| `tester` | GPT-5.6 Terra | `medium` | Test and regression strategy |
+| `implementer` | GPT-5.6 Terra | `high` | Exact isolated write scope only |
+| `reviewer` | GPT-5.6 Sol | `high` | Correctness and regression review |
+| `design_reviewer` | GPT-5.6 Sol | `high` | UI, UX, design-system, accessibility |
+| `product_reviewer` | GPT-5.6 Sol | `high` | User outcome, KPI, offer, and journey |
+| `security_reviewer` | GPT-5.6 Sol | `xhigh` | Security and trust boundaries |
+| `systems_reviewer` | GPT-5.6 Sol | `xhigh` | SOT, architecture, and repeated failures |
+
+The parent model stays in user or IDE configuration. Template profiles never
+exceed `xhigh`.
+
+## Automatic Fan-Out Decision
+
+The router returns `required`, `recommended`, `conditional`, or `skip`.
+
+- `required`: high-risk state-changing work needs independent verification.
+- `recommended`: at least two useful specialist lanes are available; spawn the
+  lanes that are genuinely independent while the parent continues.
+- `conditional`: one specialist is available; spawn only when it is a
+  non-blocking sidecar with material value.
+- `skip`: direct XS question, no specialist, or explicit user opt-out.
+
+Candidates are not a command to duplicate work. Before each spawn confirm that
+the lane has a narrow output, does not block the parent's immediate next step,
+does not repeat another lane, and costs less wall-clock attention than serial
+execution. Read-only work is the default. Write delegation requires exact,
+non-overlapping files or `[P]` ownership.
+
+Before spawning any write-capable batch, pass the proposed `{ agent, files }`
+assignments through `validateWriteAssignments` from
+`scripts/codex-agent-policy.js`. Missing scopes, duplicate files, and
+directory/file containment conflicts block write fan-out.
 
 ## Discovery First
 
@@ -66,6 +115,8 @@ Codex adaptation:
 | UI/design | `design_reviewer`, `tester`, `reviewer` | Apply token/component/state fixes, screenshot-check |
 | API/framework docs | `docs_researcher`, `reviewer` | Browse official docs when freshness matters, update code/docs |
 | Large feature | `pr_explorer`, `docs_researcher`, `tester`, then optional `reviewer` | Build spec/plan/tasks before edits |
+| Product/GTM | `product_reviewer`, `pr_explorer`, `reviewer` | Tie recommendations to user value, KPI, proof, and journey |
+| Architecture/SOT | `systems_reviewer`, `pr_explorer`, `reviewer` | Resolve ownership and broken contracts before local edits |
 | Existing `tasks.md` | `pr_explorer`, `tester` | Identify dependency order and `[P]` groups |
 | Release or migration | `reviewer`, `tester`, optional `security_reviewer` | Validate compatibility and rollback path |
 
@@ -84,8 +135,9 @@ Spawn:
 - docs_researcher: verify official docs or source-backed APIs if external behavior matters.
 - tester: propose acceptance and regression checks.
 
-Wait for all results. Parent thread writes the plan and performs edits unless
-there are explicit [P] tasks with non-overlapping files.
+Continue independent parent work. Wait only when the next action needs a child
+result. Parent thread writes the plan and performs edits unless there are
+explicit [P] tasks with non-overlapping files.
 ```
 
 ### Task Decomposition
@@ -112,7 +164,7 @@ Review this branch/change. Spawn:
 - security_reviewer only if auth, secrets, input handling, permissions, storage,
   or dependency risk is touched.
 
-Wait for all results and consolidate findings by severity.
+Continue independent parent work, then consolidate completed findings by severity.
 ```
 
 ### Security Fan-Out
@@ -151,7 +203,11 @@ Do not patch until the failure is observable or the blocker is explicitly docume
 
 ## Write Delegation Rules
 
-Default: all subagents are read-only, and the parent edits.
+Default policy: exploration and review roles request read-only sandboxes, and the
+parent edits. This is a workflow rule, not a security boundary: Codex reapplies
+the parent's live sandbox and approval settings to children. Treat role prompts
+and TOML defaults as defense in depth, and keep the parent responsible for
+reviewing every child result before it changes the product.
 
 Use `implementer` only when all are true:
 
@@ -190,6 +246,9 @@ spending quota.
 
 ## Sources
 
+- OpenAI GPT-5.6 release: https://openai.com/index/gpt-5-6/
+- OpenAI Codex subagents: https://developers.openai.com/codex/subagents
+- OpenAI multi-agent guide: https://developers.openai.com/api/docs/guides/tools-multi-agent
 - GitHub Spec Kit: https://github.com/github/spec-kit
 - Spec Kit documentation: https://github.github.io/spec-kit/
 - Spec-driven overview: https://github.com/github/spec-kit/blob/main/spec-driven.md

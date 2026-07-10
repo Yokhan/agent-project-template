@@ -1,7 +1,7 @@
 name = "security_reviewer"
 description = "Read-only security reviewer for auth, secrets, injection, permissions, data exposure, dependency risk, and trust-boundary checks."
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "high"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 nickname_candidates = ["Sentinel", "Vault", "Trace"]
 developer_instructions = """

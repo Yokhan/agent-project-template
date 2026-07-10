@@ -36,6 +36,7 @@ FORCE=false
 FROM_GIT=false
 BOOTSTRAP=false
 TEMPLATE_REF=""
+EMPTY_TRACKABLE_MANIFEST=false
 
 # --- Parse args ---
 while [ $# -gt 0 ]; do
@@ -231,6 +232,7 @@ if [ -f "$MANIFEST" ]; then
 
   if [ "$trackable_count" = "0" ]; then
     if [ "$DRY_RUN" = true ]; then
+      EMPTY_TRACKABLE_MANIFEST=true
       echo "WARNING: Manifest has no trackable files. Dry-run will report template additions without changing files."
       echo "Run bootstrap to rebuild the manifest before applying sync:"
       echo "  $0 $TEMPLATE_PATH --project-dir $PROJECT_PATH --bootstrap"
@@ -298,7 +300,7 @@ if [ ! -f "$MANIFEST" ]; then
       ".claude/commands/*.md" \
       ".claude/hooks/*.sh" \
       ".claude/pipelines/*.md" \
-      "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" \
+      "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "scripts/lib/*.js" \
       "mcp-servers/context-router/package-lock.json" \
       "mcp-servers/context-router/src/*.ts" \
       "mcp-servers/context-router/package.json" \
@@ -505,7 +507,7 @@ done < <(echo "$manifest_files")
 echo "--- Phase B: Checking for new template files ---"
 
 # Define template file patterns to check
-for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/product/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "tests/fixtures/design-policy/pass/*.css" "tests/fixtures/design-policy/fail/*.css" "docs/AGENT_CONTEXT_SOT.md" "integrations/spec-kit/*.md" "_reference/agent-sot/*.md" "_reference/agent-sot/*.json" "_reference/agent-sot/originals/*.md" "_reference/spec-kit/*.md" "_reference/spec-kit/*.json" "_reference/spec-kit/upstream/*.md" "_reference/spec-kit/upstream/LICENSE" "_reference/spec-kit/upstream/docs/*.md" "_reference/spec-kit/upstream/docs/reference/*.md" "_reference/spec-kit/upstream/integrations/*.json" "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" "_reference/spec-kit/upstream/templates/commands/*.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/validate-template.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" ".gitignore" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "CLAUDE.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
+for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/product/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "scripts/lib/*.js" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "tests/fixtures/design-policy/pass/*.css" "tests/fixtures/design-policy/fail/*.css" "docs/AGENT_CONTEXT_SOT.md" "integrations/spec-kit/*.md" "_reference/agent-sot/*.md" "_reference/agent-sot/*.json" "_reference/agent-sot/originals/*.md" "_reference/spec-kit/*.md" "_reference/spec-kit/*.json" "_reference/spec-kit/upstream/*.md" "_reference/spec-kit/upstream/LICENSE" "_reference/spec-kit/upstream/docs/*.md" "_reference/spec-kit/upstream/docs/reference/*.md" "_reference/spec-kit/upstream/integrations/*.json" "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" "_reference/spec-kit/upstream/templates/commands/*.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/validate-template.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" ".gitignore" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "CLAUDE.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
@@ -526,13 +528,32 @@ const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
 console.log((m.files||{})['$rel_path']?'yes':'no');
 " 2>/dev/null)
 
-    if [ "$in_manifest" = "no" ] && [ ! -f "$rel_path" ]; then
+    if [ "$EMPTY_TRACKABLE_MANIFEST" = true ]; then
+      in_manifest="no"
+    fi
+
+    is_unmanaged_route_helper=false
+    if [ "$rel_path" = "scripts/lib/codex-route-intents.js" ] &&
+       [ "$in_manifest" = "no" ] && [ -f "$rel_path" ]; then
+      is_unmanaged_route_helper=true
+    fi
+
+    if [ "$in_manifest" = "no" ] &&
+       { [ ! -f "$rel_path" ] || [ "$is_unmanaged_route_helper" = true ]; }; then
       if [ "$DRY_RUN" = true ]; then
-        echo "  WOULD ADD: $rel_path (new in template)"
+        if [ "$is_unmanaged_route_helper" = true ]; then
+          echo "  WOULD UPDATE: $rel_path (v4.5 unmanaged template helper)"
+        else
+          echo "  WOULD ADD: $rel_path (new in template)"
+        fi
       else
         mkdir -p "$(dirname "$rel_path")"
         cp "$template_file" "$rel_path"
-        echo "  NEW: $rel_path"
+        if [ "$is_unmanaged_route_helper" = true ]; then
+          echo "  UPDATED: $rel_path (v4.5 unmanaged template helper)"
+        else
+          echo "  NEW: $rel_path"
+        fi
       fi
       NEW_FILES=$((NEW_FILES + 1))
     fi

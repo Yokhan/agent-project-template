@@ -1,62 +1,98 @@
 # OpenAI Model Guidance
 
-Verified against official OpenAI docs on 2026-05-19.
+Verified against official OpenAI docs on 2026-07-09.
 
 Sources:
 
-- `https://developers.openai.com/api/docs/models`
+- `https://openai.com/index/gpt-5-6/`
 - `https://developers.openai.com/api/docs/guides/latest-model`
-- `https://developers.openai.com/codex/skills`
+- `https://developers.openai.com/codex/subagents`
+- `https://developers.openai.com/api/docs/guides/tools-multi-agent`
 
 ## Current Recommendation
 
-Use `gpt-5.5` as the default API starting point for complex reasoning, coding, tool-heavy agents, grounded assistants, long-context retrieval, and production workflows where execution quality matters.
+Use the GPT-5.6 family for new complex reasoning, coding, tool-heavy, design,
+research, and agent workflows.
 
-Use smaller variants when the main constraint is latency or cost:
+- GPT-5.6 Sol is the quality-first tier for ambiguous work, architecture,
+  security, design judgment, synthesis, and high-cost errors.
+- GPT-5.6 Terra is the balanced tier for exploration, documentation research,
+  test planning, isolated implementation, and parallel support work.
+- GPT-5.6 Luna is the high-volume efficiency tier. Do not pin critical template
+  reviewers or implementers to Luna without project-specific eval evidence.
 
-- `gpt-5.4-mini` for lower-latency, lower-cost coding, computer-use, and agent workloads.
-- `gpt-5.4-nano` for simple, high-volume tasks.
-- `gpt-5.4` when `gpt-5.5` quality is not required but frontier-family behavior is still useful.
+For Codex parent sessions, do not hardcode the model in project config. Model
+and reasoning effort remain user or IDE settings. The recommended parent
+baseline is GPT-5.6 Sol with `medium` effort, raised only when task evidence
+justifies it.
 
-For Codex product usage, do not hardcode the model in project config. Model and reasoning effort remain user or IDE settings. The template can document recommendations, but `.codex/config.toml` must stay project-specific only.
+## Template Reasoning Ceiling
 
-## API Defaults For GPT-5.5 Workloads
+This template uses `xhigh` as the hard ceiling for parent recommendations and
+subagent profiles. Higher settings are intentionally excluded from template
+policy because automatic fan-out already increases compute and token use.
 
-- Prefer the Responses API for reasoning, tool calling, multimodal, and multi-turn workflows.
-- Start with `reasoning.effort: "medium"` for balanced quality, latency, and cost.
-- Evaluate `low` before `none` for latency-sensitive workflows that still need planning, tool use, search, or multi-step decisions.
-- Reserve `high` and `xhigh` for complex agentic tasks where evals show a measurable gain.
-- Use `text.verbosity: "low"` when concise responses are desired.
-- Use Structured Outputs instead of describing large schemas in prompts.
-- Put stable prompt content first and dynamic context later to improve prompt caching.
-- For tool-heavy workflows, put tool-specific usage rules in tool descriptions.
-- Preserve `phase` when manually replaying assistant items instead of using `previous_response_id`.
+- `medium`: balanced default for exploration, docs, and test strategy.
+- `high`: complex implementation, product review, design review, and general
+  correctness review.
+- `xhigh`: security and systems review where missed assumptions have a high
+  cost.
+
+Do not choose effort from role prestige. Choose it from ambiguity, dependency
+depth, reversibility, evidence requirements, and the cost of a wrong answer.
+
+## Codex Agent Profiles
+
+The machine-readable source of truth is `scripts/codex-agent-policy.js`.
+Runtime declarations under `.codex/agents/*.toml` must match it.
+
+The parent model remains user-owned. Role-specific custom agents may pin a
+model and effort because that is a specialist execution contract, not a
+project-wide session default.
+
+## GPT-5.6 Workflow Guidance
+
+- Prefer the Responses API for reasoning, tool calling, multimodal, and
+  multi-turn workflows.
+- Start migrations at the current reasoning level, then evaluate the same level
+  and one level lower on representative tasks.
+- Use Programmatic Tool Calling for bounded filtering, joining, ranking,
+  deduplication, aggregation, or validation where intermediate outputs can be
+  reduced without fresh model judgment after every call.
+- Use multi-agent work only when tasks divide into independent lanes. More
+  agents are not evidence of better work.
+- Measure final task success, evidence completeness, correction count, total
+  tokens, latency, and cost. Fewer calls matter only when the user-visible
+  result still meets the quality bar.
 
 ## Prompting Direction
 
-GPT-5.5 should be tuned as a new model family, not treated as a drop-in replacement for older GPT-5 prompts.
+GPT-5.6 benefits from shorter, outcome-focused prompts.
 
-Prompt migration checklist:
-
-1. Start from the smallest prompt that preserves the product contract.
-2. State expected outcome, success criteria, allowed side effects, evidence rules, and output shape.
-3. Remove step-by-step process guidance unless the exact path matters.
-4. Remove output schema prose when Structured Outputs can enforce the schema.
-5. Keep tool descriptions precise: purpose, when to use, required inputs, side effects, retry safety, and common failure modes.
-6. Benchmark accuracy, token consumption, and end-to-end latency against representative examples.
+1. State outcome, constraints, permissions, evidence, success criteria, and
+   output shape.
+2. Remove repeated instructions and examples that no longer correct a measured
+   failure.
+3. Keep hot `AGENTS.md` guidance directional; put workflows in skills and
+   stable references in docs.
+4. Expose only task-relevant tools and keep tool descriptions precise.
+5. Benchmark representative workflows instead of treating a release benchmark
+   as a complete routing policy.
 
 ## Template Policy
-
-This repository should not set project-level model defaults for Codex.
 
 Allowed:
 
 - Documentation about recommended OpenAI models.
-- Skills that tell agents how to choose models for API code they are writing.
-- User-level or IDE-level model selection.
+- Role-specific model and effort settings in `.codex/agents/*.toml` validated
+  against `scripts/codex-agent-policy.js`.
+- Skills and routes that automatically select useful independent subagents.
+- User-level or IDE-level parent model selection.
 
 Not allowed:
 
-- `model = "gpt-5.5"` in project `.codex/config.toml`.
-- Project defaults for reasoning effort, approval policy, or sandbox mode.
-- Stale model names in template-owned instructions.
+- A project-wide `model` or `model_reasoning_effort` in `.codex/config.toml`.
+- Project defaults for approval policy or sandbox mode.
+- Reasoning above the template's `xhigh` ceiling.
+- Unconditional fan-out for XS tasks or overlapping write scopes.
+- Stale model recommendations in template-owned instructions.

@@ -26,7 +26,17 @@ cd "$TEMPLATE_DIR"
 pass() { echo "  PASS: $1"; CHECKS=$((CHECKS+1)); }
 fail() { echo "  FAIL: $1"; ERRORS=$((ERRORS+1)); CHECKS=$((CHECKS+1)); }
 skip() { echo "  SKIP: $1"; CHECKS=$((CHECKS+1)); }
-check() { local d="$1"; shift; if "$@" &>/dev/null; then pass "$d"; else fail "$d"; fi; }
+check() {
+  local description="$1"
+  local output
+  shift
+  if output="$("$@" 2>&1)"; then
+    pass "$description"
+    return
+  fi
+  [ -n "$output" ] && printf '%s\n' "$output"
+  fail "$description"
+}
 is_template_source_repo() { grep -Eq '^- Name: agent-project-template$' PROJECT_SPEC.md 2>/dev/null; }
 source_only_check() {
   local description="$1"
@@ -321,8 +331,13 @@ check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
 check "scripts/progressive-status.js" test -f scripts/progressive-status.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
 check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
+check "scripts/codex-agent-policy.js" test -f scripts/codex-agent-policy.js
+check "scripts/codex-routing-cases-a.js" test -f scripts/codex-routing-cases-a.js
+check "scripts/codex-routing-cases-b.js" test -f scripts/codex-routing-cases-b.js
+check "scripts/codex-route-config.js" test -f scripts/codex-route-config.js
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
 check "scripts/test-codex-routing.js" test -f scripts/test-codex-routing.js
+check "scripts/test-codex-agent-policy.js" test -f scripts/test-codex-agent-policy.js
 check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
 
 echo ""
@@ -336,6 +351,7 @@ check "core Codex pipeline skill" test -f .agents/skills/codex-pipeline-workflow
 check "core Codex Mermaid board skill" test -f .agents/skills/codex-mermaid-board-workflow/SKILL.md
 check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
 check "validate-codex-skills" node scripts/validate-codex-skills.js
+check "test-codex-agent-policy" node scripts/test-codex-agent-policy.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
 check "test-design-policy" node scripts/test-design-policy.js
@@ -349,10 +365,12 @@ check "progressive-status rejects stale headers" validate_progressive_status_rej
 
 echo ""
 echo "Codex subagents:"
-check ">=7 Codex agent files" bash -c '[ $(ls .codex/agents/*.toml 2>/dev/null | wc -l) -ge 7 ]'
+check ">=9 Codex agent files" bash -c '[ $(ls .codex/agents/*.toml 2>/dev/null | wc -l) -ge 9 ]'
 check "Codex pr_explorer agent" test -f .codex/agents/pr-explorer.toml
 check "Codex reviewer agent" test -f .codex/agents/reviewer.toml
 check "Codex implementer agent" test -f .codex/agents/implementer.toml
+check "Codex product reviewer agent" test -f .codex/agents/product-reviewer.toml
+check "Codex systems reviewer agent" test -f .codex/agents/systems-reviewer.toml
 check "validate-codex-agents" node scripts/validate-codex-agents.js
 
 echo ""
@@ -423,6 +441,12 @@ check "task-brief --brief" bash scripts/task-brief.sh --brief
 check "task-brief --json" bash -c 'bash scripts/task-brief.sh --json | node -e "JSON.parse(require(\"fs\").readFileSync(0, \"utf8\"))"'
 check "codex-route-task template route" bash -c 'node scripts/codex-route-task.js "обнови агентский шаблон и release tag" | node -e "const r=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); if(!r.skills.includes(\"codex-template-sync\") || !r.skills.includes(\"codex-health-check\")) process.exit(1)"'
 check "route-task fallback includes strategic review" bash -c 'bash scripts/route-task.sh "template release" | grep -q "codex-strategic-review"'
+check "route-task fallback requires high-risk fan-out" bash -c 'bash scripts/route-task.sh "template release" | grep -q "CODEX_FANOUT: required"'
+check "route-task fallback honors fan-out opt-out" bash -c 'bash scripts/route-task.sh "template release without subagents" | grep -q "CODEX_FANOUT: skip"'
+check "route-task fallback honors alternate opt-out" bash -c 'bash scripts/route-task.sh "template release, no fan-out" | grep -q "CODEX_FANOUT: skip"'
+check "route-task fallback caps children at three" bash -c 'test "$(bash scripts/route-task.sh "template release" | sed -n "s/^CODEX_SUBAGENTS: //p" | wc -w | tr -d " ")" -le 3'
+check "Unix setup manages JavaScript helpers" grep -q 'scripts/lib/.*\.js' setup.sh
+check "Windows setup manages JavaScript helpers" grep -q "scripts/lib/\*.js" setup.bat
 
 echo ""
 echo "Bootstrap trust smoke:"
@@ -441,12 +465,14 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/codex-route-task.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
       [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
+      [ -f "$project/.codex/agents/product-reviewer.toml" ] &&
+      [ -f "$project/.codex/agents/systems-reviewer.toml" ] &&
       [ -f "$project/docs/CODEX_FANOUT_PATTERNS.md" ] &&
       [ -f "$project/docs/AGENT_CONTEXT_SOT.md" ] &&
       [ -f "$project/.claude/library/product/production-product-standard.md" ] &&
@@ -469,8 +495,14 @@ if is_template_source_repo; then
       [ -f "$project/integrations/spec-kit/README.md" ] &&
       [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
       [ -f "$project/scripts/lib/codex-route-intents.js" ] &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['scripts/lib/codex-route-intents.js']?.category!=='template') process.exit(1)" "$project" &&
+      [ -f "$project/scripts/codex-agent-policy.js" ] &&
+      [ -f "$project/scripts/codex-routing-cases-a.js" ] &&
+      [ -f "$project/scripts/codex-routing-cases-b.js" ] &&
+      [ -f "$project/scripts/codex-route-config.js" ] &&
       [ -f "$project/scripts/codex-route-task.js" ] &&
       [ -f "$project/scripts/test-codex-routing.js" ] &&
+      [ -f "$project/scripts/test-codex-agent-policy.js" ] &&
       [ -f "$project/scripts/init-spec-kit.sh" ] &&
       [ -f "$project/scripts/sync-spec-kit.sh" ] &&
       [ -f "$project/scripts/validate-agent-sot.js" ] &&
@@ -482,7 +514,10 @@ if is_template_source_repo; then
       [ -f "$project/scripts/validate-codex-agents.js" ] &&
       [ -f "$project/scripts/validate-codex-skills.js" ] &&
       [ -f "$project/scripts/validate-production-standard.js" ] &&
-      [ -f "$project/scripts/progressive-status.js" ]
+      [ -f "$project/scripts/progressive-status.js" ] &&
+      (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) &&
+      (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) &&
+      (cd "$project" && node scripts/test-codex-routing.js >/dev/null)
   }
   trap cleanup_smoke EXIT
   printf 'sentinel\n' > "$SMOKE_SENTINEL"
@@ -496,13 +531,13 @@ fi
 echo ""
 echo "Sync regression smoke:"
 if is_template_source_repo; then
-  SYNC_TEMPLATE_FIXTURE="template-sync-fixture-$RANDOM-$$"
-  SYNC_EMPTY_MANIFEST_PROJECT="template-empty-manifest-smoke-$RANDOM-$$"
+  SYNC_TEMPLATE_FIXTURE="$TEMPLATE_DIR/template-sync-fixture-$RANDOM-$$"
+  SYNC_EMPTY_MANIFEST_PROJECT="$TEMPLATE_DIR/template-empty-manifest-smoke-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
-  SYNC_SOURCE_ONLY_PROJECT="template-source-only-sync-smoke-$RANDOM-$$"
+  SYNC_SOURCE_ONLY_PROJECT="$TEMPLATE_DIR/template-source-only-sync-smoke-$RANDOM-$$"
   SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
-  SYNC_GIT_TEMPLATE_FIXTURE="template-sync-git-fixture-$RANDOM-$$"
-  SYNC_GIT_DRY_RUN_PROJECT="template-git-dry-run-smoke-$RANDOM-$$"
+  SYNC_GIT_TEMPLATE_FIXTURE="$TEMPLATE_DIR/template-sync-git-fixture-$RANDOM-$$"
+  SYNC_GIT_DRY_RUN_PROJECT="$TEMPLATE_DIR/template-git-dry-run-smoke-$RANDOM-$$"
   SYNC_GIT_DRY_RUN_OUTPUT="$SYNC_GIT_DRY_RUN_PROJECT.out"
   cleanup_sync_smoke() {
     rm -rf \
@@ -515,7 +550,9 @@ if is_template_source_repo; then
     local template="$1"
 
     mkdir -p \
+      "$template/.codex/agents" \
       "$template/scripts" \
+      "$template/scripts/lib" \
       "$template/docs" \
       "$template/_reference/spec-kit" \
       "$template/templates/project-starter/tasks" \
@@ -527,6 +564,17 @@ if is_template_source_repo; then
     printf '%s\n' '# Agent SOT fixture' > "$template/docs/AGENT_CONTEXT_SOT.md"
     printf '%s\n' '{"ref":"fixture"}' > "$template/_reference/spec-kit/manifest.json"
     cp scripts/sync-template.sh "$template/scripts/sync-template.sh"
+    cp .codex/config.toml "$template/.codex/config.toml"
+    cp .codex/agents/*.toml "$template/.codex/agents/"
+    cp scripts/codex-agent-policy.js "$template/scripts/codex-agent-policy.js"
+    cp scripts/codex-route-config.js "$template/scripts/codex-route-config.js"
+    cp scripts/codex-route-task.js "$template/scripts/codex-route-task.js"
+    cp scripts/codex-routing-cases-a.js "$template/scripts/codex-routing-cases-a.js"
+    cp scripts/codex-routing-cases-b.js "$template/scripts/codex-routing-cases-b.js"
+    cp scripts/test-codex-agent-policy.js "$template/scripts/test-codex-agent-policy.js"
+    cp scripts/test-codex-routing.js "$template/scripts/test-codex-routing.js"
+    cp scripts/validate-codex-agents.js "$template/scripts/validate-codex-agents.js"
+    cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
 
     printf '%s\n' '# source-only unix setup fixture' > "$template/setup.sh"
     printf '%s\r\n' '@echo off' 'rem source-only windows setup fixture' > "$template/setup.bat"
@@ -570,38 +618,53 @@ if is_template_source_repo; then
     local project="$1"
     local output="$2"
 
-    write_empty_trackable_manifest "$project"
+    write_empty_trackable_manifest "$project" || return 1
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1
-    grep -q "Manifest has no trackable files" "$output"
-    grep -q "WOULD ADD: scripts/sync-template.sh" "$output"
-    grep -q "WOULD ADD: CLAUDE.md" "$output"
-    grep -q "WOULD ADD: .gitignore" "$output"
-    grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output"
-    grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output"
-    grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output"
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
+    grep -q "Manifest has no trackable files" "$output" || return 1
+    grep -q "WOULD ADD: scripts/sync-template.sh" "$output" || return 1
+    grep -q "WOULD ADD: CLAUDE.md" "$output" || return 1
+    grep -q "WOULD ADD: .gitignore" "$output" || return 1
+    grep -q "WOULD ADD: docs/AGENT_CONTEXT_SOT.md" "$output" || return 1
+    grep -q "WOULD ADD: scripts/codex-agent-policy.js" "$output" || return 1
+    grep -q "WOULD ADD: .codex/agents/product-reviewer.toml" "$output" || return 1
+    grep -q "WOULD ADD: .codex/agents/systems-reviewer.toml" "$output" || return 1
+    grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
+    grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output" || return 1
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1
-    grep -q '"CLAUDE.md"' "$project/.template-manifest.json"
-    grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json"
-    grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json"
-    grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json"
-    ! grep -q '"templates/' "$project/.template-manifest.json"
-    ! grep -q '"setup.sh"' "$project/.template-manifest.json"
-    ! grep -q '"setup.bat"' "$project/.template-manifest.json"
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1 || return 1
+    grep -q '"CLAUDE.md"' "$project/.template-manifest.json" || return 1
+    grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/codex-agent-policy.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/lib/codex-route-intents.js"' "$project/.template-manifest.json" || return 1
+    grep -q '".codex/agents/product-reviewer.toml"' "$project/.template-manifest.json" || return 1
+    grep -q '".codex/agents/systems-reviewer.toml"' "$project/.template-manifest.json" || return 1
+    grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json" || return 1
+    grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json" || return 1
+    ! grep -q '"templates/' "$project/.template-manifest.json" || return 1
+    ! grep -q '"setup.sh"' "$project/.template-manifest.json" || return 1
+    ! grep -q '"setup.bat"' "$project/.template-manifest.json" || return 1
+    (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-codex-routing.js >/dev/null) || return 1
   }
   run_source_only_sync_smoke() {
     local project="$1"
     local output="$2"
 
-    write_trackable_manifest "$project"
+    write_trackable_manifest "$project" || return 1
+    mkdir -p "$project/scripts/lib"
+    printf '%s\n' 'module.exports = { legacy: true };' > "$project/scripts/lib/codex-route-intents.js"
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1
-    ! grep -q "WOULD ADD: templates/" "$output"
-    ! grep -q "WOULD ADD: setup.sh" "$output"
-    ! grep -q "WOULD ADD: setup.bat" "$output"
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
+    grep -q "WOULD UPDATE: scripts/lib/codex-route-intents.js" "$output" || return 1
+    ! grep -q "WOULD ADD: templates/" "$output" || return 1
+    ! grep -q "WOULD ADD: setup.sh" "$output" || return 1
+    ! grep -q "WOULD ADD: setup.bat" "$output" || return 1
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1 || return 1
+    cmp -s "$project/scripts/lib/codex-route-intents.js" "$SYNC_TEMPLATE_FIXTURE/scripts/lib/codex-route-intents.js" || return 1
+    grep -q '"scripts/lib/codex-route-intents.js"' "$project/.template-manifest.json" || return 1
     [ ! -e "$project/templates" ] &&
       [ ! -f "$project/setup.sh" ] &&
       [ ! -f "$project/setup.bat" ] &&
@@ -614,20 +677,20 @@ if is_template_source_repo; then
     local project="$2"
     local output="$3"
 
-    create_sync_template_fixture "$template"
-    git -C "$template" init -q
-    git -C "$template" add .
-    git -C "$template" -c user.name="Template Smoke" -c user.email="template-smoke@example.invalid" commit -q -m "fixture"
-    git -C "$template" tag v9.9.9
+    create_sync_template_fixture "$template" || return 1
+    git -C "$template" init -q || return 1
+    git -C "$template" add . || return 1
+    git -C "$template" -c user.name="Template Smoke" -c user.email="template-smoke@example.invalid" commit -q -m "fixture" || return 1
+    git -C "$template" tag v9.9.9 || return 1
 
-    write_trackable_manifest "$project"
-    git -C "$project" init -q
-    git -C "$project" remote add template "$(cd "$template" && pwd)"
+    write_trackable_manifest "$project" || return 1
+    git -C "$project" init -q || return 1
+    git -C "$project" remote add template "$(cd "$template" && pwd)" || return 1
 
-    bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" --dry-run > "$output" 2>&1
-    grep -q "Fetching template preview from" "$output"
-    grep -q "WOULD UPDATE: CLAUDE.md" "$output"
-    grep -q "(Dry run" "$output"
+    bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
+    grep -q "Fetching template preview from" "$output" || return 1
+    grep -q "WOULD UPDATE: CLAUDE.md" "$output" || return 1
+    grep -q "(Dry run" "$output" || return 1
     grep -q '# Local Claude' "$project/CLAUDE.md"
   }
   trap cleanup_sync_smoke EXIT

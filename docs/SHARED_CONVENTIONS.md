@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-07-06 for template `4.5.3`; product/business outcome priority, client/executor accountability, progressive JPEG delivery plus final-plan object readiness, progressive layer replacement, `PROGRESSIVE_STATUS` project-slice reporting, semantic intent routing, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, design-policy fixture sync delivery, git dry-run sync preview, and agent-safe GitHub release entrypoint checks are enforced by validators.
+Last reviewed: 2026-07-09 for template `4.6.0`; product/business outcome priority, client/executor accountability, progressive JPEG delivery plus final-plan object readiness, progressive layer replacement, `PROGRESSIVE_STATUS` project-slice reporting, semantic intent routing, adaptive GPT-5.6 fan-out, text policy, platform policy, CI runtime hygiene, production design QA, register-aware design pipeline checks, screen anatomy/root-frame checks, design-policy fixture sync delivery, git dry-run sync preview, and agent-safe GitHub release entrypoint checks are enforced by validators.
 
 ## Product And Business Outcome Priority
 

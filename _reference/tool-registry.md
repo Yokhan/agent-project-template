@@ -19,7 +19,8 @@
 | generate-project-spec | scripts/generate-project-spec.sh | Build PROJECT_SPEC.md from repo state |
 | scan-project | scripts/scan-project.sh | Initial project scan, registry population |
 | task-brief | scripts/task-brief.sh | Compact summary for tasks/current.md |
-| codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, pipeline, risk, and orchestrator |
+| codex-agent-policy | scripts/codex-agent-policy.js | Single SOT for Codex role models, reasoning effort, sandbox, and automatic fan-out limits |
+| codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, fan-out decision, pipeline, risk, and orchestrator |
 | test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
 | validate-agent-sot | scripts/validate-agent-sot.js | Validates local Agent SOT sources, AGENTS/CLAUDE links, and drift gates |
 | validate-spec-kit | scripts/validate-spec-kit.js | Offline validation for the managed Spec Kit snapshot |
@@ -34,6 +35,7 @@
 | Tool | Path | Purpose | Used by |
 |------|------|---------|---------|
 | blast-radius | scripts/blast-radius.sh | blast-radius.sh — BFS through import graph to find all affected files | agent/manual |
+| codex-agent-policy | scripts/codex-agent-policy.js | Role/model/effort and adaptive fan-out policy used by router and validators | agent/runtime |
 | codex-route-task | scripts/codex-route-task.js | Codex route contract generator for AGENTS.md route-first workflow | agent/manual |
 | codex-hook-adapter | scripts/codex-hook-adapter.sh | codex-hook-adapter.sh — Translates Codex hook env vars to Claude hook | agent/manual |
 | context-restore | scripts/context-restore.sh | context-restore.sh — Restore context after compaction or session start | agent/manual |

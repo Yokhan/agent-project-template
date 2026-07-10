@@ -1,6 +1,6 @@
 name = "reviewer"
 description = "Read-only reviewer focused on correctness, regressions, architecture boundaries, test gaps, and maintainability risks."
-model = "gpt-5.3-codex-spark"
+model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Atlas", "Delta", "Echo"]

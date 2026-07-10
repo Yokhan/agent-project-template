@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.5.3 -->
+<!-- Template Version: 4.6.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -79,7 +79,7 @@ Codex reads `AGENTS.md` once at session start as project guidance. Keep this fil
 Before any file edit, release, template change, security work, design work, or M+ task:
 
 1. Run: `node scripts/codex-route-task.js "<user request>" --summary --write-state`
-2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Matches:** exact/semantic | **Skills:** names | **Subagents:** names | **Orchestrator:** owner.
+2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Matches:** exact/semantic | **Skills:** names | **Subagents:** names | **Fan-out:** status/reason | **Orchestrator:** owner.
 3. Follow the returned skills/rules. Do not scan every skill or reread broad docs.
 4. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
 
@@ -127,7 +127,7 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
-- Fan-out: spawn read-only subagents first for M+ tasks; parent consolidates and edits. Use `implementer` only for exact, non-overlapping files.
+- Fan-out: follow the route's `fanout` decision. For `required` or `recommended`, automatically spawn useful independent lanes without waiting for an explicit user request; notify the user, keep the parent on the critical path, and skip with a reason when parallelism would duplicate work or add latency. User opt-out always wins. Use read-only agents first and `implementer` only for exact, non-overlapping files.
 
 ### Systemic Error Analysis
 
@@ -229,7 +229,7 @@ Project-specific Codex skills use `.agents/skills/project-*` and must be preserv
 
 Project-scoped Codex subagents live in `.codex/agents/*.toml`.
 
-Use subagents named by the route output. Default to read-only workers first. Parent Codex consolidates results and edits. Use `implementer` only for exact, isolated, non-overlapping files.
+Use subagents named by the route output and the profiles in `scripts/codex-agent-policy.js`. `required` and `recommended` fan-out is proactive when a lane is independent, useful, and faster or safer in parallel; the user does not need to ask. Default to read-only workers first. Parent Codex consolidates results and edits. Use `implementer` only for exact, isolated, non-overlapping files. Never exceed the policy's `xhigh` reasoning ceiling.
 
 Before fan-out, check for Spec Kit, litkit, Kiro, AgentOS, or project-local `project-*` workflow artifacts. If `spec.md`, `plan.md`, `tasks.md`, or equivalent task graphs exist, use them as the input contract. Treat `[P]` or equivalent metadata as the default signal for safe parallel work.
 
@@ -323,7 +323,7 @@ After implementing, before presenting results:
 ## OpenAI Model Guidance
 
 For current OpenAI API model selection, check official OpenAI docs and `docs/OPENAI_MODEL_GUIDANCE.md`.
-As of the 2026-05-19 docs check, OpenAI recommends `gpt-5.5` as the starting point for complex reasoning and coding, with smaller GPT-5.4 variants for latency/cost.
+As of the 2026-07-09 docs check, use GPT-5.6 Sol for demanding reasoning and GPT-5.6 Terra for faster supporting work. Template subagent profiles are role-specific and capped at `xhigh`.
 Do not hardcode model, effort, approval, or sandbox defaults in project `.codex/config.toml`; those stay in user or IDE config.
 
 ## Self-Improvement
@@ -356,4 +356,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.5.3
+4.6.0

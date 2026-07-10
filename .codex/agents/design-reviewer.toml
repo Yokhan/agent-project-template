@@ -1,7 +1,7 @@
 name = "design_reviewer"
 description = "Read-only UI, UX, design-system, accessibility, responsive, and Figma workflow reviewer."
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "medium"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Grid", "Focus", "Frame"]
 developer_instructions = """

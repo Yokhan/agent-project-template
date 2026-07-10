@@ -128,7 +128,22 @@ function getIntentMatch(mode, task) {
   };
 }
 
+const REFERENCE_RESEARCH_PATTERN =
+  /\b(?:analy[sz]e|compare|inspect|research|study)\b|изуч|исслед|посмотр|проанализ|сравн/iu;
+const EXTERNAL_REFERENCE_PATTERN =
+  /\b(?:announcement|chart|diagram|release|site|website)\b|график|диаграм|релиз|сайт|страниц/iu;
+const OPERATION_ACTION_PATTERN =
+  /\b(?:build|create|deploy|draw|fix|publish|repair|tag|update)\b|выпусти|исправ|нарис|обнов|опубликуй|почин|релизь|созда|тегир|выкат/iu;
+
+function shouldSuppressRoute(mode, task) {
+  if (!new Set(["bugfix", "mermaid", "release"]).has(mode)) return false;
+  const isReferenceResearch =
+    REFERENCE_RESEARCH_PATTERN.test(task) && EXTERNAL_REFERENCE_PATTERN.test(task);
+  return isReferenceResearch && !OPERATION_ACTION_PATTERN.test(task);
+}
+
 module.exports = {
   getIntentMatch,
   normalizeTask,
+  shouldSuppressRoute,
 };

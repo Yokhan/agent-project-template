@@ -1,6 +1,6 @@
 # Codex Subagents Audit And Upgrade Plan
 
-Date: 2026-05-19
+Date: 2026-07-09
 
 ## Result
 
@@ -33,19 +33,24 @@ Probe results:
 1. `codex exec --json` successfully called `spawn_agent` and `wait`.
 2. A trusted repo-scoped `.codex/agents/probe-reader.toml` was applied: the child returned a marker that existed only in the TOML file.
 3. A temp project outside the trusted repo returned `unknown agent_type`, so project trust/location matters for custom agent loading.
-4. After adding the pack, `pr_explorer` spawned successfully and returned `PR_EXPLORER_READY` on `gpt-5.3-codex-spark`.
+4. The original preview-model probe succeeded; v4.6 replaces that uniform pack with the validated GPT-5.6 role policy below.
 
-## Implemented Agent Pack
+## GPT-5.6 Agent Pack
 
 | Agent | Mode | Model | Purpose |
 | --- | --- | --- | --- |
-| `pr_explorer` | read-only | `gpt-5.3-codex-spark` | Map files, execution paths, dependencies, context |
-| `reviewer` | read-only | `gpt-5.3-codex-spark` | Correctness, regressions, boundaries, test gaps |
-| `security_reviewer` | read-only | `gpt-5.3-codex-spark` | Auth, secrets, injection, permissions, data exposure |
-| `tester` | read-only | `gpt-5.3-codex-spark` | Regression strategy, edge cases, verification commands |
-| `docs_researcher` | read-only | `gpt-5.3-codex-spark` | Official docs and source-backed API checks |
-| `design_reviewer` | read-only | `gpt-5.3-codex-spark` | UI/UX/design-system/accessibility review |
-| `implementer` | workspace-write | `gpt-5.3-codex-spark` | Isolated implementation chunks only |
+| `pr_explorer` | read-only | GPT-5.6 Terra `medium` | Map files, execution paths, dependencies, context |
+| `docs_researcher` | read-only | GPT-5.6 Terra `medium` | Official docs and source-backed API checks |
+| `tester` | read-only | GPT-5.6 Terra `medium` | Regression strategy, edge cases, verification commands |
+| `implementer` | workspace-write | GPT-5.6 Terra `high` | Isolated implementation chunks only |
+| `reviewer` | read-only | GPT-5.6 Sol `high` | Correctness, regressions, boundaries, test gaps |
+| `design_reviewer` | read-only | GPT-5.6 Sol `high` | UI/UX/design-system/accessibility review |
+| `product_reviewer` | read-only | GPT-5.6 Sol `high` | User outcome, KPI, positioning, and journey |
+| `security_reviewer` | read-only | GPT-5.6 Sol `xhigh` | Auth, secrets, injection, permissions, data exposure |
+| `systems_reviewer` | read-only | GPT-5.6 Sol `xhigh` | SOT conflicts, architecture, repeated failures |
+
+`scripts/codex-agent-policy.js` is the machine-readable profile SOT. The parent
+model remains user-owned, and template profiles never exceed `xhigh`.
 
 ## Prompt Patterns
 
@@ -87,11 +92,12 @@ Spawn design_reviewer to audit the UI/design-system/accessibility risks and test
 
 ## Improvement Plan
 
-1. Keep `codex-subagent-orchestration` aligned with `docs/CODEX_FANOUT_PATTERNS.md`.
+1. Keep `codex-subagent-orchestration` aligned with `docs/CODEX_FANOUT_PATTERNS.md` and the policy SOT.
 2. Keep `scripts/validate-codex-agents.js` strict enough to catch unsafe defaults, missing model fields, and writable-agent drift.
 3. Keep implementation delegation conservative: read-only agents first; `implementer` only for explicit non-overlapping files.
 4. Use `scripts/test-codex-subagents-live.sh --yes` only when a quota-consuming runtime check is needed.
 5. Avoid recursive fan-out: keep `agents.max_depth = 1`.
+6. Automatically spawn `required` and genuinely useful `recommended` lanes without waiting for an explicit user request; always honor user opt-out.
 
 ## Spec Kit Adaptation
 
@@ -117,6 +123,6 @@ may choose the template release tag, but the project applies it through
 
 ## Risks
 
-- Subagents consume extra quota and tokens. Use them for parallelizable work, not every small edit.
+- Subagents consume extra quota and tokens. The automatic gate skips direct XS questions and duplicated work.
 - Zed may not show child threads as clearly as Codex CLI/app yet. Parent summaries remain the reliable interface.
 - Concurrent write agents can conflict. Default to read-only fan-out and parent-owned edits.

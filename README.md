@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.5.3-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.6.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -14,13 +14,13 @@ Self-deploying AI-agent optimized project template with **MCP-based dynamic rule
 Use the latest stable release, not `main`, for normal projects:
 
 1. Open: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the tag shown there. Current stable tag: `v4.5.3`.
+2. Use the tag shown there. Current stable tag: `v4.6.0`.
 3. For existing generated projects, sync with `--from-git --ref <tag>` and run `--dry-run` first.
 
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.5.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -29,8 +29,8 @@ Update an existing generated project from the stable tag:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.3
+bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.0
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -38,7 +38,7 @@ bash scripts/sync-template.sh --from-git --ref v4.5.3
 ## Quick Start
 
 ```bash
-git clone --branch v4.5.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -97,10 +97,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.5.3
+bash scripts/sync-template.sh --from-git --ref v4.6.0
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -128,8 +128,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.3
+bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.0
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -209,10 +209,10 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
 | **Codex Skills** | 41 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
-| **Codex Subagents** | 7 | pr_explorer, reviewer, security_reviewer, tester, docs_researcher, design_reviewer, implementer; flexible fan-out patterns use existing Spec Kit/litkit/AgentOS artifacts when present |
+| **Codex Subagents** | 9 | Terra exploration/docs/testing/isolated implementation plus Sol review/design/product/security/systems specialists; adaptive fan-out preserves Spec Kit/litkit/AgentOS ownership |
 | **Agents** | 11 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler, and supporting specialists |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 44 | validation, route selection, progressive status slices, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 49 | validation, adaptive route selection and fixtures, agent policy, progressive status slices, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -310,6 +310,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.6.0** | Minor release: adds role-specific GPT-5.6 Sol/Terra subagents, an `xhigh` reasoning ceiling, automatic beneficial fan-out, product/systems reviewers, and semantic suppression for reference diagrams and release pages |
 | **4.5.3** | Patch release: adds the progressive layer replacement pipeline plus `PROGRESSIVE_STATUS` project-slice reporting, so superseded wrong iterations are retired and changed working docs cannot close out with stale status headers |
 | **4.5.2** | Patch release: clarifies progressive JPEG as final-plan-gated object readiness, where a 1% object has the full planned shape and already performs its smallest honest production function |
 | **4.5.1** | Patch release: makes progressive JPEG an implementation gate, so known final product capabilities use an end-state skeleton with 1% callable hooks/stubs/contracts instead of legacy harness proof |

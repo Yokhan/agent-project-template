@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
+const {
+  AGENT_POLICY,
+  EFFORT_LEVELS,
+  getAgentProfile,
+  getAgentProfiles,
+} = require("./codex-agent-policy.js");
+const { ROUTES } = require("./codex-route-config.js");
 
 const AGENTS_ROOT = ".codex/agents";
 const CODEX_CONFIG = ".codex/config.toml";
 const MAX_AGENT_LINES = 80;
 const MAX_DESCRIPTION_CHARS = 220;
-const TEMPLATE_AGENT_MODEL = "gpt-5.3-codex-spark";
-const REQUIRED_AGENTS = [
-  "pr_explorer",
-  "reviewer",
-  "security_reviewer",
-  "tester",
-  "docs_researcher",
-  "design_reviewer",
-  "implementer",
-];
-const WRITE_CAPABLE_AGENTS = new Set(["implementer"]);
+const REQUIRED_AGENTS = getAgentProfiles().map(({ name }) => name);
+const WRITE_CAPABLE_AGENTS = new Set(
+  getAgentProfiles()
+    .filter(({ sandboxMode }) => sandboxMode === "workspace-write")
+    .map(({ name }) => name),
+);
 
 const state = {
   checks: 0,
@@ -80,55 +82,83 @@ function hasInstruction(text, pattern) {
   return pattern.test(String(text || "").toLowerCase());
 }
 
-function validateAgentMode(filePath, fields) {
+function validateAgentProfile(filePath, fields) {
   const name = fields.name || path.basename(filePath, ".toml");
-  const sandboxMode = fields.sandbox_mode || "";
+  const profile = getAgentProfile(name);
+  if (!profile) {
+    addError(`${filePath}: template agent ${name} is missing from agent policy`);
+    return null;
+  }
 
   if (!fields.model) {
     addError(`${filePath}: missing required field model`);
-  } else if (fields.model !== TEMPLATE_AGENT_MODEL) {
+  } else if (fields.model !== profile.model) {
     addError(
-      `${filePath}: template agents must use ${TEMPLATE_AGENT_MODEL}, found ${fields.model}`,
+      `${filePath}: ${name} must use ${profile.model}, found ${fields.model}`,
     );
   }
-
   if (!fields.model_reasoning_effort) {
     addError(`${filePath}: missing required field model_reasoning_effort`);
+  } else if (fields.model_reasoning_effort !== profile.effort) {
+    addError(
+      `${filePath}: ${name} must use ${profile.effort} effort, found ${fields.model_reasoning_effort}`,
+    );
   }
+  return profile;
+}
 
+function validateAgentSandbox(filePath, fields, profile) {
+  if (!profile) return;
+  const name = fields.name || path.basename(filePath, ".toml");
+  const sandboxMode = fields.sandbox_mode || "";
   if (!sandboxMode) {
     addError(`${filePath}: missing required field sandbox_mode`);
     return;
   }
-
-  if (name === "implementer") {
-    if (sandboxMode !== "workspace-write") {
-      addError(`${filePath}: implementer must use workspace-write`);
-    }
-    if (!hasInstruction(fields.developer_instructions, /assigned scope/)) {
-      addError(`${filePath}: implementer must restate the assigned scope`);
-    }
-    if (
-      !hasInstruction(
-        fields.developer_instructions,
-        /do not touch files outside/,
-      )
-    ) {
-      addError(`${filePath}: implementer must forbid out-of-scope edits`);
-    }
+  if (sandboxMode !== profile.sandboxMode) {
+    addError(
+      `${filePath}: ${name} must use ${profile.sandboxMode}, found ${sandboxMode}`,
+    );
     return;
   }
 
+  if (name === "implementer") {
+    validateImplementerInstructions(filePath, fields);
+    return;
+  }
   if (WRITE_CAPABLE_AGENTS.has(name)) {
     addError(`${filePath}: unexpected write-capable agent name ${name}`);
   }
-
-  if (sandboxMode !== "read-only") {
-    addError(`${filePath}: ${name} must stay read-only`);
-  }
-
   if (!hasInstruction(fields.developer_instructions, /do not edit/)) {
     addError(`${filePath}: read-only agent instructions must say not to edit`);
+  }
+}
+
+function validateImplementerInstructions(filePath, fields) {
+  if (!hasInstruction(fields.developer_instructions, /assigned scope/)) {
+    addError(`${filePath}: implementer must restate the assigned scope`);
+  }
+  if (!hasInstruction(fields.developer_instructions, /do not touch files outside/)) {
+    addError(`${filePath}: implementer must forbid out-of-scope edits`);
+  }
+}
+
+function validatePolicy() {
+  state.checks += 1;
+  if (AGENT_POLICY.parent.effortCeiling !== "xhigh") {
+    addError("agent policy effort ceiling must be xhigh");
+  }
+  for (const { name, effort } of getAgentProfiles()) {
+    if (!EFFORT_LEVELS.includes(effort)) {
+      addError(`agent policy: ${name} uses unsupported effort ${effort}`);
+    }
+  }
+  for (const route of ROUTES) {
+    for (const name of route.subagents || []) {
+      if (!getAgentProfile(name)) {
+        addError(`route ${route.mode} references unknown agent profile ${name}`);
+      }
+    }
   }
 }
 
@@ -180,7 +210,8 @@ function validateAgent(filePath) {
     addWarning(`${filePath}: exceeds ${MAX_AGENT_LINES} lines`);
   }
 
-  validateAgentMode(filePath, fields);
+  const profile = validateAgentProfile(filePath, fields);
+  validateAgentSandbox(filePath, fields, profile);
 }
 
 function validateRequiredAgents(agentFiles) {
@@ -237,6 +268,7 @@ function validateAgentConfig() {
 }
 
 function main() {
+  validatePolicy();
   const agentFiles = getAgentFiles(AGENTS_ROOT);
   if (agentFiles.length === 0) {
     addError(`no Codex agents found under ${AGENTS_ROOT}`);

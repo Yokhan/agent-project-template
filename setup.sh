@@ -187,6 +187,7 @@ generate_manifest() {
       scripts/*.sh) echo "template" ;;
       scripts/*.js) echo "template" ;;
       scripts/lib/*.sh) echo "template" ;;
+      scripts/lib/*.js) echo "template" ;;
       mcp-servers/context-router/package-lock.json) echo "template" ;;
       mcp-servers/context-router/src/*.ts) echo "template" ;;
       mcp-servers/context-router/package.json) echo "template" ;;
@@ -248,6 +249,7 @@ generate_manifest() {
     "scripts/"*.sh
     "scripts/"*.js
     "scripts/lib/"*.sh
+    "scripts/lib/"*.js
     "mcp-servers/context-router/package-lock.json"
     "mcp-servers/context-router/src/"*.ts
     "mcp-servers/context-router/package.json"

@@ -1,6 +1,6 @@
 ---
 name: codex-openai-model-guidance
-description: "Use current official OpenAI docs for model selection, GPT-5.5 migration, Responses API, reasoning effort, verbosity, structured outputs, tools, and prompt updates. Trigger on OpenAI model or GPT-5.5 guidance."
+description: "Use current official OpenAI docs for GPT-5.6 model selection, migration, Responses API, reasoning effort, tools, and prompt updates. Trigger on OpenAI model guidance."
 ---
 
 # Codex OpenAI Model Guidance
@@ -15,5 +15,6 @@ Read `docs/OPENAI_MODEL_GUIDANCE.md` for the latest verified snapshot in this te
 
 - Do not hardcode model defaults in project `.codex/config.toml`.
 - Prefer official OpenAI docs over bundled notes.
-- For GPT-5.5 API work, start with Responses API and `reasoning.effort: "medium"` unless evals show another setting is better.
+- For GPT-5.6 API work, start with Responses API and `reasoning.effort: "medium"` unless evals show another setting is better.
+- This template never recommends or configures reasoning above `xhigh`.
 - Cite official docs when answering the user.

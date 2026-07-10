@@ -2,260 +2,16 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { getIntentMatch } = require("./lib/codex-route-intents.js");
+const {
+  getIntentMatch,
+  shouldSuppressRoute,
+} = require("./lib/codex-route-intents.js");
+const {
+  formatAgentProfiles,
+  getFanoutDecision,
+} = require("./codex-agent-policy.js");
 const STATE_PATH = path.join("tasks", ".active-codex-route.json");
-const SHARED_RULES = {
-  base: [".claude/library/process/context-first.md", ".claude/library/process/research-first.md", ".claude/library/process/self-verification.md"],
-  implementation: [".claude/library/process/plan-first.md", ".claude/library/technical/architecture.md", ".claude/library/technical/code-style.md", ".claude/library/technical/error-handling.md"],
-  review: [".claude/library/meta/critical-thinking.md", ".claude/library/meta/analysis.md"],
-  design: [".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
-  designSystem: [".claude/library/domain/domain-design-system.md", ".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
-  product: [".claude/library/product/production-product-standard.md", ".claude/library/process/product-goal-loop.md", ".claude/library/process/client-executor-contract.md"],
-  testing: [".claude/library/technical/testing.md"],
-  writing: [".claude/library/technical/writing.md"],
-  git: [".claude/library/technical/git-workflow.md"],
-  safety: [".claude/library/domain/domain-guards.md"],
-};
-const ROUTES = [
-  {
-    mode: "security",
-    pattern:
-      /security|vulnerab|secret|auth|permission|injection|xss|csrf|ssrf|cve|owasp|безопас|уязвим|секрет|инъекц|права/i,
-    skills: ["codex-security-audit", "codex-pipeline-workflow"],
-    pipeline: "security patch",
-    subagents: ["security_reviewer", "pr_explorer", "tester"],
-    rules: ["review", "testing", "safety"],
-    risk: "HIGH",
-  },
-  {
-    mode: "bugfix",
-    pattern:
-      /fix|bug|broken|fail|failing|crash|regression|error|repair|почини|исправ|сломал|не работает|падает|ошибка|баг/i,
-    skills: ["codex-debug", "codex-pipeline-workflow"],
-    pipeline: "bugfix",
-    subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["implementation", "testing"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "design-system",
-    pattern:
-      /design system|storybook|tokens?|atomic|atoms?|molecules?|organisms?|component library|spacing|radius|typography|motion token|rendered geometry|дизайн-?систем|сторибук|токен|атом|молекул|организм|отступ|скругл|типограф|баунд|bounding/i,
-    skills: ["codex-design-system-workflow", "codex-design-workflow", "codex-domain-design-review"],
-    pipeline: "design system",
-    subagents: ["design_reviewer", "tester", "reviewer"],
-    rules: ["product", "designSystem", "testing"],
-    gates: ["token-contract", "composition-trace", "storybook-or-equivalent", "rendered-geometry", "responsive-state-check"],
-    risk: "HIGH",
-  },
-  {
-    mode: "product-ux",
-    pattern:
-      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|лк|личн|дешборд|дашборд|вход|выход|сесси|флоу|сценар|клик|сервис|главн|доки/i,
-    skills: ["codex-product-ux-audit", "codex-design-workflow", "codex-domain-design-review"],
-    pipeline: "product ux",
-    subagents: ["design_reviewer", "tester", "reviewer"],
-    rules: ["product", "design", "testing"],
-    gates: ["entry-to-value-flow", "no-dead-ends", "auth-session-states", "return-path", "responsive-check"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "design",
-    pattern:
-      /design|figma|ui|ux|css|layout|visual|component|responsive|accessib|screen|mockup|shape|craft|critique|distill|harden|polish|adapt|clarify|typeset|colorize|bolder|quieter|дизайн|фигма|макет|экран|интерфейс|стиль/i,
-    skills: ["codex-design-workflow", "codex-domain-design-review"],
-    pipeline: "design",
-    subagents: ["design_reviewer", "tester", "reviewer"],
-    rules: ["design", "testing"],
-    gates: ["token-contract", "state-coverage", "responsive-check"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "figma",
-    pattern: /figma|code connect|mockup|capture to figma|фигма/i,
-    skills: ["codex-figma-workflow"],
-    pipeline: "design",
-    subagents: ["design_reviewer"],
-    rules: ["design"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "template",
-    pattern:
-      /template|agents(?:\.md)?|claude\.md|agent instructions|agent file|main agent|single source of truth|source of truth|\bSOT\b|skill|subagent|router|route|sync-template|agent project|client-executor|accountable executor|anti-?sycophancy|sycophancy|fake work|fake completion|falsif|pretend(?:ed)? completed|no fake|progressive jpeg|progressive layer|superseded layer|disabled legacy|stale placeholder|release-only harness|ilyakhov|write this into yourself|remember this rule|шаблон|основн\w*\s+агент\w*\s+файл|агентск\w*\s+файл|источник правды|ильях|агент|скилл|роут|маршрут|синхрон|пропиши\s+себе|запиши\s+себе|прогрессивн\w*\s+(?:jpeg|джипег)|джипег|стар\w*\s+итерац|выключенн\w*\s+legacy|устаревш\w*\s+заглуш/i,
-    skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
-    pipeline: "template maintenance",
-    subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["product", "review", "testing", "git"],
-    gates: ["template-boundary", "sot-validation", "sync-regression", "release-gate"],
-    risk: "HIGH",
-  },
-  {
-    mode: "template",
-    pattern:
-      /(?:progressive\s+jpeg|progressive\s+layer|jpeg|\u0434\u0436\u0438\u043f\u0435\u0433).*(?:old|wrong|stale|obsolete|disabled|placeholder|stub|harness|\u0441\u0442\u0430\u0440|\u043d\u0435\u043f\u0440\u0430\u0432|\u0437\u0430\u0433\u043b\u0443\u0448|\u043a\u043e\u0441\u044f\u043a|\u0432\u044b\u043a\u043b\u044e\u0447)|(?:old|wrong|stale|obsolete|disabled|placeholder|stub|harness|\u0441\u0442\u0430\u0440|\u043d\u0435\u043f\u0440\u0430\u0432|\u0437\u0430\u0433\u043b\u0443\u0448|\u043a\u043e\u0441\u044f\u043a|\u0432\u044b\u043a\u043b\u044e\u0447).*(?:progressive\s+jpeg|progressive\s+layer|jpeg|\u0434\u0436\u0438\u043f\u0435\u0433)/iu,
-    skills: ["codex-template-sync", "codex-skill-maintenance", "codex-test-rules", "codex-agent-router"],
-    pipeline: "template maintenance",
-    subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["product", "review", "testing", "git"],
-    gates: ["template-boundary", "sot-validation", "sync-regression", "release-gate"],
-    risk: "HIGH",
-  },
-  {
-    mode: "product-goal",
-    pattern:
-      /business|kpi|revenue|monetization|money|conversion|activation|retention|loyalty|sales|pricing|support load/i,
-    skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
-    pipeline: "product planning",
-    subagents: ["pr_explorer", "reviewer"],
-    rules: ["product", "review"],
-    gates: ["product-goal-artifact", "quality-bar", "current-step", "language-match"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "marketing",
-    pattern:
-      /marketing|go-?to-?market|gtm|positioning|campaign|funnel|offer|copywriting|brand awareness|demand gen|lead gen|lead magnet|ICP|buyer journey|customer journey|roas|cac|ltv|маркет|позиционир|кампан|воронк|оффер|лид|аудитор|покупател|сообщени|месседж|бренд|перформанс|канал|дистрибуц/i,
-    skills: [
-      "codex-domain-communication-review",
-      "codex-domain-business-review",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    pipeline: "go-to-market",
-    subagents: ["pr_explorer", "reviewer"],
-    rules: ["product", "writing", "review"],
-    gates: [
-      "audience-icp",
-      "positioning-offer-clarity",
-      "journey-or-funnel-fit",
-      "channel-distribution-plan",
-      "measurement-and-ethics",
-    ],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "product-goal",
-    pattern:
-      /product goal|final outcome|quality bar|production|prod|finish|continue|done right|mvp|prototype|goal|roadmap|продакшн|прод|продукт|цель|финал|качеств|доделай|продолжай|мвп|прототип|роадмап/i,
-    skills: ["codex-product-goal", "codex-strategic-review", "codex-decompose"],
-    pipeline: "product planning",
-    subagents: ["pr_explorer", "reviewer"],
-    rules: ["product", "review"],
-    gates: ["product-goal-artifact", "quality-bar", "current-step", "language-match"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "lessons",
-    pattern:
-      /lesson|lessons|retrospective|post-?mortem|last week|promote|self improvement|косяк|ошибк|урок|ретро|недел|извлек|промоут/i,
-    skills: ["codex-cross-project-lessons", "codex-self-update", "codex-strategic-review"],
-    pipeline: "self improvement",
-    subagents: ["pr_explorer", "reviewer"],
-    rules: ["product", "review"],
-    gates: ["lesson-classification", "reusable-target", "validator-or-route-check"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "release",
-    pattern:
-      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/i,
-    skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
-    pipeline: "release",
-    subagents: ["tester", "reviewer", "security_reviewer"],
-    rules: ["git", "review", "testing"],
-    risk: "HIGH",
-  },
-  {
-    mode: "openai",
-    pattern:
-      /openai|gpt|codex|responses api|model|reasoning effort|модель|опенаи|gpt-?5/i,
-    skills: ["codex-openai-model-guidance"],
-    pipeline: "docs research",
-    subagents: ["docs_researcher", "reviewer"],
-    rules: ["review"],
-    needsFreshDocs: true,
-    risk: "MEDIUM",
-  },
-  {
-    mode: "mermaid",
-    pattern:
-      /mermaid|diagram|flowchart|board|architecture map|control board|диаграм|схем|борд|карта/i,
-    skills: ["codex-mermaid-board-workflow"],
-    pipeline: "documentation",
-    subagents: ["reviewer"],
-    rules: ["writing"],
-    risk: "LOW",
-  },
-  {
-    mode: "api",
-    pattern:
-      /api|endpoint|openapi|api contract|request\/response|schema|pagination|rate limit|апи|эндпоинт/i,
-    skills: ["codex-api-contract", "codex-feature-workflow"],
-    pipeline: "feature",
-    subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["implementation", "testing"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "testing",
-    pattern: /test|coverage|spec|assert|pytest|jest|vitest|тест|покрыт/i,
-    skills: ["codex-coverage"],
-    pipeline: "quality gate",
-    subagents: ["tester", "reviewer"],
-    rules: ["testing", "review"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "migration",
-    pattern: /migrate|migration|schema|database|data move|миграц|схем|база/i,
-    skills: ["codex-migrate", "codex-pipeline-workflow"],
-    pipeline: "migration",
-    subagents: ["pr_explorer", "tester", "security_reviewer"],
-    rules: ["implementation", "testing", "safety"],
-    risk: "HIGH",
-  },
-  {
-    mode: "docs",
-    pattern:
-      /docs|readme|document|guide|writing|copy|text|документ|ридми|гайд|текст|напиши/i,
-    skills: ["codex-domain-communication-review"],
-    pipeline: "documentation",
-    subagents: ["reviewer"],
-    rules: ["writing", "review"],
-    risk: "LOW",
-  },
-  {
-    mode: "feature",
-    pattern:
-      /implement|build|create|add|feature|module|component|service|создай|добавь|реализуй|настрой/i,
-    skills: ["codex-feature-workflow", "codex-pipeline-workflow"],
-    pipeline: "feature",
-    subagents: ["pr_explorer", "tester", "reviewer"],
-    rules: ["implementation", "testing"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "review",
-    pattern:
-      /review|audit|check|inspect|analyze|evaluate|провер|аудит|разбери|оцени|посмотри/i,
-    skills: ["codex-audit"],
-    pipeline: "review",
-    subagents: ["pr_explorer", "reviewer", "tester"],
-    rules: ["review"],
-    risk: "MEDIUM",
-  },
-  {
-    mode: "strategy",
-    pattern:
-      /strategy|roadmap|plan|decompose|brainstorm|risk|triz|contradiction|mental model|ideal final result|sun tzu|art of war|stratagem|terrain|competitive strategy|стратег|план|декомпоз|разбей|риск|триз|противореч|образ мысл|идеальн\w*\s+результ|сунь|цзы|стратагем|конкурентн\w*\s+стратег|ландшафт/i,
-    skills: ["codex-strategic-review", "codex-decompose"],
-    pipeline: "planning",
-    subagents: ["pr_explorer", "reviewer"],
-    rules: ["review"],
-    risk: "MEDIUM",
-  },
-];
+const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -413,7 +169,10 @@ function getMatchedRoutes(task) {
     const exact = route.pattern.test(task);
     const intent = getIntentMatch(route.mode, task);
     return { exact, intent, route };
-  }).filter((match) => match.exact || match.intent.isMatch);
+  }).filter((match) =>
+    (match.exact || match.intent.isMatch) &&
+    !shouldSuppressRoute(match.route.mode, task),
+  );
 }
 function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
@@ -444,6 +203,12 @@ function getRoute(task, options = {}) {
   );
   const shouldUseStrategicReview = needsStrategicReview(selected, risk, artifacts);
   const shouldUseProductGoal = needsProductGoal(selected, risk);
+  const fanout = getFanoutDecision({
+    task,
+    risk,
+    modes: selected.map((route) => route.mode),
+    candidates: unique(selected.flatMap((route) => route.subagents || [])),
+  });
   const ruleGroups = unique([
     "base",
     ...selected.flatMap((route) => route.rules || []),
@@ -459,7 +224,8 @@ function getRoute(task, options = {}) {
       shouldUseProductGoal ? "codex-product-goal" : "",
       shouldUseStrategicReview ? "codex-strategic-review" : "",
     ]),
-    subagents: unique(selected.flatMap((route) => route.subagents || [])),
+    subagents: fanout.candidates.map(({ name }) => name),
+    fanout,
     sharedRules: unique(
       ruleGroups.flatMap((group) => SHARED_RULES[group] || []),
     ),
@@ -483,6 +249,8 @@ function formatSummary(route) {
     `MATCHES: exact=${route.exactMatches.join("+") || "none"} | semantic=${route.semanticMatches.join("+") || "none"}`,
     `SKILLS: ${route.skills.join(", ")}`,
     `SUBAGENTS: ${route.subagents.join(", ") || "none"}`,
+    `FANOUT: ${route.fanout.status} | ${route.fanout.reason} | max_children=${route.fanout.maxChildren}`,
+    `PROFILES: ${formatAgentProfiles(route.fanout.candidates).join(", ") || "none"}`,
     `ORCHESTRATOR: ${route.orchestrator.owner} (${route.orchestrator.codexRole})`,
     `PLAN: ${route.planContract.required ? "required" : "optional"} | ${route.planContract.language}`,
     `PRODUCT_BAR: ${route.productionBar.default} | outcome=${route.productionBar.outcomePriority} | no_mvp=${route.productionBar.noMvpByDefault}`,

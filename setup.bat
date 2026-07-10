@@ -160,6 +160,7 @@ powershell -NoProfile -Command ^
   "  'scripts/*.sh'," ^
   "  'scripts/*.js'," ^
   "  'scripts/lib/*.sh'," ^
+  "  'scripts/lib/*.js'," ^
   "  'mcp-servers/context-router/package-lock.json'," ^
   "  'mcp-servers/context-router/src/*.ts'," ^
   "  'mcp-servers/context-router/package.json'," ^

@@ -7,8 +7,9 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 - `.codex/config.toml` keeps only project-specific toggles. Model, effort, approval, and sandbox stay in IDE or user-level config.
 - Codex repo-scoped skills live in `.agents/skills/`; template-owned skills sync normally, while `project-*` skills are project-owned.
 - Codex subagents live in `.codex/agents/`; template-owned agents sync normally, while `project-*` agents are project-owned.
+- `scripts/codex-agent-policy.js` is the source of truth for template-owned role profiles and the `xhigh` reasoning ceiling. Parent model defaults remain user-owned.
 - Codex route selection is explicit through `scripts/codex-route-task.js`; route state is local-only under `tasks/.active-codex-route.json`.
-- Codex fan-out defaults to read-only workers; `implementer` is only for explicit non-overlapping file scopes.
+- Codex automatically starts `required` and genuinely useful `recommended` independent lanes, notifies the user, and honors explicit opt-out. Fan-out defaults to read-only workers; `implementer` is only for exact non-overlapping file scopes.
 - Agent infrastructure changes must check `docs/AGENT_CONTEXT_SOT.md` and `_reference/agent-sot/sources.json`, then pass `node scripts/validate-agent-sot.js`.
 - Spec Kit ships as an inert snapshot under `_reference/spec-kit/`; projects opt in by running `scripts/init-spec-kit.sh`.
 - `.claude/settings.local.json` is local-only and must not ship in the template payload.

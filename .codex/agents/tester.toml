@@ -1,6 +1,6 @@
 name = "tester"
 description = "Read-only test strategist for regression coverage, edge cases, command selection, and verification plans."
-model = "gpt-5.3-codex-spark"
+model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Gauge", "Probe", "Check"]

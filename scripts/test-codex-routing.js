@@ -5,6 +5,9 @@ const os = require("os");
 const path = require("path");
 
 const { getRoute } = require("./codex-route-task.js");
+const { AGENT_POLICY, getAgentProfiles } = require("./codex-agent-policy.js");
+const { runRouteCasesA } = require("./codex-routing-cases-a.js");
+const { runRouteCasesB } = require("./codex-routing-cases-b.js");
 
 function assertIncludes(values, expected, message) {
   assert(
@@ -29,6 +32,12 @@ function testRoute(task, expectations) {
   }
   for (const subagent of expectations.subagents || []) {
     assertIncludes(route.subagents, subagent, `${task} subagents`);
+  }
+  for (const subagent of expectations.notSubagents || []) {
+    assert(
+      !route.subagents.includes(subagent),
+      `${task} subagents: expected no ${subagent}, got ${route.subagents.join(", ")}`,
+    );
   }
   for (const gate of expectations.qualityGates || []) {
     assertIncludes(route.qualityGates || [], gate, `${task} quality gates`);
@@ -57,6 +66,13 @@ function testRoute(task, expectations) {
       `${task} plan required`,
     );
   }
+  if (expectations.fanoutStatus) {
+    assert.strictEqual(
+      route.fanout.status,
+      expectations.fanoutStatus,
+      `${task} fanout status`,
+    );
+  }
   for (const mode of expectations.semanticMatches || []) {
     assertIncludes(route.semanticMatches || [], mode, `${task} semantic matches`);
   }
@@ -76,354 +92,15 @@ function withTempProject(setup, callback) {
 }
 
 function main() {
-  testRoute("почини падающий тест логина", {
-    modes: ["bugfix", "testing"],
-    skills: ["codex-debug", "codex-coverage"],
-    subagents: ["tester", "reviewer"],
-    risk: "MEDIUM",
-  });
+  assert.strictEqual(AGENT_POLICY.parent.modelSource, "user-or-ide");
+  assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "xhigh");
+  assert.deepStrictEqual(
+    new Set(getAgentProfiles().map(({ model }) => model)),
+    new Set(["gpt-5.6-sol", "gpt-5.6-terra"]),
+  );
 
-  testRoute("после обновления форма зависает и раньше это работало", {
-    modes: ["bugfix"],
-    skills: ["codex-debug"],
-    semanticMatches: ["bugfix"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("кто-то может получить чужие данные из сессии", {
-    modes: ["security", "product-ux"],
-    skills: ["codex-security-audit", "codex-strategic-review"],
-    semanticMatches: ["security"],
-    risk: "HIGH",
-  });
-
-  testRoute("сделай дизайн экрана и figma mockup", {
-    modes: ["design", "figma"],
-    skills: ["codex-design-workflow", "codex-figma-workflow"],
-    subagents: ["design_reviewer", "tester"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("polish harden typeset product surface", {
-    modes: ["design"],
-    skills: ["codex-design-workflow", "codex-domain-design-review"],
-    qualityGates: ["token-contract", "state-coverage", "responsive-check"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("страница выглядит кустарно и пользователи не доверяют", {
-    modes: ["design"],
-    skills: ["codex-design-workflow"],
-    semanticMatches: ["design"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("люди начинают путь, бросают его и не могут вернуться к ценности", {
-    modes: ["product-ux"],
-    skills: ["codex-product-ux-audit"],
-    qualityGates: ["entry-to-value-flow", "return-path"],
-    semanticMatches: ["product-ux"],
-    planRequired: true,
-  });
-
-  testRoute("critique distill harden brand/product register UI pipeline for conversion KPI", {
-    modes: ["design", "product-goal"],
-    skills: [
-      "codex-design-workflow",
-      "codex-domain-design-review",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: [
-      "token-contract",
-      "state-coverage",
-      "responsive-check",
-      "user-business-outcome-link",
-    ],
-    planRequired: true,
-    risk: "MEDIUM",
-  });
-
-  testRoute("доработай дизайн-систему: токены, Storybook, атомы, молекулы и формы", {
-    modes: ["design-system"],
-    skills: ["codex-design-system-workflow", "codex-design-workflow"],
-    qualityGates: ["token-contract", "composition-trace", "rendered-geometry"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("проверь UX личного кабинета: вход, сервисы, dead ends и возврат на главную", {
-    modes: ["product-ux"],
-    skills: ["codex-product-ux-audit"],
-    qualityGates: ["entry-to-value-flow", "no-dead-ends", "return-path"],
-    planRequired: true,
-  });
-
-  testRoute("проверь безопасность auth secrets injection", {
-    modes: ["security", "review"],
-    skills: ["codex-security-audit", "codex-audit", "codex-strategic-review"],
-    subagents: ["security_reviewer", "tester"],
-    risk: "HIGH",
-  });
-
-  testRoute("обнови агентский шаблон, AGENTS.md, skills и router", {
-    modes: ["template"],
-    skills: [
-      "codex-template-sync",
-      "codex-skill-maintenance",
-      "codex-test-rules",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    subagents: ["pr_explorer", "tester"],
-    qualityGates: ["template-boundary", "product-goal-artifact"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("усилить AGENTS основной файл: единый SOT conflict protocol, больше примеров формулировки задач из references, системный анализ ошибок вместо локальных фиксов", {
-    modes: ["template"],
-    skills: [
-      "codex-template-sync",
-      "codex-agent-router",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "sot-validation", "product-goal-artifact"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("проверь куда делся образ мысли ТРИЗ в основном агентском файле", {
-    modes: ["template", "strategy"],
-    skills: [
-      "codex-template-sync",
-      "codex-agent-router",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("проверь стратагемы и Сунь-цзы для конкурентной стратегии", {
-    modes: ["review", "strategy"],
-    notModes: ["release"],
-    skills: ["codex-audit", "codex-strategic-review"],
-    planRequired: true,
-    risk: "MEDIUM",
-  });
-
-  testRoute("стратегический обзор продукта и рынка", {
-    modes: ["strategy"],
-    notModes: ["release"],
-    skills: ["codex-strategic-review"],
-    planRequired: true,
-    risk: "MEDIUM",
-  });
-
-  testRoute("маркетологи должны проверить позиционирование, оффер, воронку и кампанию", {
-    modes: ["marketing", "review"],
-    skills: [
-      "codex-domain-communication-review",
-      "codex-domain-business-review",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: [
-      "audience-icp",
-      "positioning-offer-clarity",
-      "journey-or-funnel-fit",
-      "measurement-and-ethics",
-      "product-goal-artifact",
-    ],
-    planRequired: true,
-    risk: "MEDIUM",
-  });
-
-  testRoute("marketing positioning campaign funnel offer ICP", {
-    modes: ["marketing"],
-    skills: ["codex-domain-communication-review", "codex-domain-business-review"],
-    qualityGates: ["audience-icp", "channel-distribution-plan"],
-    planRequired: true,
-    risk: "MEDIUM",
-  });
-
-  testRoute("пользователи не покупают повторно, деньги теряются, нужно понять где ломается путь", {
-    modes: ["marketing", "product-goal"],
-    skills: ["codex-domain-communication-review", "codex-domain-business-review"],
-    qualityGates: ["audience-icp", "journey-or-funnel-fit", "user-business-outcome-link"],
-    semanticMatches: ["marketing"],
-    planRequired: true,
-  });
-
-  testRoute("протокол между клиентом и сервисом разошелся, поля не совместимы", {
-    modes: ["api"],
-    skills: ["codex-api-contract"],
-    semanticMatches: ["api"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("переносим данные в новое хранилище без простоя и с откатом", {
-    modes: ["migration"],
-    skills: ["codex-migrate", "codex-strategic-review"],
-    semanticMatches: ["migration"],
-    risk: "HIGH",
-  });
-
-  testRoute("agent template client-executor contract anti-sycophancy no fake completion", {
-    modes: ["template"],
-    skills: [
-      "codex-template-sync",
-      "codex-skill-maintenance",
-      "codex-test-rules",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "verification-evidence"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("пропиши progressive JPEG правило: продуктовая сущность сразу имеет будущую форму на 1% callable, без legacy harness proof", {
-    modes: ["template", "product-goal"],
-    skills: [
-      "codex-template-sync",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact", "verification-evidence"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("компонент должен сразу содержать будущие функции на 1 процент и прокидывать debug что тут работает а не доказывать старый harness", {
-    modes: ["feature", "product-goal"],
-    skills: [
-      "codex-feature-workflow",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["user-business-outcome-link", "product-goal-artifact"],
-    semanticMatches: ["product-goal"],
-    planRequired: true,
-  });
-
-  testRoute("пропиши себе что компонент сразу содержит будущие функции на 1 процент и debug а не доказывает harness", {
-    modes: ["template", "product-goal", "feature"],
-    skills: [
-      "codex-template-sync",
-      "codex-product-goal",
-      "codex-strategic-review",
-      "codex-feature-workflow",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("сделай LLM агента для Unreal Engine actor персонажа: на 1% готовности создать классы компоненты анимации интерфейсы переменные функции по финальному плану", {
-    modes: ["template", "product-goal", "feature"],
-    skills: [
-      "codex-template-sync",
-      "codex-product-goal",
-      "codex-feature-workflow",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact", "user-business-outcome-link"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("если финального плана нет, агент должен блокировать реализацию и создать план объекта, потом проверять полноту по плану и уровень детализации", {
-    modes: ["template", "product-goal", "strategy"],
-    skills: [
-      "codex-template-sync",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("сайт на 1% должен выполнять продакшн функцию показывать контакты и coming soon приложение", {
-    modes: ["product-goal"],
-    skills: ["codex-product-goal", "codex-strategic-review"],
-    qualityGates: ["product-goal-artifact", "user-business-outcome-link"],
-    planRequired: true,
-  });
-
-  testRoute("прогрессивный JPEG старые неправильные итерации заглушки и косяки не сохранять выключенными а удалять заменять мигрировать", {
-    modes: ["template", "lessons"],
-    skills: [
-      "codex-template-sync",
-      "codex-product-goal",
-      "codex-strategic-review",
-    ],
-    qualityGates: ["template-boundary", "product-goal-artifact", "verification-evidence"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("update API contract request/response pagination", {
-    modes: ["api"],
-    skills: ["codex-api-contract", "codex-feature-workflow"],
-    risk: "MEDIUM",
-  });
-
-  testRoute("запрети MVP мышление и веди задачу как /goal с финальным качеством продукта", {
-    modes: ["product-goal"],
-    skills: ["codex-product-goal", "codex-strategic-review"],
-    qualityGates: ["quality-bar", "current-step", "language-match"],
-    planRequired: true,
-  });
-
-  testRoute("optimize roadmap for revenue, loyalty, retention, conversion, and app KPI", {
-    modes: ["product-goal"],
-    skills: ["codex-product-goal", "codex-strategic-review"],
-    qualityGates: ["user-business-outcome-link", "quality-bar"],
-    planRequired: true,
-  });
-
-  testRoute("изучи косяки последней недели и преврати уроки в правила шаблона", {
-    modes: ["lessons", "template"],
-    skills: ["codex-cross-project-lessons", "codex-template-sync"],
-    qualityGates: ["lesson-classification", "validator-or-route-check"],
-    planRequired: true,
-    risk: "HIGH",
-  });
-
-  testRoute("нужно сохранить вывод из повторяющегося провала и поставить защиту на следующий раз", {
-    modes: ["lessons"],
-    skills: ["codex-cross-project-lessons", "codex-strategic-review"],
-    semanticMatches: ["lessons"],
-    planRequired: true,
-  });
-
-  testRoute("выпусти release v3.8.0 и tag чтобы проекты качали релиз", {
-    modes: ["release"],
-    skills: [
-      "codex-template-sync",
-      "codex-health-check",
-      "codex-strategic-review",
-    ],
-    subagents: ["security_reviewer", "tester"],
-    risk: "HIGH",
-  });
-
-  testRoute("проверь current OpenAI GPT-5.5 model docs", {
-    modes: ["openai"],
-    skills: ["codex-openai-model-guidance"],
-    subagents: ["docs_researcher"],
-    needsFreshDocs: true,
-  });
-
-  testRoute("нарисуй mermaid control board for release flow", {
-    modes: ["mermaid", "release"],
-    skills: ["codex-mermaid-board-workflow"],
-  });
+  runRouteCasesA(testRoute);
+  runRouteCasesB(testRoute);
 
   withTempProject(
     (root) => {

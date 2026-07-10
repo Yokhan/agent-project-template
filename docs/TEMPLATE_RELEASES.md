@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.5.3
-git push origin v4.5.3
+git tag v4.6.0
+git push origin v4.6.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -38,14 +38,14 @@ Patch releases are for compatible fixes to rules, skills, hooks, scripts, and do
 When an agent receives only the repository URL, it must not guess from `main`.
 
 1. Open the latest stable release: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the release tag shown there. Current stable tag: `v4.5.3`.
+2. Use the release tag shown there. Current stable tag: `v4.6.0`.
 3. For downstream sync, use `scripts/sync-template.sh --from-git --ref <tag>`.
 4. Run `--dry-run` before applying the tag.
 
 New project from a stable release:
 
 ```bash
-git clone --branch v4.5.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -54,8 +54,8 @@ Existing generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.3
+bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.0
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -107,7 +107,9 @@ Version `4.5.2` is a compatible patch release that clarifies progressive JPEG as
 
 Version `4.5.3` is a compatible patch release that adds the progressive layer replacement pipeline and `PROGRESSIVE_STATUS` project-slice reporting. When a later layer supersedes an earlier wrong iteration, agents must delete, replace, or time-box the old artifact instead of preserving disabled legacy code, stale placeholders, skipped tests, hidden UI layers, stale feature flags, or release-only exclusion harnesses. Iteration reports should include an aligned ASCII project slice from `node scripts/progressive-status.js`, and `node scripts/progressive-status.js --check` fails when a tagged working document changed but its status header did not. Temporary migration scaffolding is allowed only when it protects live data, rollback, compatibility, or user safety and has an explicit removal condition.
 
-Downstream projects should sync `v4.5.3` with a dry run first and review local `project-*` skills, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, progressive status headers, progressive layer replacement behavior, and any project-specific routing assumptions before applying.
+Version `4.6.0` is a compatible minor release that adds a single GPT-5.6 agent policy SOT, role-specific Sol/Terra profiles capped at `xhigh`, proactive beneficial fan-out, product and systems reviewers, observable fan-out decisions, and semantic suppression for external release pages and diagrams that are being studied rather than created. The parent model remains user-owned, user opt-out wins, recursive delegation stays disabled, and write-capable agents require exact non-overlapping ownership.
+
+Downstream projects should sync `v4.6.0` with a dry run first and review local `project-*` skills and agents, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, progressive status headers, adaptive fan-out behavior, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -120,6 +122,7 @@ bash scripts/test-hooks.sh
 bash scripts/test-template.sh
 bash scripts/sync-agents.sh
 node scripts/test-codex-routing.js
+node scripts/test-codex-agent-policy.js
 node scripts/validate-codex-skills.js
 node scripts/validate-codex-agents.js
 node scripts/validate-production-standard.js
@@ -143,8 +146,8 @@ Inside a generated project:
 
 ```bash
 git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.5.3
+bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.

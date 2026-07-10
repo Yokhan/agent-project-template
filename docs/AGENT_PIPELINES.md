@@ -26,7 +26,7 @@ Common artifact chain:
 1. Spec: user-visible behavior and acceptance criteria.
 2. Plan: architecture, constraints, risks, and verification.
 3. Tasks: dependency order plus `[P]` markers for independent work.
-4. Implement: parent-owned sequencing, with subagents only on safe splits.
+4. Implement: parent-owned sequencing, with automatic subagents on useful independent safe splits.
 
 Codex-specific routing and prompts live in `docs/CODEX_FANOUT_PATTERNS.md`.
 Codex route selection is made explicit with `node scripts/codex-route-task.js "<task>" --summary --write-state`.

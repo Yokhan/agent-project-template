@@ -133,7 +133,7 @@ PIPELINE="review"
 RISK="MEDIUM"
 if echo "$MODES" | grep -q "template"; then
   CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router codex-product-goal codex-strategic-review"
-  CODEX_SUBAGENTS="pr_explorer tester reviewer"
+  CODEX_SUBAGENTS="pr_explorer systems_reviewer tester"
   PIPELINE="template maintenance"
   RISK="HIGH"
 elif echo "$MODES" | grep -q "release"; then
@@ -148,7 +148,7 @@ elif echo "$TASK" | grep -qiE "security|vulnerability|secret|auth|permission|inj
   RISK="HIGH"
 elif echo "$MODES" | grep -q "plan"; then
   CODEX_SKILLS="codex-product-goal codex-strategic-review codex-decompose"
-  CODEX_SUBAGENTS="pr_explorer reviewer"
+  CODEX_SUBAGENTS="systems_reviewer product_reviewer pr_explorer"
   PIPELINE="planning"
 elif echo "$MODES" | grep -q "design-system"; then
   CODEX_SKILLS="codex-design-system-workflow codex-design-workflow codex-domain-design-review codex-product-goal"
@@ -169,6 +169,23 @@ elif echo "$MODES" | grep -q "code"; then
   PIPELINE="feature"
 fi
 
+# Match the machine-readable policy ceiling even when Node.js is unavailable.
+CODEX_SUBAGENTS="$(printf '%s\n' "$CODEX_SUBAGENTS" | awk '{print $1, $2, $3}' | sed 's/[[:space:]]*$//')"
+
+CODEX_FANOUT="conditional"
+CODEX_FANOUT_REASON="spawn-only-if-independent-specialist-lane-exists"
+if echo "$TASK" | grep -qiE "(do not|don.t|never) ((use|spawn|run|call) )?(any )?(sub-?agents?|delegation|fan-?out)|(do not|don.t|never) delegate|without ((using|any) )?(sub-?agents?|delegation|fan-?out)|no (sub-?agents?|delegation|fan-?out)|без (любых )?(субагент|сабагент|делегац|фан-?аут)|не (используй|запускай|вызывай) (любых )?(субагент|сабагент|делегац|фан-?аут)|не делегируй"; then
+  CODEX_SUBAGENTS=""
+  CODEX_FANOUT="skip"
+  CODEX_FANOUT_REASON="explicit-user-opt-out"
+elif [ "$RISK" = "HIGH" ]; then
+  CODEX_FANOUT="required"
+  CODEX_FANOUT_REASON="high-risk-independent-verification"
+elif [ "$(printf '%s\n' "$CODEX_SUBAGENTS" | wc -w | tr -d ' ')" -ge 2 ]; then
+  CODEX_FANOUT="recommended"
+  CODEX_FANOUT_REASON="parallel-independent-lanes-available"
+fi
+
 if echo "$MODES" | grep -q "product" &&
    ! echo "$CODEX_SKILLS" | grep -q "codex-product-goal"; then
   CODEX_SKILLS="$CODEX_SKILLS codex-product-goal"
@@ -187,6 +204,9 @@ mkdir -p tasks
   echo "AGENT=$AGENT"
   echo "CODEX_SKILLS=$CODEX_SKILLS"
   echo "CODEX_SUBAGENTS=$CODEX_SUBAGENTS"
+  echo "CODEX_FANOUT=$CODEX_FANOUT"
+  echo "CODEX_FANOUT_REASON=$CODEX_FANOUT_REASON"
+  echo "CODEX_AGENT_POLICY=scripts/codex-agent-policy.js"
   echo "PIPELINE=$PIPELINE"
   echo "RISK=$RISK"
   echo "STRATEGY_GATE=Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
@@ -205,6 +225,8 @@ echo "MODES:$MODES"
 echo "AGENT: $AGENT"
 echo "CODEX_SKILLS: $CODEX_SKILLS"
 echo "CODEX_SUBAGENTS: $CODEX_SUBAGENTS"
+echo "CODEX_FANOUT: $CODEX_FANOUT | $CODEX_FANOUT_REASON"
+echo "CODEX_AGENT_POLICY: scripts/codex-agent-policy.js"
 echo "PIPELINE: $PIPELINE"
 echo "RISK: $RISK"
 echo "STRATEGY_GATE: Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"

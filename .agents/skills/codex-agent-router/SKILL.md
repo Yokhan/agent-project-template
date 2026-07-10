@@ -15,7 +15,9 @@ For any file edit, M+ task, template work, release, design, security task, or am
 node scripts/codex-route-task.js "<user request>" --summary --write-state
 ```
 
-State the returned modes, exact/semantic matches, skills, pipeline, subagents, risk, and orchestrator before editing. If the route reports `agentos`, treat AgentOS as the orchestrator and Codex as the worker.
+State the returned modes, exact/semantic matches, skills, pipeline, subagents, fan-out status/reason, risk, and orchestrator before editing. If the route reports `agentos`, treat AgentOS as the orchestrator and Codex as the worker.
+
+The route's candidates are governed by `scripts/codex-agent-policy.js`. Automatically spawn `required` or genuinely useful `recommended` independent lanes without waiting for the user to request subagents. User opt-out wins; report why a candidate was skipped.
 
 Routing is not keyword-only. `scripts/codex-route-task.js` combines exact patterns with semantic intent scoring from `scripts/lib/codex-route-intents.js`. When a task is misrouted, update the relevant intent groups and add a regression fixture instead of only adding one literal keyword.
 

@@ -1,19 +1,19 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v4.5.3-progressive-status
-status: done
-updated: 2026-07-06
-readiness: 100
+id: template-v4.6.0-adaptive-fanout
+status: active
+updated: 2026-07-10
+readiness: 90
 plan: 100
 inventory: 100
-production: 100
+production: 90
 cleanup: 100
-tags: progressive-jpeg,template,release
-next: downstream projects should sync v4.5.3 with a dry run before applying
+tags: progressive-jpeg,template,release,gpt-5.6,subagents
+next: run the final release gate, publish tag v4.6.0, and verify the GitHub release
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-Last updated: 2026-07-06
+Last updated: 2026-07-10
 
 ## Goal
 Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
@@ -115,7 +115,64 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
 
 ## Immediate Next Step
-- Downstream projects should sync `v4.5.3` with `scripts/sync-template.sh --from-git --ref v4.5.3 --dry-run` before applying.
+- Run the final release gate, publish `v4.6.0`, and verify the GitHub release artifact.
+
+## Plan - v4.6.0 Adaptive GPT-5.6 Fan-Out
+
+### User Request
+Update the template for GPT-5.6. Assign appropriate Sol/Terra models and reasoning effort to specialist agents, automatically spawn subagents without an explicit user request when independent work materially improves speed or quality, and never configure `max` or `ultra`; `xhigh` is the hard ceiling.
+
+### Goal
+Make downstream Codex work faster and more reliable by routing independent exploration, review, testing, security, design, system, and product work to appropriately priced GPT-5.6 specialists while the parent remains the accountable orchestrator.
+
+### Product Goal Link
+- Final outcome: downstream teams get faster verified results with less main-thread context pollution and fewer correction loops.
+- Product/business priority: faster path to value, lower support and rework cost, safer releases, and better product decisions.
+- Current step: add one machine-readable agent policy SOT, synchronize runtime agent manifests, expose an adaptive fan-out decision in the router, update hot rules and specialist guidance, add regressions, and release `v4.6.0`.
+- Quality bar: parent model remains user-owned; auto-spawn requires independent useful work; write delegation requires exact non-overlapping ownership; maximum reasoning effort is `xhigh`; recursion remains disabled with `max_depth = 1`.
+- Out of scope: forcing a parent model in project `.codex/config.toml`, using Luna for critical roles, or applying the release to downstream projects before their dry-run review.
+
+### Strategy
+- Goal -> automatic, observable, role-aware delegation without requiring the user to ask each time.
+- Constraints -> preserve project-owned overlays, avoid duplicate SOTs, avoid unnecessary token spend, and keep hot context short.
+- Approach -> policy SOT -> validated TOML profiles -> route fan-out decision -> concise AGENTS/skill rule -> focused fixtures -> full release gate.
+- Verification -> policy/agent validator, route regressions, skill/agent/SOT validators, text/platform checks, template/sync tests, live role smoke when available, release workflow.
+- Risk/Doubt -> launch-day model availability may vary by account; keep parent defaults user-owned and make failures observable with one bounded fallback rather than silent repeated spawning.
+
+### Accepted Agent Policy
+- Terra `medium`: `pr_explorer`, `docs_researcher`, `tester`.
+- Terra `high`: `implementer` for exact isolated write scopes.
+- Sol `high`: `reviewer`, `design_reviewer`, `product_reviewer`.
+- Sol `xhigh`: `security_reviewer`, `systems_reviewer`.
+- Forbidden in template policy: `max`, `ultra`, recursive fan-out, overlapping write ownership, and unconditional spawning for XS tasks.
+
+### Current View
+- Sharp now: one policy SOT owns all nine role profiles, fan-out limits, opt-out behavior, write-scope checks, and the `xhigh` ceiling; TOML manifests and route output are validated against it.
+- Sharp now: semantic routing distinguishes research about release pages/diagrams from state-changing release work in Russian and English.
+- Sharp now: setup and sync manage JavaScript route helpers on Windows and Unix; v4.5 unmanaged helpers are migrated before their hashes are accepted.
+- Sharp now: downstream setup, empty-manifest recovery, source-only exclusion, legacy-helper migration, and from-git preview pass in a generated project.
+- Rough edge: the local commit, tag, remote workflow, and release asset are not yet published.
+- Replan trigger: any final gate or GitHub workflow failure blocks the tag or release claim.
+
+### Verification Results
+- Passed: `node scripts/test-codex-agent-policy.js`
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-production-standard.js`
+- Passed: `node scripts/validate-agent-sot.js` with existing freshness warnings only
+- Passed: `node scripts/validate-text-policy.js` (`424` files scanned)
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/test-template.sh` (`152/152`)
+- Passed: Git Bash `scripts/check-drift.sh` with one existing documentation-age warning and zero errors
+- Passed: Git Bash `scripts/test-hooks.sh` (`12/12`)
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: Git Bash `scripts/generate-project-spec.sh --write`
+- Passed: Git Bash `scripts/scan-project.sh --report`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/progressive-status.js --check`
+- Passed: `git diff --check`
 
 ## Plan - v4.5.3 Progressive Layer Replacement Pipeline
 

@@ -49,6 +49,7 @@ Current release validation covers:
 - Codex skill validation: `node scripts/validate-codex-skills.js`
 - Codex agent validation: `node scripts/validate-codex-agents.js`
 - Codex route validation: `node scripts/test-codex-routing.js`
+- Codex agent policy validation: `node scripts/test-codex-agent-policy.js`
 - Production standard validation: `node scripts/validate-production-standard.js`
 - Design context validation through the starter root `DESIGN.md` contract
 - Design policy validation: `node scripts/validate-design-policy.js` and `node scripts/test-design-policy.js`
