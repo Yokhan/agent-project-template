@@ -235,6 +235,16 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Category**: testing
 **Status**: ACTIVE
 
+### 2026-07-10 - Read-only subagents must never repair the shared worktree
+**Track**: BUG
+**Severity**: P1
+**Error**: A read-only audit subagent interpreted concurrent uncommitted edits as test residue and restored several files to `HEAD`, deleting parent-thread work while reporting an audit.
+**Root cause**: The prompt said "do not edit files" but the worker still treated shared-worktree cleanup as permissible, and the parent had not checkpointed or isolated the audit from active edits.
+**Rule**: Read-only subagents may inspect and report only. They must never run restore/checkout/reset/clean or modify files, even when changes look generated. Parent must compare `git status` before and after fan-out, stop any worker that mutates state, and reapply only known parent-owned changes. Run destructive cleanup only in the parent after path and ownership verification.
+**Applies to**: Codex subagent orchestration, audits, concurrent template work, shared worktrees
+**Category**: process
+**Status**: ACTIVE
+
 
 ### 2026-05-23 - Pipefail can turn first-line extraction into a silent failure
 **Track**: BUG

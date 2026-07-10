@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v4.6.0-adaptive-fanout
-status: done
+id: template-v4.6.1-agent-update-protocol
+status: active
 updated: 2026-07-10
-readiness: 100
+readiness: 98
 plan: 100
 inventory: 100
-production: 100
+production: 98
 cleanup: 100
-tags: progressive-jpeg,template,release,gpt-5.6,subagents
-next: downstream projects should dry-run sync v4.6.0 before applying it
+tags: progressive-jpeg,template,release,update-protocol,security
+next: commit and tag the verified source, publish v4.6.1, and verify the GitHub release asset
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -115,7 +115,58 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
 
 ## Immediate Next Step
-- Downstream projects should run `scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run` before applying the release.
+- Implement and release `v4.6.1` with one canonical agent update protocol and the security fixes required to trust its dry-run/release path.
+
+## Plan - v4.6.1 Canonical Agent Update Protocol
+
+### User Request
+Verify that v4.6 works, update instructions so agents do not confuse template maintenance, downstream updates, target versions, download sources, or release state, then push a release when the checks are green.
+
+### Goal
+Make "update your template" deterministic and trustworthy: classify workspace type, resolve one explicit stable release tag, preview the exact change without executing fetched filenames, preserve project-owned files, apply once, verify the result, and publish the same commit that passed the release gate.
+
+### Product Goal Link
+- Final outcome: users can request an update without teaching the agent which repository, tag, script, or working directory to use.
+- Product/business priority: fewer broken updates and support loops, faster adoption of fixes, lower user correction cost, and higher release trust.
+- Current step: strengthen the release SOT and hot instructions, remove path/workflow injection sinks, bind validation to the published tag commit, and add scenario regressions.
+- Quality bar: user/AgentOS tag precedence; stable tags for normal rollout; dry-run before apply; no silent remote replacement; no code generation from fetched paths; no release claim without manifest/workflow evidence.
+- Out of scope: mandatory signed historical tags, full `--force`/stash redesign, and immutable Action SHA migration; these change the trust/CLI model and need a separate hardening release.
+
+### Strategy
+- Goal -> one copy-ready state machine shared by Codex and Claude.
+- Constraints -> preserve v4.6.0 ownership, Windows/Unix parity, AgentOS boundaries, canary support, and downstream compatibility.
+- Approach -> release SOT -> hot pointers and command -> safe path/ref/workflow implementation -> scenario fixtures -> patch release.
+- Verification -> malicious-path fixture, pinned tag vs divergent main, missing-tag rejection, dry-run immutability, exact post-sync manifest version, workflow ref assertion, full downstream and release gates.
+- Risk/Doubt -> broader supply-chain hardening remains necessary, but mixing signed-tag and force/stash migration into this patch would change established contracts without a migration plan.
+
+### Current View
+- Sharp now: release docs, AGENTS, CLAUDE, `/update-template`, README, SETUP_GUIDE, and the Codex sync skill use one source/downstream/legacy update protocol.
+- Sharp now: explicit user/AgentOS tag precedence, remote conflict handling, pinned preview/apply, legacy release-checkout fallback, and post-sync evidence are mandatory.
+- Sharp now: fetched paths enter Node through `argv`; manifest hashes use Node `crypto`; the malicious-path regression does not execute its marker.
+- Sharp now: semver refs fetch exact tags in an isolated repository, dry-run leaves project files and Git metadata unchanged, divergent `main` requires explicit canary intent, missing tags fail, conflicting manifest/remote sources block, and apply records the exact tag version.
+- Sharp now: manual release input is env-bound and validated; workflow checkout, validation, archive, and publication are bound to one tag commit; existing release assets are not clobbered.
+- Rough edge: source commit, tag, remote workflow, and release asset are not yet published.
+- Replan trigger: any final gate or security recheck failure blocks tagging.
+
+### Verification Results
+- Passed: Git Bash `scripts/test-template.sh` (`160/160`)
+- Passed: Git Bash syntax for `scripts/sync-template.sh` and `scripts/test-template.sh`
+- Passed: `node scripts/validate-text-policy.js` (`431` files)
+- Passed: `node scripts/test-codex-routing.js`
+- Passed: `node scripts/test-codex-agent-policy.js`
+- Passed: `node scripts/validate-codex-skills.js`
+- Passed: `node scripts/validate-codex-agents.js`
+- Passed: `node scripts/validate-production-standard.js` (`259` checks)
+- Passed: `node scripts/validate-agent-sot.js`
+- Passed: `node scripts/validate-design-policy.js`
+- Passed: `node scripts/test-design-policy.js`
+- Passed: `node scripts/validate-spec-kit.js`
+- Passed: `node scripts/progressive-status.js --check`
+- Passed: Git Bash `scripts/validate-template.sh`
+- Passed: Git Bash `scripts/check-drift.sh` with one existing documentation-age warning and zero errors
+- Passed: Git Bash `scripts/test-hooks.sh` (`12/12`)
+- Passed: Git Bash `scripts/sync-agents.sh`
+- Passed: `git diff --check`
 
 ## Plan - v4.6.0 Adaptive GPT-5.6 Fan-Out
 

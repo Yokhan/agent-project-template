@@ -171,6 +171,10 @@ const read = (file) => fs.readFileSync(file, "utf8");
 const readme = read("README.md");
 const setupGuide = read("SETUP_GUIDE.md");
 const releases = read("docs/TEMPLATE_RELEASES.md");
+const agents = read("AGENTS.md");
+const claude = read("CLAUDE.md");
+const updateCommand = read(".claude/commands/update-template.md");
+const syncSkill = read(".agents/skills/codex-template-sync/SKILL.md");
 const allReleaseDocs = `${readme}\n${setupGuide}\n${releases}`;
 
 const badgeMatch = readme.match(/template-v([0-9]+\.[0-9]+\.[0-9]+)-blue/);
@@ -186,14 +190,30 @@ const required = [
   ["README pinned sync dry-run", readme, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["README pinned sync apply", readme, `bash scripts/sync-template.sh --from-git --ref ${tag}`],
   ["README main warning", readme, "`main` is for template development and explicit canary rollout only"],
+  ["README explicit canary", readme, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
   ["SETUP_GUIDE latest release link", setupGuide, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["SETUP_GUIDE stable tag", setupGuide, `Текущий стабильный tag: \`${tag}\``],
+  ["SETUP_GUIDE pinned clone", setupGuide, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
   ["SETUP_GUIDE pinned sync dry-run", setupGuide, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["SETUP_GUIDE main warning", setupGuide, "`main` используйте только для разработки шаблона или явного canary-роллаута"],
   ["TEMPLATE_RELEASES latest release link", releases, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["TEMPLATE_RELEASES stable tag", releases, `Current stable tag: \`${tag}\``],
   ["TEMPLATE_RELEASES pinned sync dry-run", releases, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["TEMPLATE_RELEASES main warning", releases, "Use `main` only for template development, explicit canary rollout"],
+  ["TEMPLATE_RELEASES explicit canary", releases, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
+  ["Release SOT workspace classification", releases, "### 1. Classify The Workspace"],
+  ["Release SOT installed version", releases, ".template-manifest.json.template_version"],
+  ["Release SOT remote verification", releases, "git remote get-url template"],
+  ["Release SOT same-tag apply", releases, "apply command must use the exact tag"],
+  ["Release SOT legacy fallback", releases, "target release checkout's script with `--project-dir`"],
+  ["Release SOT honest status", releases, "authoritative GitHub Release/workflow state"],
+  ["AGENTS hot update protocol", agents, "### Template Update Protocol"],
+  ["CLAUDE hot update protocol", claude, "## Template Update Protocol"],
+  ["Claude update command installed version", updateCommand, "Read the installed version from `.template-manifest.json`"],
+  ["Claude update command same tag", updateCommand, "Use the same tag as the dry-run"],
+  ["Codex sync skill release SOT", syncSkill, "#canonical-agent-update-protocol"],
+  ["Codex sync skill post-sync verification", syncSkill, "before claiming success"],
+  ["SETUP_GUIDE project-owned CLAUDE", setupGuide, "Сохраняет как project-owned: `CLAUDE.md`"],
 ];
 
 const missing = required.filter(([, text, expected]) => !text.includes(expected));
@@ -207,6 +227,24 @@ if (/v3\.8\.0/.test(allReleaseDocs)) {
 
 if (/git clone https:\/\/github\.com\/Yokhan\/agent-project-template\.git agent-project-template/.test(readme)) {
   throw new Error("README contains branchless clone command; use a pinned release tag");
+}
+
+if (/git clone https:\/\/github\.com\/Yokhan\/agent-project-template\.git agent-project-template/.test(setupGuide)) {
+  throw new Error("SETUP_GUIDE contains branchless clone command; use a pinned release tag");
+}
+
+if (/bash scripts\/sync-all\.sh/.test(setupGuide)) {
+  throw new Error("SETUP_GUIDE contains batch apply without a preview gate");
+}
+
+if (/sync-template\.sh --from-git(?:\s+--dry-run)?\s*(?:#.*)?$/m.test(updateCommand)) {
+  throw new Error("update-template command contains branchless normal-update instructions");
+}
+
+for (const [name, content] of [["README", readme], ["TEMPLATE_RELEASES", releases]]) {
+  if (/sync-template\.sh --from-git(?:\s+--dry-run)?\s*(?:#.*)?$/m.test(content)) {
+    throw new Error(`${name} contains an implicit branch update without --canary and --ref`);
+  }
 }
 NODE
 }
@@ -432,6 +470,13 @@ check "README/SETUP_GUIDE release entrypoint is agent-safe" validate_agent_safe_
 check "SETUP_GUIDE has no legacy --from sync syntax" bash -c "! grep -q 'sync-template\\.sh --from ' SETUP_GUIDE.md"
 check "SETUP_GUIDE has no Python 3 bootstrap prerequisite" bash -c "! grep -q 'Python 3' SETUP_GUIDE.md"
 check "GitHub workflows use Node24-compatible actions" github_workflows_use_node24_actions
+check "Release workflow passes dispatch input through env" grep -q 'INPUT_TAG:.*inputs.tag' .github/workflows/release-template.yml
+check "Release workflow validates semantic tag" grep -q 'Invalid release tag' .github/workflows/release-template.yml
+check "Release workflow checks out resolved ref" grep -q "ref:.*workflow_dispatch.*inputs.tag" .github/workflows/release-template.yml
+check "Release workflow binds HEAD to tag commit" grep -q 'head_commit.*tag_commit' .github/workflows/release-template.yml
+check "Release workflow archives validated commit" grep -q 'git archive.*RELEASE_COMMIT' .github/workflows/release-template.yml
+check "Release workflow rechecks tag before publish" grep -q 'current_tag_commit.*RELEASE_COMMIT' .github/workflows/release-template.yml
+check "Release workflow does not clobber assets" bash -c '! grep -q -- "--clobber" .github/workflows/release-template.yml'
 check "No tracked local Claude settings" bash -c '! git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1'
 check "Codex config has no user-owned defaults" bash -c "! grep -Eq '^(model|model_reasoning_effort|approval_policy|sandbox_mode)\\s*=' .codex/config.toml"
 check "downstream-census --json" bash -c 'bash scripts/downstream-census.sh --no-sync --json "$PWD" 2>/dev/null | node -e "const text=require(\"fs\").readFileSync(0,\"utf8\").trim(); JSON.parse(text || \"[]\")"'
@@ -536,6 +581,8 @@ if is_template_source_repo; then
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
   SYNC_SOURCE_ONLY_PROJECT="$TEMPLATE_DIR/template-source-only-sync-smoke-$RANDOM-$$"
   SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
+  SYNC_BOOTSTRAP_DRY_RUN_PROJECT="$TEMPLATE_DIR/template-bootstrap-dry-run-smoke-$RANDOM-$$"
+  SYNC_BOOTSTRAP_DRY_RUN_OUTPUT="$SYNC_BOOTSTRAP_DRY_RUN_PROJECT.out"
   SYNC_GIT_TEMPLATE_FIXTURE="$TEMPLATE_DIR/template-sync-git-fixture-$RANDOM-$$"
   SYNC_GIT_DRY_RUN_PROJECT="$TEMPLATE_DIR/template-git-dry-run-smoke-$RANDOM-$$"
   SYNC_GIT_DRY_RUN_OUTPUT="$SYNC_GIT_DRY_RUN_PROJECT.out"
@@ -544,7 +591,10 @@ if is_template_source_repo; then
       "$SYNC_TEMPLATE_FIXTURE" \
       "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
       "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply" \
-      "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" "$SYNC_GIT_DRY_RUN_OUTPUT"
+      "$SYNC_BOOTSTRAP_DRY_RUN_PROJECT" "$SYNC_BOOTSTRAP_DRY_RUN_OUTPUT" \
+      "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" \
+      "$SYNC_GIT_DRY_RUN_OUTPUT" "$SYNC_GIT_DRY_RUN_OUTPUT.apply" "$SYNC_GIT_DRY_RUN_OUTPUT.canary" \
+      "$SYNC_GIT_DRY_RUN_OUTPUT.branch" "$SYNC_GIT_DRY_RUN_OUTPUT.conflict" "$SYNC_GIT_DRY_RUN_OUTPUT.missing"
   }
   create_sync_template_fixture() {
     local template="$1"
@@ -575,6 +625,8 @@ if is_template_source_repo; then
     cp scripts/test-codex-routing.js "$template/scripts/test-codex-routing.js"
     cp scripts/validate-codex-agents.js "$template/scripts/validate-codex-agents.js"
     cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
+
+    node -e 'const fs=require("fs"),path=require("path"),q=String.fromCharCode(39); const name="skill"+q+"]);require("+q+"fs"+q+").writeFileSync("+q+"SYNC_PATH_INJECTION"+q+","+q+"x"+q+");console.log(m.files["+q+"skill"; const dir=path.join(process.argv[1],".agents","skills",name); fs.mkdirSync(dir,{recursive:true}); fs.writeFileSync(path.join(dir,"SKILL.md"),"# inert path fixture\n","utf8");' "$template"
 
     printf '%s\n' '# source-only unix setup fixture' > "$template/setup.sh"
     printf '%s\r\n' '@echo off' 'rem source-only windows setup fixture' > "$template/setup.bat"
@@ -631,8 +683,12 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: .codex/agents/systems-reviewer.toml" "$output" || return 1
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output" || return 1
+    [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1 || return 1
+    if ! bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1; then
+      cat "$output.apply"
+      return 1
+    fi
     grep -q '"CLAUDE.md"' "$project/.template-manifest.json" || return 1
     grep -q '"docs/AGENT_CONTEXT_SOT.md"' "$project/.template-manifest.json" || return 1
     grep -q '"scripts/codex-agent-policy.js"' "$project/.template-manifest.json" || return 1
@@ -647,6 +703,7 @@ if is_template_source_repo; then
     (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-routing.js >/dev/null) || return 1
+    [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
   }
   run_source_only_sync_smoke() {
     local project="$1"
@@ -662,7 +719,10 @@ if is_template_source_repo; then
     ! grep -q "WOULD ADD: setup.sh" "$output" || return 1
     ! grep -q "WOULD ADD: setup.bat" "$output" || return 1
 
-    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1 || return 1
+    if ! bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1; then
+      cat "$output.apply"
+      return 1
+    fi
     cmp -s "$project/scripts/lib/codex-route-intents.js" "$SYNC_TEMPLATE_FIXTURE/scripts/lib/codex-route-intents.js" || return 1
     grep -q '"scripts/lib/codex-route-intents.js"' "$project/.template-manifest.json" || return 1
     [ ! -e "$project/templates" ] &&
@@ -671,6 +731,16 @@ if is_template_source_repo; then
       ! grep -q '"templates/' "$project/.template-manifest.json" &&
       ! grep -q '"setup.sh"' "$project/.template-manifest.json" &&
       ! grep -q '"setup.bat"' "$project/.template-manifest.json"
+  }
+  run_bootstrap_dry_run_smoke() {
+    local template="$1"
+    local project="$2"
+    local output="$3"
+
+    mkdir -p "$project" || return 1
+    bash scripts/sync-template.sh "$template" --project-dir "$project" --bootstrap --dry-run > "$output" 2>&1 || return 1
+    grep -q "WOULD BOOTSTRAP" "$output" || return 1
+    [ ! -e "$project/.template-manifest.json" ] || return 1
   }
   run_from_git_dry_run_smoke() {
     local template="$1"
@@ -681,23 +751,70 @@ if is_template_source_repo; then
     git -C "$template" init -q || return 1
     git -C "$template" add . || return 1
     git -C "$template" -c user.name="Template Smoke" -c user.email="template-smoke@example.invalid" commit -q -m "fixture" || return 1
+    git -C "$template" branch -M main || return 1
     git -C "$template" tag v9.9.9 || return 1
+    sed -i 's/9\.9\.9/10.0.0/g' "$template/CLAUDE.md" || return 1
+    git -C "$template" add CLAUDE.md || return 1
+    git -C "$template" -c user.name="Template Smoke" -c user.email="template-smoke@example.invalid" commit -q -m "main diverges from release" || return 1
 
     write_trackable_manifest "$project" || return 1
     git -C "$project" init -q || return 1
-    git -C "$project" remote add template "$(cd "$template" && pwd)" || return 1
+    local template_remote
+    template_remote="$(cd "$template" && pwd)"
+    node -e "const fs=require('fs'); const p=process.argv[1],m=JSON.parse(fs.readFileSync(p,'utf8')); m.template_remote=process.argv[2]; fs.writeFileSync(p,JSON.stringify(m,null,2));" "$project/.template-manifest.json" "$template_remote" || return 1
+    git -C "$project" add CLAUDE.md .template-manifest.json || return 1
+    git -C "$project" -c user.name="Project Smoke" -c user.email="project-smoke@example.invalid" commit -q -m "project fixture" || return 1
 
+    local manifest_before
+    local claude_before
+    manifest_before="$(_get_hash "$project/.template-manifest.json")"
+    claude_before="$(_get_hash "$project/CLAUDE.md")"
     bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
     grep -q "Fetching template preview from" "$output" || return 1
+    grep -q "Current: 4.1.1.*New: 9.9.9" "$output" || return 1
     grep -q "WOULD UPDATE: CLAUDE.md" "$output" || return 1
     grep -q "(Dry run" "$output" || return 1
-    grep -q '# Local Claude' "$project/CLAUDE.md"
+    [ "$manifest_before" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
+    [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
+    ! git -C "$project" remote get-url template >/dev/null 2>&1 || return 1
+    [ ! -e "$project/.git/FETCH_HEAD" ] || return 1
+    git -C "$project" remote add template "$template_remote-conflict" || return 1
+    if bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" --dry-run > "$output.conflict" 2>&1; then
+      return 1
+    fi
+    grep -q "Template source conflict" "$output.conflict" || return 1
+    git -C "$project" remote remove template || return 1
+    if bash scripts/sync-template.sh --from-git --ref main --project-dir "$project" --dry-run > "$output.branch" 2>&1; then
+      return 1
+    fi
+    grep -q "Non-release ref 'main' requires --canary" "$output.branch" || return 1
+    bash scripts/sync-template.sh --from-git --canary --ref main --project-dir "$project" --dry-run > "$output.canary" 2>&1 || return 1
+    grep -q "Current: 4.1.1.*New: 10.0.0" "$output.canary" || return 1
+    [ "$manifest_before" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
+    [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
+    ! git -C "$project" remote get-url template >/dev/null 2>&1 || return 1
+    [ ! -e "$project/.git/FETCH_HEAD" ] || return 1
+    if bash scripts/sync-template.sh --from-git --ref v9.9.8 --project-dir "$project" --dry-run > "$output.missing" 2>&1; then
+      return 1
+    fi
+    grep -q "Cannot fetch template ref: v9.9.8" "$output.missing" || return 1
+    if ! bash scripts/sync-template.sh --from-git --ref v9.9.9 --project-dir "$project" > "$output.apply" 2>&1; then
+      cat "$output.apply"
+      return 1
+    fi
+    node -e "const m=require(process.argv[1]); if(m.template_version!=='9.9.9') process.exit(1)" "$project/.template-manifest.json" || return 1
+    grep -q 'Template Version: 9.9.9' "$project/CLAUDE.md" || return 1
+    ! grep -q 'Template Version: 10.0.0' "$project/CLAUDE.md" || return 1
+    local applied_remote
+    applied_remote="$(git -C "$project" remote get-url template)"
+    [ "$(cd "$applied_remote" && pwd)" = "$(cd "$template_remote" && pwd)" ] || return 1
   }
   trap cleanup_sync_smoke EXIT
   create_sync_template_fixture "$SYNC_TEMPLATE_FIXTURE"
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
   check "sync-template keeps source-only files out of generated projects" run_source_only_sync_smoke "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT"
-  check "sync-template --from-git --dry-run shows real sync preview" run_from_git_dry_run_smoke "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" "$SYNC_GIT_DRY_RUN_OUTPUT"
+  check "sync-template bootstrap dry-run leaves legacy project unchanged" run_bootstrap_dry_run_smoke "$SYNC_TEMPLATE_FIXTURE" "$SYNC_BOOTSTRAP_DRY_RUN_PROJECT" "$SYNC_BOOTSTRAP_DRY_RUN_OUTPUT"
+  check "sync-template pinned ref previews, rejects missing tags, and applies exact release" run_from_git_dry_run_smoke "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" "$SYNC_GIT_DRY_RUN_OUTPUT"
   cleanup_sync_smoke
   trap - EXIT
 else

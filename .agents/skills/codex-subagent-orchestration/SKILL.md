@@ -26,6 +26,9 @@ For prompt templates and the routing matrix, read `docs/CODEX_FANOUT_PATTERNS.md
 Use Codex subagents with existing project artifacts.
 First inspect whether this project has Spec Kit, litkit, Kiro, AgentOS, or project-local workflow docs.
 Spawn pr_explorer, reviewer, and tester for read-only grounding.
+Read-only means no file writes and no git restore/checkout/reset/clean, stash,
+generated-artifact cleanup, or other shared-worktree state change. Report
+unexpected changes to the parent; never repair or revert them.
 Wait for all results. Parent agent performs edits unless exact [P] tasks with non-overlapping files are assigned.
 ```
 

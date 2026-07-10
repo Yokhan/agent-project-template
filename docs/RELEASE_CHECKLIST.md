@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-09 for template `4.6.0` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-07-10 for template `4.6.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
 
 ## Validation Gate
 
@@ -50,6 +50,8 @@ Last reviewed: 2026-07-09 for template `4.6.0` local validation. Remote GitHub A
 - [ ] Router output includes an observable fan-out status/reason/profile set; direct XS questions and explicit user opt-out do not spawn agents
 - [ ] Automatic fan-out remains read-only first, uses `max_depth = 1`, and write delegation requires exact non-overlapping ownership
 - [ ] No mojibake, replacement characters, mixed line endings, raw `uname`, raw `/tmp`, or raw `mktemp` outside `scripts/lib/platform.sh`
+- [ ] Fetched manifest paths are passed to Node as data, never interpolated into generated JavaScript or shell hashing commands
+- [ ] Pinned semver refs fetch `refs/tags/<tag>`; dry-run does not add remotes or rewrite project files/manifests
 - [ ] `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md` match the shipped contract
 - [ ] `_reference/spec-kit/manifest.json` matches the intended stable Spec Kit ref; run `bash scripts/sync-spec-kit.sh --check` before cutting the release
 - [ ] `tasks/goal.md` and `templates/project-starter/tasks/goal.md` carry the v4 goal-loop contract
@@ -72,8 +74,11 @@ Last reviewed: 2026-07-09 for template `4.6.0` local validation. Remote GitHub A
 - [ ] README and CLAUDE release-facing counts match the shipped filesystem
 - [ ] CI workflow covers validation scripts plus Linux/Windows bootstrap smoke
 - [ ] GitHub workflows and CI templates use Node 24-compatible actions; release/validation jobs disable unnecessary setup-node package-manager cache
+- [ ] Manual release input is passed through `env`, validated as `vX.Y.Z`, checked out before validation, and asserted to match `HEAD`
+- [ ] Published release assets are never silently replaced by workflow reruns
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
 - [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`
 - [ ] README, SETUP_GUIDE, and docs/TEMPLATE_RELEASES show the current stable release tag, link to `/releases/latest`, and warn that `main` is for canary/template development only
+- [ ] AGENTS, CLAUDE, `/update-template`, and Codex sync skill point to the canonical source/downstream update protocol
 - [ ] AgentOS rollout notes state whether AgentOS is the orchestrator or the project uses Codex parent orchestration

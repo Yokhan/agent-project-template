@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.6.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.6.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -11,16 +11,20 @@ Self-deploying AI-agent optimized project template with **MCP-based dynamic rule
 
 ## If An Agent Only Has This GitHub Link
 
-Use the latest stable release, not `main`, for normal projects:
+Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol):
 
-1. Open: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the tag shown there. Current stable tag: `v4.6.0`.
-3. For existing generated projects, sync with `--from-git --ref <tag>` and run `--dry-run` first.
+1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
+2. Read installed version from `.template-manifest.json`.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.1`.
+4. Verify `git remote get-url template`; never silently replace a conflict.
+5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
+6. Use the target release checkout's script with `--project-dir` when local sync is stale.
+7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -28,9 +32,11 @@ bash setup.sh my-project
 Update an existing generated project from the stable tag:
 
 ```bash
-git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.0
+template_url="$(git remote get-url template 2>/dev/null || true)"
+[ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
+[ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
+bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.1
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -38,7 +44,7 @@ bash scripts/sync-template.sh --from-git --ref v4.6.0
 ## Quick Start
 
 ```bash
-git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -97,10 +103,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.0
+bash scripts/sync-template.sh --from-git --ref v4.6.1
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -108,8 +114,8 @@ Projects created from a git-hosted template automatically have a `template` remo
 Use branch-based sync only for template development, early rollout, or canary projects where untagged changes are intentional:
 
 ```bash
-bash scripts/sync-template.sh --from-git --dry-run
-bash scripts/sync-template.sh --from-git
+bash scripts/sync-template.sh --from-git --canary --ref main --dry-run
+bash scripts/sync-template.sh --from-git --canary --ref main
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
@@ -128,8 +134,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.0
+bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.1
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -194,7 +200,7 @@ Follow the 5-level loading pattern:
 ### Template updates preserve your extensions
 
 When you run `/update-template` or `bash scripts/sync-template.sh`:
-- Template files → **updated** to latest version
+- Template files → **updated** to the explicitly resolved target tag
 - `project-*` files → **untouched**
 - `settings.local.json` → **untouched**
 - `core/` directory → **untouched** (not tracked by template)
@@ -310,6 +316,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.6.1** | Patch release: adds the canonical agent update protocol, exact-tag preview/apply verification, safe path hashing, dry-run regression coverage, and release workflow tag/commit binding |
 | **4.6.0** | Minor release: adds role-specific GPT-5.6 Sol/Terra subagents, an `xhigh` reasoning ceiling, automatic beneficial fan-out, product/systems reviewers, and semantic suppression for reference diagrams and release pages |
 | **4.5.3** | Patch release: adds the progressive layer replacement pipeline plus `PROGRESSIVE_STATUS` project-slice reporting, so superseded wrong iterations are retired and changed working docs cannot close out with stale status headers |
 | **4.5.2** | Patch release: clarifies progressive JPEG as final-plan-gated object readiness, where a 1% object has the full planned shape and already performs its smallest honest production function |

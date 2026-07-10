@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
@@ -33,14 +35,22 @@ jobs:
 
       - name: Resolve tag
         id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag="${{ inputs.tag }}"
-            git rev-parse "$tag" >/dev/null
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$INPUT_TAG"
           else
-            tag="${GITHUB_REF_NAME}"
+            tag="$REF_NAME"
           fi
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
+          tag_commit="$(git rev-parse "refs/tags/$tag^{commit}")"
+          head_commit="$(git rev-parse HEAD)"
+          [ "$head_commit" = "$tag_commit" ] || { echo "Checked out $head_commit but tag points to $tag_commit"; exit 1; }
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$tag_commit" >> "$GITHUB_OUTPUT"
 
       - name: Validate release gate
         run: |
@@ -54,10 +64,13 @@ jobs:
           node scripts/validate-codex-agents.js
 
       - name: Build release archive
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.tag.outputs.commit }}
         run: |
-          tag="${{ steps.tag.outputs.tag }}"
+          tag="$RELEASE_TAG"
           archive="agent-project-template-${tag}.tar.gz"
-          git archive --format=tar.gz --prefix="agent-project-template-${tag}/" -o "$archive" "$tag"
+          git archive --format=tar.gz --prefix="agent-project-template-${tag}/" -o "$archive" "$RELEASE_COMMIT"
           {
             echo "# Agent Project Template ${tag}"
             echo ""
@@ -74,11 +87,16 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+          RELEASE_COMMIT: ${{ steps.tag.outputs.commit }}
         run: |
-          tag="${{ steps.tag.outputs.tag }}"
+          tag="$RELEASE_TAG"
           archive="agent-project-template-${tag}.tar.gz"
+          current_tag_commit="$(git rev-parse "refs/tags/$tag^{commit}")"
+          [ "$current_tag_commit" = "$RELEASE_COMMIT" ] || { echo "Tag moved from $RELEASE_COMMIT to $current_tag_commit"; exit 1; }
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$archive" --clobber
+            echo "Release $tag already exists; refusing to replace a published asset."
+            exit 1
           else
             gh release create "$tag" "$archive" --title "Agent Project Template ${tag}" --notes-file release-notes.md
           fi

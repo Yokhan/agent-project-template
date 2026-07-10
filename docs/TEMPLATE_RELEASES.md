@@ -25,27 +25,94 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.6.0
-git push origin v4.6.0
+git tag v4.6.1
+git push origin v4.6.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
 
 Patch releases are for compatible fixes to rules, skills, hooks, scripts, and docs. Minor releases can add new skills, agents, release flows, or routing behavior. Major releases can change sync contracts, project ownership boundaries, or the default agent operating contract.
 
-## GitHub Link Handoff For Agents
+## Canonical Agent Update Protocol
 
-When an agent receives only the repository URL, it must not guess from `main`.
+This section is the source of truth for "update your template", "update the
+agent template", or a handoff containing only the repository URL. Do not invent
+another update path from examples elsewhere.
 
-1. Open the latest stable release: <https://github.com/Yokhan/agent-project-template/releases/latest>
-2. Use the release tag shown there. Current stable tag: `v4.6.0`.
-3. For downstream sync, use `scripts/sync-template.sh --from-git --ref <tag>`.
-4. Run `--dry-run` before applying the tag.
+### 1. Classify The Workspace
+
+- **Template source:** `PROJECT_SPEC.md` says `Name: agent-project-template`.
+  This is release work; never sync the template into itself.
+- **Generated downstream:** `.template-manifest.json` exists. Its
+  `template_version` is the installed-version SOT.
+- **Legacy downstream:** no manifest exists. Bootstrap once with the target
+  release's script, then continue as generated downstream.
+
+If ownership is unclear, stop and ask instead of guessing.
+
+### 2. Resolve One Explicit Target
+
+1. Explicit user tag > AgentOS-approved tag > verified latest stable release.
+2. Otherwise read the stable, non-draft, non-prerelease tag from
+   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.1`.
+3. Installed version is comparison data, never the target. Never infer the
+   target from `main`, a badge, cached memory, or a stale local sync script.
+4. If no target can be verified, ask for a tag. Do not substitute a branch.
+5. Installed equals target is a no-op. Downgrades and major jumps require
+   explicit confirmation. Branches/commits require explicit canary intent.
+
+### 3. Verify Source And Preflight
+
+- Read `git remote get-url template`. Add the approved repository only when the
+  remote is absent. Present an existing conflicting remote to the user.
+- Inspect `git status --short`, manifest ownership, and `project-*` overlays.
+  Stop for dirty ownership ambiguity, downgrade/major jump, changed product
+  boundary, or unresolved `*.template-new` conflicts.
+- On Windows, use Git Bash and shipped platform helpers; do not substitute
+  Linux-only temp or path commands.
+
+### 4. Preview And Apply The Same Tag
+
+```bash
+git remote get-url template
+bash scripts/sync-template.sh --from-git --ref <tag> --dry-run
+bash scripts/sync-template.sh --from-git --ref <tag>
+```
+
+The apply command must use the exact tag from the accepted preview. Bare
+`--from-git` is canary behavior and is forbidden for normal update requests.
+
+If the local sync script is missing or fails before a trustworthy preview,
+check out the exact release and use its script against the project:
+
+```bash
+git clone --branch <tag> --depth 1 <template-url> <release-checkout>
+bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project> --dry-run
+bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project>
+```
+
+Do not patch a stale local sync script ad hoc and call it the release.
+Use the target release checkout's script with `--project-dir` for this fallback.
+
+### 5. Verify Before Claiming Success
+
+1. Confirm `.template-manifest.json.template_version` equals the target without
+   the leading `v`.
+2. Confirm actual diff, preserved project-owned overlays, and explicit handling
+   of every `*.template-new` file.
+3. Run route-selected downstream checks: at minimum text policy, Codex
+   agent/skill validation, routing smoke, and project tests when present.
+4. Report installed -> target, repository, tag, preview/apply evidence,
+   conflicts, checks, and remaining doubt.
+5. A local tag proves only tag resolution. Say "published/live" only after
+   checking the authoritative GitHub Release/workflow state.
+
+### Copy-Ready Stable Flow
 
 New project from a stable release:
 
 ```bash
-git clone --branch v4.6.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -53,9 +120,11 @@ bash setup.sh my-project
 Existing generated project:
 
 ```bash
-git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.0
+template_url="$(git remote get-url template 2>/dev/null || true)"
+[ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
+[ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
+bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.1
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -109,7 +178,9 @@ Version `4.5.3` is a compatible patch release that adds the progressive layer re
 
 Version `4.6.0` is a compatible minor release that adds a single GPT-5.6 agent policy SOT, role-specific Sol/Terra profiles capped at `xhigh`, proactive beneficial fan-out, product and systems reviewers, observable fan-out decisions, and semantic suppression for external release pages and diagrams that are being studied rather than created. The parent model remains user-owned, user opt-out wins, recursive delegation stays disabled, and write-capable agents require exact non-overlapping ownership.
 
-Downstream projects should sync `v4.6.0` with a dry run first and review local `project-*` skills and agents, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, progressive status headers, adaptive fan-out behavior, and any project-specific routing assumptions before applying.
+Version `4.6.1` is a compatible patch release that makes template updates deterministic for agents and closes the release blockers found during verification. It adds one canonical source/downstream update protocol, explicit target-tag precedence, pinned preview/apply and post-sync evidence, safe manifest/path handling without generated JavaScript or shell hashing, exact semver tag fetches, dry-run project-file immutability, and a release workflow that validates and publishes the same tag commit without replacing an existing release asset.
+
+Downstream projects should sync `v4.6.1` with a dry run first and review local `project-*` skills and agents, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, progressive status headers, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -145,9 +216,11 @@ bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
 Inside a generated project:
 
 ```bash
-git remote add template https://github.com/Yokhan/agent-project-template.git 2>/dev/null || true
-bash scripts/sync-template.sh --from-git --ref v4.6.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.0
+template_url="$(git remote get-url template 2>/dev/null || true)"
+[ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
+[ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
+bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.1
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
@@ -157,8 +230,8 @@ Use `--dry-run` first when a project has local changes. If both the project and 
 Use the branch path only for early rollout or canary projects:
 
 ```bash
-bash scripts/sync-template.sh --from-git --dry-run
-bash scripts/sync-template.sh --from-git
+bash scripts/sync-template.sh --from-git --canary --ref main --dry-run
+bash scripts/sync-template.sh --from-git --canary --ref main
 ```
 
 Release tags are preferred for normal projects because they make rollbacks and AgentOS rollout plans explicit.

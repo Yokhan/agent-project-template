@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.6.0 -->
+<!-- Template Version: 4.6.1 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -88,7 +88,7 @@ Translate vague requests into execution contracts:
 | --- | --- | --- |
 | `сделай нормально` | Production flow + quality bar + verification | Inspect flow, plan, implement, verify user path |
 | `почини ошибку` | Symptom + broken link + regression guard | Reproduce, diagnose root cause, patch boundary |
-| `обнови шаблон` | Downstream-safe template sync/release | Preserve `project-*`, run template gates |
+| `обнови шаблон` | Deterministic source/downstream update to a verified tag | Classify workspace, pinned dry-run/apply, verify manifest/diff/checks |
 | `улучши дизайн` | One user job + KPI + rendered evidence | Subtract first, use tokens/components, viewport-check |
 | `проверь` | Findings-first review | Severity, evidence, impact, smallest fix |
 | `спланируй` | Decision-ready plan | First useful result, options, risk, replan trigger |
@@ -97,6 +97,16 @@ Translate vague requests into execution contracts:
 | `требования конфликтуют` | TRIZ contradiction | Need X without Y; resources, separation options, recommendation |
 | `проверь маркетинг` | GTM/communication review | ICP, positioning, offer, funnel, channel, proof, measurement, ethics |
 | `примени Сунь-цзы/стратагемы` | Competitive strategy | Terrain, center of gravity, asymmetry, timing, no dark patterns |
+
+## Template Update Protocol
+
+For `обнови шаблон`, `/update-template`, or a repository-link handoff, follow
+`docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol`: classify source vs
+downstream, read installed manifest version, resolve one explicit stable tag,
+verify remote/worktree, run pinned dry-run, apply the same tag, then verify
+manifest version, diff, overlays, conflicts, and checks. Bare `--from-git` is
+canary-only. If local sync is broken, use the target release checkout's script
+with `--project-dir`. Never infer a published release from an unverified tag.
 
 ## Session Start
 1. `bash scripts/context-restore.sh` — shows mode, task, lessons, git state
@@ -200,7 +210,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.6.0 — Run `bash scripts/check-drift.sh` to verify health.
+4.6.1 — Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

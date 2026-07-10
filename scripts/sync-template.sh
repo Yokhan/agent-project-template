@@ -35,6 +35,7 @@ DRY_RUN=false
 FORCE=false
 FROM_GIT=false
 BOOTSTRAP=false
+CANARY=false
 TEMPLATE_REF=""
 EMPTY_TRACKABLE_MANIFEST=false
 
@@ -45,6 +46,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=true ;;
     --from-git) FROM_GIT=true ;;
     --bootstrap) BOOTSTRAP=true ;;
+    --canary) CANARY=true ;;
     --ref|--template-ref)
       shift
       if [ $# -eq 0 ]; then
@@ -62,7 +64,7 @@ while [ $# -gt 0 ]; do
       PROJECT_PATH="$1"
       ;;
     --help|-h)
-      echo "Usage: $0 [/path/to/template] [project-dir] [--project-dir PATH] [--dry-run] [--force] [--from-git] [--ref REF] [--bootstrap]"
+      echo "Usage: $0 [/path/to/template] [project-dir] [--project-dir PATH] [--dry-run] [--force] [--from-git] [--ref REF] [--canary] [--bootstrap]"
       echo ""
       echo "Syncs this project with a newer version of agent-project-template."
       echo "Template files (tracked in .template-manifest.json) are updated."
@@ -72,7 +74,8 @@ while [ $# -gt 0 ]; do
       echo "  --dry-run    Show what would change without modifying files"
       echo "  --force      Skip backup step"
       echo "  --from-git   Fetch template from the 'template' git remote instead of a local path"
-      echo "  --ref REF    With --from-git, fetch a specific template branch, tag, or commit"
+      echo "  --ref REF    With --from-git, fetch an exact vX.Y.Z release tag"
+      echo "  --canary     Explicitly allow a branch/commit ref or remote default branch"
       echo "  --bootstrap  Generate .template-manifest.json for a project created before sync support"
       echo "  --project-dir PATH  Target project directory (defaults to current directory)"
       exit 0
@@ -101,15 +104,18 @@ cd "$PROJECT_PATH"
 
 # --- Git-based update mode ---
 if [ "$FROM_GIT" = true ]; then
-    # Check if 'template' remote exists
-    TEMPLATE_REMOTE=$(git remote get-url template 2>/dev/null || true)
-    if [ -z "$TEMPLATE_REMOTE" ]; then
-        # Try reading from manifest
-        MANIFEST_PATH=".template-manifest.json"
-        TEMPLATE_REMOTE=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('$MANIFEST_PATH','utf8')).template_remote||'')" 2>/dev/null || true)
-        if [ -n "$TEMPLATE_REMOTE" ]; then
-            git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || true
-        fi
+    CONFIGURED_REMOTE=$(git remote get-url template 2>/dev/null || true)
+    MANIFEST_PATH=".template-manifest.json"
+    MANIFEST_REMOTE=$(_node -e "const fs=require('fs'); const p=process.argv[1]; console.log(JSON.parse(fs.readFileSync(p,'utf8')).template_remote||'')" "$MANIFEST_PATH" 2>/dev/null || true)
+
+    if [ -n "$CONFIGURED_REMOTE" ] && [ -n "$MANIFEST_REMOTE" ] && [ "$CONFIGURED_REMOTE" != "$MANIFEST_REMOTE" ]; then
+        echo "Error: Template source conflict. Git remote is '$CONFIGURED_REMOTE' but manifest records '$MANIFEST_REMOTE'."
+        exit 1
+    fi
+
+    TEMPLATE_REMOTE="${CONFIGURED_REMOTE:-$MANIFEST_REMOTE}"
+    if [ -z "$CONFIGURED_REMOTE" ] && [ -n "$TEMPLATE_REMOTE" ] && [ "$DRY_RUN" = false ]; then
+        git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || { echo "Error: Could not add the manifest template remote."; exit 1; }
     fi
 
     if [ -z "$TEMPLATE_REMOTE" ]; then
@@ -122,38 +128,34 @@ if [ "$FROM_GIT" = true ]; then
     else
         echo "Fetching template updates from $TEMPLATE_REMOTE..."
     fi
-    if [ -n "$TEMPLATE_REF" ]; then
-        git fetch template --depth 1 "$TEMPLATE_REF" 2>/dev/null || { echo "Error: Cannot fetch template ref: $TEMPLATE_REF"; exit 1; }
-    else
-        git fetch template --depth 1 2>/dev/null || { echo "Error: Cannot reach template remote: $TEMPLATE_REMOTE"; exit 1; }
+    if [ -z "$TEMPLATE_REF" ] && [ "$CANARY" = false ]; then
+        echo "Error: Normal updates require --ref vX.Y.Z. Use --canary only for an explicit branch/commit rollout."
+        exit 1
+    fi
+    if [ -n "$TEMPLATE_REF" ] &&
+       [[ ! "$TEMPLATE_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] &&
+       [ "$CANARY" = false ]; then
+        echo "Error: Non-release ref '$TEMPLATE_REF' requires --canary."
+        exit 1
     fi
 
-    # Create temp directory with latest template
-    TEMP_DIR="$(_temp_dir template-sync)"
-
+    # Fetch outside the target repository so dry-run does not mutate project git state.
+    FETCH_DIR="$(_temp_dir template-fetch)"
+    git -C "$FETCH_DIR" init -q
     if [ -n "$TEMPLATE_REF" ]; then
-        git archive FETCH_HEAD | tar -x -C "$TEMP_DIR" 2>/dev/null || \
-        { echo "Error: Cannot extract template ref: $TEMPLATE_REF"; rm -rf "$TEMP_DIR"; exit 1; }
-    else
-        # Detect which branch exists on the remote
-        TEMPLATE_BRANCH=""
-        for branch in main master; do
-            if git rev-parse --verify "template/$branch" &>/dev/null; then
-                TEMPLATE_BRANCH="$branch"
-                break
-            fi
-        done
-
-        if [ -z "$TEMPLATE_BRANCH" ]; then
-            echo "Error: No main or master branch found on template remote."
-            echo "Available branches: $(git branch -r | grep template/ | tr '\n' ' ')"
-            rm -rf "$TEMP_DIR"
-            exit 1
+        FETCH_REF="$TEMPLATE_REF"
+        if [[ "$TEMPLATE_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            FETCH_REF="refs/tags/$TEMPLATE_REF"
         fi
-
-        git archive "template/$TEMPLATE_BRANCH" | tar -x -C "$TEMP_DIR" 2>/dev/null || \
-        { echo "Error: Cannot extract template branch."; rm -rf "$TEMP_DIR"; exit 1; }
+        git -C "$FETCH_DIR" fetch "$TEMPLATE_REMOTE" --depth 1 "$FETCH_REF" 2>/dev/null || { echo "Error: Cannot fetch template ref: $TEMPLATE_REF"; rm -rf "$FETCH_DIR"; exit 1; }
+    else
+        git -C "$FETCH_DIR" fetch "$TEMPLATE_REMOTE" --depth 1 2>/dev/null || { echo "Error: Cannot reach template remote: $TEMPLATE_REMOTE"; rm -rf "$FETCH_DIR"; exit 1; }
     fi
+
+    TEMP_DIR="$(_temp_dir template-sync)"
+    git -C "$FETCH_DIR" archive FETCH_HEAD | tar -x -C "$TEMP_DIR" 2>/dev/null || \
+    { echo "Error: Cannot extract template ref: ${TEMPLATE_REF:-remote default}"; rm -rf "$FETCH_DIR" "$TEMP_DIR"; exit 1; }
+    rm -rf "$FETCH_DIR"
 
     # Now use TEMP_DIR as TEMPLATE_PATH and continue with normal sync
     TEMPLATE_PATH="$TEMP_DIR"
@@ -203,24 +205,28 @@ MANIFEST=".template-manifest.json"
 
 # Fix Windows backslash paths in manifest
 if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
-  echo "Fixing Windows backslash paths in manifest..."
-  if command -v _sed_i &>/dev/null; then
-    _sed_i 's/\\\\/\//g' .template-manifest.json
+  if [ "$DRY_RUN" = true ]; then
+    echo "WOULD NORMALIZE: Windows backslash paths in manifest"
   else
-    sed -i 's/\\\\/\//g' .template-manifest.json 2>/dev/null || sed -i '' 's/\\\\/\//g' .template-manifest.json
+    echo "Fixing Windows backslash paths in manifest..."
+    if command -v _sed_i &>/dev/null; then
+      _sed_i 's/\\\\/\//g' .template-manifest.json
+    else
+      sed -i 's/\\\\/\//g' .template-manifest.json 2>/dev/null || sed -i '' 's/\\\\/\//g' .template-manifest.json
+    fi
   fi
 fi
 
 manifest_trackable_count() {
   _node -e "
 const fs=require('fs');
-const m=JSON.parse(fs.readFileSync('$MANIFEST','utf8'));
+const m=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
 let count=0;
 for(const[,info]of Object.entries(m.files||{})){
   if((info.category||'template')!=='project')count++;
 }
 console.log(count);
-" 2>/dev/null
+" "$MANIFEST" 2>/dev/null
 }
 
 if [ -f "$MANIFEST" ]; then
@@ -248,13 +254,18 @@ if [ -f "$MANIFEST" ]; then
 fi
 
 # Warn if manifest version is unknown
-manifest_ver=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('.template-manifest.json','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
+manifest_ver=$(_node -e "const fs=require('fs'); console.log(JSON.parse(fs.readFileSync(process.argv[1],'utf8')).template_version||'unknown')" "$MANIFEST" 2>/dev/null || echo "unknown")
 if [ "$manifest_ver" = "unknown" ] || [ -z "$manifest_ver" ]; then
   echo "WARNING: Manifest version is '$manifest_ver'. Will be updated after sync."
 fi
 
 if [ ! -f "$MANIFEST" ]; then
   if [ "$BOOTSTRAP" = true ]; then
+    if [ "$DRY_RUN" = true ]; then
+      echo "WOULD BOOTSTRAP: Generate $MANIFEST from the current project without modifying files."
+      exit 0
+    fi
+
     echo "=== Bootstrap: Generating $MANIFEST for existing project ==="
     echo "Scanning project files and computing hashes..."
 
@@ -378,14 +389,14 @@ if [ ! -f "$MANIFEST" ]; then
     echo ""
     echo "Or with git remote:"
     echo "  1. git remote add template https://github.com/Yokhan/agent-project-template.git"
-    echo "  2. bash scripts/sync-template.sh --from-git --bootstrap"
-    echo "  3. bash scripts/sync-template.sh --from-git"
+    echo "  2. bash scripts/sync-template.sh --from-git --ref <tag> --bootstrap"
+    echo "  3. bash scripts/sync-template.sh --from-git --ref <tag>"
     exit 1
   fi
 fi
 
 # Get current and new template versions
-CURRENT_VER=$(_node -e "console.log(JSON.parse(require('fs').readFileSync('$MANIFEST','utf8')).template_version||'unknown')" 2>/dev/null || echo "unknown")
+CURRENT_VER=$(_node -e "const fs=require('fs'); console.log(JSON.parse(fs.readFileSync(process.argv[1],'utf8')).template_version||'unknown')" "$MANIFEST" 2>/dev/null || echo "unknown")
 NEW_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$TEMPLATE_PATH/CLAUDE.md" 2>/dev/null || echo "unknown")
 
 echo "=== Template Sync ==="
@@ -419,10 +430,12 @@ echo "--- Phase A: Updating template files ---"
 
 # Read manifest files using node (portable JSON parsing)
 manifest_files=$(_node -e "
-const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
+const fs=require('fs');
+const m=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
 for(const[p,i]of Object.entries(m.files||{})){
-  if(i.category!=='project')console.log(p+'|'+(i.hash||'')+'|'+(i.category||'template'));
-}" 2>&1)
+  const normalized=p.replaceAll('\\\\','/');
+  if(i.category!=='project')console.log(normalized+'|'+(i.hash||'')+'|'+(i.category||'template'));
+}" "$MANIFEST" 2>&1)
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to parse $MANIFEST: $manifest_files"
     exit 1
@@ -524,9 +537,12 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" "
 
     # Check if already in manifest (C1: use env vars for Python)
     in_manifest=$(_node -e "
-const m=JSON.parse(require('fs').readFileSync('$MANIFEST','utf8'));
-console.log((m.files||{})['$rel_path']?'yes':'no');
-" 2>/dev/null)
+const fs=require('fs');
+const [manifestPath,relativePath]=process.argv.slice(1);
+const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+const files=Object.fromEntries(Object.entries(m.files||{}).map(([p,info])=>[p.replaceAll('\\\\','/'),info]));
+console.log(files[relativePath]?'yes':'no');
+" "$MANIFEST" "$rel_path" 2>/dev/null)
 
     if [ "$EMPTY_TRACKABLE_MANIFEST" = true ]; then
       in_manifest="no"
@@ -593,8 +609,8 @@ done
 if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES + SOURCE_ONLY_MANIFEST)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
   echo "--- Updating manifest ---"
   _node -e "
-const fs=require('fs'),path=require('path'),{execSync}=require('child_process');
-const manifestPath='$MANIFEST',newVer='$NEW_VER',syncDate=new Date().toISOString().slice(0,10);
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const [manifestPath,newVer]=process.argv.slice(1),syncDate=new Date().toISOString().slice(0,10);
 const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
 m.template_version=newVer;m.updated=syncDate;
 function toPosix(fp){return fp.split(path.sep).join('/').replace(/\/+/g,'/');}
@@ -620,10 +636,7 @@ for(const[rawFp,rawInfo]of Object.entries(m.files||{})){
 m.files=normalizedFiles;
 
 function getHash(fp){
-  try{return execSync('sha256sum \"'+fp+'\"',{encoding:'utf8'}).split(' ')[0];}catch{}
-  try{return execSync('shasum -a 256 \"'+fp+'\"',{encoding:'utf8'}).split(' ')[0];}catch{}
-  try{const r=execSync('certutil -hashfile \"'+fp+'\" SHA256',{encoding:'utf8'});return r.split('\\n')[1].trim().replace(/ /g,'').toLowerCase();}catch{}
-  return null;
+  try{return crypto.createHash('sha256').update(fs.readFileSync(fp)).digest('hex');}catch{return null;}
 }
 
 // Rehash template files
@@ -711,16 +724,35 @@ for(const sd of ['.claude/skills','.agents/skills']){
 
 fs.writeFileSync(manifestPath,JSON.stringify(m,null,2));
 console.log('Manifest updated.');
-" 2>/dev/null || echo "WARNING: Could not update manifest automatically. Update manually."
+" "$MANIFEST" "$NEW_VER" || { echo "ERROR: Could not update manifest automatically."; exit 1; }
 fi
 
 # --- Validation ---
 if [ "$DRY_RUN" = false ]; then
   echo "--- Validation ---"
-  _json_valid .claude/settings.json && echo "  settings.json: valid JSON" || echo "  settings.json: invalid JSON"
+  VALIDATION_ERRORS=0
+  if [ -f .claude/settings.json ]; then
+    if _json_valid .claude/settings.json; then
+      echo "  settings.json: valid JSON"
+    else
+      echo "  settings.json: invalid JSON"
+      VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+    fi
+  else
+    echo "  settings.json: not present (skipped)"
+  fi
   for script in scripts/*.sh; do
-    bash -n "$script" 2>/dev/null && echo "  $script: valid bash" || echo "  $script: syntax error"
+    if bash -n "$script" 2>/dev/null; then
+      echo "  $script: valid bash"
+    else
+      echo "  $script: syntax error"
+      VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+    fi
   done
+  if [ "$VALIDATION_ERRORS" -gt 0 ]; then
+    echo "ERROR: Post-sync validation failed with $VALIDATION_ERRORS error(s)."
+    exit 1
+  fi
 fi
 
 # --- Report ---
@@ -743,7 +775,7 @@ fi
 
 if [ "$DRY_RUN" = true ]; then
   echo ""
-  echo "(Dry run — no files were modified)"
+  echo "(Dry run — no project files or project git metadata were modified)"
 fi
 
 # --- Post-sync reconciliation ---

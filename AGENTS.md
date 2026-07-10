@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.6.0 -->
+<!-- Template Version: 4.6.1 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -129,6 +129,10 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
 - Fan-out: follow the route's `fanout` decision. For `required` or `recommended`, automatically spawn useful independent lanes without waiting for an explicit user request; notify the user, keep the parent on the critical path, and skip with a reason when parallelism would duplicate work or add latency. User opt-out always wins. Use read-only agents first and `implementer` only for exact, non-overlapping files.
 
+### Template Update Protocol
+
+For updates, follow `docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol`: classify source/downstream, pin one tag, verify manifest/diff/checks, never self-sync.
+
 ### Systemic Error Analysis
 
 When an error, failed check, regression, or user correction appears, do not patch only the local symptom unless it is XS and isolated.
@@ -181,7 +185,7 @@ Use these examples to translate vague requests into an execution contract. They 
 | --- | --- | --- |
 | `сделай нормально` | "User wants the product flow to meet the production quality bar. Success means the primary user can complete [flow] with verified happy/error/empty states." | Ask only for missing product intent; otherwise inspect flow, plan, implement, verify. |
 | `почини ошибку` | "User wants the observed failure removed and the broken link identified. Success means the symptom is gone and a regression guard covers the root cause." | Reproduce or document why blocked, map root cause, patch boundary, add/identify guard. |
-| `обнови шаблон` | "User wants downstream-safe template behavior. Success means template-owned files update without touching project-owned overlays and release/sync checks pass." | Route template-sync, preserve `project-*`, run template gates, report release status honestly. |
+| `обнови шаблон` | "User wants a verified tagged update without touching project-owned overlays." | Classify source/downstream, pinned preview/apply, verify manifest/diff/checks. |
 | `улучши дизайн` | "User wants the current screen to serve one user job better and protect the app-specific KPI." | Run subtraction first, use tokens/components, verify rendered desktop/mobile states. |
 | `проверь` | "User wants a findings-first review with severity, evidence, user/business impact, and smallest fix." | Do not summarize first; list concrete defects, gaps, residual risk. |
 | `спланируй` | "User wants a decision-ready plan: first useful result, dependencies, options, risks, evidence, and replan trigger." | Give a progressive JPEG plan, not a task dump. |
@@ -356,4 +360,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.6.0
+4.6.1
