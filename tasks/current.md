@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-v4.6.1-agent-update-protocol
-status: active
+status: done
 updated: 2026-07-10
-readiness: 98
+readiness: 100
 plan: 100
 inventory: 100
-production: 98
+production: 100
 cleanup: 100
 tags: progressive-jpeg,template,release,update-protocol,security
-next: commit and tag the verified source, publish v4.6.1, and verify the GitHub release asset
+next: run pinned downstream dry-runs for v4.6.1 before applying it to generated projects
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -113,9 +113,11 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.1 has been published as the progressive JPEG implementation gate patch release.
 - v4.5.2 has been published as the progressive object readiness patch release.
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
+- v4.6.0 has been published as the adaptive GPT-5.6 fan-out minor release.
+- v4.6.1 has been published as the canonical agent update protocol and release hardening patch release.
 
 ## Immediate Next Step
-- Implement and release `v4.6.1` with one canonical agent update protocol and the security fixes required to trust its dry-run/release path.
+- Preview `v4.6.1` in each generated downstream project with the pinned dry-run protocol before applying it.
 
 ## Plan - v4.6.1 Canonical Agent Update Protocol
 
@@ -145,8 +147,8 @@ Make "update your template" deterministic and trustworthy: classify workspace ty
 - Sharp now: fetched paths enter Node through `argv`; manifest hashes use Node `crypto`; the malicious-path regression does not execute its marker.
 - Sharp now: semver refs fetch exact tags in an isolated repository, dry-run leaves project files and Git metadata unchanged, divergent `main` requires explicit canary intent, missing tags fail, conflicting manifest/remote sources block, and apply records the exact tag version.
 - Sharp now: manual release input is env-bound and validated; workflow checkout, validation, archive, and publication are bound to one tag commit; existing release assets are not clobbered.
-- Rough edge: source commit, tag, remote workflow, and release asset are not yet published.
-- Replan trigger: any final gate or security recheck failure blocks tagging.
+- Published: source commit `48eb80d6ef5188f5c6e388442d82a0f0d5823110`, tag `v4.6.1`, workflow `29082718223`, and the release archive are live.
+- Remaining hardening: signed historical tags, complete `--force`/stash redesign, and full immutable Action SHA migration remain separate contract-changing work.
 
 ### Verification Results
 - Passed: Git Bash `scripts/test-template.sh` (`160/160`)
@@ -167,6 +169,9 @@ Make "update your template" deterministic and trustworthy: classify workspace ty
 - Passed: Git Bash `scripts/test-hooks.sh` (`12/12`)
 - Passed: Git Bash `scripts/sync-agents.sh`
 - Passed: `git diff --check`
+- Published: GitHub Actions `Release Template` run `29082718223` completed `success` on the release commit
+- Published: GitHub Release `Agent Project Template v4.6.1` is live at `https://github.com/Yokhan/agent-project-template/releases/tag/v4.6.1`
+- Published: asset `agent-project-template-v4.6.1.tar.gz`, sha256 `a97d009490fbc2ee9aaaa47ad2e2af31a49aae902d4505c3b47d78de45a85aed`
 
 ## Plan - v4.6.0 Adaptive GPT-5.6 Fan-Out
 
