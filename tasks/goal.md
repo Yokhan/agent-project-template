@@ -20,7 +20,7 @@ The primary user is the downstream product team or operator using a generated pr
 - Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
 
 ## Current Step
-Ship v4.6.2 with cost-aware Luna support, trustworthy subagent runtime evidence, and a progressive JPEG iteration planner that makes every product slice solve the product purpose in the smallest honest form.
+`v4.6.2` is published. Downstream projects should preview the pinned tag before applying it; monitor the documented `codex-cli 0.144.x` live custom-agent limitation without weakening the trace gate.
 
 ## Dependencies
 - Shared `.claude/library/` rules.

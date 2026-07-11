@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-v4.6.2-cost-aware-progressive-jpeg
-status: active
+status: done
 updated: 2026-07-11
-readiness: 95
+readiness: 100
 plan: 100
 inventory: 100
-production: 95
+production: 100
 cleanup: 100
 tags: progressive-jpeg,template,release,subagents,luna,anti-falsification
-next: commit and publish v4.6.2; monitor the documented codex-cli 0.144.x live custom-agent limitation
+next: downstream projects preview v4.6.2 with pinned dry-run; monitor the documented codex-cli 0.144.x live custom-agent limitation
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -114,12 +114,14 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.2 has been published as the progressive object readiness patch release.
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
 - v4.6.0 has been published as the adaptive GPT-5.6 fan-out minor release.
-- v4.6.2 implementation is complete: bounded Luna roles, one-wave fan-out, genuine child-trace validation, and the progressive JPEG anti-falsification planner are in release verification.
-- Live Codex CLI evidence remains unverified on `codex-cli 0.144.0`: the runtime emitted `collab spawn failed: no thread with id`, an empty wait, and a parent-authored role name; the strict trace gate rejected it.
+- v4.6.2 is published with bounded Luna roles, one-wave fan-out, genuine child-trace validation, and the progressive JPEG anti-falsification planner.
+- Live Codex CLI evidence remains unverified on `codex-cli 0.144.x`: after removing incompatible `--ephemeral`, the runtime still emitted no spawn event, an empty wait, and a parent-authored role name; the strict trace gate rejected it.
+- Published: source commit `996416291a1d40a38fcd509f9edd1a33709a3f78`, tag `v4.6.2`, workflow `29146862497`, and GitHub Release `Agent Project Template v4.6.2` are live.
+- Published asset: `agent-project-template-v4.6.2.tar.gz`, sha256 `0dbfabd3f7d8c15527f64f5aa3484280e2e3465a36faf6340ee8ed28b3f89440`.
 - v4.6.1 has been published as the canonical agent update protocol and release hardening patch release.
 
 ## Immediate Next Step
-- Implement and verify `v4.6.2`; do not tag until policy, skill, live-runtime, and release gates are green.
+- Preview `v4.6.2` in downstream projects before apply; keep the live custom-agent trace limitation explicit until the CLI emits genuine child evidence.
 
 ## Plan - v4.6.2 Cost-Aware Fan-Out And Truthful Progressive JPEG
 
