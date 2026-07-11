@@ -14,6 +14,9 @@ const {
 } = require("./codex-agent-policy.js");
 
 const EXPECTED_PROFILES = {
+  scout: ["gpt-5.6-luna", "low", "read-only"],
+  log_analyst: ["gpt-5.6-luna", "low", "read-only"],
+  summarizer: ["gpt-5.6-luna", "low", "read-only"],
   pr_explorer: ["gpt-5.6-terra", "medium", "read-only"],
   docs_researcher: ["gpt-5.6-terra", "medium", "read-only"],
   tester: ["gpt-5.6-terra", "medium", "read-only"],
@@ -39,18 +42,20 @@ function assertFanoutDecision(decision, expected) {
   assert.strictEqual(decision.reason, expected.reason);
   assert.strictEqual(decision.maxChildren, 3);
   assert.strictEqual(decision.maxDepth, 1);
+  assert.strictEqual(decision.maxAutomaticWaves, 1);
   assert.strictEqual(decision.notifyUser, true);
   assert.strictEqual(decision.readOnlyFirst, true);
+  assert.strictEqual(decision.requireRuntimeProfileEvidence, true);
 }
 
 function testFanoutDecisions() {
   assertFanoutDecision(
     getFanoutDecision({ task: "Что такое GPT-5.6?", risk: "MEDIUM", candidates: ["docs_researcher", "reviewer"] }),
-    { status: "skip", reason: "small-direct-question" },
+    { status: "skip", reason: "xs-direct-task" },
   );
   assertFanoutDecision(
     getFanoutDecision({ task: "review docs", risk: "MEDIUM", candidates: ["docs_researcher"] }),
-    { status: "conditional", reason: "spawn-only-if-non-blocking-specialist-lane-exists" },
+    { status: "conditional", reason: "parallel-value-not-yet-proven" },
   );
   assertFanoutDecision(
     getFanoutDecision({ task: "compare docs and implementation", risk: "MEDIUM", candidates: ["docs_researcher", "reviewer"] }),
@@ -66,6 +71,40 @@ function testFanoutDecisions() {
     reason: "high-risk-independent-verification",
   });
   assert.strictEqual(required.candidates.length, 3);
+}
+
+function testXsAndReadOnlyBoundaries() {
+  for (const task of ["Fix typo", "Check one line", "Update one comment"]) {
+    assertFanoutDecision(
+      getFanoutDecision({
+        task,
+        risk: "HIGH",
+        candidates: ["scout", "tester", "reviewer"],
+        modes: ["review"],
+      }),
+      { status: "skip", reason: "xs-direct-task" },
+    );
+  }
+
+  assertFanoutDecision(
+    getFanoutDecision({
+      task: "Read-only review of AGENTS.md routing policy",
+      risk: "HIGH",
+      candidates: ["scout", "systems_reviewer", "tester"],
+      modes: ["template", "review"],
+    }),
+    { status: "conditional", reason: "parallel-value-not-yet-proven" },
+  );
+
+  assertFanoutDecision(
+    getFanoutDecision({
+      task: "Comprehensive audit across modules without changes",
+      risk: "HIGH",
+      candidates: ["scout", "systems_reviewer", "tester"],
+      modes: ["template", "review"],
+    }),
+    { status: "recommended", reason: "parallel-independent-lanes-available" },
+  );
 }
 
 function testFanoutOptOuts() {
@@ -102,7 +141,7 @@ function testFanoutRiskBoundaries() {
       risk: "MEDIUM",
       candidates: ["reviewer", "tester"],
     }),
-    { status: "skip", reason: "small-direct-question" },
+    { status: "skip", reason: "xs-direct-task" },
   );
 }
 
@@ -197,6 +236,15 @@ function withValidatorFixture(mutate, expectedText) {
 
 function testValidatorRejections() {
   withValidatorFixture((root) => {
+    const file = path.join(root, ".codex/agents/scout.toml");
+    const content = fs.readFileSync(file, "utf8").replace(
+      'model = "gpt-5.6-luna"',
+      'model = "gpt-5.6-sol"',
+    );
+    fs.writeFileSync(file, content, "utf8");
+  }, /scout must use gpt-5\.6-luna/);
+
+  withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/pr-explorer.toml");
     const content = fs.readFileSync(file, "utf8").replace(
       'model_reasoning_effort = "medium"',
@@ -222,6 +270,7 @@ function main() {
   assert.strictEqual(AGENT_POLICY.parent.modelSource, "user-or-ide");
   assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "xhigh");
   testFanoutDecisions();
+  testXsAndReadOnlyBoundaries();
   testFanoutOptOuts();
   testFanoutRiskBoundaries();
   testWriteScopes();

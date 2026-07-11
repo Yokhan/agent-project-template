@@ -1,6 +1,6 @@
 # OpenAI Model Guidance
 
-Verified against official OpenAI docs on 2026-07-09.
+Verified against official OpenAI docs on 2026-07-11.
 
 Sources:
 
@@ -18,8 +18,10 @@ research, and agent workflows.
   security, design judgment, synthesis, and high-cost errors.
 - GPT-5.6 Terra is the balanced tier for exploration, documentation research,
   test planning, isolated implementation, and parallel support work.
-- GPT-5.6 Luna is the high-volume efficiency tier. Do not pin critical template
-  reviewers or implementers to Luna without project-specific eval evidence.
+- GPT-5.6 Luna is the high-volume efficiency tier for bounded discovery, log
+  extraction, and evidence condensation. It is not used for implementation,
+  product judgment, architecture, security, or final verification without
+  project-specific eval evidence.
 
 For Codex parent sessions, do not hardcode the model in project config. Model
 and reasoning effort remain user or IDE settings. The recommended parent
@@ -49,6 +51,15 @@ Runtime declarations under `.codex/agents/*.toml` must match it.
 The parent model remains user-owned. Role-specific custom agents may pin a
 model and effort because that is a specialist execution contract, not a
 project-wide session default.
+
+Template Luna roles are deliberately narrow: `scout`, `log_analyst`, and
+`summarizer`, all at `low`. Terra handles research, test strategy, and isolated
+implementation; Sol handles judgment-heavy review. Automatic fan-out is capped
+at one wave and requires task evidence of parallel value.
+
+Do not infer that a child used its pinned model from parent output. Runtime
+verification requires a correlated trace accepted by
+`node scripts/validate-subagent-trace.js`.
 
 ## GPT-5.6 Workflow Guidance
 

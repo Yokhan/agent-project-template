@@ -119,7 +119,7 @@ Run `node scripts/validate-agent-sot.js` after any agent infrastructure change.
 If a source in `_reference/agent-sot/sources.json` is stale or marked
 `requires_fresh_check`, browse the canonical URL before editing behavior.
 
-Current official-doc check: 2026-07-09 for GPT-5.6 model selection and Codex subagent behavior.
+Current official-doc check: 2026-07-11 for GPT-5.6 model selection and Codex subagent behavior.
 
 ## Minimum Closeout
 

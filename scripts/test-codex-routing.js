@@ -18,6 +18,20 @@ function assertIncludes(values, expected, message) {
 
 function testRoute(task, expectations) {
   const route = getRoute(task, expectations.options || {});
+  if (expectations.exactModes) {
+    assert.deepStrictEqual(
+      new Set(route.modes),
+      new Set(expectations.exactModes),
+      `${task} exact modes`,
+    );
+  }
+  if (expectations.exactSubagents) {
+    assert.deepStrictEqual(
+      route.subagents,
+      expectations.exactSubagents,
+      `${task} exact subagents`,
+    );
+  }
   for (const mode of expectations.modes || []) {
     assertIncludes(route.modes, mode, `${task} modes`);
   }
@@ -96,8 +110,22 @@ function main() {
   assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "xhigh");
   assert.deepStrictEqual(
     new Set(getAgentProfiles().map(({ model }) => model)),
-    new Set(["gpt-5.6-sol", "gpt-5.6-terra"]),
+    new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]),
   );
+
+  testRoute("план итераций по прогрессивному джипегу, где каждый срез решает цель продукта", {
+    modes: ["progressive-planning"],
+    notModes: ["design-system"],
+    skills: ["codex-progressive-jpeg-planner", "codex-product-goal", "codex-decompose"],
+    qualityGates: ["product-purpose", "end-to-end-user-victory", "anti-falsification"],
+    planRequired: true,
+  });
+
+  testRoute("Check subagent token usage and report whether the configured models work", {
+    notModes: ["design-system"],
+    notSubagents: ["product_reviewer"],
+    fanoutStatus: "conditional",
+  });
 
   runRouteCasesA(testRoute);
   runRouteCasesB(testRoute);

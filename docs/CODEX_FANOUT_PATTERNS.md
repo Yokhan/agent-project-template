@@ -1,6 +1,6 @@
 # Codex Fan-Out Patterns
 
-Date: 2026-07-09
+Date: 2026-07-11
 
 ## Purpose
 
@@ -32,6 +32,9 @@ sandbox, fan-out limit, and parent-default boundaries. Files under
 
 | Role | Model | Effort | Default use |
 | --- | --- | --- | --- |
+| `scout` | GPT-5.6 Luna | `low` | Bounded file/symbol discovery without synthesis |
+| `log_analyst` | GPT-5.6 Luna | `low` | Bounded failure/log extraction and grouping |
+| `summarizer` | GPT-5.6 Luna | `low` | Condense completed evidence without new judgment |
 | `pr_explorer` | GPT-5.6 Terra | `medium` | Repository map and dependency trace |
 | `docs_researcher` | GPT-5.6 Terra | `medium` | Fresh official documentation |
 | `tester` | GPT-5.6 Terra | `medium` | Test and regression strategy |
@@ -50,10 +53,11 @@ exceed `xhigh`.
 The router returns `required`, `recommended`, `conditional`, or `skip`.
 
 - `required`: high-risk state-changing work needs independent verification.
-- `recommended`: at least two useful specialist lanes are available; spawn the
-  lanes that are genuinely independent while the parent continues.
+- `recommended`: the task contains explicit independent work with material
+  parallel value; spawn only the useful lanes while the parent continues.
 - `conditional`: one specialist is available; spawn only when it is a
-  non-blocking sidecar with material value.
+  non-blocking sidecar with material value. Candidate count alone produces at
+  most `conditional`.
 - `skip`: direct XS question, no specialist, or explicit user opt-out.
 
 Candidates are not a command to duplicate work. Before each spawn confirm that
@@ -61,6 +65,19 @@ the lane has a narrow output, does not block the parent's immediate next step,
 does not repeat another lane, and costs less wall-clock attention than serial
 execution. Read-only work is the default. Write delegation requires exact,
 non-overlapping files or `[P]` ownership.
+
+Automatic fan-out is limited to one wave. Children do not recursively fan out,
+and the parent must not start a second automatic wave to compensate for weak
+prompts or premature delegation.
+
+### Runtime Evidence Gate
+
+A parent marker or prose claim does not prove that a custom subagent ran. For a
+runtime check, `node scripts/validate-subagent-trace.js` must observe one
+correlated chain: parent thread, genuine spawn event, distinct child thread ID,
+required role/model metadata, child activity or completion, and a wait that
+references the same child. If the runtime cannot expose this evidence, report
+the profile as unverified and do not claim role/model isolation.
 
 Before spawning any write-capable batch, pass the proposed `{ agent, files }`
 assignments through `validateWriteAssignments` from
@@ -110,14 +127,14 @@ Codex adaptation:
 
 | Work type | Default agents | Parent action |
 | --- | --- | --- |
-| Bugfix | `pr_explorer`, `tester`, `reviewer` | Reproduce, patch, run regression check |
-| Security patch | `security_reviewer`, `pr_explorer`, `tester` | Patch narrowly, prove exploit path is closed |
+| Bugfix | `scout`, `log_analyst`, `tester`, `reviewer` | Reproduce, patch, run regression check |
+| Security patch | `security_reviewer`, `tester` | Patch narrowly, prove exploit path is closed |
 | UI/design | `design_reviewer`, `tester`, `reviewer` | Apply token/component/state fixes, screenshot-check |
 | API/framework docs | `docs_researcher`, `reviewer` | Browse official docs when freshness matters, update code/docs |
 | Large feature | `pr_explorer`, `docs_researcher`, `tester`, then optional `reviewer` | Build spec/plan/tasks before edits |
-| Product/GTM | `product_reviewer`, `pr_explorer`, `reviewer` | Tie recommendations to user value, KPI, proof, and journey |
-| Architecture/SOT | `systems_reviewer`, `pr_explorer`, `reviewer` | Resolve ownership and broken contracts before local edits |
-| Existing `tasks.md` | `pr_explorer`, `tester` | Identify dependency order and `[P]` groups |
+| Product/GTM | `product_reviewer`, `scout`, `reviewer` | Tie recommendations to user value, KPI, proof, and journey |
+| Architecture/SOT | `systems_reviewer`, `scout`, `reviewer` | Resolve ownership and broken contracts before local edits |
+| Existing `tasks.md` | `scout`, `tester` | Identify dependency order and `[P]` groups |
 | Release or migration | `reviewer`, `tester`, optional `security_reviewer` | Validate compatibility and rollback path |
 
 ## Prompt Templates

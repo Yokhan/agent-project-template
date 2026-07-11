@@ -17,9 +17,10 @@ The primary user is the downstream product team or operator using a generated pr
 - Data/API: contracts, schemas, and validation are part of product quality.
 - Docs: linked docs are treated as product surfaces and verified by route/layout/assets/404 checks.
 - Domain tone: plans, audits, and reports match the user's language and project vocabulary.
+- Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
 
 ## Current Step
-Ship the v4 production product standard, goal loop, routing, skills, and validators in the template source repo.
+Ship v4.6.2 with cost-aware Luna support, trustworthy subagent runtime evidence, and a progressive JPEG iteration planner that makes every product slice solve the product purpose in the smallest honest form.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
@@ -32,8 +33,10 @@ Ship the v4 production product standard, goal loop, routing, skills, and validat
 - Router expansion could become too broad if gates are not kept backwards-compatible.
 - More rules can increase startup noise if entrypoints are not concise.
 - Downstream projects still need release-tag sync after the template is ready.
+- Codex CLI surfaces can expose different multi-agent runtimes; automatic fan-out must not assume a custom model profile was applied without runtime evidence.
 
 ## Out Of Scope For Current Step
 - Applying the new template to every downstream project.
 - Reworking each downstream product UI.
 - Changing user-level Codex or IDE model/sandbox defaults.
+- Treating planning, research, architecture-only work, or a debug harness as a delivered product slice.

@@ -85,8 +85,8 @@ for skill_dir in .agents/skills/*/; do
   fi
   CODEX_SKILL_COUNT=$((CODEX_SKILL_COUNT + 1))
 done
-if [ "$CODEX_SKILL_COUNT" -lt 41 ]; then
-  echo "  ERROR: Expected at least 41 Codex skills, found $CODEX_SKILL_COUNT"
+if [ "$CODEX_SKILL_COUNT" -lt 42 ]; then
+  echo "  ERROR: Expected at least 42 Codex skills, found $CODEX_SKILL_COUNT"
   ERRORS=$((ERRORS + 1))
 else
   echo "  Found $CODEX_SKILL_COUNT Codex skills"
@@ -103,8 +103,8 @@ for agent_file in .codex/agents/*.toml; do
   [ -f "$agent_file" ] || continue
   CODEX_AGENT_COUNT=$((CODEX_AGENT_COUNT + 1))
 done
-if [ "$CODEX_AGENT_COUNT" -lt 7 ]; then
-  echo "  ERROR: Expected at least 7 Codex agents, found $CODEX_AGENT_COUNT"
+if [ "$CODEX_AGENT_COUNT" -lt 12 ]; then
+  echo "  ERROR: Expected at least 12 Codex agents, found $CODEX_AGENT_COUNT"
   ERRORS=$((ERRORS + 1))
 else
   echo "  Found $CODEX_AGENT_COUNT Codex agents"
@@ -150,6 +150,18 @@ if ! node scripts/progressive-status.js --check >/dev/null 2>&1; then
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: Progressive status validates"
+fi
+if ! node scripts/test-progressive-plan.js >/dev/null 2>&1; then
+  echo "  ERROR: Progressive plan validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Progressive plan validates"
+fi
+if ! node scripts/test-subagent-trace.js >/dev/null 2>&1; then
+  echo "  ERROR: Subagent trace validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Subagent trace validates"
 fi
 
 # 4. Script syntax

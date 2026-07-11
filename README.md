@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.6.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.6.2-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.1`.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.2`.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
@@ -24,7 +24,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -35,8 +35,8 @@ Update an existing generated project from the stable tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.1
+bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.2
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -44,7 +44,7 @@ bash scripts/sync-template.sh --from-git --ref v4.6.1
 ## Quick Start
 
 ```bash
-git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -103,10 +103,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.1
+bash scripts/sync-template.sh --from-git --ref v4.6.2
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -134,8 +134,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.1
+bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.2
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -214,11 +214,11 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Rules** | 25 | Shared library rules plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
-| **Codex Skills** | 41 | Pipeline, route-first orchestration, subagent orchestration, design/Figma, Mermaid boards, audit/debug/security, setup, developer quality, domain review, template ops, integrations, migrations, and OpenAI model guidance |
-| **Codex Subagents** | 9 | Terra exploration/docs/testing/isolated implementation plus Sol review/design/product/security/systems specialists; adaptive fan-out preserves Spec Kit/litkit/AgentOS ownership |
+| **Codex Skills** | 42 | Pipeline, route-first orchestration, truthful progressive JPEG planning, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
 | **Agents** | 11 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler, and supporting specialists |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 49 | validation, adaptive route selection and fixtures, agent policy, progressive status slices, design policy checks, drift checks, bootstrap, sync, project scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 53 | validation, adaptive routing, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -316,6 +316,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.6.2** | Patch release: adds Luna support roles, one-wave cost-aware fan-out, genuine child-trace validation, and a progressive JPEG planner with an explicit anti-falsification gate |
 | **4.6.1** | Patch release: adds the canonical agent update protocol, exact-tag preview/apply verification, safe path hashing, dry-run regression coverage, and release workflow tag/commit binding |
 | **4.6.0** | Minor release: adds role-specific GPT-5.6 Sol/Terra subagents, an `xhigh` reasoning ceiling, automatic beneficial fan-out, product/systems reviewers, and semantic suppression for reference diagrams and release pages |
 | **4.5.3** | Patch release: adds the progressive layer replacement pipeline plus `PROGRESSIVE_STATUS` project-slice reporting, so superseded wrong iterations are retired and changed working docs cannot close out with stale status headers |

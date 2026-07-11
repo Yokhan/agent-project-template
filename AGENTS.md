@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.6.1 -->
+<!-- Template Version: 4.6.2 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -24,7 +24,7 @@ Treat the user as the client/product owner and the agent as the accountable exec
 
 For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer. When working documents use `PROGRESSIVE_STATUS`, include a project slice from `node scripts/progressive-status.js`; before closeout, `node scripts/progressive-status.js --check` must pass.
 
-Progressive JPEG also applies to implementation shape. For known product capabilities, build the end-state skeleton from the first meaningful slice: the component, service, screen, or workflow should expose callable slots, handlers, contracts, feature flags, or no-op stubs for the accepted future behavior at 1% readiness. Missing internals may log a dev-only debug signal or return an honest "not implemented yet" boundary, but the architecture point must exist when the final product direction is already known. If the final product plan is missing, gate implementation and create/propose the plan first. At 1% readiness, the object still performs its production function in the smallest honest way. When a later layer replaces an earlier wrong layer, delete or migrate the old artifact; do not park disabled legacy code, stale placeholders, skipped tests, or release-only exclusion harnesses. Do not replace this with legacy harness proof unless that proof protects the current product path. Never fake user-visible readiness.
+Progressive JPEG also controls implementation shape. Use `$codex-progressive-jpeg-planner`: every implementation slice must fulfill the real product purpose end to end at its current depth through the final path. Planning, architecture, stubs, debug output, tests, status, and inventories are enabling checkpoints, never product evidence; the slice outcome may not depend on a stub, and evidence may not be fabricated. Build the accepted end-state skeleton with honest 1% callable seams, gate on a missing final plan, and delete or migrate superseded layers before claiming sharper readiness.
 
 Before state-changing product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -122,12 +122,12 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Template/release: read product boundary/safe defaults/supported environments; preserve `project-*`; update Unix and Windows paths together; run template, skill, agent, routing, and sync checks.
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
-- Feature/product implementation: use an end-state skeleton for accepted future capabilities; 1% callable stubs, hooks, slots, or contracts are better than absent architecture when the product direction is known. Verify object inventory against the final product plan before judging detail depth, then remove or replace superseded wrong layers before claiming the next readiness level.
+- Feature/product implementation: use `$codex-progressive-jpeg-planner`; every slice solves the product purpose end to end through the final path. Skeletons and stubs preserve shape but never prove value. Verify the plan and user journey, then remove superseded layers before claiming sharper readiness.
 - Marketing/GTM: use `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
 - OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
-- Fan-out: follow the route's `fanout` decision. For `required` or `recommended`, automatically spawn useful independent lanes without waiting for an explicit user request; notify the user, keep the parent on the critical path, and skip with a reason when parallelism would duplicate work or add latency. User opt-out always wins. Use read-only agents first and `implementer` only for exact, non-overlapping files.
+- Fan-out: follow the route's `fanout` decision. Auto-spawn only independent, useful `required`/`recommended` lanes, one automatic wave maximum. Candidate count alone is not value. User opt-out wins; prefer read-only roles and exact isolated `implementer` scopes. Never claim a custom role/model ran without a genuine spawn-child-wait trace accepted by `validate-subagent-trace.js`.
 
 ### Template Update Protocol
 
@@ -233,7 +233,7 @@ Project-specific Codex skills use `.agents/skills/project-*` and must be preserv
 
 Project-scoped Codex subagents live in `.codex/agents/*.toml`.
 
-Use subagents named by the route output and the profiles in `scripts/codex-agent-policy.js`. `required` and `recommended` fan-out is proactive when a lane is independent, useful, and faster or safer in parallel; the user does not need to ask. Default to read-only workers first. Parent Codex consolidates results and edits. Use `implementer` only for exact, isolated, non-overlapping files. Never exceed the policy's `xhigh` reasoning ceiling.
+Use subagents named by the route output and profiles in `scripts/codex-agent-policy.js`. `required` and `recommended` fan-out is proactive only for independent material value, with one automatic wave. Luna serves bounded `scout`, `log_analyst`, and `summarizer` work; Terra handles research/testing/isolated implementation; Sol handles judgment-heavy review. Parent Codex consolidates and edits. Never exceed `xhigh`.
 
 Before fan-out, check for Spec Kit, litkit, Kiro, AgentOS, or project-local `project-*` workflow artifacts. If `spec.md`, `plan.md`, `tasks.md`, or equivalent task graphs exist, use them as the input contract. Treat `[P]` or equivalent metadata as the default signal for safe parallel work.
 
@@ -327,7 +327,7 @@ After implementing, before presenting results:
 ## OpenAI Model Guidance
 
 For current OpenAI API model selection, check official OpenAI docs and `docs/OPENAI_MODEL_GUIDANCE.md`.
-As of the 2026-07-09 docs check, use GPT-5.6 Sol for demanding reasoning and GPT-5.6 Terra for faster supporting work. Template subagent profiles are role-specific and capped at `xhigh`.
+As of the 2026-07-11 docs check, use GPT-5.6 Sol for demanding judgment, Terra for substantive support work, and Luna only for bounded discovery, log extraction, and summarization. Profiles are role-specific and capped at `xhigh`.
 Do not hardcode model, effort, approval, or sandbox defaults in project `.codex/config.toml`; those stay in user or IDE config.
 
 ## Self-Improvement
@@ -360,4 +360,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.6.1
+4.6.2

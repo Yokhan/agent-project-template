@@ -367,6 +367,10 @@ check "scripts/test-design-policy.js" test -f scripts/test-design-policy.js
 check "scripts/validate-spec-kit.js" test -f scripts/validate-spec-kit.js
 check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
 check "scripts/progressive-status.js" test -f scripts/progressive-status.js
+check "scripts/validate-progressive-plan.js" test -f scripts/validate-progressive-plan.js
+check "scripts/test-progressive-plan.js" test -f scripts/test-progressive-plan.js
+check "scripts/validate-subagent-trace.js" test -f scripts/validate-subagent-trace.js
+check "scripts/test-subagent-trace.js" test -f scripts/test-subagent-trace.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
 check "scripts/init-spec-kit.sh" test -f scripts/init-spec-kit.sh
 check "scripts/codex-agent-policy.js" test -f scripts/codex-agent-policy.js
@@ -380,7 +384,8 @@ check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagent
 
 echo ""
 echo "Codex skills:"
-check ">=41 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 41 ]'
+check ">=42 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 42 ]'
+check "progressive JPEG planner skill" test -f .agents/skills/codex-progressive-jpeg-planner/SKILL.md
 check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
 check "core Codex design command modes reference" test -f .agents/skills/codex-design-workflow/references/design-command-modes.md
 check "core Codex design review skill" test -f .agents/skills/codex-domain-design-review/SKILL.md
@@ -390,6 +395,8 @@ check "core Codex Mermaid board skill" test -f .agents/skills/codex-mermaid-boar
 check "core Codex model guidance skill" test -f .agents/skills/codex-openai-model-guidance/SKILL.md
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-agent-policy" node scripts/test-codex-agent-policy.js
+check "test-progressive-plan" node scripts/test-progressive-plan.js
+check "test-subagent-trace" node scripts/test-subagent-trace.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
 check "test-design-policy" node scripts/test-design-policy.js
@@ -403,7 +410,10 @@ check "progressive-status rejects stale headers" validate_progressive_status_rej
 
 echo ""
 echo "Codex subagents:"
-check ">=9 Codex agent files" bash -c '[ $(ls .codex/agents/*.toml 2>/dev/null | wc -l) -ge 9 ]'
+check ">=12 Codex agent files" bash -c '[ $(ls .codex/agents/*.toml 2>/dev/null | wc -l) -ge 12 ]'
+check "Codex Luna scout agent" test -f .codex/agents/scout.toml
+check "Codex Luna log analyst agent" test -f .codex/agents/log-analyst.toml
+check "Codex Luna summarizer agent" test -f .codex/agents/summarizer.toml
 check "Codex pr_explorer agent" test -f .codex/agents/pr-explorer.toml
 check "Codex reviewer agent" test -f .codex/agents/reviewer.toml
 check "Codex implementer agent" test -f .codex/agents/implementer.toml
@@ -510,7 +520,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -623,8 +633,14 @@ if is_template_source_repo; then
     cp scripts/codex-routing-cases-b.js "$template/scripts/codex-routing-cases-b.js"
     cp scripts/test-codex-agent-policy.js "$template/scripts/test-codex-agent-policy.js"
     cp scripts/test-codex-routing.js "$template/scripts/test-codex-routing.js"
+    cp scripts/test-progressive-plan.js "$template/scripts/test-progressive-plan.js"
+    cp scripts/test-subagent-trace.js "$template/scripts/test-subagent-trace.js"
+    cp scripts/validate-progressive-plan.js "$template/scripts/validate-progressive-plan.js"
+    cp scripts/validate-subagent-trace.js "$template/scripts/validate-subagent-trace.js"
     cp scripts/validate-codex-agents.js "$template/scripts/validate-codex-agents.js"
     cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
+    cp scripts/lib/progressive-plan.js "$template/scripts/lib/progressive-plan.js"
+    cp scripts/lib/subagent-trace.js "$template/scripts/lib/subagent-trace.js"
 
     node -e 'const fs=require("fs"),path=require("path"),q=String.fromCharCode(39); const name="skill"+q+"]);require("+q+"fs"+q+").writeFileSync("+q+"SYNC_PATH_INJECTION"+q+","+q+"x"+q+");console.log(m.files["+q+"skill"; const dir=path.join(process.argv[1],".agents","skills",name); fs.mkdirSync(dir,{recursive:true}); fs.writeFileSync(path.join(dir,"SKILL.md"),"# inert path fixture\n","utf8");' "$template"
 
@@ -681,6 +697,8 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: scripts/codex-agent-policy.js" "$output" || return 1
     grep -q "WOULD ADD: .codex/agents/product-reviewer.toml" "$output" || return 1
     grep -q "WOULD ADD: .codex/agents/systems-reviewer.toml" "$output" || return 1
+    grep -q "WOULD ADD: .codex/agents/scout.toml" "$output" || return 1
+    grep -q "WOULD ADD: scripts/validate-progressive-plan.js" "$output" || return 1
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output" || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
@@ -695,6 +713,8 @@ if is_template_source_repo; then
     grep -q '"scripts/lib/codex-route-intents.js"' "$project/.template-manifest.json" || return 1
     grep -q '".codex/agents/product-reviewer.toml"' "$project/.template-manifest.json" || return 1
     grep -q '".codex/agents/systems-reviewer.toml"' "$project/.template-manifest.json" || return 1
+    grep -q '".codex/agents/scout.toml"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/validate-progressive-plan.js"' "$project/.template-manifest.json" || return 1
     grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json" || return 1
     grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json" || return 1
     ! grep -q '"templates/' "$project/.template-manifest.json" || return 1
@@ -703,6 +723,8 @@ if is_template_source_repo; then
     (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-routing.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-progressive-plan.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-subagent-trace.js >/dev/null) || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
   }
   run_source_only_sync_smoke() {

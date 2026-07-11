@@ -21,6 +21,8 @@
 | task-brief | scripts/task-brief.sh | Compact summary for tasks/current.md |
 | codex-agent-policy | scripts/codex-agent-policy.js | Single SOT for Codex role models, reasoning effort, sandbox, and automatic fan-out limits |
 | codex-route-task | scripts/codex-route-task.js | Deterministic Codex route selection for skills, subagents, fan-out decision, pipeline, risk, and orchestrator |
+| validate-progressive-plan | scripts/validate-progressive-plan.js | Validates that every progressive implementation slice fulfills the product purpose end to end without stub-dependent or fabricated evidence |
+| validate-subagent-trace | scripts/validate-subagent-trace.js | Proves a real child thread used the required role/model and was awaited; parent markers do not count |
 | test-codex-routing | scripts/test-codex-routing.js | Smoke tests for Codex route behavior and AgentOS detection |
 | validate-agent-sot | scripts/validate-agent-sot.js | Validates local Agent SOT sources, AGENTS/CLAUDE links, and drift gates |
 | validate-spec-kit | scripts/validate-spec-kit.js | Offline validation for the managed Spec Kit snapshot |

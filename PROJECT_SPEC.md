@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Preview `v4.6.1` in each generated downstream project with the pinned dry-run protocol before applying it.
+- Next: Finish `v4.6.2` release gates; keep the `codex-cli 0.144.0` live custom-agent runtime marked unverified until a genuine child trace passes.
 
 ## Last Scan
 2026-07-10

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checked_at": "2026-07-09",
+  "checked_at": "2026-07-11",
   "policy": {
     "refresh_after_days": 30,
     "do_not_vendor_third_party_docs": true,
@@ -54,9 +54,9 @@
       "trust": "primary",
       "title": "OpenAI Codex subagents",
       "url": "https://developers.openai.com/codex/subagents",
-      "last_checked": "2026-07-09",
+      "last_checked": "2026-07-11",
       "requires_fresh_check": true,
-      "local_conclusion": "Applicable AGENTS.md or skill instructions can authorize proactive Codex delegation. Use role-specific models, keep max_depth at 1, prefer independent read-only lanes, and preserve parent ownership."
+      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Applicable AGENTS.md or skill instructions can authorize delegation; keep max_depth at 1, prefer independent read-only lanes, and verify real child activity instead of parent markers."
     },
     {
       "id": "openai-gpt-5-6-release",
@@ -64,7 +64,7 @@
       "trust": "primary",
       "title": "OpenAI GPT-5.6 release",
       "url": "https://openai.com/index/gpt-5-6/",
-      "last_checked": "2026-07-09",
+      "last_checked": "2026-07-11",
       "requires_fresh_check": true,
       "local_conclusion": "GPT-5.6 Sol is the quality tier, Terra is the balanced support tier, and multi-agent gains depend on cleanly parallel work rather than agent count alone."
     },
@@ -74,7 +74,7 @@
       "trust": "primary",
       "title": "OpenAI GPT-5.6 model guidance",
       "url": "https://developers.openai.com/api/docs/guides/latest-model",
-      "last_checked": "2026-07-09",
+      "last_checked": "2026-07-11",
       "requires_fresh_check": true,
       "local_conclusion": "Tune GPT-5.6 by representative evals, use shorter outcome-focused prompts, and choose reasoning effort intentionally. The template caps recommendations at xhigh."
     },

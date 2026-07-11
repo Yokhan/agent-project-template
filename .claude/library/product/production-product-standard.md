@@ -67,10 +67,25 @@ A bounded step is acceptable when it is honest:
 - It has a rollback or follow-up path.
 - It reports remaining gaps as gaps, not as completed product behavior.
 
-## Progressive JPEG Implementation Gate
+## Progressive JPEG Anti-Falsification Gate
 
-Progressive JPEG is not only a reporting format. It also controls implementation
-shape.
+Progressive JPEG is not only a reporting format. It controls implementation
+shape and may never be satisfied by relabeling internal progress as product
+value.
+
+Every implementation slice must fulfill the product's real purpose end to end
+at its current depth. It must give the intended user a complete, honest journey
+from entry through action and feedback to a useful outcome and return path. The
+slice must use the accepted final product path and name the user victory,
+purpose mechanism, app-specific KPI link, evidence, falsifier, rough edges, and
+next sharpening step.
+
+Planning, research, architecture, scaffolding, migrations, inventories, status
+headers, tests, debug output, mocks, stubs, callable seams, HTTP success, and
+readiness percentages are enabling checkpoints. They are not product slices and
+cannot prove that the product purpose is fulfilled. A stub may preserve final
+architecture, but the user outcome for the slice must not depend on that stub.
+Never fabricate, infer, or self-report evidence that was not observed.
 
 For a known final product direction, the first meaningful implementation should
 use an end-state skeleton:
@@ -87,11 +102,11 @@ use an end-state skeleton:
 - A 1% callable capability can be a typed no-op, explicit stub, feature-flagged
   path, dev-only debug signal, placeholder event, or honest
   `not implemented yet` boundary.
-- At 1% readiness, the object must still perform its production function in the
-  smallest honest form. A site shows contacts or a "coming soon" app shell; a
-  game actor spawns and responds with debug actions; a book has the real
-  structure and a useful synopsis; a module exposes its public API and safe
-  placeholder behavior.
+- At 1% readiness, the product slice must still fulfill the real product purpose
+  in the smallest honest end-to-end form. A contact or "coming soon" page counts
+  only when announcement or lead capture is the accepted purpose; actor debug,
+  a table of contents, or a safe API placeholder alone never counts as product
+  completion.
 - User-visible UI must not pretend the capability is complete. Debug notices
   stay developer-facing or explicitly marked as unavailable.
 - Do not build a legacy harness, proof proxy, or compatibility scaffold instead
@@ -194,8 +209,8 @@ Review progressive JPEG objects in this order:
 2. Completeness: does the object contain every planned class, component,
    interface, variable, function, route, section, state, and contract that must
    exist for the final shape?
-3. Executability: does the object perform its production function, even with
-   honest placeholders or debug output?
+3. Product execution: does an intended user complete a purpose-solving journey
+   whose outcome does not depend on a placeholder or debug output?
 4. Detail depth: how much of each planned capability is implemented,
    integrated, tested, and polished?
 
@@ -203,8 +218,8 @@ Readiness levels:
 
 | Level | Meaning | Acceptance |
 | --- | --- | --- |
-| 1% | Whole object skeleton exists from the final plan. All accepted future capabilities are callable or present as honest stubs. | Primary production function works in the smallest honest way. |
-| 10% | Critical path is wired with debug/no-op internals and basic integration points. | Agent can exercise the main path and see debug evidence. |
+| 1% | Whole object skeleton exists from the final plan. All accepted future capabilities are callable or present as honest stubs. | A smallest honest end-to-end user journey already fulfills the product purpose; stubs do not determine its outcome. |
+| 10% | Critical path is wired with rough real behavior and basic integration points. | A product user completes the narrow path and observed product evidence exists. |
 | 30% | Main behavior has rough real implementation for happy path. | Product user can complete a narrow real flow with known rough edges. |
 | 60% | Important states, errors, edge cases, and integrations are implemented. | The object survives realistic use beyond the happy path. |
 | 90% | Production hardening, UX polish, accessibility, performance, privacy, and observability are mostly complete. | Release blockers are known and small. |
@@ -212,20 +227,22 @@ Readiness levels:
 
 Examples:
 
-- Unreal/game actor: 1% means the actor class, components, animation component,
-  interaction interfaces, planned variables, input/event handlers, state names,
-  and debug-callable methods exist. The actor can spawn and report actions such
-  as `Attack requested` or `Interact hook reached`.
-- Site/app: 1% means the shell, routes, core sections, contact/sales path,
-  empty/loading/error placeholders, analytics/feature flags where planned, and
-  deployment entry point exist. If the app is not ready, the site still shows
-  contacts and an honest "coming soon" product promise.
-- Book/text: 1% means the title, thesis, table of contents, chapter slots,
-  argument map, sources/placeholders, editorial voice, and sample section exist.
-  The text can already communicate the core promise.
-- Project/module: 1% means public API, directory structure, contracts, config,
-  adapters, commands, tests or smoke placeholders, and observability/debug
-  boundaries exist. Calls return safe placeholders instead of missing modules.
+- Unreal/game actor: the full planned class/component/interface skeleton exists,
+  and one real playable loop using that actor reaches the intended gameplay
+  outcome. Debug-only attack or interaction messages are preparation evidence.
+- Site/app: the full planned shell and contracts exist, and one real visitor
+  journey reaches the accepted conversion or service outcome. "Coming soon"
+  counts only for an announcement or lead-capture product with a working CTA.
+- Book/text: the full argument and chapter skeleton exists, and a coherent
+  reader-facing unit already delivers the promised insight or action. A table
+  of contents or synopsis alone is preparation.
+- Project/module: the full public contract exists, and one real consumer path
+  completes the module's promised job. Safe placeholders may occupy future
+  seams but cannot determine that path's result.
+
+Use `$codex-progressive-jpeg-planner` and validate
+`tasks/progressive-plan.json` with `node scripts/validate-progressive-plan.js`
+before claiming a progressive product slice.
 
 ## Domain Examples
 

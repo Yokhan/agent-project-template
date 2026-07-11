@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-10 for template `4.6.1` local validation. Remote GitHub Actions runner parity is still required before release tagging.
+Last reviewed: 2026-07-11 for template `4.6.2` local validation. Remote GitHub Actions runner parity is still required before release tagging. The live Codex subagent probe is reported separately because it consumes quota and currently remains unverified on CLI 0.144.x; static markers never count as runtime proof.
 
 ## Validation Gate
 

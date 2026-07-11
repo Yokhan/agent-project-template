@@ -22,6 +22,7 @@ Read:
 5. Treat the user as the client/product owner and the agent as the accountable executor.
 6. List dependencies, risks, acceptance evidence, and honest out-of-scope items.
 7. Use progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
+   For iteration planning, delegate the detailed slice contract to `$codex-progressive-jpeg-planner`.
 8. If the final product plan is missing, gate implementation and create/propose the plan first.
 9. For known final capabilities, require an end-state skeleton: 1% callable hooks, slots, contracts, feature flags, no-op stubs, or dev-only debug signals when the architecture depends on them.
 10. After each sharpening pass, run a superseded-layer audit and delete, replace, or time-box obsolete layers.
@@ -41,6 +42,7 @@ Read:
 - Do not judge detail depth before checking that object inventory matches the final product plan.
 - Do not preserve wrong earlier iterations as disabled legacy, stale placeholders, commented-out code, skipped tests, or release-only exclusion harnesses.
 - Do not fake user-visible readiness for a 1% callable stub; mark rough edges honestly.
+- Do not call planning, architecture, debug output, status, or stub inventory a product slice. Every implementation slice must fulfill the product purpose through an end-to-end user path.
 - Do not close out changed tagged working documents when their `PROGRESSIVE_STATUS` header is stale.
 - Plans, audits, and final reports use the language of the user's request.
 - Partial work must be reported as partial with the next dependency.

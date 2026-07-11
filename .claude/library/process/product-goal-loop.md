@@ -123,13 +123,29 @@ outcome. For each one, decide whether it needs a 1% callable contract now:
   product path or prevents a real regression.
 
 The goal is a low-resolution version of the future product, not a separate demo
-path that must be thrown away.
+path that must be thrown away. Use `$codex-progressive-jpeg-planner` for
+iteration planning and validate `tasks/progressive-plan.json` before treating a
+step as a product slice.
+
+### Anti-Falsification Gate
+
+Every implementation slice must fulfill the product's real purpose end to end
+at its current depth through the accepted final path. It needs a user victory,
+entry-to-return journey, purpose mechanism, app-specific KPI link, observed
+product evidence, falsifier, truth boundary, rough edges, and next sharpening.
+
+Planning, research, architecture, scaffolding, migration, status, tests, mocks,
+stubs, debug output, HTTP success, and inventory completeness are enabling
+checkpoints, not product slices. Callable seams preserve architecture but do not
+prove user value. The slice outcome must not depend on a stub, and evidence must
+never be fabricated or replaced with the agent's own claim.
 
 Verification order for object readiness:
 
 1. Final plan exists.
 2. Object inventory matches the plan.
-3. The 1% object performs its production function in the smallest honest way.
+3. A real user completes the smallest honest purpose-solving journey; its
+   outcome does not depend on a stub or debug signal.
 4. Remaining gaps are classified by detail depth, integration, tests, polish, or
    production hardening.
 5. Superseded layers are removed, replaced, or time-boxed as migration
@@ -148,12 +164,12 @@ Progressive layer replacement gate:
   users, data, or compatibility, stays outside the normal product path, and has
   an explicit removal condition.
 
-For example, a game actor should spawn and expose planned components,
-interfaces, variables, animation hooks, interaction hooks, and debug-callable
-methods before its combat/animation details are complete. A site should expose
-the real shell, route structure, contact path, and honest placeholder promise
-before the full app exists. A book should expose the thesis, structure, chapter
-slots, and sample voice before all chapters are written.
+For example, a game actor needs the planned skeleton plus one real playable loop;
+debug-callable methods alone are preparation. A site needs the final shell plus
+one real conversion or service journey; "coming soon" counts only when the
+accepted product purpose is announcement or lead capture. A book needs the full
+argument skeleton plus one coherent unit that already delivers the reader
+promise; structure alone is preparation.
 
 ## Product Slice Discipline
 

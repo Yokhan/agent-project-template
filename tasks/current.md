@@ -1,19 +1,19 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v4.6.1-agent-update-protocol
-status: done
-updated: 2026-07-10
-readiness: 100
+id: template-v4.6.2-cost-aware-progressive-jpeg
+status: active
+updated: 2026-07-11
+readiness: 95
 plan: 100
 inventory: 100
-production: 100
+production: 95
 cleanup: 100
-tags: progressive-jpeg,template,release,update-protocol,security
-next: run pinned downstream dry-runs for v4.6.1 before applying it to generated projects
+tags: progressive-jpeg,template,release,subagents,luna,anti-falsification
+next: commit and publish v4.6.2; monitor the documented codex-cli 0.144.x live custom-agent limitation
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-Last updated: 2026-07-10
+Last updated: 2026-07-11
 
 ## Goal
 Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
@@ -114,10 +114,65 @@ If router changes become too invasive, keep the new fields backwards-compatible 
 - v4.5.2 has been published as the progressive object readiness patch release.
 - v4.5.3 has been published as the progressive layer replacement and project-slice status patch release.
 - v4.6.0 has been published as the adaptive GPT-5.6 fan-out minor release.
+- v4.6.2 implementation is complete: bounded Luna roles, one-wave fan-out, genuine child-trace validation, and the progressive JPEG anti-falsification planner are in release verification.
+- Live Codex CLI evidence remains unverified on `codex-cli 0.144.0`: the runtime emitted `collab spawn failed: no thread with id`, an empty wait, and a parent-authored role name; the strict trace gate rejected it.
 - v4.6.1 has been published as the canonical agent update protocol and release hardening patch release.
 
 ## Immediate Next Step
-- Preview `v4.6.1` in each generated downstream project with the pinned dry-run protocol before applying it.
+- Implement and verify `v4.6.2`; do not tag until policy, skill, live-runtime, and release gates are green.
+
+## Plan - v4.6.2 Cost-Aware Fan-Out And Truthful Progressive JPEG
+
+### User Request
+Use Luna where it is genuinely suitable, fix wasteful automatic subagent use, explicitly forbid falsifying progressive JPEG, and add a skill that plans iterations so every implementation slice solves the purpose for which the product exists.
+
+### Product Goal Link
+- Final outcome: downstream agents deliver useful product-shaped iterations without burning expensive reasoning on mechanical work or reporting internal motion as product value.
+- Product user: the downstream product owner and the real end user of the generated application, game, text, service, or internal tool.
+- Product/business priority: faster verified value, lower token/support/rework cost, honest acceptance, and protection of the application-specific KPI.
+- Quality bar: no `max`/`ultra`; Luna only for bounded low-risk roles; critical decisions stay on Terra/Sol; no fake child success; no fake progressive slice; every implementation slice closes the real user-value loop at its declared depth.
+
+### System Map
+- Parent/session model and live permissions -> project thread/depth limits -> semantic route -> fan-out policy -> runtime agent profile -> child evidence -> parent consolidation.
+- Product goal -> final inventory and contracts -> progressive iteration plan -> end-to-end slice -> user-path evidence -> cleanup/replacement gate -> next sharpening pass.
+- Active SOTs: user instruction -> `tasks/goal.md` -> production/product-goal/client-executor rules -> agent policy and progressive planner skill -> validators/tests.
+
+### Contradictions
+- Need proactive parallelism without spawning workers whose combined attention costs more than the evidence they add.
+- Need a whole future product shape at 1% without pretending that callable stubs or architecture alone achieve the product purpose.
+- Need cheap Luna throughput without delegating ambiguous decisions or production writes beyond its proven quality envelope.
+
+### Implementation Order
+1. Correct fan-out semantics: XS imperative tasks skip, read-only work cannot become required mutation work, candidate count alone is not enough, and automatic fan-out has one bounded wave.
+2. Add Luna `scout`, `log_analyst`, and `summarizer` roles for bounded read-only work; keep architecture, source verification, testing strategy, implementation, and critical review on Terra/Sol.
+3. Harden live smoke: require a genuine spawn event, non-empty child thread, child completion, and observable role/model evidence when the runtime exposes it; never accept a marker written by the parent.
+4. Add `$codex-progressive-jpeg-planner` with an iteration contract, anti-falsification gate, replacement gate, product-purpose test, and domain examples.
+5. Update hot rules and shared SOTs concisely; route progressive planning by meaning to the new skill.
+6. Add exact policy/routing/skill/production regressions, sync coverage, version/docs, full release gate, then tag and verify `v4.6.2`.
+
+### Slice Acceptance Contract
+Every implementation slice must state and prove:
+- Product purpose: the real user outcome the product exists to create.
+- End-to-end path: a real user/input reaches a real useful outcome, even when fulfillment is manual, narrow, or low-detail.
+- Product shape: accepted final inventory/contracts exist at the declared readiness level.
+- KPI signal: the slice can produce or protect one application-specific success signal.
+- Truth boundary: stubs/debug/mocks are identified and are not the evidence for the product outcome.
+- Replacement: superseded wrong layers are deleted, migrated, or time-boxed with removal conditions.
+- Evidence: an executable path, rendered artifact, complete readable text, real service result, or equivalent product-domain proof.
+
+Planning, research, architecture, migration preparation, and test scaffolding may be necessary work stages. If they do not deliver the product purpose, label them `preparation`, not a progressive product slice.
+
+### Verification
+- Exact unit fixtures for XS commands, read-only review, explicit parallel intent, high-risk mutation, Luna profiles, one-wave limit, and write-scope boundaries.
+- Exact route fixtures proving progressive iteration planning selects the new skill without unrelated design-system or product agents.
+- Skill and production validators require `product purpose`, `end-to-end`, `anti-falsification`, `evidence`, and `replacement` gates plus examples.
+- Live CLI smoke must fail on the previously observed empty `wait` and parent-authored marker.
+- Full template, sync, text, SOT, hook, agent, skill, routing, progressive-status, and release checks.
+
+### Rough Edges And Replan Trigger
+- Rough now: CLI `0.144.0` did not produce a real child in the existing live smoke, even with the anecdotal `multi_agent_v2` workaround.
+- Replan trigger: if the installed CLI cannot expose a genuine custom child/profile, ship automatic fan-out as runtime-gated and report the unsupported CLI path instead of weakening the test or claiming success.
+- Out of scope: changing user-owned global model defaults, enabling experimental Reddit configuration by default, or moving critical reviewer/implementer roles to Luna without eval evidence.
 
 ## Plan - v4.6.1 Canonical Agent Update Protocol
 

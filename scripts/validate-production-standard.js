@@ -12,6 +12,8 @@ const REQUIRED_FILES = [
   ".claude/library/domain/domain-design-system.md",
   "tasks/goal.md",
   ".agents/skills/codex-product-goal/SKILL.md",
+  ".agents/skills/codex-progressive-jpeg-planner/SKILL.md",
+  ".agents/skills/codex-progressive-jpeg-planner/references/domain-examples.md",
   ".agents/skills/codex-design-system-workflow/SKILL.md",
   ".agents/skills/codex-design-workflow/references/design-command-modes.md",
   ".agents/skills/codex-product-ux-audit/SKILL.md",
@@ -20,6 +22,8 @@ const REQUIRED_FILES = [
   "scripts/codex-agent-policy.js",
   "scripts/codex-route-config.js",
   "scripts/progressive-status.js",
+  "scripts/validate-progressive-plan.js",
+  "scripts/validate-subagent-trace.js",
 ];
 
 const SOURCE_ONLY_REQUIRED_FILES = [
@@ -60,7 +64,7 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/process/product-goal-loop.md", text: "Progressive JPEG Implementation Gate" },
   { file: ".claude/library/process/product-goal-loop.md", text: "Verification order for object readiness" },
   { file: ".claude/library/process/product-goal-loop.md", text: "Progressive layer replacement gate" },
-  { file: ".claude/library/product/production-product-standard.md", text: "Progressive JPEG Implementation Gate" },
+  { file: ".claude/library/product/production-product-standard.md", text: "Progressive JPEG Anti-Falsification Gate" },
   { file: ".claude/library/product/production-product-standard.md", text: "end-state skeleton" },
   { file: ".claude/library/product/production-product-standard.md", text: "Object Readiness Levels" },
   { file: ".claude/library/product/production-product-standard.md", text: "Progressive Layer Replacement Pipeline" },
@@ -78,9 +82,9 @@ const REQUIRED_TEXT = [
   { file: "AGENTS.md", text: "progressive JPEG delivery" },
   { file: "AGENTS.md", text: "end-state skeleton" },
   { file: "AGENTS.md", text: "1% callable" },
-  { file: "AGENTS.md", text: "final product plan is missing" },
-  { file: "AGENTS.md", text: "production function" },
-  { file: "AGENTS.md", text: "disabled legacy code" },
+  { file: "AGENTS.md", text: "gate on a missing final plan" },
+  { file: "AGENTS.md", text: "every implementation slice must fulfill the real product purpose end to end" },
+  { file: "AGENTS.md", text: "evidence may not be fabricated" },
   { file: "AGENTS.md", text: "PROGRESSIVE_STATUS" },
   { file: "AGENTS.md", text: "SOT Conflict Protocol" },
   { file: "AGENTS.md", text: "Systemic Error Analysis" },
@@ -160,7 +164,16 @@ const REQUIRED_TEXT = [
   { file: "scripts/codex-route-task.js", text: "exact-patterns-plus-semantic-intent-scoring" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-5.6-sol" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-5.6-terra" },
+  { file: "scripts/codex-agent-policy.js", text: "gpt-5.6-luna" },
   { file: "scripts/codex-agent-policy.js", text: "effortCeiling: \"xhigh\"" },
+  { file: "scripts/codex-agent-policy.js", text: "maxAutomaticWaves: 1" },
+  { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "Anti-Falsification Gate" },
+  { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "Every implementation slice" },
+  { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "enabling checkpoint" },
+  { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "tasks/progressive-plan.json" },
+  { file: ".agents/skills/codex-progressive-jpeg-planner/references/domain-examples.md", text: "Game actor" },
+  { file: "scripts/validate-progressive-plan.js", text: "validateProgressivePlan" },
+  { file: "scripts/validate-subagent-trace.js", text: "validateSubagentTrace" },
   { file: ".claude/library/product/production-product-standard.md", text: "MVP/prototype" },
   { file: ".claude/library/process/product-goal-loop.md", text: "This is not a \"final slice\" model" },
   { file: ".claude/library/domain/domain-design-system.md", text: "Rendered Geometry Gate" },
@@ -190,6 +203,11 @@ const SOURCE_ONLY_REQUIRED_TEXT = [
 ];
 
 const ROUTE_CASES = [
+  {
+    task: "plan progressive JPEG iterations where every slice solves the product purpose end to end",
+    skills: ["codex-progressive-jpeg-planner", "codex-product-goal", "codex-decompose"],
+    gates: ["product-purpose", "end-to-end-user-victory", "anti-falsification", "final-path-evidence"],
+  },
   {
     task: "agent template client-executor contract anti-sycophancy no fake completion",
     skills: ["codex-template-sync", "codex-product-goal", "codex-strategic-review"],

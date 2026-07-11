@@ -89,6 +89,19 @@ src/
   excluded]
 - Replacement/cleanup: [superseded stubs, wrong iterations, disabled branches,
   old tests, stale flags, or release-only harnesses to delete/replace/migrate]
+- Slice purpose: [real user victory and product purpose fulfilled end to end at
+  this detail level through the accepted final path]
+- Journey and mechanism: [entry -> action -> feedback -> useful outcome ->
+  return; why this produces the intended result]
+- KPI and evidence: [app-specific KPI link, observed product evidence, and the
+  fact that would falsify the claim]
+- Truth boundary: [rough edges and stubs; confirm the slice outcome does not
+  depend on a stub]
+
+Planning, research, architecture, scaffolding, migration, status, tests, debug
+output, mocks, and inventories are enabling checkpoints, not product slices.
+Use `$codex-progressive-jpeg-planner` and validate
+`tasks/progressive-plan.json` before implementation.
 
 ### Plan B (mandatory for M+ tasks)
 If the primary approach fails at step [N], the fallback is:

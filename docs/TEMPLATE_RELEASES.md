@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.6.1
-git push origin v4.6.1
+git tag v4.6.2
+git push origin v4.6.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -54,7 +54,7 @@ If ownership is unclear, stop and ask instead of guessing.
 
 1. Explicit user tag > AgentOS-approved tag > verified latest stable release.
 2. Otherwise read the stable, non-draft, non-prerelease tag from
-   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.1`.
+   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.2`.
 3. Installed version is comparison data, never the target. Never infer the
    target from `main`, a badge, cached memory, or a stale local sync script.
 4. If no target can be verified, ask for a tag. Do not substitute a branch.
@@ -112,7 +112,7 @@ Use the target release checkout's script with `--project-dir` for this fallback.
 New project from a stable release:
 
 ```bash
-git clone --branch v4.6.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.6.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -123,8 +123,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.1
+bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.2
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -180,7 +180,9 @@ Version `4.6.0` is a compatible minor release that adds a single GPT-5.6 agent p
 
 Version `4.6.1` is a compatible patch release that makes template updates deterministic for agents and closes the release blockers found during verification. It adds one canonical source/downstream update protocol, explicit target-tag precedence, pinned preview/apply and post-sync evidence, safe manifest/path handling without generated JavaScript or shell hashing, exact semver tag fetches, dry-run project-file immutability, and a release workflow that validates and publishes the same tag commit without replacing an existing release asset.
 
-Downstream projects should sync `v4.6.1` with a dry run first and review local `project-*` skills and agents, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, readiness-level definitions, progressive status headers, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
+Version `4.6.2` is a compatible patch release that adds bounded Luna roles for discovery, log extraction, and summarization; limits automatic fan-out to one evidence-backed wave; replaces marker-based subagent proof with genuine child-thread trace validation; and adds a progressive JPEG planner whose every implementation slice must fulfill the real product purpose end to end without stub-dependent or fabricated evidence.
+
+Downstream projects should sync `v4.6.2` with a dry run first and review local `project-*` skills and agents, auth flows, design systems, task files, CI workflows, design context files, design policy ignores, client-facing report conventions, business/product planning conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -194,12 +196,18 @@ bash scripts/test-template.sh
 bash scripts/sync-agents.sh
 node scripts/test-codex-routing.js
 node scripts/test-codex-agent-policy.js
+node scripts/test-progressive-plan.js
+node scripts/test-subagent-trace.js
 node scripts/validate-codex-skills.js
 node scripts/validate-codex-agents.js
 node scripts/validate-production-standard.js
 node scripts/validate-design-policy.js
 node scripts/test-design-policy.js
 ```
+
+`scripts/test-codex-subagents-live.sh --yes` is a quota-consuming compatibility
+probe, not a mandatory release gate. Report its result separately and never
+convert a parent-authored marker into child/model evidence.
 
 Also run a generated-project smoke when the payload changes:
 
@@ -219,8 +227,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.6.1 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.1
+bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.6.2
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
