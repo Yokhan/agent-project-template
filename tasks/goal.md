@@ -20,7 +20,7 @@ The primary user is the downstream product team or operator using a generated pr
 - Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
 
 ## Current Step
-`v4.7.0` is the active release candidate. Validate its writing profiles, truthful external-tool contract, fresh bootstrap, existing-project sync, version binding, and remote release workflow before publishing the tag.
+`v4.7.0` is published. Downstream projects should preview the pinned tag before applying it and review project-owned writing voice, terminology, external-tool adapters, and route overlays.
 
 ## Dependencies
 - Shared `.claude/library/` rules.

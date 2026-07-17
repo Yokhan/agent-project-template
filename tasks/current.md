@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-russian-writing-books-and-tool-truth
-status: active
+status: done
 updated: 2026-07-17
-readiness: 92
+readiness: 100
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
 tags: writing,russian,correspondence,explanation,glavred,tool-truth,routing
-next: validate, commit, tag, push, and verify v4.7.0 release
+next: preview v4.7.0 in representative downstream projects before rollout
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -29,6 +29,13 @@ next: validate, commit, tag, push, and verify v4.7.0 release
 - Independent systems, test, and security review.
 - Template, writing, routing, MCP, text, dependency, manifest, and downstream checks.
 - Tag-to-commit match plus authoritative GitHub Actions and release verification.
+
+### Result
+- Release commits: `56ff86a` and gate follow-up `281eb65`.
+- Tag `v4.7.0` points to `281eb65c3b078ea4f38b7598d6ca5c6c0f1ba4e7`.
+- Aggregate validation run `29599897177` passed Linux/Windows validation and bootstrap smoke.
+- Release workflow `29600194608` passed and published the GitHub release archive.
+- Glavred remains `not-configured:not-run`; recreation stays out of scope.
 
 ## Active Slice - Russian Correspondence, Explanation, And Tool Truth
 
