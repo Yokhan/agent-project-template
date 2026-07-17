@@ -23,8 +23,8 @@ Selects the best agent for a task based on signals from the request and affected
 | test, coverage, spec, TDD | test-engineer | Sonnet |
 | simplify, refactor, cleanup, reduce complexity | simplifier | Sonnet |
 | security, vulnerability, CVE, audit (security) | security-auditor | Opus |
-| docs, readme, changelog, API docs | documenter | Sonnet |
-| article, blog, text, copy, content, write | writer | Opus |
+| docs, readme, changelog, API docs | writer in informational mode | Opus |
+| literary, marketing, informational, communication text | writer + writing-workflow | Opus |
 | perf, slow, latency, profile, optimize | profiler | Sonnet |
 
 ## File Context Signals
@@ -38,7 +38,7 @@ When task references specific files, use file patterns to refine:
 | `*.css`, `*.scss`, `*.tsx` with style changes | implementer + load domain-design rules |
 | `auth/*`, `security/*`, `*.auth.*` | security-auditor (deep mode) |
 | `shared/*`, `core/*` | reviewer (Opus, deep mode) — high blast radius |
-| `*.md`, `docs/*` | documenter |
+| `*.md`, `docs/*` | writer in informational mode when content changes; documenter only for mechanical doc generation |
 | `brain/*` | researcher (knowledge management) |
 
 ## Compound Signals

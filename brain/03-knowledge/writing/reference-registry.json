@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "updatedOn": "2026-07-17",
+  "owner": "project",
+  "supersedes": {
+    "editorIds": [],
+    "toolIds": [],
+    "sourceIds": [],
+    "profileIds": []
+  },
+  "editorRoles": [],
+  "externalTools": [],
+  "sources": [],
+  "profiles": []
+}

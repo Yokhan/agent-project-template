@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.6.2 -->
+<!-- Template Version: 4.7.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -123,10 +123,14 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
 - Feature/product implementation: use `$codex-progressive-jpeg-planner`; every slice solves the product purpose end to end through the final path. Skeletons and stubs preserve shape but never prove value. Verify the plan and user journey, then remove superseded layers before claiming sharper readiness.
-- Marketing/GTM: use `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
+- Writing: use `$codex-writing-workflow`; select literary, marketing/advertising, informational, or communication mode by the reader's job. A functional 1% text must already perform its production purpose; never fabricate facts, proof, citations, human imperfections, or AI-detector claims.
+- Technical writing: keep informational or communication as the primary mode and add `$codex-technical-writing`; select registry profile IDs, verify code/schema/version/OS, execute procedures, and use `$codex-technical-writing-review` for independent acceptance.
+- Marketing/GTM: use `$codex-writing-workflow`, `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
+- Writing: resolve the artifact's target language, then keep language/editorial, process, domain, and technical profiles separate. Russian output loads `russian-writing-profile.md`; English standards may constrain facts, claims, procedure, terminology, accessibility, or information architecture, but never Russian voice, syntax, idiom, or line editing.
+- Writing tools: external services are separate from sources and profiles. Without configured access and a successful response tied to the current artifact, never claim a Glavred check, score, warning list, or other provider result; label public-method editing as manual.
 - Design system: use `$codex-design-system-workflow`; tokens, components, states, Storybook, and rendered geometry are part of the contract.
 - Product UX: use `$codex-product-ux-audit`; verify useful flows, dead ends, return paths, auth/session states, and mobile/desktop behavior.
-- OpenAI/API docs: browse official docs when freshness matters; do not rely on stale model/API memory.
+- OpenAI docs: require an explicit OpenAI/GPT/Codex/Responses vendor anchor and browse official docs when freshness matters. Generic API docs use technical writing plus `$codex-api-contract`, not OpenAI guidance.
 - Fan-out: follow the route's `fanout` decision. Auto-spawn only independent, useful `required`/`recommended` lanes, one automatic wave maximum. Candidate count alone is not value. User opt-out wins; prefer read-only roles and exact isolated `implementer` scopes. Never claim a custom role/model ran without a genuine spawn-child-wait trace accepted by `validate-subagent-trace.js`.
 
 ### Template Update Protocol
@@ -216,7 +220,7 @@ Prefer the shared rules returned by `scripts/codex-route-task.js`. If the router
 ### Read per task type:
 - **Implementation**: also read `.claude/library/process/plan-first.md`
 - **Review/Audit**: also read `.claude/library/meta/critical-thinking.md`
-- **Writing content**: also read `.claude/library/technical/writing.md`
+- **Writing content**: use `$codex-writing-workflow` and read `.claude/library/technical/writing.md`; add `$codex-technical-writing` when truth depends on code or runtime behavior
 - **Work reports / closeout**: also read `.claude/library/technical/writing.md` and follow the client-facing report rules
 - **Testing**: also read `.claude/library/technical/testing.md`
 - **Design/UI**: also read `.claude/library/domain/domain-design-pipeline.md`
@@ -360,4 +364,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.6.2
+4.7.0

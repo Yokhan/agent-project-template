@@ -175,6 +175,7 @@ generate_manifest() {
       .claude/docs/domain-full/*.md) echo "template" ;;
       .claude/library/process/*.md) echo "template" ;;
       .claude/library/technical/*.md) echo "template" ;;
+      .claude/library/technical/*.json) echo "template" ;;
       .claude/library/meta/*.md) echo "template" ;;
       .claude/library/domain/*.md) echo "template" ;;
       .claude/library/product/*.md) echo "template" ;;
@@ -193,7 +194,10 @@ generate_manifest() {
       mcp-servers/context-router/package.json) echo "template" ;;
       mcp-servers/context-router/tsconfig.json) echo "template" ;;
       tests/rules/*.test.md) echo "template" ;;
-      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
+      tests/fixtures/design-policy/pass/*.css) echo "template" ;;
+      tests/fixtures/design-policy/fail/*.css) echo "template" ;;
+      tests/fixtures/writing-tools/*.js) echo "template" ;;
+      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
       _reference/*.md) echo "template" ;;
       .github/*) echo "template" ;;
       .github/workflows/validate-template.yml) echo "template" ;;
@@ -237,6 +241,7 @@ generate_manifest() {
     ".claude/docs/domain-full/"*.md
     ".claude/library/process/"*.md
     ".claude/library/technical/"*.md
+    ".claude/library/technical/"*.json
     ".claude/library/meta/"*.md
     ".claude/library/domain/"*.md
     ".claude/library/product/"*.md
@@ -255,12 +260,15 @@ generate_manifest() {
     "mcp-servers/context-router/package.json"
     "mcp-servers/context-router/tsconfig.json"
     "tests/rules/"*.test.md
+    "tests/fixtures/writing-tools/"*.js
     "docs/AGENT_PIPELINES.md"
     "docs/CODEX_FANOUT_PATTERNS.md"
     "docs/CODEX_SKILLS_AUDIT.md"
     "docs/CODEX_SUBAGENTS_AUDIT.md"
     "docs/MIGRATION_MATRIX.md"
     "docs/OPENAI_MODEL_GUIDANCE.md"
+    "docs/WRITING_REFERENCE_PROVENANCE.md"
+    "docs/WRITING_WORKFLOW.md"
     "docs/PRODUCT_BOUNDARY.md"
     "docs/RELEASE_CHECKLIST.md"
     "docs/TEMPLATE_RELEASES.md"

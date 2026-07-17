@@ -6,6 +6,17 @@ const { getRoute } = require("./codex-route-task.js");
 const REQUIRED_FILES = [
   "AGENTS.md",
   "CLAUDE.md",
+  ".claude/agents/writer.md",
+  ".claude/agents/technical-writer.md",
+  ".claude/skills/writing-workflow/SKILL.md",
+  ".claude/library/technical/writing.md",
+  ".claude/library/technical/writing-mode-profiles.md",
+  ".claude/library/technical/russian-writing-profile.md",
+  ".claude/library/technical/russian-business-correspondence.md",
+  ".claude/library/technical/russian-explanation-and-persuasion.md",
+  ".claude/library/technical/technical-writing-profile.md",
+  ".claude/library/technical/writing-editorial-board.md",
+  ".claude/library/technical/writing-reference-registry.json",
   ".claude/library/product/production-product-standard.md",
   ".claude/library/process/product-goal-loop.md",
   ".claude/library/process/client-executor-contract.md",
@@ -14,11 +25,24 @@ const REQUIRED_FILES = [
   ".agents/skills/codex-product-goal/SKILL.md",
   ".agents/skills/codex-progressive-jpeg-planner/SKILL.md",
   ".agents/skills/codex-progressive-jpeg-planner/references/domain-examples.md",
+  ".agents/skills/codex-writing-workflow/SKILL.md",
+  ".agents/skills/codex-technical-writing/SKILL.md",
+  ".agents/skills/codex-technical-writing-review/SKILL.md",
+  ".claude/library/technical/writing-mode-profiles.md",
+  "docs/WRITING_WORKFLOW.md",
+  "docs/WRITING_REFERENCE_PROVENANCE.md",
   ".agents/skills/codex-design-system-workflow/SKILL.md",
   ".agents/skills/codex-design-workflow/references/design-command-modes.md",
   ".agents/skills/codex-product-ux-audit/SKILL.md",
   ".agents/skills/codex-cross-project-lessons/SKILL.md",
   "scripts/lib/codex-route-intents.js",
+  "scripts/lib/writing-intent.js",
+  "scripts/lib/writing-route-policy.js",
+  "scripts/lib/writing-reference-policy.js",
+  "scripts/lib/writing-external-tool-policy.js",
+  "scripts/lib/writing-path-policy.js",
+  "scripts/validate-writing-references.js",
+  "tests/fixtures/writing-tools/external-tool-adapter.fixture.js",
   "scripts/codex-agent-policy.js",
   "scripts/codex-route-config.js",
   "scripts/progressive-status.js",
@@ -79,6 +103,31 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/meta/strategic-thinking.md", text: "Sun Tzu / Stratagem Terrain Check" },
   { file: ".claude/library/meta/strategic-thinking.md", text: "Plan Reality Check" },
   { file: ".claude/library/technical/writing.md", text: "progressive JPEG shape" },
+  { file: ".claude/library/technical/writing.md", text: "Four Semantic Modes" },
+  { file: ".claude/library/technical/writing.md", text: "LitAI-Derived Workflow" },
+  { file: ".claude/library/technical/writing.md", text: "Technical writing is a specialization" },
+  { file: ".claude/library/technical/technical-writing-profile.md", text: "Technical Progressive JPEG" },
+  { file: ".claude/library/technical/writing-editorial-board.md", text: "Independent Review Rule" },
+  { file: ".claude/library/technical/russian-writing-profile.md", text: "Derived Russian Examples" },
+  { file: ".claude/library/technical/russian-writing-profile.md", text: "English domain standard may change facts" },
+  { file: ".claude/library/technical/russian-business-correspondence.md", text: "Correspondence Contract" },
+  { file: ".claude/library/technical/russian-explanation-and-persuasion.md", text: "Explanation Contract" },
+  { file: ".claude/library/technical/writing.md", text: "External Tool Truth Gate" },
+  { file: "scripts/lib/writing-route-policy.js", text: "externalTools" },
+  { file: ".claude/library/technical/writing-reference-registry.json", text: "glavred-api" },
+  { file: ".claude/library/technical/writing-reference-registry.json", text: "requiresArtifactBinding" },
+  { file: ".agents/skills/codex-technical-writing/SKILL.md", text: "declared environment" },
+  { file: ".agents/skills/codex-technical-writing-review/SKILL.md", text: "Procedure" },
+  { file: "scripts/lib/writing-route-policy.js", text: "TECHNICAL_EDITORS" },
+  { file: "scripts/lib/writing-route-policy.js", text: "languageProfiles" },
+  { file: "docs/WRITING_REFERENCE_PROVENANCE.md", text: "template baseline" },
+  { file: ".claude/library/technical/writing.md", text: "deliberate typos" },
+  { file: ".claude/library/technical/writing.md", text: "evasion of AI detectors" },
+  { file: ".agents/skills/codex-writing-workflow/SKILL.md", text: "functional 1% whole" },
+  { file: ".agents/skills/codex-writing-workflow/SKILL.md", text: "Never invent facts" },
+  { file: ".agents/skills/codex-writing-workflow/SKILL.md", text: "genuine child trace" },
+  { file: ".claude/library/technical/writing-mode-profiles.md", text: "Progressive Readiness" },
+  { file: "docs/WRITING_WORKFLOW.md", text: "Writing Workflow Architecture And LitAI Adaptation" },
   { file: "AGENTS.md", text: "progressive JPEG delivery" },
   { file: "AGENTS.md", text: "end-state skeleton" },
   { file: "AGENTS.md", text: "1% callable" },
@@ -149,9 +198,10 @@ const REQUIRED_TEXT = [
   { file: "scripts/validate-template.sh", text: "Progressive status validates" },
   { file: "tasks/current.md", text: "PROGRESSIVE_STATUS" },
   { file: ".claude/library/technical/testing.md", text: "Stale implementation paths" },
-  { file: ".agents/skills/codex-domain-communication-review/SKILL.md", text: "text, book" },
-  { file: ".agents/skills/codex-domain-communication-review/SKILL.md", text: "core promise" },
+  { file: ".agents/skills/codex-domain-communication-review/SKILL.md", text: "independent review skill" },
+  { file: ".agents/skills/codex-domain-communication-review/SKILL.md", text: "functional progressive whole" },
   { file: "scripts/lib/codex-route-intents.js", text: "INTENT_GROUPS" },
+  { file: "scripts/lib/writing-intent.js", text: "classifyWritingIntent" },
   { file: "scripts/lib/codex-route-intents.js", text: "future capability" },
   { file: "scripts/lib/codex-route-intents.js", text: "remember this rule" },
   { file: "scripts/codex-route-task.js", text: "user-business-outcome-link" },
@@ -259,6 +309,36 @@ const ROUTE_CASES = [
     gates: ["audience-icp", "positioning-offer-clarity", "measurement-and-ethics"],
   },
   {
+    task: "напиши художественную сцену с конфликтом и поворотом",
+    skills: ["codex-writing-workflow"],
+    gates: ["writing-contract", "functional-whole", "mode-specific-review"],
+    planRequired: false,
+  },
+  {
+    task: "напиши руководство пользователю с проверяемым результатом",
+    skills: ["codex-writing-workflow"],
+    gates: ["writing-contract", "reader-task-completion"],
+    planRequired: false,
+  },
+  {
+    task: "Write generic API docs",
+    skills: ["codex-writing-workflow", "codex-technical-writing", "codex-api-contract"],
+    gates: ["reference-registry-valid", "technical-procedure-executed"],
+    excludedSkills: ["codex-openai-model-guidance", "codex-feature-workflow"],
+  },
+  {
+    task: "Write OpenAI Responses API docs",
+    skills: ["codex-technical-writing", "codex-api-contract", "codex-openai-model-guidance"],
+    gates: ["technical-procedure-executed"],
+    needsFreshDocs: true,
+  },
+  {
+    task: "напиши письмо клиенту с владельцем действия и сроком ответа",
+    skills: ["codex-writing-workflow"],
+    gates: ["writing-contract", "recipient-action-path"],
+    planRequired: false,
+  },
+  {
     task: "пользователи не покупают повторно деньги теряются путь ломается",
     skills: ["codex-domain-communication-review", "codex-domain-business-review", "codex-product-goal"],
     gates: ["journey-or-funnel-fit", "user-business-outcome-link"],
@@ -350,8 +430,9 @@ function assertIncludes(values, expected, label) {
 
 function assertRoute(routeCase) {
   const route = getRoute(routeCase.task);
-  if (!route.planContract?.required) {
-    addError(`${routeCase.task}: planContract.required must be true`);
+  const expectedPlan = routeCase.planRequired ?? true;
+  if (route.planContract?.required !== expectedPlan) {
+    addError(`${routeCase.task}: planContract.required must be ${expectedPlan}`);
   }
   if (!route.productionBar?.noMvpByDefault) {
     addError(`${routeCase.task}: productionBar.noMvpByDefault must be true`);
@@ -365,8 +446,27 @@ function assertRoute(routeCase) {
   for (const skill of routeCase.skills) {
     assertIncludes(route.skills, skill, `${routeCase.task} skills`);
   }
+  for (const skill of routeCase.excludedSkills || []) {
+    state.checks += 1;
+    if (route.skills.includes(skill)) addError(`${routeCase.task} skills unexpectedly include ${skill}`);
+  }
   for (const gate of routeCase.gates) {
     assertIncludes(route.qualityGates || [], gate, `${routeCase.task} gates`);
+  }
+  if (typeof routeCase.needsFreshDocs === "boolean" && route.needsFreshDocs !== routeCase.needsFreshDocs) {
+    addError(`${routeCase.task}: needsFreshDocs must be ${routeCase.needsFreshDocs}`);
+  }
+}
+
+function assertContextRouterVersion() {
+  const packageJson = JSON.parse(readText(path.join(process.cwd(), "mcp-servers/context-router/package.json")));
+  const packageLock = JSON.parse(readText(path.join(process.cwd(), "mcp-servers/context-router/package-lock.json")));
+  const serverSource = readText(path.join(process.cwd(), "mcp-servers/context-router/src/index.ts"));
+  const serverVersion = serverSource.match(/version:\s*"([0-9.]+)"/)?.[1] || "missing";
+  const versions = [packageJson.version, packageLock.version, packageLock.packages?.[""]?.version, serverVersion];
+  state.checks += versions.length;
+  if (!versions.every((version) => version === versions[0])) {
+    addError(`context-router version mismatch: ${versions.join(", ")}`);
   }
 }
 
@@ -390,6 +490,7 @@ function main() {
   for (const routeCase of ROUTE_CASES) {
     assertRoute(routeCase);
   }
+  assertContextRouterVersion();
 
   console.log(`Production standard checks: ${state.checks}`);
   for (const error of state.errors) {

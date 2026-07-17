@@ -33,6 +33,7 @@ async function persistState(): Promise<void> {
   }
 
   const lines = [
+    'STATE_VERSION=2',
     `TASK=${state.taskDescription}`,
     `MODES=${state.currentModes.join(' ')}`,
     `COUNT=${state.activeRules.length} files`,

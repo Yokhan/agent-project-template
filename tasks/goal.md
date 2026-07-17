@@ -20,7 +20,7 @@ The primary user is the downstream product team or operator using a generated pr
 - Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
 
 ## Current Step
-`v4.6.2` is published. Downstream projects should preview the pinned tag before applying it; monitor the documented `codex-cli 0.144.x` live custom-agent limitation without weakening the trace gate.
+`v4.7.0` is the active release candidate. Validate its writing profiles, truthful external-tool contract, fresh bootstrap, existing-project sync, version binding, and remote release workflow before publishing the tag.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
@@ -34,9 +34,11 @@ The primary user is the downstream product team or operator using a generated pr
 - More rules can increase startup noise if entrypoints are not concise.
 - Downstream projects still need release-tag sync after the template is ready.
 - Codex CLI surfaces can expose different multi-agent runtimes; automatic fan-out must not assume a custom model profile was applied without runtime evidence.
+- Glavred recreation is a separate product task; this release must keep the provider explicitly not configured and not run.
 
 ## Out Of Scope For Current Step
 - Applying the new template to every downstream project.
 - Reworking each downstream product UI.
 - Changing user-level Codex or IDE model/sandbox defaults.
 - Treating planning, research, architecture-only work, or a debug harness as a delivered product slice.
+- Recreating, proxying, or bundling Glavred.

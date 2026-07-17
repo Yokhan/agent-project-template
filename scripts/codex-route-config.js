@@ -58,7 +58,7 @@ const ROUTES = [
   {
     mode: "design",
     pattern:
-      /design|figma|ui|ux|css|layout|visual|component|responsive|accessib|screen|mockup|shape|craft|critique|distill|harden|polish|adapt|clarify|typeset|colorize|bolder|quieter|дизайн|фигма|макет|экран|интерфейс|стиль/i,
+      /design|figma|\bui\b|\bux\b|\bcss\b|layout|visual|component|responsive|accessib|screen|mockup|shape|craft|critique|distill|harden|polish|adapt|clarify|typeset|colorize|bolder|quieter|дизайн|фигма|макет|экран|интерфейс|стиль/i,
     skills: ["codex-design-workflow", "codex-domain-design-review"],
     pipeline: "design",
     subagents: ["design_reviewer", "tester", "reviewer"],
@@ -128,7 +128,7 @@ const ROUTES = [
   {
     mode: "marketing",
     pattern:
-      /marketing|go-?to-?market|gtm|positioning|campaign|funnel|offer|copywriting|brand awareness|demand gen|lead gen|lead magnet|ICP|buyer journey|customer journey|roas|cac|ltv|маркет|позиционир|кампан|воронк|оффер|лид|аудитор|покупател|сообщени|месседж|бренд|перформанс|канал|дистрибуц/i,
+      /marketing|go-?to-?market|gtm|positioning|campaign|funnel|offer|copywriting|advertis|ad copy|sales copy|brand awareness|demand gen|lead gen|lead magnet|ICP|buyer journey|customer journey|roas|cac|ltv|маркет|позиционир|кампан|воронк|оффер|реклам|продающ|лид|покупател|бренд|перформанс|дистрибуц/i,
     skills: [
       "codex-domain-communication-review",
       "codex-domain-business-review",
@@ -144,8 +144,31 @@ const ROUTES = [
       "journey-or-funnel-fit",
       "channel-distribution-plan",
       "measurement-and-ethics",
+      "independent-review-or-self-check-label",
     ],
     risk: "MEDIUM",
+  },
+  {
+    mode: "writing-literary",
+    pattern:
+      /\b(?:novel|fiction|story|chapter|scene|dialogue|screenplay|narrative|poem|game lore)\b|роман|рассказ|повест|литератур|художественн|сценари|диалог|стих|игров\w*\s+лор|глава\s+(?:книг|роман)/i,
+    skills: ["codex-writing-workflow"],
+    pipeline: "literary writing",
+    subagents: ["reviewer"],
+    rules: ["writing"],
+    gates: ["writing-contract", "source-truth-boundary", "functional-whole", "mode-specific-review", "independent-review-or-self-check-label"],
+    risk: "LOW",
+  },
+  {
+    mode: "writing-communication",
+    pattern:
+      /\b(?:email|e-mail|letter|message|notification|announcement|support reply|incident update|pr response|client report)\b|письм|уведомлен|объявлен|коммуникац|клиентск[а-яё]*\s+отч|ответ[а-яё]*\s+поддерж|сообщен[а-яё]*\s+(?:клиент|пользовател|команд|сотрудник)/i,
+    skills: ["codex-writing-workflow"],
+    pipeline: "communication writing",
+    subagents: ["reviewer"],
+    rules: ["writing"],
+    gates: ["writing-contract", "source-truth-boundary", "functional-whole", "recipient-action-path", "independent-review-or-self-check-label"],
+    risk: "LOW",
   },
   {
     mode: "product-goal",
@@ -172,7 +195,7 @@ const ROUTES = [
   {
     mode: "release",
     pattern:
-      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/i,
+      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|(?:^|[^А-Яа-яЁё])верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/i,
     skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
     pipeline: "release",
     subagents: ["tester", "reviewer", "security_reviewer"],
@@ -182,7 +205,7 @@ const ROUTES = [
   {
     mode: "openai",
     pattern:
-      /openai|gpt|codex|responses api|model|reasoning effort|модель|опенаи|gpt-?5/i,
+      /openai|gpt|codex|responses api|опенаи|gpt-?5/i,
     skills: ["codex-openai-model-guidance"],
     pipeline: "docs research",
     subagents: ["docs_researcher", "reviewer"],
@@ -201,9 +224,20 @@ const ROUTES = [
     risk: "LOW",
   },
   {
+    mode: "technical-writing",
+    pattern:
+      /technical (?:documentation|docs|guide)|developer docs?|api docs?|sdk guide|cli guide|how-to|readme|runbook|troubleshooting|deployment guide|configuration guide|integration guide|migration guide|release notes?|architecture decision|техническ[а-яё]*\s+документац|ранбук|ридми/i,
+    skills: ["codex-technical-writing"],
+    pipeline: "technical writing",
+    subagents: ["docs_researcher", "tester", "reviewer"],
+    rules: ["writing", "testing"],
+    gates: ["technical-accuracy", "procedure-executed", "document-architecture", "technical-language"],
+    risk: "MEDIUM",
+  },
+  {
     mode: "api",
     pattern:
-      /api|endpoint|openapi|api contract|request\/response|schema|pagination|rate limit|апи|эндпоинт/i,
+      /\b(?:api|endpoint|openapi)\b|api contract|request\/response|schema|pagination|rate limit|(?:^|[^А-Яа-яЁё])апи(?:$|[^А-Яа-яЁё])|эндпоинт/i,
     skills: ["codex-api-contract", "codex-feature-workflow"],
     pipeline: "feature",
     subagents: ["pr_explorer", "tester", "reviewer"],
@@ -229,19 +263,20 @@ const ROUTES = [
     risk: "HIGH",
   },
   {
-    mode: "docs",
+    mode: "writing-informational",
     pattern:
-      /docs|readme|document|guide|writing|copy|text|документ|ридми|гайд|текст|напиши/i,
-    skills: ["codex-domain-communication-review"],
-    pipeline: "documentation",
+      /docs|readme|document|documentation|guide|manual|tutorial|article|explain|knowledge base|release note|writing|text|документ|ридми|гайд|руководств|инструкц|стат|объясн|справк|баз\w*\s+знан|текст/i,
+    skills: ["codex-writing-workflow"],
+    pipeline: "informational writing",
     subagents: ["summarizer", "reviewer"],
-    rules: ["writing", "review"],
+    rules: ["writing"],
+    gates: ["writing-contract", "source-truth-boundary", "functional-whole", "reader-task-completion", "independent-review-or-self-check-label"],
     risk: "LOW",
   },
   {
     mode: "feature",
     pattern:
-      /implement|build|create|add|feature|module|component|service|создай|добавь|реализуй|настрой/i,
+      /implement|build|create|add|feature|module|component|service|создай|добавь|реализуй|настрой\w*\s+(?:проект|модул|сервис|интеграц|окружен)/i,
     skills: ["codex-feature-workflow", "codex-pipeline-workflow"],
     pipeline: "feature",
     subagents: ["pr_explorer", "tester", "reviewer"],
@@ -251,7 +286,7 @@ const ROUTES = [
   {
     mode: "review",
     pattern:
-      /review|audit|check|inspect|analyze|evaluate|провер|аудит|разбери|оцени|посмотри/i,
+      /review|audit|check|inspect|analyze|evaluate|провер|аудитир|(?:^|[^А-Яа-яЁё])аудит(?:$|[^А-Яа-яЁё])|разбери|оцени|посмотри/i,
     skills: ["codex-audit"],
     pipeline: "review",
     subagents: ["scout", "reviewer", "tester", "summarizer"],

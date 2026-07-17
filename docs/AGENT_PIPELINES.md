@@ -157,6 +157,54 @@ Use for tokens, Storybook, component libraries, atomic design, forms, product UI
 5. Rendered checks
    - Use Storybook/browser automation to compare computed styles and bounding boxes against tokens.
 
+## Writing
+
+Use for literary, marketing/advertising, informational, and communication text.
+
+1. Classify
+   - Use `scripts/lib/writing-intent.js` to identify action, primary mode, and domain overlays.
+   - Channel words do not create a second primary mode; a marketing email remains marketing.
+2. Contract
+   - Define reader, production purpose, after-state, product/business link, channel, SOTs, voice, and acceptance evidence.
+3. Research
+   - Load relevant facts, prior text, references, claims, constraints, and gaps.
+4. Architect
+   - Define the final function/section inventory and mode-specific reader path.
+5. Functional whole
+   - Produce the smallest complete text that performs the production purpose honestly end to end.
+6. Sharpen
+   - Increase evidence, examples, scenes, objections, detail, and language resolution in the accepted whole.
+7. Review
+   - Use a separate reviewer for public, commercial, sensitive, or M+ text; otherwise label the pass as self-check.
+8. Release and evolve
+   - Verify truth, channel, links, CTA/resolution, active version, and outcome evidence; replace superseded text.
+
+## Technical Writing
+
+Use as a specialization over informational writing, or communication for
+incidents, release notes, and migration notices.
+
+1. Contract
+   - Identify reader, product/version, OS/shell, deployment shape, document kind,
+     active SOTs, and executable acceptance path.
+2. Select
+   - Run the shared writing policy and record selected reference profile IDs and
+     editorial role IDs.
+   - Validate template and project-owned registries before loading sources.
+3. Inspect
+   - Compare existing prose with code, schemas, interfaces, tests, and observed
+     behavior; gate material SOT conflicts.
+4. Write the functional whole
+   - Let the reader complete or understand the production job through the final
+     path at the declared depth.
+5. Verify independently
+   - Separate accuracy, procedure execution, information architecture, and
+     technical language lanes. Add API, security, or migration specialists only
+     when those contracts apply.
+6. Replace and release
+   - Remove superseded instructions, verify links/build/rendering, and record the
+     lifecycle owner and version boundary.
+
 ## Template Maintenance
 
 Use for `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, MCP router, setup/sync payloads, and validation scripts.

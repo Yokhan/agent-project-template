@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.6.2-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.7.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.6.2`.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.7.0`.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
@@ -24,7 +24,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.6.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.7.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -35,8 +35,8 @@ Update an existing generated project from the stable tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.2
+bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.7.0
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -44,7 +44,7 @@ bash scripts/sync-template.sh --from-git --ref v4.6.2
 ## Quick Start
 
 ```bash
-git clone --branch v4.6.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.7.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -54,7 +54,7 @@ bash scripts/bootstrap-mcp.sh --install
 Open the generated project in Claude Code or Zed.
 In chat: `/setup-project` — Claude configures the project for your stack.
 
-**Windows**: run `setup.bat`, then `cd` into the generated project and run `bash scripts/bootstrap-mcp.sh --install`.
+**Windows**: run `setup.bat`. It detects the Windows environment and prepares the context-router with native `npm.cmd`; do not substitute Unix bootstrap commands in PowerShell.
 
 `README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
 
@@ -103,10 +103,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.6.2
+bash scripts/sync-template.sh --from-git --ref v4.7.0
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -134,13 +134,28 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.6.2 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.6.2
+bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.7.0
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
 **What's preserved**: Your code (`src/`), project docs, `brain/`, `tasks/`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and all `project-*` files
 **Convention**: Template files are read-only baseline. Project customizations go to `project-*` prefixed files (e.g., `rules/project-no-mock-db.md`).
+
+Writing references follow the same boundary: template source/property defaults
+are synced from `.claude/library/technical/writing-reference-registry.json`, while
+approved project voice, samples, rights, and replacements live in the preserved
+`brain/03-knowledge/writing/reference-registry.json`.
+The registry separates target-language/editorial authority from domain standards:
+Russian output loads the Russian writing profile, while English technical or
+regulatory sources can constrain correctness without shaping Russian prose.
+Russian communication and explanatory work load dedicated child profiles for
+business correspondence and explanation/persuasion. Paid writing services are
+tracked separately as external tools. The template declares the Glavred API
+capability as `not-configured`; it does not include an adapter or subscription.
+Agents may apply public principles manually but cannot claim a provider check,
+score, or warning list without a real artifact-specific response. Eligible routes
+also report `not-run` until such a response exists.
 
 ## Extending the Template for Your Domain
 
@@ -211,14 +226,14 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 25 | Shared library rules plus router entrypoint |
+| **Rules** | 28 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
-| **Claude Skills** | 30 | 6 core + 5 dev + 2 quality + 7 domain review + 2 integrations + 8 other |
-| **Codex Skills** | 42 | Pipeline, route-first orchestration, truthful progressive JPEG planning, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
+| **Codex Skills** | 45 | Pipeline, route-first orchestration, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
 | **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
-| **Agents** | 11 | implementer, reviewer, researcher, test-engineer, security-auditor, writer, simplifier, documenter, devops, profiler, and supporting specialists |
+| **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 53 | validation, adaptive routing, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 56 | validation, adaptive writing/reference routing, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -316,6 +331,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.7.0** | Minor release: adds purpose-first literary, marketing, informational, communication, and technical-writing workflows; Russian editorial profiles and provenance; authority-isolated reference routing; and a fail-closed external-tool truth contract that keeps paid providers such as Glavred explicitly not configured and not run until real adapter evidence exists |
 | **4.6.2** | Patch release: adds Luna support roles, one-wave cost-aware fan-out, genuine child-trace validation, and a progressive JPEG planner with an explicit anti-falsification gate |
 | **4.6.1** | Patch release: adds the canonical agent update protocol, exact-tag preview/apply verification, safe path hashing, dry-run regression coverage, and release workflow tag/commit binding |
 | **4.6.0** | Minor release: adds role-specific GPT-5.6 Sol/Terra subagents, an `xhigh` reasoning ceiling, automatic beneficial fan-out, product/systems reviewers, and semantic suppression for reference diagrams and release pages |

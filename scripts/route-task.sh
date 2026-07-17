@@ -1,6 +1,6 @@
 #!/bin/bash
-# route-task.sh — Dynamic keyword router (zero AI tokens)
-# Routes task to relevant rules, agent, pipeline. ~10ms, pure grep.
+# route-task.sh — Dynamic task router (zero AI tokens)
+# Routes task to relevant rules, agent, and pipeline using the shared writing classifier plus grep fallbacks.
 # Usage: bash scripts/route-task.sh "implement OAuth for auth module"
 # Output: rule files to Read + suggested agent → saved to tasks/.active-rules
 # Called: on EVERY new task, on task switch, on mode change
@@ -15,6 +15,33 @@ if [ -z "$TASK" ]; then
   exit 1
 fi
 
+WRITING_TSV="$(node scripts/lib/writing-intent.js --tsv "$TASK" 2>/dev/null || printf '0\t\t\t')"
+WRITING_IS_WRITING="$(printf '%s' "$WRITING_TSV" | cut -f1)"
+WRITING_ACTION="$(printf '%s' "$WRITING_TSV" | cut -f2)"
+WRITING_MODE="$(printf '%s' "$WRITING_TSV" | cut -f3)"
+WRITING_OVERLAYS="$(printf '%s' "$WRITING_TSV" | cut -f4)"
+WRITING_POLICY_TSV="$(node scripts/lib/writing-route-policy.js --tsv "$TASK" 2>/dev/null || printf '0\t\t\t\t\t\t\t\t\t\t\t')"
+WRITING_POLICY_MODE="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f2)"
+WRITING_POLICY_EXTRA_MODES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f3)"
+WRITING_POLICY_AGENT="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f4)"
+WRITING_POLICY_SKILLS="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f5)"
+WRITING_POLICY_SUBAGENTS="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f6)"
+WRITING_POLICY_FILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f7)"
+WRITING_POLICY_PIPELINE="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f8)"
+WRITING_POLICY_RISK="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f9)"
+WRITING_POLICY_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f10)"
+WRITING_POLICY_EDITORS="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f11)"
+WRITING_POLICY_GATES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f12)"
+WRITING_POLICY_FRESH_DOCS="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f13)"
+WRITING_POLICY_TARGET_LANGUAGE="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f14)"
+WRITING_POLICY_LANGUAGE_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f15)"
+WRITING_POLICY_DOMAIN_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f16)"
+WRITING_POLICY_TECHNICAL_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f17)"
+WRITING_POLICY_REJECTED_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f18)"
+WRITING_POLICY_LANGUAGE_RESOLUTION="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f19)"
+WRITING_POLICY_PROCESS_PROFILES="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f20)"
+WRITING_POLICY_EXTERNAL_TOOLS="$(printf '%s' "$WRITING_POLICY_TSV" | cut -f21)"
+
 # Always needed
 FILES="$LIB/process/context-first.md"
 MODES=""
@@ -26,7 +53,7 @@ if echo "$TASK" | grep -qiE "product.goal|final.outcome|quality.bar|production|p
 fi
 
 # CODE
-if echo "$TASK" | grep -qiE "implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate|настрой|создай|добавь|исправь|починь|реализуй|напиши код|сделай|баг|не работает|падает|ошибка|сломал"; then
+if [ "$WRITING_IS_WRITING" != "1" ] && echo "$TASK" | grep -qiE "implement|build|create|add|fix|bug|refactor|feature|module|function|class|api|endpoint|service|migrate|настрой|создай|добавь|исправь|починь|реализуй|напиши код|сделай|баг|не работает|падает|ошибка|сломал"; then
   FILES="$FILES $LIB/process/research-first.md $LIB/process/plan-first.md $LIB/process/self-verification.md $LIB/technical/architecture.md $LIB/technical/code-style.md $LIB/technical/error-handling.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES code"
 fi
@@ -38,7 +65,7 @@ if echo "$TASK" | grep -qiE "test|coverage|tdd|spec|assert|mock|jest|pytest|vite
 fi
 
 # DESIGN
-if echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen|дизайн|макет|фигма|экран|интерфейс|стиль"; then
+if [ "$WRITING_IS_WRITING" != "1" ] && echo "$TASK" | grep -qiE "design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|tailwind|screen|дизайн|макет|фигма|экран|интерфейс|стиль"; then
   FILES="$FILES $LIB/product/production-product-standard.md $LIB/process/product-goal-loop.md $LIB/process/client-executor-contract.md $LIB/domain/domain-design-pipeline.md $LIB/meta/analysis.md $LIB/technical/atomic-reuse.md"
   MODES="$MODES design"
 fi
@@ -50,19 +77,22 @@ if echo "$TASK" | grep -qiE "design.system|storybook|tokens?|atomic|atoms?|molec
 fi
 
 # REVIEW
-if echo "$TASK" | grep -qiE "review|audit|check|analyze|report|status|health|inspect|evaluate|посмотри|проверь|оцени|разбери|покажи"; then
+if [ "$WRITING_IS_WRITING" != "1" ] && echo "$TASK" | grep -qiE "review|audit|check|analyze|report|status|health|inspect|evaluate|посмотри|проверь|оцени|разбери|покажи"; then
   FILES="$FILES $LIB/meta/analysis.md $LIB/meta/critical-thinking.md $LIB/process/self-verification.md"
   MODES="$MODES review"
 fi
 
 # WRITING
-if echo "$TASK" | grep -qiE "write|article|post|copy|text|content|landing|marketing|email|newsletter|документ|текст|статья"; then
-  FILES="$FILES $LIB/technical/writing.md $LIB/domain/domain-guards.md"
-  MODES="$MODES write"
+if [ "$WRITING_IS_WRITING" = "1" ]; then
+  for writing_file in $(printf '%s' "$WRITING_POLICY_FILES" | tr ',' ' '); do
+    FILES="$FILES $LIB/$writing_file"
+  done
+  FILES="$FILES $LIB/domain/domain-guards.md"
+  MODES="$MODES $WRITING_POLICY_MODE $(printf '%s' "$WRITING_POLICY_EXTRA_MODES" | tr ',' ' ')"
 fi
 
 # GIT
-if echo "$TASK" | grep -qiE "commit|push|pr|pull.request|merge|branch|release|deploy|tag|cherry"; then
+if [ "$WRITING_IS_WRITING" != "1" ] && echo "$TASK" | grep -qiE "commit|push|(^|[^[:alpha:]])pr([^[:alpha:]]|$)|pull.request|merge|branch|release|deploy|tag|cherry"; then
   FILES="$FILES $LIB/technical/git-workflow.md"
   MODES="$MODES git"
 fi
@@ -74,7 +104,7 @@ if echo "$TASK" | grep -qiE "template|agents\.md|claude\.md|skill|subagent|route
 fi
 
 # RELEASE
-if echo "$TASK" | grep -qiE "release|tag|version|changelog|publish|github release|deploy|релиз|верси|тег|опубликуй|выкат"; then
+if [ "$WRITING_IS_WRITING" != "1" ] && echo "$TASK" | grep -qiE "release|tag|version|changelog|publish|github release|deploy|релиз|верси|тег|опубликуй|выкат"; then
   FILES="$FILES $LIB/technical/git-workflow.md $LIB/technical/testing.md $LIB/meta/critical-thinking.md"
   MODES="$MODES release"
 fi
@@ -118,9 +148,11 @@ for f in $UNIQUE_FILES; do
 done
 
 # Determine agent
-if echo "$TASK" | grep -qiE "review|audit"; then AGENT="reviewer"
+if [ "$WRITING_IS_WRITING" = "1" ]; then
+  AGENT="$WRITING_POLICY_AGENT"
+elif echo "$TASK" | grep -qiE "review|audit"; then AGENT="reviewer"
 elif echo "$TASK" | grep -qiE "test|tdd|coverage"; then AGENT="test-engineer"
-elif echo "$TASK" | grep -qiE "write|article|copy|текст|статья"; then AGENT="writer"
+elif echo "$TASK" | grep -qiE "write|draft|rewrite|article|copy|story|novel|scene|email|message|guide|manual|напиш|перепиш|роман|рассказ|сцен|письм|сообщен|руководств|текст|статья"; then AGENT="writer"
 elif echo "$TASK" | grep -qiE "security|vulnerability|owasp"; then AGENT="security-auditor"
 elif echo "$TASK" | grep -qiE "performance|slow|optimize|profile|benchmark"; then AGENT="profiler"
 elif echo "$TASK" | grep -qiE "document|readme|changelog|api.doc"; then AGENT="documenter"
@@ -131,6 +163,12 @@ CODEX_SKILLS="codex-audit"
 CODEX_SUBAGENTS="reviewer"
 PIPELINE="review"
 RISK="MEDIUM"
+if [ "$WRITING_IS_WRITING" = "1" ]; then
+  CODEX_SKILLS="$(printf '%s' "$WRITING_POLICY_SKILLS" | tr ',' ' ')"
+  CODEX_SUBAGENTS="$(printf '%s' "$WRITING_POLICY_SUBAGENTS" | tr ',' ' ')"
+  PIPELINE="$WRITING_POLICY_PIPELINE"
+  RISK="$WRITING_POLICY_RISK"
+fi
 if echo "$MODES" | grep -q "template"; then
   CODEX_SKILLS="codex-template-sync codex-skill-maintenance codex-test-rules codex-agent-router codex-product-goal codex-strategic-review"
   CODEX_SUBAGENTS="pr_explorer systems_reviewer tester"
@@ -207,6 +245,19 @@ mkdir -p tasks
   echo "CODEX_FANOUT=$CODEX_FANOUT"
   echo "CODEX_FANOUT_REASON=$CODEX_FANOUT_REASON"
   echo "CODEX_AGENT_POLICY=scripts/codex-agent-policy.js"
+  echo "WRITING_INTENT=$WRITING_ACTION:$WRITING_MODE:$WRITING_OVERLAYS"
+  echo "WRITING_PROFILES=$WRITING_POLICY_PROFILES"
+  echo "WRITING_EDITORS=$WRITING_POLICY_EDITORS"
+  echo "WRITING_GATES=$WRITING_POLICY_GATES"
+  echo "WRITING_FRESH_DOCS=$WRITING_POLICY_FRESH_DOCS"
+  echo "WRITING_TARGET_LANGUAGE=$WRITING_POLICY_TARGET_LANGUAGE"
+  echo "WRITING_LANGUAGE_PROFILES=$WRITING_POLICY_LANGUAGE_PROFILES"
+  echo "WRITING_DOMAIN_PROFILES=$WRITING_POLICY_DOMAIN_PROFILES"
+  echo "WRITING_TECHNICAL_PROFILES=$WRITING_POLICY_TECHNICAL_PROFILES"
+  echo "WRITING_REJECTED_PROFILES=$WRITING_POLICY_REJECTED_PROFILES"
+  echo "WRITING_LANGUAGE_RESOLUTION=$WRITING_POLICY_LANGUAGE_RESOLUTION"
+  echo "WRITING_PROCESS_PROFILES=$WRITING_POLICY_PROCESS_PROFILES"
+  echo "WRITING_EXTERNAL_TOOLS=$WRITING_POLICY_EXTERNAL_TOOLS"
   echo "PIPELINE=$PIPELINE"
   echo "RISK=$RISK"
   echo "STRATEGY_GATE=Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"
@@ -227,6 +278,19 @@ echo "CODEX_SKILLS: $CODEX_SKILLS"
 echo "CODEX_SUBAGENTS: $CODEX_SUBAGENTS"
 echo "CODEX_FANOUT: $CODEX_FANOUT | $CODEX_FANOUT_REASON"
 echo "CODEX_AGENT_POLICY: scripts/codex-agent-policy.js"
+echo "WRITING_INTENT: $WRITING_ACTION | $WRITING_MODE | $WRITING_OVERLAYS"
+echo "WRITING_PROFILES: $WRITING_POLICY_PROFILES"
+echo "WRITING_EDITORS: $WRITING_POLICY_EDITORS"
+echo "WRITING_GATES: $WRITING_POLICY_GATES"
+echo "WRITING_FRESH_DOCS: $WRITING_POLICY_FRESH_DOCS"
+echo "WRITING_TARGET_LANGUAGE: $WRITING_POLICY_TARGET_LANGUAGE"
+echo "WRITING_LANGUAGE_PROFILES: $WRITING_POLICY_LANGUAGE_PROFILES"
+echo "WRITING_DOMAIN_PROFILES: $WRITING_POLICY_DOMAIN_PROFILES"
+echo "WRITING_TECHNICAL_PROFILES: $WRITING_POLICY_TECHNICAL_PROFILES"
+echo "WRITING_REJECTED_PROFILES: $WRITING_POLICY_REJECTED_PROFILES"
+echo "WRITING_LANGUAGE_RESOLUTION: $WRITING_POLICY_LANGUAGE_RESOLUTION"
+echo "WRITING_PROCESS_PROFILES: $WRITING_POLICY_PROCESS_PROFILES"
+echo "WRITING_EXTERNAL_TOOLS: $WRITING_POLICY_EXTERNAL_TOOLS"
 echo "PIPELINE: $PIPELINE"
 echo "RISK: $RISK"
 echo "STRATEGY_GATE: Goal -> Constraints -> Approach -> Verification -> Risk/Doubt"

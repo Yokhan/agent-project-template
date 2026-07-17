@@ -1,17 +1,268 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v4.6.2-cost-aware-progressive-jpeg
-status: done
-updated: 2026-07-11
-readiness: 100
+id: template-russian-writing-books-and-tool-truth
+status: active
+updated: 2026-07-17
+readiness: 92
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
-tags: progressive-jpeg,template,release,subagents,luna,anti-falsification
-next: downstream projects preview v4.6.2 with pinned dry-run; monitor the documented codex-cli 0.144.x live custom-agent limitation
+tags: writing,russian,correspondence,explanation,glavred,tool-truth,routing
+next: validate, commit, tag, push, and verify v4.7.0 release
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - Release v4.7.0
+
+### User Wants
+- Commit and publish the completed writing pipeline and skill updates.
+- Keep any recreation of Glavred outside this template release.
+
+### Success Means
+- Release-facing SOTs consistently identify `v4.7.0`.
+- Local native Windows gates and remote Linux release gates pass.
+- One release commit is tagged `v4.7.0`, pushed, and published by GitHub Actions.
+- Glavred remains `not-configured:not-run`; no provider capability is fabricated.
+
+### Verification
+- Independent systems, test, and security review.
+- Template, writing, routing, MCP, text, dependency, manifest, and downstream checks.
+- Tag-to-commit match plus authoritative GitHub Actions and release verification.
+
+## Active Slice - Russian Correspondence, Explanation, And Tool Truth
+
+### User Wants
+- Expand the Russian writing system with operational rules from `Новые правила
+  деловой переписки`, `Ясно, понятно`, and related Ilyakhov/Bureau materials.
+- Explain and enforce how Glavred is used when no paid API access exists.
+- Preserve one writing SOT and make the behavior available through every route.
+
+### Success Means
+- Russian communication loads a dedicated business-correspondence contract.
+- Russian informational, marketing, and communication work loads a dedicated
+  explanation and evidence-calibrated persuasion contract.
+- Books/public methods, profiles, and paid external tools are separate entities.
+- The template reports `glavred-api:not-configured` and cannot claim a check,
+  score, warning list, or provider response without artifact-specific evidence.
+- Codex, shell, and MCP routes plus downstream setup deliver the same contract.
+
+### Verification
+- Writing registry, intent, Codex route, MCP parity, and TypeScript build.
+- Production, template, skill, SOT, text-policy, and downstream setup checks.
+- Independent systems and test review before closeout.
+
+### Result
+- Added separate Russian language, correspondence-process, explanation,
+  persuasion, domain, and technical profiles with exact effect ownership.
+- Added fail-closed registry validation and an explicit paid-provider state:
+  `glavred-api:not-configured:not-run:paid`.
+- Added anti-fabrication gates, direct provider-intent coverage, state recovery,
+  release manifest coverage, and native Windows downstream verification.
+- Verified the source repository and a newly generated project; no release was
+  created because this slice did not include an explicit release request.
+
+## Active Slice - Russian Writing Reference Boundary
+
+### Observed Failure
+- Immediate symptom: English technical and government standards were presented
+  beside named writers as if all of them taught the agent how to write Russian.
+- Broken link: the registry described provenance but not source language, usage
+  class, or the dimensions a source is allowed to influence.
+- Root cause: route selection returned one flat profile list, so language/voice,
+  editorial method, information architecture, claims, and technical correctness
+  were indistinguishable to the agent and to tests.
+
+### Goal And Product Link
+- Final outcome: Russian text uses Russian author/editor methods and concrete
+  project-authored examples; domain standards verify facts and structure without
+  leaking English voice or syntax into the result.
+- Product effect: clearer Russian product communication, fewer editorial loops,
+  and less risk of technically correct but unnatural or generic output.
+- Current step: promote the Ilyakhov material into an operational Russian profile,
+  split reference effects in schema and routing, then add hard negative tests.
+- Quality bar: no author imitation, no copied book corpus, no unverified voice
+  source by default, and no weakening of technical/legal correctness checks.
+- Out of scope: selecting a universal literary canon or publishing a release.
+
+### Plan
+1. Extract purpose, system, structure, action, specificity, editing, examples,
+   planning, and client communication from user-provided and official sources.
+2. Add original `bad -> diagnosis -> better` Russian examples derived from those
+   principles, clearly marked as template-authored rather than quotations.
+3. Add source language, usage class, allowed effects, profile output language,
+   and profile effects to the registry schema.
+4. Return language/editorial and domain/correctness profile groups separately;
+   keep the combined list only for adapter compatibility.
+5. Reject domain standards that claim voice, syntax, idiom, line-editing, or
+   example-authority effects; cover Russian and technical routes with tests.
+
+### Verification
+- `node scripts/test-writing-intent.js`
+- `node scripts/test-writing-references.js`
+- `node scripts/validate-writing-references.js --today 2026-07-17`
+- `node scripts/test-codex-routing.js`
+- `node scripts/validate-text-policy.js`
+- Context-router tests and TypeScript build.
+- Native Windows `setup.bat` downstream smoke with a release-equivalent temporary
+  Git index; installed payload passed writing, routing, production, text-policy,
+  and MCP checks.
+
+### Result
+- Russian prose authority is now owned by Russian author/editor sources and
+  project-approved Russian examples, not English organizations or vendor guides.
+- Ilyakhov/Sarycheva language editing, Ilyakhov planning/client service, domain
+  constraints, and technical correctness are four separate authority groups.
+- Routes report target-language certainty, selected/rejected profiles, editors,
+  and gates through Codex, shell, and MCP adapters.
+- Mixed-language work requires per-section language resolution; inferred language
+  cannot silently authorize an edit/review profile.
+- The registry rejects undeclared effects, cross-language style leakage, stale or
+  missing provenance, and technical editors claiming Russian syntax authority.
+
+## Active Slice - Reference-Grounded Writing And Technical Writer
+
+### User Request
+Fix and complete the writing system: add technical writing, search for stronger
+sources, preserve useful LitAI reference properties, define real editors, and
+correct route behavior.
+
+### Goal And Product Link
+- Final outcome: agents create and review texts from a verified purpose, source,
+  reference, and editor contract instead of relying on generic model taste.
+- Product users: readers, customers, operators, developers, and the client whose
+  product KPI, trust, support load, or operational result depends on the text.
+- Current step: establish the reusable reference/editor infrastructure and the
+  technical-writing specialization without changing the four semantic modes.
+- Quality bar: one behavioral SOT; provenance before authority; no copyrighted
+  corpus copying; no unverified reference as a default; technical procedures must
+  match the product and be executable in the stated environment.
+- Out of scope: copying full third-party books or campaigns, publishing a release,
+  or forcing one author voice on every project.
+
+### System Map
+- Request -> action + primary semantic mode + domain overlays.
+- Writing SOT -> mode profile -> technical profile when selected.
+- Reference registry -> provenance gate -> task-specific property pack.
+- Editor board -> mode/domain review lenses -> independent evidence.
+- Codex/MCP/shell adapters consume the same classifier and contracts.
+- Project-owned approved references and terminology override template defaults.
+
+### Architecture And Ownership
+- `.claude/library/technical/writing.md`: parent behavioral SOT.
+- `.claude/library/technical/writing-reference-registry.json`: structured source,
+  property, provenance, freshness, content-policy, and editor mapping.
+- `.claude/library/technical/writing-editorial-board.md`: editor roles and review
+  composition by mode; no author impersonation.
+- `.claude/library/technical/technical-writing-profile.md`: technical artifact
+  types, docs-as-code contract, executable evidence, and release maintenance.
+- `docs/WRITING_REFERENCE_PROVENANCE.md`: LitAI audit and external source rationale;
+  architecture record, not behavioral SOT.
+- Codex/Claude skills remain adapters; classifiers and routers select them.
+
+### Decomposition
+1. Reference infrastructure: registry, provenance record, validator, fixtures.
+2. Writing behavior: technical profile, editorial board, Codex/Claude adapters.
+3. Routing: shared classifier, Codex, MCP, shell, OpenAI false-positive fix.
+4. Shipping and verification: validators, sync payload, smoke tests, documentation.
+
+### Complexity
+- Size: XL, decomposed into four M-sized changes above.
+- Risk: HIGH because shared routes, skills, template payload, and source authority
+  change across all downstream projects.
+- Expected touch set: about 25 modified files and 8-12 new files.
+- Reversibility: all changes are additive or route-table changes on the current
+  branch and can be reverted together before any release.
+
+### Test Scenarios
+- Valid verified/default and unverified/opt-in references pass the registry schema.
+- Missing provenance, duplicate IDs, stale required sources, unsafe content policy,
+  or unverified default references fail with the source ID and field.
+- Generic API guide -> informational + technical + API, never OpenAI guidance.
+- OpenAI Responses API guide -> informational + technical + API + OpenAI guidance.
+- Technical review -> technical review skill without generation self-certification.
+- Literary/marketing/informational/communication requests keep their primary mode.
+- Codex, MCP, and shell expose the same action, primary mode, and overlays.
+- Generated downstream project receives registry, profiles, adapters, and validators.
+- Existing writing and non-writing route fixtures remain green.
+
+### Progressive JPEG
+- First useful view: a reviewed source/editor architecture with explicit provenance
+  boundaries and the route defect reproduced.
+- Next sharpened layer: callable technical writer and registry validator wired into
+  all three routing adapters.
+- Final object plan: four semantic modes; technical specialization; verified
+  reference registry; task-specific property selection; mode/editor board;
+  independent acceptance; deterministic route and sync tests.
+- Slice purpose: a downstream agent can produce technically accurate, source-grounded
+  text through the real final route, not merely display a reference inventory.
+- KPI evidence: fewer incorrect docs/actions, lower editing/support cost, honest
+  marketing claims, and clearer reader decisions; falsified if routes load the wrong
+  specialist or a default reference lacks provenance.
+- Truth boundary: tests prove contracts and routing, not subjective prose quality;
+  real downstream texts remain the outcome-validation layer.
+- Replacement/cleanup: replace generic technical handling and the OpenAI/API
+  collision; do not preserve obsolete branches or duplicate writing SOTs.
+- Replan trigger: stop if a reference requires shipping copyrighted full text, if
+  technical writing cannot remain an overlay, or if adapter parity requires a
+  second competing classifier.
+
+### Plan B
+If a full reference registry makes session routing too heavy, keep the structured
+registry and validator but load only selected source IDs through compact mode maps.
+The SOT, provenance audit, technical profile, and tests remain reusable.
+
+### Completion Evidence
+- Four semantic modes remain the primary reader-job SOT; technical writing is a
+  specialization and API is a domain contract.
+- A shared route policy now drives Codex, MCP, and shell adapters, including
+  explicit OpenAI vendor qualification and selected profile/editor IDs.
+- Template and project-owned registries validate provenance, freshness, local
+  hashes, rights policy, role/skill links, collisions, and explicit supersession.
+- Technical generation and independent review skills cover accuracy, executable
+  procedures, document architecture, language, OS/shell, and lifecycle ownership.
+- Template setup/sync delivery includes the new infrastructure while preserving
+  the project-owned `brain` registry.
+- Verification passed: writing/reference/routing unit tests, MCP test/build,
+  production/skill/SOT/text validators, template validation, and downstream smoke
+  `176/176`.
+
+## Active Slice - Four-Mode Writing Workflow
+
+### User Request
+Adapt the strongest parts of the local LitAI writing pipeline into the template and add one writing workflow with four semantic modes: literary, marketing/advertising, informational, and communication.
+
+### Product Goal Link
+- Final outcome: agents produce texts that fulfill the reader's real job and the product's purpose instead of applying one generic copywriting formula.
+- Product user: the reader or recipient of the text, plus the client who needs a reliable business, informational, communication, or literary result.
+- Product/business priority: clearer decisions and actions, honest conversion, lower support and editing cost, stronger trust and loyalty, and mode-specific quality.
+- Quality bar: one shared SOT; no fabricated facts, proof, citations, human imperfections, or AI-detection claims; progressive JPEG slices must already fulfill the text's production purpose; review remains independent from generation.
+
+### System Map
+- User intent -> semantic writing route -> shared writing contract -> mode profile -> context/SOT pack -> text architecture -> functional 1% text -> detailing -> independent review -> release check -> feedback/evolution.
+- Shared owner: `.claude/library/technical/writing.md`.
+- Codex adapter: `.agents/skills/codex-writing-workflow/`.
+- Claude adapter: `.claude/agents/writer.md`.
+- Independent reviewer: `codex-domain-communication-review` and its shared Claude counterpart.
+
+### Implementation Plan
+1. Replace the current imitation-based writing rules with a purpose-first shared workflow derived from LitAI principles.
+2. Add four mode profiles and progressive JPEG acceptance examples.
+3. Add a Codex writing workflow skill with progressive disclosure references and metadata.
+4. Point Claude writer and communication reviewers at the shared SOT without duplicating it.
+5. Route literary, marketing, informational, and communication requests semantically to the writer skill; preserve business/strategy review for marketing work.
+6. Add routing fixtures and production/template validation for the new contract.
+7. Run text, SOT, skill, routing, production, template, and progressive-status checks; perform an independent findings-first audit.
+
+### Replan Trigger
+Replan before continuing if the four modes require separate competing SOTs, if routing cannot distinguish writing from review reliably, or if a new shipped path requires a template sync contract change beyond existing `.agents/skills/` and `.claude/` ownership.
+
+### Completion Evidence
+- Shared purpose-first writing SOT and detailed profiles cover literary, marketing/advertising, informational, and communication modes.
+- One semantic classifier returns action, primary mode, and overlays across Codex, MCP, and shell fallback routes.
+- Generation and independent review are separate; self-review cannot be reported as independent acceptance.
+- Universal phrase bans and fabricated human markers are excluded from the active workflow; the legacy phrase scanner is diagnostic and non-blocking.
+- Writing intent, Codex routing, MCP tests/build, production validation, skill/agent/SOT/text checks, sync checks, and the full template smoke suite passed; full smoke result: 172/172.
 
 Last updated: 2026-07-11
 

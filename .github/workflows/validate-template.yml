@@ -43,6 +43,16 @@ jobs:
           bash scripts/scan-project.sh --report >/dev/null
           bash scripts/downstream-census.sh --no-sync --json "$PWD" >/dev/null
 
+      - name: Validate writing and MCP contracts
+        run: |
+          node scripts/test-writing-references.js
+          node scripts/validate-writing-references.js
+          node scripts/test-writing-intent.js
+          node scripts/test-codex-routing.js
+          npm --prefix mcp-servers/context-router ci
+          npm --prefix mcp-servers/context-router test
+          npm --prefix mcp-servers/context-router run build
+
   bootstrap-smoke-linux:
     name: Bootstrap Smoke (Linux)
     runs-on: ubuntu-latest
@@ -102,8 +112,21 @@ jobs:
           test -f ci-bootstrap-win/brain/01-daily/.gitkeep
           test ! -f ci-bootstrap-win/tasks/debug-recovery-log.md
           test ! -f ci-bootstrap-win/docs/.ci-untracked-sentinel.txt
-          test ! -d ci-bootstrap-win/mcp-servers/context-router/node_modules
+          test -d ci-bootstrap-win/mcp-servers/context-router/node_modules
           cd ci-bootstrap-win
           bash scripts/test-hooks.sh
           bash scripts/bootstrap-mcp.sh --dry-run
           bash scripts/sync-template.sh "$GITHUB_WORKSPACE" --dry-run
+
+      - name: Validate generated Windows writing contract
+        shell: pwsh
+        run: |
+          Set-Location ci-bootstrap-win
+          node scripts/test-writing-references.js
+          node scripts/validate-writing-references.js
+          node scripts/test-writing-intent.js
+          node scripts/test-codex-routing.js
+          node scripts/validate-production-standard.js
+          node scripts/validate-text-policy.js
+          npm.cmd --prefix mcp-servers/context-router test
+          npm.cmd --prefix mcp-servers/context-router run build

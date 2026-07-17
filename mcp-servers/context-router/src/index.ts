@@ -9,10 +9,12 @@ import { getState, updateState, restoreState } from "./state.js";
 import { runResearch, runVerify, runPlanScaffold } from "./research.js";
 import { searchMemory, getEngramStatus } from "./engram.js";
 import { runPipeline, listPipelines, pipelineStatus } from "./n8n.js";
+import { appendWritingContract } from "./writing-contract.js";
+import { buildActiveRulesOutput } from "./active-rules.js";
 
 const server = new McpServer({
   name: "context-router",
-  version: "1.5.0",
+  version: "1.6.0",
 });
 
 // --- Tool: get_context ---
@@ -24,7 +26,7 @@ server.tool(
       .string()
       .max(500)
       .describe(
-        'English keywords extracted from user message, e.g. "fix auth login bug"',
+        'Original user task. Preserve its language and explicit output-language request.',
       ),
     depth: z
       .enum(["brief", "normal", "full"])
@@ -48,6 +50,7 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
 
     // BRIEF: just routing info + file list (for XS/S tasks and subagents)
@@ -158,6 +161,7 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
 
     if (depth === "brief") {
@@ -219,16 +223,8 @@ server.tool(
     }
 
     const engramStatus = await getEngramStatus();
-    const lines = [
-      `MODE: ${state.currentModes.join("+")}`,
-      `TASK: ${state.taskDescription}`,
-      `ROUTED AT: ${state.lastRouteTime}`,
-      engramStatus,
-      `RULES (${state.activeRules.length} files):`,
-      ...state.activeRules.map((f) => `  .claude/library/${f}`),
-    ];
-
-    return { content: [{ type: "text" as const, text: lines.join("\n") }] };
+    const text = buildActiveRulesOutput(state, engramStatus);
+    return { content: [{ type: "text" as const, text }] };
   },
 );
 

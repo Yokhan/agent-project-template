@@ -18,8 +18,16 @@ echo ""
 # 1. Version consistency
 echo "[1/11] Checking version consistency..."
 CLAUDE_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "MISSING")
+AGENTS_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' AGENTS.md 2>/dev/null || echo "MISSING")
 DRIFT_VER=$(sed -n 's/.*TEMPLATE_VERSION="\([^"]*\)".*/\1/p' scripts/check-drift.sh 2>/dev/null || echo "MISSING")
 README_VER=$(sed -n 's/.*template-v\([0-9.]*\).*/\1/p' README.md 2>/dev/null || echo "MISSING")
+
+if [ "$CLAUDE_VER" = "$AGENTS_VER" ]; then
+  echo "  OK: CLAUDE.md ($CLAUDE_VER) = AGENTS.md ($AGENTS_VER)"
+else
+  echo "  ERROR: CLAUDE.md ($CLAUDE_VER) != AGENTS.md ($AGENTS_VER)"
+  ERRORS=$((ERRORS + 1))
+fi
 
 if [ "$CLAUDE_VER" = "$DRIFT_VER" ]; then
   echo "  OK: CLAUDE.md ($CLAUDE_VER) = check-drift.sh ($DRIFT_VER)"
@@ -31,8 +39,19 @@ fi
 if [ "$CLAUDE_VER" = "$README_VER" ]; then
   echo "  OK: CLAUDE.md ($CLAUDE_VER) = README.md ($README_VER)"
 else
-  echo "  WARNING: CLAUDE.md ($CLAUDE_VER) != README.md ($README_VER)"
-  WARNINGS=$((WARNINGS + 1))
+  echo "  ERROR: CLAUDE.md ($CLAUDE_VER) != README.md ($README_VER)"
+  ERRORS=$((ERRORS + 1))
+fi
+
+if [ -n "${EXPECTED_RELEASE_TAG:-}" ]; then
+  EXPECTED_VER="${EXPECTED_RELEASE_TAG#v}"
+  if [ "$CLAUDE_VER" = "$EXPECTED_VER" ] && [ "$AGENTS_VER" = "$EXPECTED_VER" ] &&
+     [ "$DRIFT_VER" = "$EXPECTED_VER" ] && [ "$README_VER" = "$EXPECTED_VER" ]; then
+    echo "  OK: release tag $EXPECTED_RELEASE_TAG matches declared version $EXPECTED_VER"
+  else
+    echo "  ERROR: release tag $EXPECTED_RELEASE_TAG does not match all declared versions"
+    ERRORS=$((ERRORS + 1))
+  fi
 fi
 
 # 2. Agent frontmatter
@@ -120,6 +139,12 @@ if ! node scripts/test-codex-routing.js >/dev/null 2>&1; then
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: Codex routing smoke passes"
+fi
+if ! node scripts/test-writing-references.js >/dev/null 2>&1 || ! node scripts/validate-writing-references.js >/dev/null 2>&1; then
+  echo "  ERROR: Writing reference registry validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Writing references and project overlay validate"
 fi
 if ! node scripts/validate-production-standard.js >/dev/null 2>&1; then
   echo "  ERROR: Production standard validation failed"
@@ -212,6 +237,7 @@ REQUIRED_FILES=(
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
   "scripts/validate-production-standard.js"
+  "scripts/validate-writing-references.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"
   "scripts/validate-text-policy.js"
@@ -309,6 +335,20 @@ if [ -d ".claude/library" ]; then
     if [ ! -d ".claude/library/$subdir" ]; then
       echo "  WARNING: .claude/library/$subdir/ missing"
       WARNINGS=$((WARNINGS + 1))
+    fi
+  done
+  for writing_file in \
+    .claude/library/technical/writing.md \
+    .claude/library/technical/writing-mode-profiles.md \
+    .claude/library/technical/russian-writing-profile.md \
+    .claude/library/technical/russian-business-correspondence.md \
+    .claude/library/technical/russian-explanation-and-persuasion.md \
+    .claude/skills/writing-workflow/SKILL.md \
+    .agents/skills/codex-writing-workflow/SKILL.md \
+    scripts/lib/writing-intent.js; do
+    if [ ! -f "$writing_file" ]; then
+      echo "  ERROR: writing workflow file missing: $writing_file"
+      ERRORS=$((ERRORS + 1))
     fi
   done
 else
@@ -424,6 +464,6 @@ if [ "$ERRORS" -gt 0 ]; then
   echo "FAIL: Fix $ERRORS error(s) before release."
   exit 1
 else
-  echo "PASS: Template is ready for release."
+  echo "PASS: Template validation subset passed. Run the aggregate release workflow before publishing."
   exit 0
 fi

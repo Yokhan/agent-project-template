@@ -23,6 +23,9 @@ const REQUIRED_CORE_SKILLS = [
   "codex-design-system-workflow",
   "codex-product-ux-audit",
   "codex-cross-project-lessons",
+  "codex-writing-workflow",
+  "codex-technical-writing",
+  "codex-technical-writing-review",
 ];
 
 const state = {

@@ -18,6 +18,22 @@ export interface RouteResult {
   pipeline: string;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   needsFreshDocs: boolean;
+  targetLanguage: string | null;
+  languageResolution: string | null;
+  writingProfiles: string[];
+  writingLanguageProfiles: string[];
+  writingProcessProfiles: string[];
+  writingDomainProfiles: string[];
+  writingTechnicalProfiles: string[];
+  writingEditors: string[];
+  writingGates: string[];
+  writingExternalTools: Array<{
+    id: string;
+    access: string;
+    execution: string;
+    paid: boolean;
+  }>;
+  writingRejectedProfiles: Array<{ id: string; reason: string }>;
 }
 
 export interface ServerState {

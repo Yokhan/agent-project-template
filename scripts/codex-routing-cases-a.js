@@ -156,6 +156,7 @@ function runRouteCasesA(testRoute) {
       "codex-product-goal",
       "codex-strategic-review",
     ],
+    notSkills: ["codex-writing-workflow"],
     qualityGates: [
       "audience-icp",
       "positioning-offer-clarity",
@@ -181,6 +182,132 @@ function runRouteCasesA(testRoute) {
     qualityGates: ["audience-icp", "journey-or-funnel-fit", "user-business-outcome-link"],
     semanticMatches: ["marketing"],
     planRequired: true,
+  });
+
+  testRoute("Напиши сцену разговора героя с антагонистом", {
+    exactModes: ["writing-literary"],
+    notModes: ["api", "writing-informational"],
+    skills: ["codex-writing-workflow"],
+    notSkills: ["codex-api-contract", "codex-feature-workflow"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    qualityGates: ["writing-contract", "functional-whole", "mode-specific-review", "independent-review-or-self-check-label"],
+    semanticMatches: ["writing-literary"],
+    risk: "LOW",
+  });
+
+  testRoute("Перепиши оффер лендинга для целевой аудитории, чтобы повысить конверсию", {
+    exactModes: ["marketing"],
+    notModes: ["release", "review"],
+    skills: [
+      "codex-writing-workflow",
+      "codex-domain-communication-review",
+      "codex-domain-business-review",
+      "codex-product-goal",
+    ],
+    sharedRules: [".claude/library/technical/writing.md"],
+    qualityGates: ["audience-icp", "positioning-offer-clarity", "measurement-and-ethics"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("Напиши руководство для нового пользователя по настройке аккаунта", {
+    exactModes: ["writing-informational"],
+    notModes: ["api", "feature"],
+    skills: ["codex-writing-workflow"],
+    notSkills: ["codex-api-contract", "codex-feature-workflow"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    qualityGates: ["reader-task-completion", "source-truth-boundary"],
+    risk: "LOW",
+  });
+
+  testRoute("Напиши письмо клиенту о задержке и следующем обновлении", {
+    exactModes: ["writing-communication"],
+    notModes: ["marketing", "writing-informational"],
+    skills: ["codex-writing-workflow"],
+    notSkills: ["codex-domain-business-review"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    qualityGates: ["recipient-action-path", "functional-whole"],
+    risk: "LOW",
+  });
+
+  testRoute("Review this marketing email", {
+    exactModes: ["marketing"],
+    notModes: ["writing-communication", "review"],
+    skills: ["codex-domain-communication-review", "codex-domain-business-review"],
+    notSkills: ["codex-writing-workflow"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("Write an API integration guide", {
+    exactModes: ["api", "technical-writing", "writing-informational"],
+    notModes: ["design", "marketing"],
+    skills: ["codex-api-contract", "codex-writing-workflow", "codex-technical-writing"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("Write generic API docs", {
+    exactModes: ["api", "technical-writing", "writing-informational"],
+    notModes: ["openai", "feature"],
+    skills: ["codex-writing-workflow", "codex-technical-writing", "codex-api-contract"],
+    notSkills: ["codex-openai-model-guidance", "codex-feature-workflow"],
+    qualityGates: ["reference-registry-valid", "technical-procedure-executed"],
+    needsFreshDocs: false,
+    risk: "MEDIUM",
+  });
+
+  testRoute("Document a Stripe API endpoint", {
+    exactModes: ["api", "technical-writing", "writing-informational"],
+    notModes: ["openai", "feature"],
+    notSkills: ["codex-openai-model-guidance", "codex-feature-workflow"],
+    skills: ["codex-technical-writing", "codex-api-contract"],
+  });
+
+  testRoute("Write a PostgreSQL recovery runbook", {
+    exactModes: ["technical-writing", "writing-informational"],
+    notModes: ["openai", "feature"],
+    skills: ["codex-technical-writing"],
+    notSkills: ["codex-openai-model-guidance"],
+  });
+
+  testRoute("Write an API outage incident update", {
+    exactModes: ["api", "technical-writing", "writing-communication"],
+    skills: ["codex-technical-writing", "codex-api-contract"],
+    notSkills: ["codex-openai-model-guidance"],
+  });
+
+  testRoute("Write OpenAI Responses API docs", {
+    exactModes: ["api", "openai", "technical-writing", "writing-informational"],
+    skills: ["codex-openai-model-guidance", "codex-technical-writing", "codex-api-contract"],
+    needsFreshDocs: true,
+  });
+
+  testRoute("Write ORM data-model documentation", {
+    exactModes: ["technical-writing", "writing-informational"],
+    notModes: ["openai"],
+    notSkills: ["codex-openai-model-guidance"],
+    skills: ["codex-technical-writing"],
+  });
+
+  testRoute("Implement an API endpoint", {
+    modes: ["api", "feature"],
+    notModes: ["technical-writing", "writing-informational"],
+    skills: ["codex-api-contract", "codex-feature-workflow"],
+    notSkills: ["codex-technical-writing"],
+  });
+
+  testRoute("Review API docs", {
+    exactModes: ["api", "technical-writing", "writing-informational"],
+    skills: ["codex-domain-communication-review", "codex-technical-writing-review", "codex-api-contract"],
+    notSkills: ["codex-writing-workflow", "codex-feature-workflow", "codex-openai-model-guidance"],
+  });
+
+  testRoute("Напиши клиентский отчёт: что было, что стало, что это даёт и что дальше", {
+    exactModes: ["writing-communication"],
+    notModes: ["api", "review"],
+    skills: ["codex-writing-workflow"],
+    sharedRules: [".claude/library/technical/writing.md"],
+    risk: "LOW",
   });
 
   testRoute("протокол между клиентом и сервисом разошелся, поля не совместимы", {

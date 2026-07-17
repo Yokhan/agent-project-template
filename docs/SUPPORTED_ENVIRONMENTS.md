@@ -27,15 +27,15 @@ These are the environments the template is designed and tested to support.
 
 ### Windows
 
-- `setup.bat` for project creation
-- Git Bash or WSL for running shipped shell scripts such as `bootstrap-mcp.sh`, `check-drift.sh`, and `sync-template.sh`
-- PowerShell-to-Git-Bash path normalization is supported for template-owned scripts
+- `setup.bat` for project creation and native context-router preparation through `npm.cmd`
+- Node and PowerShell validation commands run natively
+- Unix release and maintenance scripts run in Linux CI or another declared Unix environment, not by substituting Linux commands into PowerShell
 - Template-owned shell scripts must route OS, architecture, and temp-path behavior through `scripts/lib/platform.sh`
 - Raw `uname`, `/tmp`, and `mktemp` are not allowed outside the shared platform helper
 
 ## Not A Supported Assumption
 
-- plain `cmd.exe` without Git Bash or WSL for running the shipped shell tooling
+- invoking shipped Bash tooling as though PowerShell or `cmd.exe` were a Linux shell
 - Linux filesystem, temp directory, shell, or command behavior on Windows unless explicitly detected first
 - project-level Codex model or effort defaults
 - copying untracked maintainer files as part of bootstrap

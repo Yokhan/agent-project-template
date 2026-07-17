@@ -35,7 +35,8 @@ If the route includes `$codex-strategic-review`, use it before choosing the impl
 - Security: `$codex-security-audit`.
 - UI/Figma: `$codex-design-workflow`, `$codex-figma-workflow`.
 - Product goal/current-step continuity: `$codex-product-goal`.
-- Marketing, GTM, positioning, funnel, campaigns, offer, ICP, and sales messaging: `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, `$codex-strategic-review`.
+- Literary, marketing/advertising, informational, and communication writing: `$codex-writing-workflow`; choose by reader purpose, not keywords alone.
+- Marketing, GTM, positioning, funnel, campaigns, offer, ICP, and sales messaging: `$codex-writing-workflow`, `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, `$codex-strategic-review`.
 - Design system, Storybook, tokens, component contracts: `$codex-design-system-workflow`.
 - Product UX flow/dead-end checks: `$codex-product-ux-audit`.
 - Repeated downstream mistakes and template promotion: `$codex-cross-project-lessons`.

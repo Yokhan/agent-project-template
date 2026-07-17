@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.6.2 -->
+<!-- Template Version: 4.7.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -79,6 +79,17 @@ Not configured yet.
 **Manual**: `/mode-code` `/mode-design` `/mode-review` `/mode-research` `/mode-write` `/mode-fix` `/mode-plan`
 
 Codex route fallback uses exact patterns plus semantic intent scoring in `scripts/lib/codex-route-intents.js`. Misroutes must be fixed in the intent model with regression fixtures, not only by adding one literal keyword.
+
+Writing uses `.claude/skills/writing-workflow/SKILL.md` and the writer agent. Select literary, marketing/advertising, informational, or communication mode by the reader's job; a functional 1% text must already perform its production purpose. Resolve the target language and keep language/editorial, process, domain, and technical profiles separate. Russian output loads `russian-writing-profile.md`; English standards cannot define Russian voice or syntax. Never fabricate facts, proof, citations, deliberate human imperfections, or AI-detector claims.
+
+External writing services are separate from sources and profiles. Without configured access and a successful response tied to the current artifact, never claim a Glavred check, score, warning list, or provider result; label public-method editing as manual.
+
+Technical writing remains an informational or communication specialization. Use
+the technical-writer agent and technical-writing skill, select registry profile
+IDs, verify code/schema/version/OS, execute procedures, and require an independent
+technical review for M+, public, operational, or version-sensitive work. Generic
+API docs do not activate OpenAI guidance without an OpenAI/GPT/Codex/Responses
+vendor anchor.
 
 ## Task Formulation Examples
 
@@ -210,7 +221,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.6.2 - Run `bash scripts/check-drift.sh` to verify health.
+4.7.0 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

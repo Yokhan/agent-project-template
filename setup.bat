@@ -22,11 +22,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-set "BASH_CMD="
-where bash >nul 2>nul
-if not errorlevel 1 set "BASH_CMD=bash"
-if not defined BASH_CMD if exist "%ProgramFiles%\Git\bin\bash.exe" set "BASH_CMD=%ProgramFiles%\Git\bin\bash.exe"
-
 set "RAW_PROJECT_NAME=%PROJECT_NAME%"
 for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$env:RAW_PROJECT_NAME.Trim().ToLower().Replace(' ','-')"` ) do set "PROJECT_DIR=%%i"
 set "RAW_PROJECT_NAME="
@@ -97,6 +92,7 @@ if exist "%TEMPLATE_DIR%scripts\task-brief.sh" (
 
 set "RAW_TEMPLATE_DIR="
 set "RAW_PROJECT_DIR="
+set "GIT_INDEX_FILE="
 
 :: Create project-local settings (never touched by template sync)
 if not exist "%PROJECT_DIR%\.claude\settings.local.json" (
@@ -148,6 +144,7 @@ powershell -NoProfile -Command ^
   "  '.claude/rules/*.md'," ^
   "  '.claude/library/process/*.md'," ^
   "  '.claude/library/technical/*.md'," ^
+  "  '.claude/library/technical/*.json'," ^
   "  '.claude/library/meta/*.md'," ^
   "  '.claude/library/domain/*.md'," ^
   "  '.claude/library/product/*.md'," ^
@@ -166,12 +163,15 @@ powershell -NoProfile -Command ^
   "  'mcp-servers/context-router/package.json'," ^
   "  'mcp-servers/context-router/tsconfig.json'," ^
   "  'tests/rules/*.test.md'," ^
+  "  'tests/fixtures/writing-tools/*.js'," ^
   "  'docs/AGENT_PIPELINES.md'," ^
   "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
   "  'docs/CODEX_SKILLS_AUDIT.md'," ^
   "  'docs/CODEX_SUBAGENTS_AUDIT.md'," ^
   "  'docs/MIGRATION_MATRIX.md'," ^
   "  'docs/OPENAI_MODEL_GUIDANCE.md'," ^
+  "  'docs/WRITING_REFERENCE_PROVENANCE.md'," ^
+  "  'docs/WRITING_WORKFLOW.md'," ^
   "  'docs/PRODUCT_BOUNDARY.md'," ^
   "  'docs/RELEASE_CHECKLIST.md'," ^
   "  'docs/TEMPLATE_RELEASES.md'," ^
@@ -257,12 +257,14 @@ if errorlevel 1 (
     echo Git repository initialized with initial commit.
 )
 
-:: Test hooks compatibility
-echo [4/6] Testing hooks compatibility...
-if not defined BASH_CMD (
-    echo Skipping hook smoke test ^(bash not found in PATH^).
+:: Run checks that are native to the detected Windows environment.
+echo [4/6] Running native Windows checks...
+where node >nul 2>nul
+if errorlevel 1 (
+    echo WARNING: Node.js not found. Skipping template validators.
 ) else (
-    "!BASH_CMD!" scripts/test-hooks.sh 2>nul && echo Hooks OK || echo WARNING: Some hooks may need adjustment. See .claude/hooks/
+    node scripts/validate-text-policy.js || exit /b 1
+    node scripts/validate-production-standard.js || exit /b 1
 )
 
 REM Store template origin for future updates
@@ -270,13 +272,18 @@ for /f "tokens=*" %%r in ('cd /d "%TEMPLATE_DIR%" ^&^& git remote get-url origin
 if defined TEMPLATE_REMOTE (
     git remote add template "%TEMPLATE_REMOTE%" 2>nul
     echo Template remote added: %TEMPLATE_REMOTE%
-    echo For pinned releases, run bash scripts/sync-template.sh --from-git --ref vX.Y.Z
 )
 
 cd ..
 
-echo [5/6] MCP bootstrap is manual by design.
-echo Run `bash scripts/bootstrap-mcp.sh --install` inside the generated project before first agent session.
+echo [5/6] Preparing context-router with native Windows tooling...
+where npm.cmd >nul 2>nul
+if errorlevel 1 (
+    echo WARNING: npm.cmd not found. Run npm.cmd ci in mcp-servers\context-router later.
+) else (
+    npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" ci || exit /b 1
+    npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" run build || exit /b 1
+)
 echo.
 echo [6/6] Done!
 echo.
@@ -285,8 +292,8 @@ echo    Project "%PROJECT_DIR%" created successfully!
 echo.
 echo    Next steps:
 echo    1. cd "%PROJECT_DIR%"
-echo    2. Run in Git Bash or WSL: bash scripts/bootstrap-mcp.sh --install
-echo    3. Open in Claude Code or Zed and run /setup-project
+echo    2. Open in Claude Code, Codex, or Zed and run the project setup workflow
+echo    3. Configure optional MCP integrations only if the project needs them
 echo.
 echo    Included:
 echo    - Shared agent rules, hooks, and sync tooling

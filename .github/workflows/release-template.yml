@@ -53,6 +53,8 @@ jobs:
           echo "commit=$tag_commit" >> "$GITHUB_OUTPUT"
 
       - name: Validate release gate
+        env:
+          EXPECTED_RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           bash scripts/validate-template.sh
           bash scripts/check-drift.sh
@@ -62,6 +64,12 @@ jobs:
           node scripts/test-codex-routing.js
           node scripts/validate-codex-skills.js
           node scripts/validate-codex-agents.js
+          node scripts/test-writing-references.js
+          node scripts/validate-writing-references.js
+          node scripts/test-writing-intent.js
+          npm --prefix mcp-servers/context-router ci
+          npm --prefix mcp-servers/context-router test
+          npm --prefix mcp-servers/context-router run build
 
       - name: Build release archive
         env:

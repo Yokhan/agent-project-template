@@ -44,6 +44,15 @@ function testRoute(task, expectations) {
   for (const skill of expectations.skills || []) {
     assertIncludes(route.skills, skill, `${task} skills`);
   }
+  for (const skill of expectations.notSkills || []) {
+    assert(
+      !route.skills.includes(skill),
+      `${task} skills: expected no ${skill}, got ${route.skills.join(", ")}`,
+    );
+  }
+  for (const rule of expectations.sharedRules || []) {
+    assertIncludes(route.sharedRules, rule, `${task} shared rules`);
+  }
   for (const subagent of expectations.subagents || []) {
     assertIncludes(route.subagents, subagent, `${task} subagents`);
   }
@@ -112,6 +121,31 @@ function main() {
     new Set(getAgentProfiles().map(({ model }) => model)),
     new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]),
   );
+
+  const russianWriting = getRoute("Напиши на русском руководство по интеграции API");
+  assert.deepStrictEqual(russianWriting.writingPolicy.languageProfiles, ["russian-infostyle-core", "ilyakhov-russian-voice-decisions"]);
+  assert(russianWriting.writingPolicy.domainProfiles.includes("russian-explanation-and-persuasion"));
+  assert(russianWriting.writingPolicy.domainProfiles.includes("reader-task-architecture"));
+  assert(russianWriting.writingPolicy.technicalProfiles.includes("technical-developer-conventions"));
+  assert.deepStrictEqual(russianWriting.writingPolicy.externalTools, [{ id: "glavred-api", access: "not-configured", execution: "not-run", paid: true }]);
+  assert(russianWriting.writingPolicy.gates.includes("external-tool-unavailable"));
+
+  const russianLetter = getRoute("Напиши на русском деловое письмо клиенту");
+  assert(russianLetter.writingPolicy.languageProfiles.includes("russian-business-correspondence-language"));
+  assert(russianLetter.writingPolicy.processProfiles.includes("russian-business-correspondence-process"));
+  assert(russianLetter.writingPolicy.domainProfiles.includes("russian-business-correspondence"));
+
+  for (const task of ["Проверь в Главреде", "Дай оценку Главреда", "Отредактируй по Главреду", "Проверь этот текст в Главреде"]) {
+    const glavredRoute = getRoute(task);
+    assert(glavredRoute.modes.includes("writing-informational"), `${task}: ${glavredRoute.modes.join(", ")}`);
+    assert(!glavredRoute.modes.includes("writing-literary"), `${task}: unexpected literary route`);
+    assert.deepStrictEqual(glavredRoute.writingPolicy.externalTools, [{ id: "glavred-api", access: "not-configured", execution: "not-run", paid: true }]);
+  }
+
+  const mixedWriting = getRoute("Напиши руководство на русском и английском по API");
+  assert.strictEqual(mixedWriting.writingPolicy.targetLanguage, "mixed");
+  assert.deepStrictEqual(mixedWriting.writingPolicy.languageProfiles, []);
+  assert(mixedWriting.writingPolicy.gates.includes("per-section-language-resolution"));
 
   testRoute("план итераций по прогрессивному джипегу, где каждый срез решает цель продукта", {
     modes: ["progressive-planning"],

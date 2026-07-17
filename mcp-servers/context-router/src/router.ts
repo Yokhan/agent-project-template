@@ -1,4 +1,48 @@
 import type { Route, RouteResult } from "./types.js";
+import { createRequire } from "node:module";
+type WritingIntent = {
+  isWriting: boolean;
+  action: "create" | "edit" | "plan" | "review" | null;
+  primaryMode: "literary" | "marketing" | "informational" | "communication" | null;
+  overlays: string[];
+  specializations: string[];
+  domains: string[];
+  vendors: string[];
+  externalTools: string[];
+  outputLanguage: string | null;
+  languageResolution: "explicit" | "inferred" | null;
+};
+
+type WritingRoutePolicy = {
+  mode: string;
+  extraModes: string[];
+  pipeline: string;
+  risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  agent: string;
+  skills: string[];
+  subagents: string[];
+  files: string[];
+  targetLanguage: string;
+  languageResolution: string;
+  languageProfiles: string[];
+  processProfiles: string[];
+  domainProfiles: string[];
+  technicalProfiles: string[];
+  profiles: string[];
+  editors: string[];
+  gates: string[];
+  externalTools: Array<{ id: string; access: string; execution: string; paid: boolean }>;
+  rejectedProfiles: Array<{ id: string; reason: string }>;
+  needsFreshDocs: boolean;
+};
+
+const require = createRequire(import.meta.url);
+const { classifyWritingIntent } = require("../../../scripts/lib/writing-intent.js") as {
+  classifyWritingIntent(task: string): WritingIntent;
+};
+const { getWritingRoutePolicy } = require("../../../scripts/lib/writing-route-policy.js") as {
+  getWritingRoutePolicy(intent: WritingIntent): WritingRoutePolicy | null;
+};
 
 const ROUTES: Record<string, Route> = {
   code: {
@@ -31,7 +75,7 @@ const ROUTES: Record<string, Route> = {
   },
   design: {
     keywords:
-      /design|figma|ui|ux|css|style|layout|component|token|color|font|responsive|screen|tailwind|дизайн|макет|фигма|экран|интерфейс|стиль/i,
+      /design|figma|\bui\b|\bux\b|\bcss\b|style|layout|component|token|color|font|responsive|screen|tailwind|дизайн|макет|фигма|экран|интерфейс|стиль/i,
     files: [
       "domain/domain-design-pipeline.md",
       "meta/analysis.md",
@@ -62,13 +106,13 @@ const ROUTES: Record<string, Route> = {
       /write|article|post|copy|text|content|landing|marketing|email|newsletter|напиши|текст|статья|пост|контент/i,
     files: ["technical/writing.md", "domain/domain-guards.md"],
     agent: "writer",
-    codexSkills: ["codex-domain-communication-review"],
+    codexSkills: ["codex-writing-workflow"],
     codexSubagents: ["reviewer"],
     pipeline: "documentation",
     risk: "LOW",
   },
   git: {
-    keywords: /commit|push|pr|pull.request|merge|branch|release|deploy|tag/i,
+    keywords: /commit|push|\bpr\b|pull.request|merge|branch|release|deploy|tag/i,
     files: ["technical/git-workflow.md"],
     agent: "implementer",
     codexSkills: ["codex-health-check"],
@@ -151,7 +195,7 @@ const ROUTES: Record<string, Route> = {
       /document|readme|changelog|api.?doc|jsdoc|typedoc|swagger|документ|задокумент/i,
     files: ["process/context-first.md", "technical/writing.md"],
     agent: "documenter",
-    codexSkills: ["codex-domain-communication-review"],
+    codexSkills: ["codex-writing-workflow"],
     codexSubagents: ["reviewer"],
     pipeline: "documentation",
     risk: "LOW",
@@ -178,7 +222,7 @@ const ROUTES: Record<string, Route> = {
   },
   openai: {
     keywords:
-      /openai|gpt|responses.api|reasoning.effort|model|опенаи|модель|gpt-?5/i,
+      /openai|gpt|responses.api|опенаи|gpt-?5/i,
     files: ["meta/critical-thinking.md", "process/self-verification.md"],
     agent: "researcher",
     codexSkills: ["codex-openai-model-guidance"],
@@ -206,6 +250,7 @@ const AGENT_PRIORITY: Record<string, number> = {
   reviewer: 10,
   "test-engineer": 9,
   writer: 8,
+  "technical-writer": 8,
   "security-auditor": 7,
   profiler: 6,
   documenter: 5,
@@ -215,6 +260,8 @@ const AGENT_PRIORITY: Record<string, number> = {
 };
 
 export function routeKeywords(keywords: string): RouteResult {
+  const writingIntent = classifyWritingIntent(keywords);
+  const writingPolicy = getWritingRoutePolicy(writingIntent);
   const matchedModes: string[] = [];
   const matchedFiles = new Set<string>(CORE_FILES);
   const codexSkills = new Set<string>();
@@ -231,7 +278,25 @@ export function routeKeywords(keywords: string): RouteResult {
     CRITICAL: 4,
   };
 
+  if (writingPolicy) {
+    matchedModes.push(writingPolicy.mode, ...writingPolicy.extraModes);
+    writingPolicy.files.forEach((file) => matchedFiles.add(file));
+    writingPolicy.skills.forEach((skill) => codexSkills.add(skill));
+    writingPolicy.subagents.forEach((subagent) => codexSubagents.add(subagent));
+    pipeline = writingPolicy.pipeline;
+    risk = writingPolicy.risk;
+    needsFreshDocs = writingPolicy.needsFreshDocs;
+    bestAgent = writingPolicy.agent;
+    bestPriority = AGENT_PRIORITY[bestAgent] ?? 0;
+  }
+
   for (const [mode, route] of Object.entries(ROUTES)) {
+    if (
+      writingIntent.isWriting &&
+      new Set(["code", "design", "docs", "git", "review", "write"]).has(mode)
+    ) {
+      continue;
+    }
     if (route.keywords.test(keywords)) {
       matchedModes.push(mode);
       for (const file of route.files) {
@@ -272,7 +337,7 @@ export function routeKeywords(keywords: string): RouteResult {
   }
 
   return {
-    modes: matchedModes,
+    modes: Array.from(new Set(matchedModes)),
     agent: bestAgent,
     files: Array.from(matchedFiles),
     codexSkills: Array.from(codexSkills),
@@ -280,6 +345,17 @@ export function routeKeywords(keywords: string): RouteResult {
     pipeline,
     risk,
     needsFreshDocs,
+    targetLanguage: writingPolicy?.targetLanguage ?? null,
+    languageResolution: writingPolicy?.languageResolution ?? null,
+    writingProfiles: writingPolicy?.profiles ?? [],
+    writingLanguageProfiles: writingPolicy?.languageProfiles ?? [],
+    writingProcessProfiles: writingPolicy?.processProfiles ?? [],
+    writingDomainProfiles: writingPolicy?.domainProfiles ?? [],
+    writingTechnicalProfiles: writingPolicy?.technicalProfiles ?? [],
+    writingEditors: writingPolicy?.editors ?? [],
+    writingGates: writingPolicy?.gates ?? [],
+    writingExternalTools: writingPolicy?.externalTools ?? [],
+    writingRejectedProfiles: writingPolicy?.rejectedProfiles ?? [],
   };
 }
 

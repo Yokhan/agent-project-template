@@ -386,6 +386,12 @@ echo ""
 echo "Codex skills:"
 check ">=42 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 42 ]'
 check "progressive JPEG planner skill" test -f .agents/skills/codex-progressive-jpeg-planner/SKILL.md
+check "four-mode writing workflow skill" test -f .agents/skills/codex-writing-workflow/SKILL.md
+check "technical writing skill" test -f .agents/skills/codex-technical-writing/SKILL.md
+check "technical writing review skill" test -f .agents/skills/codex-technical-writing-review/SKILL.md
+check "writing intent classifier" node scripts/test-writing-intent.js
+check "writing reference policy" node scripts/test-writing-references.js
+check "writing reference registry" node scripts/validate-writing-references.js
 check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
 check "core Codex design command modes reference" test -f .agents/skills/codex-design-workflow/references/design-command-modes.md
 check "core Codex design review skill" test -f .agents/skills/codex-domain-design-review/SKILL.md
@@ -520,7 +526,8 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md tests/fixtures/design-policy scripts/lib/codex-route-intents.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -536,6 +543,24 @@ if is_template_source_repo; then
       [ -f "$project/.claude/library/domain/domain-design-system.md" ] &&
       [ -f "$project/.claude/library/domain/domain-design-pipeline.md" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/references/design-command-modes.md" ] &&
+      [ -f "$project/.agents/skills/codex-writing-workflow/SKILL.md" ] &&
+      [ -f "$project/.agents/skills/codex-technical-writing/SKILL.md" ] &&
+      [ -f "$project/.agents/skills/codex-technical-writing-review/SKILL.md" ] &&
+      [ -f "$project/.claude/skills/writing-workflow/SKILL.md" ] &&
+      [ -f "$project/.claude/skills/technical-writing/SKILL.md" ] &&
+      [ -f "$project/.claude/skills/technical-writing-review/SKILL.md" ] &&
+      [ -f "$project/.claude/agents/technical-writer.md" ] &&
+      [ -f "$project/.claude/library/technical/writing-mode-profiles.md" ] &&
+      [ -f "$project/.claude/library/technical/russian-writing-profile.md" ] &&
+      [ -f "$project/.claude/library/technical/russian-business-correspondence.md" ] &&
+      [ -f "$project/.claude/library/technical/russian-explanation-and-persuasion.md" ] &&
+      [ -f "$project/.claude/library/technical/technical-writing-profile.md" ] &&
+      [ -f "$project/.claude/library/technical/writing-editorial-board.md" ] &&
+      [ -f "$project/.claude/library/technical/writing-reference-registry.json" ] &&
+      [ -f "$project/docs/WRITING_WORKFLOW.md" ] &&
+      [ -f "$project/docs/WRITING_REFERENCE_PROVENANCE.md" ] &&
+      [ -f "$project/tests/fixtures/writing-tools/external-tool-adapter.fixture.js" ] &&
+      [ -f "$project/brain/03-knowledge/writing/reference-registry.json" ] &&
       [ -f "$project/DESIGN.md" ] &&
       [ -f "$project/design-policy.ignore" ] &&
       [ -f "$project/tests/fixtures/design-policy/pass/basic.css" ] &&
@@ -550,6 +575,14 @@ if is_template_source_repo; then
       [ -f "$project/integrations/spec-kit/README.md" ] &&
       [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
       [ -f "$project/scripts/lib/codex-route-intents.js" ] &&
+      [ -f "$project/scripts/lib/writing-intent.js" ] &&
+      [ -f "$project/scripts/lib/writing-route-policy.js" ] &&
+      [ -f "$project/scripts/lib/writing-reference-policy.js" ] &&
+      [ -f "$project/scripts/lib/writing-external-tool-policy.js" ] &&
+      (cd "$project" && node scripts/test-writing-intent.js >/dev/null) &&
+      (cd "$project" && node scripts/test-writing-references.js >/dev/null) &&
+      (cd "$project" && node scripts/validate-writing-references.js >/dev/null) &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); const paths=['.claude/library/technical/writing-reference-registry.json','docs/WRITING_WORKFLOW.md','docs/WRITING_REFERENCE_PROVENANCE.md','tests/fixtures/writing-tools/external-tool-adapter.fixture.js','scripts/lib/writing-external-tool-policy.js']; if(paths.some((p)=>m.files?.[p]?.category!=='template')) process.exit(1)" "$project" &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['scripts/lib/codex-route-intents.js']?.category!=='template') process.exit(1)" "$project" &&
       [ -f "$project/scripts/codex-agent-policy.js" ] &&
       [ -f "$project/scripts/codex-routing-cases-a.js" ] &&
@@ -617,7 +650,8 @@ if is_template_source_repo; then
       "$template/_reference/spec-kit" \
       "$template/templates/project-starter/tasks" \
       "$template/tests/fixtures/design-policy/pass" \
-      "$template/tests/fixtures/design-policy/fail"
+      "$template/tests/fixtures/design-policy/fail" \
+      "$template/tests/fixtures/writing-tools"
 
     printf '%s\n' '# Fixture Claude' '<!-- Template Version: 9.9.9 -->' > "$template/CLAUDE.md"
     printf '%s\n' '*.log' > "$template/.gitignore"
@@ -639,6 +673,11 @@ if is_template_source_repo; then
     cp scripts/validate-subagent-trace.js "$template/scripts/validate-subagent-trace.js"
     cp scripts/validate-codex-agents.js "$template/scripts/validate-codex-agents.js"
     cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
+    cp scripts/lib/writing-intent.js "$template/scripts/lib/writing-intent.js"
+    cp scripts/lib/writing-route-policy.js "$template/scripts/lib/writing-route-policy.js"
+    cp scripts/lib/writing-reference-policy.js "$template/scripts/lib/writing-reference-policy.js"
+    cp scripts/lib/writing-external-tool-policy.js "$template/scripts/lib/writing-external-tool-policy.js"
+    cp scripts/lib/writing-path-policy.js "$template/scripts/lib/writing-path-policy.js"
     cp scripts/lib/progressive-plan.js "$template/scripts/lib/progressive-plan.js"
     cp scripts/lib/subagent-trace.js "$template/scripts/lib/subagent-trace.js"
 
@@ -649,6 +688,7 @@ if is_template_source_repo; then
     printf '%s\n' '# source-only starter task fixture' > "$template/templates/project-starter/tasks/current.md"
     printf '%s\n' '.fixture-pass { color: var(--color-text); }' > "$template/tests/fixtures/design-policy/pass/basic.css"
     printf '%s\n' '.fixture-fail { background: linear-gradient(red, blue); background-clip: text; }' > "$template/tests/fixtures/design-policy/fail/gradient-text.css"
+    printf '%s\n' 'module.exports = { provider: "fixture", configured: false };' > "$template/tests/fixtures/writing-tools/external-tool-adapter.fixture.js"
   }
   write_empty_trackable_manifest() {
     local project="$1"
@@ -701,6 +741,7 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: scripts/validate-progressive-plan.js" "$output" || return 1
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output" || return 1
+    grep -q "WOULD ADD: tests/fixtures/writing-tools/external-tool-adapter.fixture.js" "$output" || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
 
     if ! bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1; then
@@ -717,6 +758,8 @@ if is_template_source_repo; then
     grep -q '"scripts/validate-progressive-plan.js"' "$project/.template-manifest.json" || return 1
     grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json" || return 1
     grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json" || return 1
+    grep -q '"tests/fixtures/writing-tools/external-tool-adapter.fixture.js"' "$project/.template-manifest.json" || return 1
+    cmp "$SYNC_TEMPLATE_FIXTURE/tests/fixtures/writing-tools/external-tool-adapter.fixture.js" "$project/tests/fixtures/writing-tools/external-tool-adapter.fixture.js" || return 1
     ! grep -q '"templates/' "$project/.template-manifest.json" || return 1
     ! grep -q '"setup.sh"' "$project/.template-manifest.json" || return 1
     ! grep -q '"setup.bat"' "$project/.template-manifest.json" || return 1

@@ -6,6 +6,8 @@ const {
   getIntentMatch,
   shouldSuppressRoute,
 } = require("./lib/codex-route-intents.js");
+const { classifyWritingIntent } = require("./lib/writing-intent.js");
+const { getWritingRoutePolicy } = require("./lib/writing-route-policy.js");
 const {
   formatAgentProfiles,
   getFanoutDecision,
@@ -164,8 +166,69 @@ function getQualityGates(selected, risk, shouldUseProductGoal = false) {
     ...selected.flatMap((route) => route.gates || []),
   ]);
 }
+
+const WRITING_NOISE_MODES = new Set([
+  "api",
+  "design",
+  "design-system",
+  "feature",
+  "marketing",
+  "mermaid",
+  "openai",
+  "release",
+  "review",
+  "product-ux",
+  "writing-communication",
+  "writing-informational",
+  "writing-literary",
+  "technical-writing",
+]);
+
+function getRouteByMode(mode) {
+  return ROUTES.find((route) => route.mode === mode);
+}
+
+function createWritingMatch(mode, policy, rawMatches, isPrimary) {
+  const base = getRouteByMode(mode);
+  const original = rawMatches.find((match) => match.route.mode === mode);
+  return {
+    exact: Boolean(original?.exact),
+    intent: original?.intent || { isMatch: true, score: 1, threshold: 1 },
+    route: {
+      ...base,
+      pipeline: policy.pipeline,
+      risk: policy.risk,
+      skills: isPrimary ? policy.skills : [],
+      subagents: isPrimary ? policy.subagents : [],
+      rules: isPrimary ? unique([...(base.rules || []), ...policy.rules]) : [],
+      gates: isPrimary ? unique([...(base.gates || []), ...policy.gates]) : [],
+      writingProfiles: isPrimary ? policy.profiles : [],
+      writingLanguageProfiles: isPrimary ? policy.languageProfiles : [],
+      writingProcessProfiles: isPrimary ? policy.processProfiles : [],
+      writingDomainProfiles: isPrimary ? policy.domainProfiles : [],
+      writingTechnicalProfiles: isPrimary ? policy.technicalProfiles : [],
+      writingEditors: isPrimary ? policy.editors : [],
+      writingExternalTools: isPrimary ? policy.externalTools : [],
+      writingRejectedProfiles: isPrimary ? policy.rejectedProfiles : [],
+    },
+  };
+}
+
+function applyWritingIntent(task, rawMatches) {
+  const intent = classifyWritingIntent(task);
+  if (!intent.isWriting) return rawMatches;
+  const policy = getWritingRoutePolicy(intent);
+  const preserved = rawMatches.filter(
+    (match) => !WRITING_NOISE_MODES.has(match.route.mode),
+  );
+  const modes = [policy.mode, ...policy.extraModes];
+  const writingMatches = modes.map((mode, index) =>
+    createWritingMatch(mode, policy, rawMatches, index === 0));
+  return [...writingMatches, ...preserved];
+}
+
 function getMatchedRoutes(task) {
-  return ROUTES.map((route) => {
+  const rawMatches = ROUTES.map((route) => {
     const exact = route.pattern.test(task);
     const intent = getIntentMatch(route.mode, task);
     return { exact, intent, route };
@@ -173,9 +236,12 @@ function getMatchedRoutes(task) {
     (match.exact || match.intent.isMatch) &&
     !shouldSuppressRoute(match.route.mode, task),
   );
+  return applyWritingIntent(task, rawMatches);
 }
 function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
+  const writingIntent = classifyWritingIntent(task);
+  const writingPolicy = getWritingRoutePolicy(writingIntent);
   const matches = getMatchedRoutes(task);
   const defaultMode = /сделай|сделать|do it|make it/i.test(task)
     ? "feature"
@@ -233,6 +299,8 @@ function getRoute(task, options = {}) {
     productionBar: getProductionBar(selected),
     languagePolicy: "plans-audits-status-and-final-reports-match-user-request-language",
     matchPolicy: "exact-patterns-plus-semantic-intent-scoring",
+    writingIntent,
+    writingPolicy,
     exactMatches,
     semanticMatches,
     qualityGates: getQualityGates(selected, risk, shouldUseProductGoal),
@@ -256,6 +324,18 @@ function formatSummary(route) {
     `PRODUCT_BAR: ${route.productionBar.default} | outcome=${route.productionBar.outcomePriority} | no_mvp=${route.productionBar.noMvpByDefault}`,
     `GATES: ${route.qualityGates.join(", ")}`,
     `RULES: ${route.sharedRules.join(", ")}`,
+    ...(route.writingPolicy ? [
+      `WRITING_LANGUAGE: ${route.writingPolicy.targetLanguage}`,
+      `WRITING_LANGUAGE_RESOLUTION: ${route.writingPolicy.languageResolution}`,
+      `WRITING_LANGUAGE_PROFILES: ${route.writingPolicy.languageProfiles.join(", ") || "none"}`,
+      `WRITING_PROCESS_PROFILES: ${route.writingPolicy.processProfiles.join(", ") || "none"}`,
+      `WRITING_DOMAIN_PROFILES: ${route.writingPolicy.domainProfiles.join(", ") || "none"}`,
+      `WRITING_TECHNICAL_PROFILES: ${route.writingPolicy.technicalProfiles.join(", ") || "none"}`,
+      `WRITING_REJECTED: ${route.writingPolicy.rejectedProfiles.map(({ id, reason }) => `${id}:${reason}`).join(", ") || "none"}`,
+      `WRITING_EXTERNAL_TOOLS: ${route.writingPolicy.externalTools.map(({ id, access, execution, paid }) => `${id}:${access}:${execution}:${paid ? "paid" : "free"}`).join(", ") || "none"}`,
+      `WRITING_EDITORS: ${route.writingPolicy.editors.join(", ") || "none"}`,
+      `WRITING_GATES: ${route.writingPolicy.gates.join(", ") || "none"}`,
+    ] : []),
     route.needsFreshDocs
       ? "FRESH_DOCS: required"
       : "FRESH_DOCS: not required by route",

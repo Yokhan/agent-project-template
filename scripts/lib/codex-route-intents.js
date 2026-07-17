@@ -21,10 +21,20 @@ const INTENT_GROUPS = {
     [/spacing|typography|radius|motion|color|state/i, /отступ|типограф|радиус|скругл|движен|цвет|состояни/i],
     [/reuse|composition|contract|library|foundation/i, /переиспольз|композиц|контракт|библиотек|фундамент/i],
   ],
-  docs: [
-    [/explain|guide|manual|article|email|copy|message|wording/i, /объясн|инструкц|гайд|стат|письм|сообщен|формулиров|текст/i],
-    [/reader|audience|tone|clarity|understand|rewrite/i, /читател|аудитор|тон|ясност|поня|перепиш/i],
-    [/publish|readme|documentation|release note/i, /опублик|ридми|документац|релизн\w*\s+замет/i],
+  "writing-literary": [
+    [/novel|fiction|story|chapter|scene|dialogue|screenplay|narrative|poem/i, /роман|рассказ|повест|глав|сцен|диалог|сценари|стих/i],
+    [/character arc|dramatic turn|point of view|worldbuilding|lore|reader experience/i, /арк\w*\s+персонаж|драматическ\w*\s+поворот|точк\w*\s+зрен|миростро|лор|читательск\w*\s+пережив/i],
+    [/write|draft|rewrite|edit|continue/i, /напиш|черновик|перепиш|редакт|продолж/i],
+  ],
+  "writing-informational": [
+    [/explain|guide|manual|article|tutorial|documentation|knowledge base/i, /объясн|инструкц|гайд|стат|руководств|документац|справк|баз\w*\s+знан/i],
+    [/reader task|understand|learn|complete|procedure|prerequisite/i, /задач\w*\s+читател|поня|науч|выполн|процедур|предуслов|требован/i],
+    [/write|draft|rewrite|publish|clarity|wording/i, /напиш|черновик|перепиш|опублик|ясност|формулиров/i],
+  ],
+  "writing-communication": [
+    [/email|letter|message|notification|announcement|support reply|incident update/i, /письм|сообщен|уведомлен|объявлен|ответ\w*\s+поддерж|инцидент/i],
+    [/recipient|sender|reply|action owner|deadline|next update/i, /получател|отправител|ответ|исполнител|срок|следующ\w*\s+обновлен/i],
+    [/write|draft|rewrite|send|clarify|tone/i, /напиш|черновик|перепиш|отправ|уточн|тон/i],
   ],
   feature: [
     [/enable|allow|support|add ability|new flow|capability/i, /возможност|разреш|поддерж|нов\w*\s+флоу|функц/i],
@@ -57,7 +67,7 @@ const INTENT_GROUPS = {
   ],
   openai: [
     [/model|responses api|reasoning effort|structured outputs|tool calling/i, /модел|responses api|reasoning|структурн\w*\s+вывод|tool/i],
-    [/openai|codex|gpt|api/i, /openai|codex|gpt|опенаи|апи/i],
+    [/openai|codex|gpt|responses api/i, /openai|codex|gpt|опенаи|responses api/i],
     [/current|latest|docs|migration/i, /актуальн|последн|док|миграц/i],
   ],
   "product-goal": [
@@ -121,8 +131,9 @@ function getIntentMatch(mode, task) {
   const normalizedTask = normalizeTask(task);
   const matchedGroups = groups.filter((group) => doesGroupMatch(group, normalizedTask));
   const threshold = Math.min(INTENT_THRESHOLD, groups.length || INTENT_THRESHOLD);
+  const hasVendorAnchor = mode !== "openai" || /\b(?:openai|codex|gpt(?:-?\d(?:\.\d)?)?|responses api)\b|опенаи/i.test(normalizedTask);
   return {
-    isMatch: matchedGroups.length >= threshold,
+    isMatch: hasVendorAnchor && matchedGroups.length >= threshold,
     score: matchedGroups.length,
     threshold,
   };

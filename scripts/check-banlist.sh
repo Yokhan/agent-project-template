@@ -1,9 +1,9 @@
 #!/bin/bash
-# BAN-LIST Scanner — check user-facing files for AI-slop words before commit
+# Phrase-signal scanner — flag possible filler for contextual review
 # Usage: bash scripts/check-banlist.sh [file_or_dir...]
 # Default: scans staged files if no args given
 
-# Default BAN-LIST (Russian AI-slop markers)
+# Default Russian diagnostic signals
 BAN_RU=(
   "является"
   "представляет собой"
@@ -23,7 +23,7 @@ BAN_RU=(
   "Резюмируя"
 )
 
-# Default BAN-LIST (English AI-slop markers)
+# Default English diagnostic signals
 BAN_EN=(
   "Furthermore"
   "Moreover"
@@ -42,7 +42,7 @@ BAN_EN=(
   "Paradigm shift"
 )
 
-# Merge project BAN-LIST if exists
+# Merge project-owned diagnostic signals if present
 PROJECT_BANS=()
 for banfile in ban-list.md BAN-LIST.md ban-list.txt; do
   if [ -f "$banfile" ]; then
@@ -87,7 +87,7 @@ fi
 VIOLATIONS=0
 TOTAL_FILES=${#FILES[@]}
 
-echo "=== BAN-LIST Scan: $TOTAL_FILES file(s) ==="
+echo "=== Phrase Signal Scan: $TOTAL_FILES file(s) ==="
 
 for file in "${FILES[@]}"; do
   [ -f "$file" ] || continue
@@ -108,7 +108,7 @@ for file in "${FILES[@]}"; do
       fi
       # Show first occurrence with line number
       line_info=$(grep -ni "$phrase" "$file" 2>/dev/null | head -1)
-      echo "    BAN: \"$phrase\" ($count occurrence(s)) — $line_info"
+      echo "    REVIEW: \"$phrase\" ($count occurrence(s)) — $line_info"
       FILE_HITS=$((FILE_HITS + count))
     fi
   done
@@ -120,10 +120,10 @@ done
 
 echo ""
 if [ "$VIOLATIONS" -gt 0 ]; then
-  echo "=== FAIL: $VIOLATIONS BAN-LIST violation(s) found ==="
-  echo "Fix these before committing user-facing content."
-  exit 1
+  echo "=== REVIEW: $VIOLATIONS phrase signal(s) found ==="
+  echo "These are diagnostic signals, not forbidden words. Review each occurrence in context."
+  exit 0
 else
-  echo "=== PASS: No BAN-LIST violations ==="
+  echo "=== PASS: No phrase signals found ==="
   exit 0
 fi
