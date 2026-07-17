@@ -360,6 +360,8 @@ git update-index --chmod=+x scripts/check-drift.sh 2>/dev/null || true
 
 # Create initial commit
 git add -A
+git config user.name >/dev/null 2>&1 || git config user.name "Agent Project Template"
+git config user.email >/dev/null 2>&1 || git config user.email "template@localhost.invalid"
 git commit -m "chore: initialize project from agent-project-template v$TEMPLATE_VERSION"
 
 # Test hooks compatibility

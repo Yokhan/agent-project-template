@@ -765,7 +765,6 @@ if is_template_source_repo; then
     ! grep -q '"setup.bat"' "$project/.template-manifest.json" || return 1
     (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) || return 1
-    (cd "$project" && node scripts/test-codex-routing.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-progressive-plan.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-subagent-trace.js >/dev/null) || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1

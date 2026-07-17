@@ -252,6 +252,8 @@ if errorlevel 1 (
 ) else (
     git update-index --chmod=+x scripts/check-drift.sh >nul 2>&1
     git add -A >nul 2>&1
+    git config user.name >nul 2>&1 || git config user.name "Agent Project Template"
+    git config user.email >nul 2>&1 || git config user.email "template@localhost.invalid"
     for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$match = Select-String -Path 'AGENTS.md' -Pattern 'Template Version:\s*([0-9.]+)' | Select-Object -First 1; if ($match -and $match.Matches.Count -gt 0) { $match.Matches[0].Groups[1].Value } else { '4.0.1' }"`) do set "TEMPLATE_VERSION=%%i"
     git commit -m "chore: initialize project from agent-project-template v%TEMPLATE_VERSION%" >nul 2>&1
     echo Git repository initialized with initial commit.

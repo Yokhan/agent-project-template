@@ -226,7 +226,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 28 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, plus router entrypoint |
+| **Rules** | 31 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
 | **Codex Skills** | 45 | Pipeline, route-first orchestration, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
