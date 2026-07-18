@@ -784,6 +784,7 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: scripts/lib/codex-route-summary.js" "$output" || return 1
     grep -q "WOULD ADD: scripts/lib/codex-route-cli.js" "$output" || return 1
     grep -q "WOULD ADD: scripts/lib/codex-discovery-reroute.js" "$output" || return 1
+    grep -q "WOULD ADD: brain/03-knowledge/communication/ilyakhov-planning-principles.md" "$output" || return 1
     grep -q "WOULD ADD: .agents/skills/codex-change-strategy/SKILL.md" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/change-strategy/discovery-architecture-mismatch.json" "$output" || return 1
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
@@ -807,6 +808,8 @@ if is_template_source_repo; then
     grep -q '"scripts/lib/codex-route-summary.js"' "$project/.template-manifest.json" || return 1
     grep -q '"scripts/lib/codex-route-cli.js"' "$project/.template-manifest.json" || return 1
     grep -q '"scripts/lib/codex-discovery-reroute.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"brain/03-knowledge/communication/ilyakhov-planning-principles.md"' "$project/.template-manifest.json" || return 1
+    [ -f "$project/brain/03-knowledge/communication/ilyakhov-planning-principles.md" ] || return 1
     grep -q '".agents/skills/codex-change-strategy/SKILL.md"' "$project/.template-manifest.json" || return 1
     grep -q '"tests/fixtures/change-strategy/discovery-architecture-mismatch.json"' "$project/.template-manifest.json" || return 1
     grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json" || return 1
