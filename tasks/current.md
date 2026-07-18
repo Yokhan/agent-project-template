@@ -2,13 +2,13 @@
 id: template-v4.8.0-release
 status: active
 updated: 2026-07-18
-readiness: 90
+readiness: 92
 plan: 100
 inventory: 100
-production: 85
+production: 88
 cleanup: 100
 tags: release,change-strategy,destination,transition,compatibility,evidence,routing
-next: pass release gates, publish v4.8.0, and verify the remote release
+next: rerun the exact-SHA release gates, publish v4.8.0, and verify the remote release
 -->
 
 # Current Task - Template v4 Production Product Standard

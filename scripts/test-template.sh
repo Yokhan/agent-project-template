@@ -668,6 +668,8 @@ if is_template_source_repo; then
       "$template/.agents/skills/codex-change-strategy/agents" \
       "$template/.codex/agents" \
       "$template/.claude/library/process" \
+      "$template/.claude/library/technical" \
+      "$template/brain/03-knowledge/communication" \
       "$template/scripts" \
       "$template/scripts/lib" \
       "$template/docs" \
@@ -685,6 +687,7 @@ if is_template_source_repo; then
     cp scripts/sync-template.sh "$template/scripts/sync-template.sh"
     cp .codex/config.toml "$template/.codex/config.toml"
     cp .codex/agents/*.toml "$template/.codex/agents/"
+    cp -R .agents/skills/. "$template/.agents/skills/"
     cp scripts/codex-agent-policy.js "$template/scripts/codex-agent-policy.js"
     cp scripts/codex-route-config.js "$template/scripts/codex-route-config.js"
     cp scripts/codex-route-task.js "$template/scripts/codex-route-task.js"
@@ -712,6 +715,9 @@ if is_template_source_repo; then
     cp scripts/lib/change-strategy-policy.js "$template/scripts/lib/change-strategy-policy.js"
     cp scripts/lib/subagent-trace.js "$template/scripts/lib/subagent-trace.js"
     cp .claude/library/process/change-strategy-gate.md "$template/.claude/library/process/change-strategy-gate.md"
+    cp .claude/library/technical/writing-reference-registry.json "$template/.claude/library/technical/writing-reference-registry.json"
+    cp docs/WRITING_REFERENCE_PROVENANCE.md "$template/docs/WRITING_REFERENCE_PROVENANCE.md"
+    cp brain/03-knowledge/communication/ilyakhov-planning-principles.md "$template/brain/03-knowledge/communication/ilyakhov-planning-principles.md"
     cp .agents/skills/codex-change-strategy/SKILL.md "$template/.agents/skills/codex-change-strategy/SKILL.md"
     cp .agents/skills/codex-change-strategy/agents/openai.yaml "$template/.agents/skills/codex-change-strategy/agents/openai.yaml"
     cp tests/fixtures/change-strategy/discovery-architecture-mismatch.json "$template/tests/fixtures/change-strategy/discovery-architecture-mismatch.json"

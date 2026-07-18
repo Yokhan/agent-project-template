@@ -226,14 +226,14 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 31 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, plus router entrypoint |
+| **Rules** | 32 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
-| **Codex Skills** | 45 | Pipeline, route-first orchestration, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Skills** | 46 | Pipeline, route-first orchestration, evidence-backed change strategy, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
 | **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 56 | validation, adaptive writing/reference routing, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 58 | validation, adaptive writing/reference routing, change-strategy validation, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
