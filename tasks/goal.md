@@ -25,9 +25,9 @@ The primary user is the downstream product team or operator using a generated pr
 
 ## Current Step
 The evidence-backed Change Strategy Gate, pre-repair discovery activation, and
-decision-to-resume lifecycle are implemented. The current state-changing step
-is the approved `v4.8.0` release: pass local and remote gates, bind one tag to
-the verified commit, publish it, and verify the authoritative GitHub Release.
+decision-to-resume lifecycle are published in verified release `v4.8.0`. The
+next state-changing step is a pinned downstream dry-run that reviews local
+overlays and conflicts before any project applies the release.
 
 ## Dependencies
 - Shared `.claude/library/` rules.

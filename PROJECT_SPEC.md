@@ -44,7 +44,7 @@
 ## Current State
 - Goal: Prepare `agent-project-template` v4 so agents stop treating real product work as MVP/prototype work and instead operate from a persistent product goal, current step, dependencies, verification contract, and product/business outcome priority.
 - Status: Working branch: `feature/template-v4-production-product-standard`
-- Next: Release `v4.8.0`, then preview its evidence-backed Change Strategy Gate in downstream projects with the pinned dry-run protocol.
+- Next: Preview released `v4.8.0` in representative downstream projects with the pinned dry-run protocol before applying it.
 
 ## Last Scan
 2026-07-18
