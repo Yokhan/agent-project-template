@@ -1,18 +1,15 @@
 #!/usr/bin/env node
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
-const {
-  getIntentMatch,
-  shouldSuppressRoute,
-} = require("./lib/codex-route-intents.js");
+const { getChangeStrategyActivation, getIntentMatch, shouldSuppressRoute } =
+  require("./lib/codex-route-intents.js");
 const { classifyWritingIntent } = require("./lib/writing-intent.js");
 const { getWritingRoutePolicy } = require("./lib/writing-route-policy.js");
-const {
-  formatAgentProfiles,
-  getFanoutDecision,
-} = require("./codex-agent-policy.js");
-const STATE_PATH = path.join("tasks", ".active-codex-route.json");
+const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
+const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
+const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
+const { formatSummary } = require("./lib/codex-route-summary.js");
+const { getFanoutDecision } = require("./codex-agent-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
@@ -52,8 +49,8 @@ function detectArtifacts(root) {
       name: "kiro",
       present:
         pathExists(root, ".kiro") ||
-        pathExists(root, "requirements.md") ||
-        pathExists(root, "design.md"),
+        fs.readdirSync(root).includes("requirements.md") ||
+        fs.readdirSync(root).includes("design.md"),
       role: "requirements/design/tasks artifacts are the input contract",
     },
     {
@@ -107,15 +104,16 @@ function getOrchestrator(artifacts) {
 }
 function needsStrategicReview(selected, risk, artifacts) {
   const strategicModes = new Set(["strategy", "template", "release", "security", "migration", "product-goal", "lessons"]);
+  const externalOrchestrators = new Set(["agentos", "spec-kit", "kiro", "litkit"]);
   return risk === "HIGH" ||
     selected.some((route) => strategicModes.has(route.mode)) ||
-    artifacts.some((artifact) => artifact.name !== "template-native");
+    artifacts.some((artifact) => externalOrchestrators.has(artifact.name));
 }
 function needsProductGoal(selected, risk) {
   const productModes = new Set(["product-goal", "product-ux", "design-system", "marketing", "template", "release", "strategy", "lessons"]);
   return risk !== "LOW" && selected.some((route) => productModes.has(route.mode));
 }
-function getPlanContract(selected, risk) {
+function getPlanContract(selected, risk, changeStrategy) {
   const modes = new Set(selected.map((route) => route.mode));
   return {
     required: risk !== "LOW" || modes.has("product-goal") || modes.has("template"),
@@ -124,7 +122,9 @@ function getPlanContract(selected, risk) {
     goalArtifact: modes.has("product-goal") || modes.has("template") || modes.has("design-system")
       ? "read-or-create tasks/goal.md for M+ product work"
       : "read tasks/goal.md when present",
-    approval: risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
+    approval: changeStrategy.required
+      ? "change-strategy-gate-decides-auto-internal-vs-client-tradeoff"
+      : risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
     outcomePriority:
       "name product-user experience and app-specific business KPI before technical work",
   };
@@ -151,7 +151,7 @@ function getProductionBar(selected) {
     appliesToModes: modes,
   };
 }
-function getQualityGates(selected, risk, shouldUseProductGoal = false) {
+function getQualityGates(selected, risk, shouldUseProductGoal = false, changeStrategy = { required: false }) {
   const base = ["success-criteria", "user-business-outcome-link", "verification-evidence", "confidence-and-doubt"];
   const riskGates = risk === "HIGH" || risk === "CRITICAL"
     ? ["rollback-or-plan-b", "route-state-written"]
@@ -159,14 +159,19 @@ function getQualityGates(selected, risk, shouldUseProductGoal = false) {
   const productGoalGates = shouldUseProductGoal
     ? ["product-goal-artifact", "quality-bar", "current-step", "language-match"]
     : [];
+  const changeStrategyGates = changeStrategy.required
+    ? ["project-posture", "protected-contracts", "destination-transition", "objective-evidence-matrix", "approved-change-envelope", "superseded-path-removal"]
+    : [];
+  const discoveryGates = changeStrategy.discoveryRequired ? ["discovery-evidence-before-edit"] : [];
   return unique([
     ...base,
     ...riskGates,
     ...productGoalGates,
+    ...changeStrategyGates,
+    ...discoveryGates,
     ...selected.flatMap((route) => route.gates || []),
   ]);
 }
-
 const WRITING_NOISE_MODES = new Set([
   "api",
   "design",
@@ -183,11 +188,9 @@ const WRITING_NOISE_MODES = new Set([
   "writing-literary",
   "technical-writing",
 ]);
-
 function getRouteByMode(mode) {
   return ROUTES.find((route) => route.mode === mode);
 }
-
 function createWritingMatch(mode, policy, rawMatches, isPrimary) {
   const base = getRouteByMode(mode);
   const original = rawMatches.find((match) => match.route.mode === mode);
@@ -213,7 +216,6 @@ function createWritingMatch(mode, policy, rawMatches, isPrimary) {
     },
   };
 }
-
 function applyWritingIntent(task, rawMatches) {
   const intent = classifyWritingIntent(task);
   if (!intent.isWriting) return rawMatches;
@@ -226,7 +228,6 @@ function applyWritingIntent(task, rawMatches) {
     createWritingMatch(mode, policy, rawMatches, index === 0));
   return [...writingMatches, ...preserved];
 }
-
 function getMatchedRoutes(task) {
   const rawMatches = ROUTES.map((route) => {
     const exact = route.pattern.test(task);
@@ -242,42 +243,79 @@ function getRoute(task, options = {}) {
   const cwd = options.cwd || process.cwd();
   const writingIntent = classifyWritingIntent(task);
   const writingPolicy = getWritingRoutePolicy(writingIntent);
-  const matches = getMatchedRoutes(task);
+  const requestActivation = getChangeStrategyActivation(task);
+  const matches = getMatchedRoutes(task).filter((match) => !requestActivation.required ||
+    requestActivation.recordMode !== "response-only" || match.route.mode !== "bugfix");
+  const discovery = evaluateDiscoveryReroute(options.discovery);
+  const activation = discovery.required ? {
+    ...requestActivation,
+    required: true,
+    semantic: !requestActivation.exact,
+    discoveryRequired: true,
+    reasons: unique([...requestActivation.reasons, ...discovery.reasons]),
+  } : { ...requestActivation, discoveryRequired: false };
+  const strategyDecision = options.changeStrategyDecision
+    ? validateChangeStrategy(options.changeStrategyDecision)
+    : null;
+  const decisionBinding = getDecisionBinding(discovery, options.changeStrategyDecision, activation.required);
+  const blockEdits = activation.required &&
+    (!strategyDecision || strategyDecision.blocked || !decisionBinding.isBound);
+  const changeStrategy = {
+    ...activation,
+    lifecycle: !activation.required
+      ? "not-required"
+      : blockEdits ? "pending-decision" : "resolved-resume-base-pipeline",
+  };
   const defaultMode = /сделай|сделать|do it|make it/i.test(task)
     ? "feature"
-    : "review";
+    : changeStrategy.required ? "strategy" : "review";
   const selectedMatches = matches.length > 0
     ? matches
     : [{ exact: false, intent: { isMatch: false, score: 0, threshold: 0 }, route: ROUTES.find((route) => route.mode === defaultMode) }];
   const selected = selectedMatches.map((match) => match.route);
-  const semanticMatches = unique(
-    selectedMatches
+  const semanticMatches = unique([
+    ...selectedMatches
       .filter((match) => !match.exact && match.intent.isMatch)
       .map((match) => match.route.mode),
-  );
-  const exactMatches = unique(
-    selectedMatches
+    changeStrategy.semantic ? "change-strategy" : "",
+  ]);
+  const exactMatches = unique([
+    ...selectedMatches
       .filter((match) => match.exact)
       .map((match) => match.route.mode),
-  );
+    changeStrategy.exact ? "change-strategy" : "",
+  ]);
   const artifacts = detectArtifacts(cwd);
   const riskOrder = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
-  const risk = selected.reduce(
+  const routeRisk = selected.reduce(
     (current, route) =>
       riskOrder[route.risk] > riskOrder[current] ? route.risk : current,
     "LOW",
   );
-  const shouldUseStrategicReview = needsStrategicReview(selected, risk, artifacts);
-  const shouldUseProductGoal = needsProductGoal(selected, risk);
-  const fanout = getFanoutDecision({
-    task,
+  const risk = changeStrategy.required && riskOrder[routeRisk] < riskOrder.MEDIUM
+    ? "MEDIUM"
+    : routeRisk;
+  const shouldUseStrategicReview = needsStrategicReview(
+    selected,
     risk,
-    modes: selected.map((route) => route.mode),
-    candidates: unique(selected.flatMap((route) => route.subagents || [])),
+    artifacts,
+  );
+  const shouldUseProductGoal = needsProductGoal(selected, risk);
+  const candidateSubagents = unique([
+    ...(changeStrategy.required ? ["systems_reviewer", "tester"] : []),
+    ...selected.flatMap((route) => route.subagents || []),
+  ]);
+  const baseFanout = getFanoutDecision({
+    task, risk, modes: selected.map((route) => route.mode), candidates: candidateSubagents,
+    priorityCandidates: changeStrategy.required ? ["systems_reviewer", "tester"] : [],
   });
+  const fanout = changeStrategy.required && baseFanout.status === "conditional"
+    ? { ...baseFanout, status: "recommended", reason: "change-strategy-independent-system-and-test-review" }
+    : baseFanout;
   const ruleGroups = unique([
     "base",
     ...selected.flatMap((route) => route.rules || []),
+    changeStrategy.required ? "changeStrategy" : "",
   ]);
   return {
     task,
@@ -287,6 +325,7 @@ function getRoute(task, options = {}) {
     risk,
     skills: unique([
       ...selected.flatMap((route) => route.skills || []),
+      changeStrategy.required ? "codex-change-strategy" : "",
       shouldUseProductGoal ? "codex-product-goal" : "",
       shouldUseStrategicReview ? "codex-strategic-review" : "",
     ]),
@@ -295,7 +334,7 @@ function getRoute(task, options = {}) {
     sharedRules: unique(
       ruleGroups.flatMap((group) => SHARED_RULES[group] || []),
     ),
-    planContract: getPlanContract(selected, risk),
+    planContract: getPlanContract(selected, risk, changeStrategy),
     productionBar: getProductionBar(selected),
     languagePolicy: "plans-audits-status-and-final-reports-match-user-request-language",
     matchPolicy: "exact-patterns-plus-semantic-intent-scoring",
@@ -303,78 +342,29 @@ function getRoute(task, options = {}) {
     writingPolicy,
     exactMatches,
     semanticMatches,
-    qualityGates: getQualityGates(selected, risk, shouldUseProductGoal),
+    changeStrategy,
+    strategyDecision,
+    decisionBinding,
+    discovery,
+    blockEdits,
+    qualityGates: getQualityGates(
+      selected,
+      risk,
+      shouldUseProductGoal,
+      changeStrategy,
+    ),
     needsFreshDocs: selected.some((route) => route.needsFreshDocs),
     artifacts,
     orchestrator: getOrchestrator(artifacts),
   };
 }
-function formatSummary(route) {
-  return [
-    `ROUTE: ${route.modes.join("+")}`,
-    `PIPELINE: ${route.pipeline}`,
-    `RISK: ${route.risk}`,
-    `MATCHES: exact=${route.exactMatches.join("+") || "none"} | semantic=${route.semanticMatches.join("+") || "none"}`,
-    `SKILLS: ${route.skills.join(", ")}`,
-    `SUBAGENTS: ${route.subagents.join(", ") || "none"}`,
-    `FANOUT: ${route.fanout.status} | ${route.fanout.reason} | max_children=${route.fanout.maxChildren}`,
-    `PROFILES: ${formatAgentProfiles(route.fanout.candidates).join(", ") || "none"}`,
-    `ORCHESTRATOR: ${route.orchestrator.owner} (${route.orchestrator.codexRole})`,
-    `PLAN: ${route.planContract.required ? "required" : "optional"} | ${route.planContract.language}`,
-    `PRODUCT_BAR: ${route.productionBar.default} | outcome=${route.productionBar.outcomePriority} | no_mvp=${route.productionBar.noMvpByDefault}`,
-    `GATES: ${route.qualityGates.join(", ")}`,
-    `RULES: ${route.sharedRules.join(", ")}`,
-    ...(route.writingPolicy ? [
-      `WRITING_LANGUAGE: ${route.writingPolicy.targetLanguage}`,
-      `WRITING_LANGUAGE_RESOLUTION: ${route.writingPolicy.languageResolution}`,
-      `WRITING_LANGUAGE_PROFILES: ${route.writingPolicy.languageProfiles.join(", ") || "none"}`,
-      `WRITING_PROCESS_PROFILES: ${route.writingPolicy.processProfiles.join(", ") || "none"}`,
-      `WRITING_DOMAIN_PROFILES: ${route.writingPolicy.domainProfiles.join(", ") || "none"}`,
-      `WRITING_TECHNICAL_PROFILES: ${route.writingPolicy.technicalProfiles.join(", ") || "none"}`,
-      `WRITING_REJECTED: ${route.writingPolicy.rejectedProfiles.map(({ id, reason }) => `${id}:${reason}`).join(", ") || "none"}`,
-      `WRITING_EXTERNAL_TOOLS: ${route.writingPolicy.externalTools.map(({ id, access, execution, paid }) => `${id}:${access}:${execution}:${paid ? "paid" : "free"}`).join(", ") || "none"}`,
-      `WRITING_EDITORS: ${route.writingPolicy.editors.join(", ") || "none"}`,
-      `WRITING_GATES: ${route.writingPolicy.gates.join(", ") || "none"}`,
-    ] : []),
-    route.needsFreshDocs
-      ? "FRESH_DOCS: required"
-      : "FRESH_DOCS: not required by route",
-  ].join(os.EOL);
-}
-function writeState(route, statePath = STATE_PATH) {
-  fs.mkdirSync(path.dirname(statePath), { recursive: true });
-  fs.writeFileSync(statePath, `${JSON.stringify(route, null, 2)}\n`);
-}
-function parseArgs(argv) {
-  const flags = new Set(argv.filter((arg) => arg.startsWith("--")));
-  const task = argv
-    .filter((arg) => !arg.startsWith("--"))
-    .join(" ")
-    .trim();
-  return {
-    task,
-    isSummary: flags.has("--summary") || flags.has("--text"),
-    shouldWriteState: flags.has("--write-state"),
-  };
-}
-function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (!args.task) {
-    console.error(
-      'Usage: node scripts/codex-route-task.js "<task>" [--summary] [--write-state]',
-    );
+if (require.main === module) {
+  try {
+    console.log(runRouteCli(process.argv.slice(2), { getRoute, formatSummary }));
+  } catch (error) {
+    console.error(error.message);
     process.exit(1);
   }
-  const route = getRoute(args.task);
-  if (args.shouldWriteState) {
-    writeState(route);
-  }
-  console.log(
-    args.isSummary ? formatSummary(route) : JSON.stringify(route, null, 2),
-  );
-}
-if (require.main === module) {
-  main();
 }
 module.exports = {
   ROUTES,

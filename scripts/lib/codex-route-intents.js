@@ -1,4 +1,8 @@
 const INTENT_THRESHOLD = 2;
+const CHANGE_STRATEGY_EXACT_PATTERN =
+  /compare\s+(?:repair|rewrite).*?(?:replacement|migration)|repair\s*(?:vs|or|and|\/|,|->)\s*(?:replace|replacement|rewrite|migrate|migration)|replace\s*(?:vs|or|and|\/|,|->)\s*(?:repair|migrate)|fix\s+or\s+rewrite|patch\s+loop|architecture\s+mismatch.*(?:reading|first\s+patch)|second\s+failed\s+repair.*(?:same\s+acceptance|criterion)|compatibility\s+shim.*(?:old|legacy)|(?:dead|legacy|obsolete)\s+(?:code|path).*(?:rewrite|replace|migrate)|чинить[\p{L}\p{N}_-]*\s+или\s+(?:замен|перепис|мигрир)|(?:сравни|сопостав)[\p{L}\p{N}_-]*.*(?:ремонт|почин|замен|перепис|миграц)|(?:ремонт|почин|латан)[\p{L}\p{N}_-]*\s+(?:против|или|vs)\s+(?:замен|перепис|миграц)|(?:несоответств|конфликт)[\p{L}\p{N}_-]*\s+архитектур[\p{L}\p{N}_-]*.*(?:чтени|перв)[\p{L}\p{N}_-]*\s+(?:прав|патч)|втор[\p{L}\p{N}_-]*\s+неудачн[\p{L}\p{N}_-]*\s+(?:ремонт|почин|исправ)[\p{L}\p{N}_-]*.*(?:критери|приемк)|(?:снова|опять|трет|втор)[\p{L}\p{N}_-]*.*(?:лат|чин|патч)|совместимост[\p{L}\p{N}_-]*.*(?:стар|устар|legacy)/iu;
+const READ_ONLY_PATTERN =
+  /read[- ]only|do not (?:edit|modify|change)|analysis only|только\s+(?:анализ|провер|ревью)|не\s+(?:редактир|изменя|трогай)/i;
 
 const INTENT_GROUPS = {
   api: [
@@ -10,6 +14,12 @@ const INTENT_GROUPS = {
     [/stuck|hang|freeze|loop|blank|wrong|unexpected|does not/i, /завис|зацикл|бел\w*\s+экран|неверн|неожидан|не\s+может/i],
     [/after update|after deploy|after change|repro|steps|symptom/i, /после\s+обнов|после\s+релиз|после\s+депло|воспроиз|симптом/i],
     [/restore|recover|rollback|regress|worked before/i, /вернуть|откат|раньше\s+работ|регресс/i],
+  ],
+  "change-strategy": [
+    [/repeated repair|patch loop|workaround|compatibility shim|compatibility-only|dead code|architecture drift|architecture mismatch|duplicate state|duplicate implementation|wrong ownership/i, /повторн\w*\s+ремонт|цикл\w*\s+патч|обход|костыл|мёртв\w*\s+код|мертв\w*\s+код|дрейф\w*\s+архитектур|несоответств\w*\s+архитектур|дублир\w*\s+(?:состояни|реализац)|неверн\w*\s+владен/i],
+    [/repair|replace|rewrite|migrate|new architecture|start fresh/i, /чин|ремонт|замен|перепис|мигрир|нов\w*\s+архитектур|с\s+нуля/i],
+    [/protected contract|consumer|live data|public api|compatibility|project posture|source of truth|ownership|accepted final path/i, /защищенн\w*\s+контракт|потребител|жив\w*\s+данн|публичн\w*\s+апи|совместимост|состояни\w*\s+проект|источник\w*\s+истин|владен|финальн\w*\s+пут/i],
+    [/baseline|evidence|maintainability|performance|total cost|rollback/i, /базов\w*\s+уров|доказател|поддерживаем|производительност|полн\w*\s+стоимост|откат/i],
   ],
   design: [
     [/looks|visual|trust|polish|premium|cheap|clutter|hierarchy/i, /выгляд|довер|полиров|дешев|кустар|перегруж|иерарх/i],
@@ -139,6 +149,19 @@ function getIntentMatch(mode, task) {
   };
 }
 
+function getChangeStrategyActivation(task) {
+  const exact = CHANGE_STRATEGY_EXACT_PATTERN.test(task);
+  const intent = getIntentMatch("change-strategy", task);
+  return {
+    required: exact || intent.isMatch,
+    exact,
+    semantic: !exact && intent.isMatch,
+    recordMode: READ_ONLY_PATTERN.test(task) ? "response-only" : "orchestrator-artifact",
+    reasons: exact ? ["explicit-or-circuit-breaker-trigger"]
+      : intent.isMatch ? ["semantic-change-strategy-intent"] : [],
+  };
+}
+
 const REFERENCE_RESEARCH_PATTERN =
   /\b(?:analy[sz]e|compare|inspect|research|study)\b|изуч|исслед|посмотр|проанализ|сравн/iu;
 const EXTERNAL_REFERENCE_PATTERN =
@@ -154,6 +177,7 @@ function shouldSuppressRoute(mode, task) {
 }
 
 module.exports = {
+  getChangeStrategyActivation,
   getIntentMatch,
   normalizeTask,
   shouldSuppressRoute,

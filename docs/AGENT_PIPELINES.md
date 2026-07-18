@@ -31,6 +31,34 @@ Common artifact chain:
 Codex-specific routing and prompts live in `docs/CODEX_FANOUT_PATTERNS.md`.
 Codex route selection is made explicit with `node scripts/codex-route-task.js "<task>" --summary --write-state`.
 
+## Change Strategy Overlay
+
+Apply this overlay to the active pipeline when initial reading reveals a causal
+system mismatch, or when the fallback triggers through a second failed repair,
+recurring workaround, stale-path test, or planned breaking change:
+
+1. During initial reading, run a bounded repair-path check over the affected path
+   and direct consumers. If causal system evidence appears, invoke the overlay
+   before the first patch. Reroute the original task once with `--discovery-file`
+   only when pipeline, risk, or approval authority changes. The second failed
+   repair remains the mandatory fallback trigger.
+2. Prove the discovery, repeated attempt, or planned-change trigger against a
+   named evidence reference, acceptance, or falsifier.
+3. Classify project posture and inventory protected contracts with owner, SOT, and impact.
+4. Choose destination (`repair|bounded-replace|retire-remove`) separately from transition (`direct-swap|staged-swap|versioned-coexistence|expand-migrate-contract`).
+5. Eliminate options that fail product function, data safety, security/privacy, contracts, verification, or recovery constraints.
+6. Compare remaining options against one objective evidence baseline, including maintainability, reliability, performance, total cost, and reversibility.
+7. Continue automatically only inside the approved change envelope; otherwise notify the client with 2-3 options and a recommendation.
+8. Remove superseded paths or time-box transition scaffolding with owner, removal condition, and absence check.
+
+`blockEdits` means "pending a valid Change Strategy decision", not permanent
+stoppage. Validate the optional decision JSON, update the same route state with
+`--decision-file`, and resume the original pipeline when validation is
+unblocked and the decision trigger plus evidence reference match the discovery.
+The discovery file is ephemeral router input, never another SOT.
+
+This overlay does not replace the orchestrator or create a parallel task graph.
+
 ## Production Product Standard
 
 Use for any real product, design, auth, data, game, docs, deployment, or M+ work.

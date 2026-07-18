@@ -27,6 +27,10 @@ Read `.claude/skills/strategic-review/SKILL.md` for the full checklist when need
 16. Check progressive layer replacement: wrong earlier iterations, obsolete stubs, disabled branches, stale flags, skipped tests, and release-only harnesses should be deleted, replaced, or time-boxed as migration scaffolding with a removal condition.
 17. Check project-slice reporting: tagged working documents need fresh `PROGRESSIVE_STATUS` headers and a current `node scripts/progressive-status.js` slice before closeout.
 18. Recommend the next smallest valuable move.
+19. After repeated repair, compatibility-only scaffolding, architecture drift,
+    or a proposed breaking rewrite, use `$codex-change-strategy`. Compare
+    destination and transition alternatives against protected contracts, total cost,
+    objective evidence, and the client approval boundary.
 
 For client-facing plans, status, replans, and closeouts, follow
 `.claude/library/process/client-executor-contract.md`.

@@ -21,7 +21,7 @@ Rule: Never present D-level evidence as best practice. If only D-level available
 7. **Cargo cult practices** — Before adopting: WHY does it work? Do those conditions exist HERE?
 8. **Feature bloat / scope creep** — For every addition, ask "what can I remove?"
 9. **Survivorship bias** — Ask "how many failed attempts per success story cited?"
-10. **Sunk cost escalation** — "If starting fresh today, would I choose this path?" If no, cut.
+10. **Sunk cost escalation** — "If starting fresh today, would I choose this path?" If no, run the Change Strategy Gate before deciding how to cut over safely.
 11. **Anchoring** — First number/idea dominates judgment even when irrelevant. Generate independent estimates BEFORE seeing others.
 12. **Goodhart's Law** — "When a measure becomes a target, it ceases to be a good measure." Optimize for outcomes, not metrics.
 13. **Planning Fallacy** — Projects take 2-3x longer than estimated. Use reference class forecasting (how long did SIMILAR projects actually take?).
@@ -58,6 +58,12 @@ Goal: surface flaws BEFORE the user asks. Zero "you're right!" moments.
 - **Irreversible + High Stakes** → Deep analysis, multiple perspectives, sleep on it. Pre-mortem mandatory. Get external review.
 - **Under Uncertainty** → Prefer options that keep future options open. Minimize regret, not cost.
 - **Under Time Pressure** → Use pre-established frameworks, not ad-hoc reasoning. 10-min cooling period before irreversible actions.
+
+For destination/transition decisions, use
+`.claude/library/process/change-strategy-gate.md`. "Simpler", "faster",
+"lighter", and "more maintainable" are hypotheses until the recommendation
+names a common baseline and measured, observed, estimated, or unknown evidence.
+Line count alone is not maintainability evidence.
 
 ## Cognitive Bias Quick Debiasing
 - **Anchoring** → Generate your estimate BEFORE seeing any reference number

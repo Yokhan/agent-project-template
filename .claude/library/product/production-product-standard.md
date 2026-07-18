@@ -116,6 +116,25 @@ use an end-state skeleton:
 Absent architecture for known future behavior is a product risk. Honest rough
 internals behind a stable product-shaped contract are acceptable.
 
+## Change Strategy Gate
+
+When repair becomes repeated, starts preserving an obsolete path, or competes
+with a different destination or transition, follow
+`.claude/library/process/change-strategy-gate.md`. Compatibility protects named
+user, data, public, security, project-owned, and operational contracts rather
+than old implementation. Claims of better maintainability, reliability, or
+performance require a shared baseline and explicit evidence level.
+
+Before the first patch, use a bounded repair-path check over the affected path
+and direct consumers. Causal evidence of a wrong final path, SOT/owner boundary,
+duplicate state, or compatibility-only layer activates Change Strategy
+immediately; the second failed repair is only the mandatory fallback breaker.
+
+Do not apply another local patch after the second failed repair without recording
+an evidence-backed destination and transition decision. Reversible internal replacement may proceed
+without ritual approval only when protected contracts remain stable and rollback
+plus verification are concrete.
+
 ## Progressive Layer Replacement Pipeline
 
 Progressive JPEG is an evolution pipeline, not a permission to accumulate old

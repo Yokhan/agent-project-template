@@ -53,6 +53,9 @@ node scripts/validate-progressive-plan.js tasks/progressive-plan.json
 8. Before accepting a completed slice, inspect real evidence. Expected evidence
    in the plan is not proof that it occurred. Update `PROGRESSIVE_STATUS`, run
    `node scripts/progressive-status.js --check`, and retire superseded paths.
+9. When an earlier layer may represent the wrong architecture rather than low
+   detail, use `$codex-change-strategy`. Progressive JPEG sharpens the selected
+   final path; it does not justify retaining a failed implementation.
 
 ## Anti-Falsification Gate
 

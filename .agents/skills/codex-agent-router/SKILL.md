@@ -52,4 +52,15 @@ old iterations, disabled scaffolds, stale placeholders, skipped tests, or
 release-only exclusions also require the progressive layer replacement gate:
 delete, replace, or time-box the superseded layer.
 
+Repeated patching, compatibility shims that only preserve an old path,
+architecture drift, stale-path tests, and repair-versus-rewrite decisions route
+semantically to `$codex-change-strategy`. A normal first local defect should not
+load the full gate.
+
+During reading, invoke that overlay immediately when causal evidence reveals a
+qualifying system mismatch. Reroute the original task at most once and only
+when pipeline, risk, or approval authority changes. A discovery route with
+`blockEdits: true` resumes its original pipeline after a valid, unblocked Change
+Strategy decision; it must not create a nested pipeline or stay blocked.
+
 If no skill fits, read the shared `.claude/library/` rules listed in `AGENTS.md` and state the chosen workflow before editing.

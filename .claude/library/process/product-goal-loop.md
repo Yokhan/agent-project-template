@@ -188,15 +188,30 @@ After user correction:
 
 1. Classify the failure: misunderstanding, product gap, design gap, technical bug, process gap, or stale context.
 2. Classify the shape: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict.
-3. For repeated, boundary, architecture, or HIGH-risk failures, name the broken link, root-cause hypothesis, smallest systemic fix, and regression guard before editing.
-4. Update `tasks/lessons.md` when the failure is reusable.
-5. Re-check the goal and current step before editing again.
-6. State what changed in the plan.
+3. For repeated, boundary, architecture, or HIGH-risk failures, name the broken
+   link and root-cause hypothesis before editing.
+   Record the smallest systemic fix and the regression guard it requires.
+4. During reading, run a bounded repair-path check over the affected path and
+   direct consumers. If causal system evidence exists, run Change Strategy
+   before the first patch. Reroute once only when pipeline, risk, or approval
+   authority changes.
+5. After a second failed repair, compatibility shim, stale-path test, or
+   architecture drift, run `.claude/library/process/change-strategy-gate.md`.
+   Compare destination and transition alternatives before another patch.
+6. Update `tasks/lessons.md` when the failure is reusable.
+7. Re-check the goal and current step before editing again.
+8. State what changed in the plan.
 
 Do not keep patching local symptoms when the same error points to a broken
 module boundary, stale SOT, missing validator, weak architecture, or failed
 feedback loop. Fix the system path or ask for a product-owner decision when the
 systemic fix changes scope, ownership, release, timeline, or quality bar.
+
+The Change Strategy Gate may continue automatically for reversible internal
+replacement that preserves protected contracts. It must ask the product owner
+when user behavior, data, public contracts, security, release, scope, cost,
+timeline, or irreversible state changes. "Smallest reversible step" means the
+smallest move toward the accepted final system, not the smallest diff.
 
 ## Verification Examples
 

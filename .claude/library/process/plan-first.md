@@ -66,6 +66,24 @@ src/
 - Module boundary: [which module(s) this touches]
 - Public API changes: [yes/no — if yes, document contract]
 
+### Change Strategy (when triggered)
+- Trigger: [second failed repair, compatibility shim, architecture drift,
+  stale-path test, sunk cost, or planned breaking change]
+- Project posture: [greenfield/evolving/production/unknown, with evidence]
+- Protected contracts: [user behavior, data, API, security, release,
+  project-owned overlays, or none]
+- Destination: [repair, bounded-replace, retire-remove]
+- Transition: [direct-swap, staged-swap, versioned-coexistence, expand-migrate-contract]
+- Objective evidence: [common baseline; measured/observed/estimated/unknown]
+- Approval boundary: [automatic internal change or client-owned tradeoff]
+- Removal/migration plan: [superseded path, owner, condition, rollback]
+
+When this section applies, follow
+`.claude/library/process/change-strategy-gate.md` and record the decision in the
+active orchestrator artifact. Optional `tasks/change-strategy.json` decisions
+must pass `node scripts/validate-change-strategy.js tasks/change-strategy.json`
+before the next state-changing patch.
+
 ### Risks & Mitigations
 - [Risk 1] → [Mitigation]
 - [Risk 2] → [Mitigation]
@@ -169,13 +187,14 @@ If any criterion fails, refine the plan. Do not proceed to code.
 | 10 | **Evidence before done** | Is the evidence needed for acceptance explicit? | "Done" can be claimed without a fresh test/check/source |
 | 11 | **No sycophancy** | Does the plan challenge harmful shortcuts or weak assumptions? | User preference is accepted even when it lowers outcome, safety, or quality |
 | 12 | **Progressive JPEG** | Is the first useful view, next sharpened layer, rough edge, and replan trigger explicit? | The client sees only internal work or a final surprise |
+| 13 | **Change strategy** | After repeated repair or architecture drift, are destination, transition, protected contracts, evidence, approval, and cleanup explicit? | Another local patch proceeds because it changes fewer lines |
 
-**Scoring**: 12/12 = proceed. 10-11/12 = proceed with noted gaps. <10/12 = refine before coding.
+**Scoring**: 13/13 = proceed. 11-12/13 = proceed with noted gaps. <11/13 = refine before coding.
 
 For L/XL tasks, add:
 - [ ] User has approved the plan
 - [ ] Decomposition into M-sized subtasks is complete
-- [ ] Each subtask passes criteria 1-12 independently
+- [ ] Each subtask passes criteria 1-13 independently
 
 ## Test Scenario Templates (required in plan for M+ tasks)
 

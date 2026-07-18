@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.7.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.8.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.7.0`.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.8.0`.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
@@ -24,7 +24,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 Create a new project from the stable tag:
 
 ```bash
-git clone --branch v4.7.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -35,8 +35,8 @@ Update an existing generated project from the stable tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.7.0
+bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.8.0
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
@@ -44,7 +44,7 @@ bash scripts/sync-template.sh --from-git --ref v4.7.0
 ## Quick Start
 
 ```bash
-git clone --branch v4.7.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -103,10 +103,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.7.0
+bash scripts/sync-template.sh --from-git --ref v4.8.0
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -134,8 +134,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.7.0
+bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.8.0
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -331,6 +331,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.8.0** | Minor release: adds an evidence-backed Change Strategy Gate that evaluates architecture fitness during reading, compares repair/replacement/retirement destinations and transitions, binds decisions to structured triggers, derives compatibility checks from protected contracts, blocks fake alternatives and malformed CLI input, and verifies the behavior through setup and sync payload tests |
 | **4.7.0** | Minor release: adds purpose-first literary, marketing, informational, communication, and technical-writing workflows; Russian editorial profiles and provenance; authority-isolated reference routing; and a fail-closed external-tool truth contract that keeps paid providers such as Glavred explicitly not configured and not run until real adapter evidence exists |
 | **4.6.2** | Patch release: adds Luna support roles, one-wave cost-aware fan-out, genuine child-trace validation, and a progressive JPEG planner with an explicit anti-falsification gate |
 | **4.6.1** | Patch release: adds the canonical agent update protocol, exact-tag preview/apply verification, safe path hashing, dry-run regression coverage, and release workflow tag/commit binding |

@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-07-17 for template `4.7.0`; product/business outcome priority, client/executor accountability, truthful progressive JPEG planning and replacement, `PROGRESSIVE_STATUS` project-slice reporting, semantic intent routing, one-wave GPT-5.6 fan-out with genuine child evidence, canonical pinned-tag updates, writing-mode and external-tool truth contracts, text/platform policy, CI hygiene, production design QA, register-aware design checks, screen anatomy, fixture sync, git dry-run preview, and agent-safe GitHub release entrypoints are enforced by validators.
+Last reviewed: 2026-07-18 for template `4.8.0`; product/business outcome priority, client/executor accountability, truthful progressive JPEG planning and replacement, evidence-bound change strategy, `PROGRESSIVE_STATUS` project-slice reporting, semantic intent routing, one-wave GPT-5.6 fan-out with genuine child evidence, canonical pinned-tag updates, writing-mode and external-tool truth contracts, text/platform policy, CI hygiene, production design QA, register-aware design checks, screen anatomy, fixture sync, git dry-run preview, and agent-safe GitHub release entrypoints are enforced by validators.
 
 ## Product And Business Outcome Priority
 
@@ -18,6 +18,12 @@ Treat the user as the client or product owner and the agent as the accountable e
 Agreement is not the default. If a request conflicts with evidence, user outcome, safety, privacy, quality, platform constraints, or app-specific KPI, the agent must challenge it before acting.
 
 Never claim tests passed, research was checked, review was completed, a release was published, or work is done unless there is fresh evidence or a cited existing artifact. If the evidence is missing, say what is verified, what is not verified, and what the next check is.
+
+## Change Strategy Gate
+
+During initial reading, a bounded repair-path check may reveal architecture drift, wrong ownership/SOT, duplicate state, or an obsolete path; invoke `.claude/library/process/change-strategy-gate.md` before the first patch when that evidence is causal. A second failed repair is the mandatory fallback breaker. Preserve verified user, data, public, security, and operational contracts, not old implementation. Choose the destination separately from the transition, compare alternatives against one evidence baseline, and require client approval only when the approved product, contract, data, security, release, cost, timeline, or reversibility envelope changes.
+
+The gate is an overlay on the active bugfix, feature, migration, product, or strategy pipeline. Record it in the active orchestrator artifact; optional JSON records must pass `node scripts/validate-change-strategy.js`.
 
 ## Functions-in-Modules Pattern
 

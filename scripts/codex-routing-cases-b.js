@@ -1,6 +1,110 @@
 "use strict";
 
 function runRouteCasesB(testRoute) {
+  testRoute("мы опять латаем тот же модуль: чинить или заменить архитектуру", {
+    modes: ["strategy"],
+    skills: ["codex-change-strategy", "codex-strategic-review"],
+    subagents: ["systems_reviewer", "tester"],
+    fanoutStatus: "recommended",
+    qualityGates: ["project-posture", "destination-transition", "objective-evidence-matrix"],
+    changeStrategyRequired: true,
+    changeStrategyRecordMode: "orchestrator-artifact",
+    planRequired: true,
+  });
+
+  testRoute("текущая реализация держится на обходах; сравни новую архитектуру с сохранением публичных границ и эксплуатационными доказательствами", {
+    skills: ["codex-change-strategy", "codex-product-goal", "codex-strategic-review"],
+    semanticMatches: ["change-strategy"],
+    qualityGates: ["protected-contracts", "objective-evidence-matrix", "approved-change-envelope"],
+    changeStrategyRequired: true,
+    planRequired: true,
+  });
+
+  testRoute("refactor an internal helper in a fresh toy app", {
+    notModes: ["migration"],
+    notSkills: ["codex-change-strategy", "codex-migrate"],
+    changeStrategyRequired: false,
+  });
+
+  testRoute("review architecture documentation", {
+    notSkills: ["codex-change-strategy"],
+    changeStrategyRequired: false,
+  });
+
+  testRoute("the first repair failed; diagnose again before changing code", {
+    notSkills: ["codex-change-strategy"],
+    changeStrategyRequired: false,
+  });
+
+  testRoute("compatibility-only layer found while reading the affected path", {
+    skills: ["codex-change-strategy"],
+    changeStrategyRequired: true,
+  });
+
+  testRoute("fix typo in a private UI label", {
+    modes: ["bugfix"],
+    notSkills: ["codex-change-strategy"],
+    qualityGates: ["bounded-repair-path-check"],
+    changeStrategyRequired: false,
+    discoveryKind: "local-leaf",
+    blockEdits: false,
+    options: {
+      discovery: {
+        phase: "reading",
+        kind: "local-leaf",
+        architecture_fit: "fit",
+        summary: "The defect is confined to one private label formatter.",
+        evidence_ref: "src/ui/label-formatter.ts direct consumer check",
+        owner: "UI label module",
+        sot: "Current component specification",
+        protected_boundaries: [],
+      },
+    },
+  });
+
+  testRoute("fix the display bug", {
+    modes: ["bugfix"],
+    skills: ["codex-change-strategy"],
+    notSkills: ["codex-product-goal", "codex-strategic-review"],
+    subagents: ["systems_reviewer", "tester"],
+    semanticMatches: ["change-strategy"],
+    qualityGates: ["bounded-repair-path-check", "discovery-evidence-before-edit"],
+    changeStrategyRequired: true,
+    discoveryKind: "architecture-mismatch",
+    blockEdits: true,
+    options: {
+      discovery: {
+        phase: "reading",
+        kind: "architecture-mismatch",
+        architecture_fit: "mismatch",
+        summary: "Reading found duplicate state ownership outside the accepted final path.",
+        evidence_ref: "src/game/legacy-state.ts and plan final-path section",
+        owner: "Gameplay state subsystem",
+        sot: "Accepted product architecture plan",
+        protected_boundaries: ["player-state contract"],
+      },
+    },
+  });
+
+  testRoute("read-only review: compare repair and replacement, do not modify files", {
+    exactModes: ["review"],
+    pipeline: "review",
+    skills: ["codex-change-strategy"],
+    notSkills: [
+      "codex-debug", "codex-pipeline-workflow",
+      "codex-product-goal", "codex-strategic-review",
+    ],
+    changeStrategyRequired: true,
+    changeStrategyRecordMode: "response-only",
+  });
+
+  testRoute("read-only diagnose why the worker crashes; do not modify files", {
+    modes: ["bugfix"],
+    pipeline: "bugfix",
+    skills: ["codex-debug"],
+    changeStrategyRequired: false,
+  });
+
   testRoute("переносим данные в новое хранилище без простоя и с откатом", {
     modes: ["migration"],
     skills: ["codex-migrate", "codex-strategic-review"],

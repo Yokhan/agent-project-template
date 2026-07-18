@@ -7,6 +7,11 @@ description: "Plan and implement database, schema, data, or storage migrations w
 
 Migrations are high-risk shared-state changes. Do not start writes until the current schema, data shape, compatibility window, and rollback path are clear.
 
+When the target architecture is unresolved, use `$codex-change-strategy` first
+to choose the destination and transition. This skill owns safe execution of an
+`expand-migrate-contract` transition only after the strategy and client approval
+boundary are established.
+
 ## Workflow
 
 1. Identify current and target schema/data contracts.

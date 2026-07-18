@@ -70,6 +70,15 @@ function testFanoutDecisions() {
     status: "required",
     reason: "high-risk-independent-verification",
   });
+  assertFanoutDecision(
+    getFanoutDecision({
+      task: "Read-only template patch review; do not modify files",
+      risk: "HIGH",
+      modes: ["template"],
+      candidates: ["systems_reviewer", "tester"],
+    }),
+    { status: "conditional", reason: "parallel-value-not-yet-proven" },
+  );
   assert.strictEqual(required.candidates.length, 3);
 }
 

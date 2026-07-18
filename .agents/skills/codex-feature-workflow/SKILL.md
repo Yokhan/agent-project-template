@@ -20,6 +20,8 @@ Read:
 4. If the final object plan is missing, stop implementation and create/propose it first.
 5. For accepted future capabilities, design the end-state skeleton before code: callable handlers, contracts, states, routes, flags, or no-op stubs can be 1% ready, but the architecture point should exist when later slices depend on it.
 6. Before sharpening a later layer, identify superseded wrong stubs, disabled branches, old tests, stale flags, and release-only harnesses.
+   If the current architecture itself may be wrong, use `$codex-change-strategy`
+   before choosing the destination and transition.
 7. Keep business logic in importable modules.
 8. Implement in small batches.
 9. Replace or delete obsolete layers in the same slice; keep only final-plan placeholders or time-boxed migration scaffolding.
@@ -41,3 +43,7 @@ The first slice should be a low-resolution version of the future product:
 
 Verify object completeness against the final plan before judging detail depth.
 Then verify the old layer is gone or intentionally time-boxed before claiming the next readiness level.
+
+Do not claim that a replacement is simpler, faster, or more maintainable without
+a common baseline and explicit measured, observed, estimated, or unknown
+evidence. Preserve verified contracts rather than old implementation.

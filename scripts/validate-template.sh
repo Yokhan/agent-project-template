@@ -140,6 +140,12 @@ if ! node scripts/test-codex-routing.js >/dev/null 2>&1; then
 else
   echo "  OK: Codex routing smoke passes"
 fi
+if ! node scripts/test-change-strategy.js >/dev/null 2>&1; then
+  echo "  ERROR: Change strategy validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Change strategy validates"
+fi
 if ! node scripts/test-writing-references.js >/dev/null 2>&1 || ! node scripts/validate-writing-references.js >/dev/null 2>&1; then
   echo "  ERROR: Writing reference registry validation failed"
   ERRORS=$((ERRORS + 1))
@@ -232,11 +238,18 @@ REQUIRED_FILES=(
   ".claude/library/product/production-product-standard.md"
   ".claude/library/process/product-goal-loop.md"
   ".claude/library/process/client-executor-contract.md"
+  ".claude/library/process/change-strategy-gate.md"
+  ".agents/skills/codex-change-strategy/SKILL.md"
   ".claude/library/domain/domain-design-system.md"
   "integrations/spec-kit/README.md"
   "scripts/validate-codex-skills.js"
   "scripts/validate-codex-agents.js"
   "scripts/validate-production-standard.js"
+  "scripts/validate-change-strategy.js"
+  "scripts/lib/change-strategy-policy.js"
+  "scripts/lib/codex-discovery-reroute.js"
+  "scripts/lib/codex-route-cli.js"
+  "scripts/test-change-strategy.js"
   "scripts/validate-writing-references.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"
@@ -248,6 +261,8 @@ REQUIRED_FILES=(
   "scripts/codex-routing-cases-b.js"
   "scripts/codex-route-config.js"
   "scripts/codex-route-task.js"
+  "scripts/lib/codex-route-summary.js"
+  "tests/fixtures/change-strategy/discovery-architecture-mismatch.json"
   "scripts/test-codex-routing.js"
   "scripts/test-codex-agent-policy.js"
   "scripts/test-codex-subagents-live.sh"

@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.7.0 -->
+<!-- Template Version: 4.8.0 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -81,7 +81,9 @@ Before any file edit, release, template change, security work, design work, or M
 1. Run: `node scripts/codex-route-task.js "<user request>" --summary --write-state`
 2. State: **Route:** modes | **Pipeline:** name | **Risk:** level | **Matches:** exact/semantic | **Skills:** names | **Subagents:** names | **Fan-out:** status/reason | **Orchestrator:** owner.
 3. Follow the returned skills/rules. Do not scan every skill or reread broad docs.
-4. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
+4. If reading changes pipeline, risk, or approval authority, rerun once with a
+   discovery record: `node scripts/codex-route-task.js "<original request>" --discovery-file <json> --summary --write-state`. A returned `blockEdits: true` stops edits only until a valid, unblocked Change Strategy decision is recorded. Update the same route state with `--decision-file <decision.json>`, then resume the original pipeline.
+5. If Node is unavailable, run `bash scripts/route-task.sh "<keywords>"` and follow its `CODEX_*` output.
 
 Routing is not keyword-only. `scripts/codex-route-task.js` uses exact patterns plus semantic intent scoring from `scripts/lib/codex-route-intents.js`. If a task is misrouted, fix the route intent model and add a regression fixture instead of only adding one literal keyword.
 
@@ -123,6 +125,7 @@ These are the useful rules distilled from `.claude/rules/router.md`, `.claude/li
 - Strategy/ambiguous: use `$codex-strategic-review`; optimize for product user victory and app-specific business KPI over local task completion or technical neatness; compare at least one alternative; choose the next smallest reversible move.
 - Product goal: use `$codex-product-goal`; preserve the final outcome and current-step contract before changing state.
 - Feature/product implementation: use `$codex-progressive-jpeg-planner`; every slice solves the product purpose end to end through the final path. Skeletons and stubs preserve shape but never prove value. Verify the plan and user journey, then remove superseded layers before claiming sharper readiness.
+- Change strategy: every bugfix starts with a bounded repair-path check while reading the affected path and direct consumers. Use `$codex-change-strategy` before the first patch when causal evidence already shows a final-plan, SOT/owner, duplicate-state, obsolete-path, compatibility-layer, or protected-boundary mismatch; the second failed repair is the mandatory fallback breaker. Classify `greenfield|evolving|production|unknown`, protect verified contracts rather than implementation, choose a destination (`repair|bounded-replace|retire-remove`) separately from a transition (`direct-swap|staged-swap|versioned-coexistence|expand-migrate-contract`), and ask only when product behavior, business outcome/KPI, data, public contracts, security, release, scope, cost, timeline, or irreversible state changes.
 - Writing: use `$codex-writing-workflow`; select literary, marketing/advertising, informational, or communication mode by the reader's job. A functional 1% text must already perform its production purpose; never fabricate facts, proof, citations, human imperfections, or AI-detector claims.
 - Technical writing: keep informational or communication as the primary mode and add `$codex-technical-writing`; select registry profile IDs, verify code/schema/version/OS, execute procedures, and use `$codex-technical-writing-review` for independent acceptance.
 - Marketing/GTM: use `$codex-writing-workflow`, `$codex-domain-communication-review`, `$codex-domain-business-review`, `$codex-product-goal`, and `$codex-strategic-review`; verify ICP/audience, positioning, offer clarity, funnel/buyer journey, channel/distribution plan, CAC/LTV/ROAS/conversion measurement, and ethical proof. Do not optimize vanity metrics or fake urgency.
@@ -145,8 +148,8 @@ Before fixing, classify the failure:
 
 - Local typo or one-off input issue: fix narrowly and verify.
 - Broken contract between modules, docs, agents, hooks, routes, or SOTs: map the contract and fix the boundary.
-- Repeated error or second failed attempt: stop, diagnose root cause, update plan, and add/adjust a guard.
-- Architecture or workflow smell: name the violated dependency, ownership, or feedback loop before editing.
+- Repeated error or second failed attempt: stop local patching, diagnose root cause, and run the Change Strategy Gate before choosing the destination and transition.
+- Architecture or workflow smell discovered during reading: run the Change Strategy Gate before the first patch; reroute once only when pipeline, risk, or approval authority changes.
 
 Use the systemic debug shape:
 
@@ -161,17 +164,26 @@ Regression guard:
 
 Prefer a root-cause fix plus a regression guard over a local workaround. If the systemic fix changes scope, timeline, ownership, or quality bar, ask the user before applying it.
 
+When the Change Strategy Gate fires, notify the user even if reversible internal
+replacement can continue automatically. Record the decision in the active
+orchestrator artifact; parent Codex uses `tasks/current.md`, while read-only work
+may report it in the response. Optional machine-readable decisions use
+`tasks/change-strategy.json` and must pass
+`node scripts/validate-change-strategy.js tasks/change-strategy.json` before the
+next state-changing patch.
+
 ### Thinking Tools Gate
 
 For M+, HIGH-risk, ambiguous, template, architecture, design, product, or repeated-failure work, use explicit thinking tools before choosing the fix.
 
 1. System map: name the real user outcome, app-specific KPI, active SOTs, contracts between files/agents/tools, bottleneck, and feedback loop.
 2. TRIZ contradiction gate: when requirements fight, phrase the contradiction as "we need X without causing Y"; list existing resources; try separation by time, place, scope, mode, or user segment; prefer an ideal final result where the harmful tradeoff disappears instead of splitting the difference.
-3. Sun Tzu / stratagem terrain check: know the terrain, alternatives, competitors, constraints, center of gravity, and favorable ground; prefer winning without direct confrontation; use asymmetry and timing, not deception, dark patterns, or user-hostile manipulation.
-4. Plan Reality Check: plan only after understanding result, user, business outcome, dependencies, critical path, parallel work, external risks, and real deadline reason.
-5. Treat plans as forecasts, not promises: name the first useful iteration, the next verifiable checkpoint, and the first signal that the plan is drifting.
-6. If the plan breaks, replan explicitly: old assumption, new reality, impact, options, recommendation, and what needs user approval.
-7. No hidden drift: if time, budget, risk, or quality changes, tell the user before continuing silently.
+3. Change Strategy Gate: compare the current destination and transition with at least one real alternative; preserve user/data/public contracts, not implementation. Treat "simpler", "faster", and "more maintainable" as claims requiring a baseline and measured, observed, estimated, or unknown evidence.
+4. Sun Tzu / stratagem terrain check: know the terrain, alternatives, competitors, constraints, center of gravity, and favorable ground; prefer winning without direct confrontation; use asymmetry and timing, not deception, dark patterns, or user-hostile manipulation.
+5. Plan Reality Check: plan only after understanding result, user, business outcome, dependencies, critical path, parallel work, external risks, and real deadline reason.
+6. Treat plans as forecasts, not promises: name the first useful iteration, the next verifiable checkpoint, and the first signal that the plan is drifting.
+7. If the plan breaks, replan explicitly: old assumption, new reality, impact, options, recommendation, and what needs user approval.
+8. No hidden drift: if time, budget, risk, or quality changes, tell the user before continuing silently.
 
 Do not turn these tools into theater. If they do not change the decision, keep the note short. If they reveal a product, SOT, scope, deadline, or quality-bar conflict, ask the user with options.
 
@@ -197,6 +209,7 @@ Use these examples to translate vague requests into an execution contract. They 
 | `план поехал` | "User wants control restored: old assumption, new reality, impact, options, and recommendation." | Replan before continuing; ask for approval when scope, date, cost, or quality changes. |
 | `становится дольше/дороже` | "User wants hidden effort drift surfaced before more budget or attention is spent." | State time/risk/quality cost, options, and recommendation; do not report motion as value. |
 | `требования конфликтуют` | "User wants the contradiction solved, not averaged: need X without causing Y." | Use TRIZ contradiction gate; propose separation/resource options and recommend the least harmful reversible move. |
+| `мы опять чиним то же самое` | "User wants the repair loop stopped and the system path reconsidered without risking live contracts." | Fire Change Strategy Gate; classify posture/contracts, choose destination and transition separately, show evidence and approval boundary. |
 | `проверь маркетинг` | "User wants a GTM/communication review tied to revenue or another app-specific KPI." | Check ICP, positioning, offer, funnel/buyer journey, channels, proof, measurement, and ethical risks before rewriting copy. |
 | `примени Сунь-цзы/стратагемы` | "User wants competitive strategy, not ornamental quotes." | Map terrain, center of gravity, asymmetry, timing, and favorable ground; reject deception or dark patterns. |
 
@@ -216,6 +229,7 @@ Prefer the shared rules returned by `scripts/codex-route-task.js`. If the router
 6. `.claude/library/product/production-product-standard.md` — final product quality bar
 7. `.claude/library/process/product-goal-loop.md` — persistent product goal/current-step loop
 8. `.claude/library/process/client-executor-contract.md` — client/executor accountability, anti-sycophancy, and evidence-before-done
+9. `.claude/library/process/change-strategy-gate.md` — destination/transition decision, evidence, and approval boundary
 
 ### Read per task type:
 - **Implementation**: also read `.claude/library/process/plan-first.md`
@@ -318,7 +332,7 @@ After implementing, before presenting results:
 ### Sunk Cost Test
 > "If I had NOT already written this code, would I choose this exact approach?"
 - YES → continue
-- NO → discard and restart with the better approach
+- NO → run the Change Strategy Gate; replace or migrate only after protected contracts, evidence, rollback, and approval boundaries are explicit
 
 ## Design Work — HARD RULES (Figma, CSS, UI)
 1. NEVER hardcode visual values. Use tokens/variables.
@@ -364,4 +378,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.7.0
+4.8.0

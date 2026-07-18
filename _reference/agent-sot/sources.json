@@ -24,7 +24,7 @@
       "trust": "primary",
       "title": "OpenAI Codex AGENTS.md guide",
       "url": "https://developers.openai.com/codex/guides/agents-md",
-      "last_checked": "2026-07-04",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "AGENTS.md is project guidance discovered by Codex with a 32 KiB default limit; keep it concise and route to deeper docs."
     },
@@ -34,7 +34,7 @@
       "trust": "primary",
       "title": "OpenAI Codex skills",
       "url": "https://developers.openai.com/codex/skills",
-      "last_checked": "2026-07-04",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
     },
@@ -54,7 +54,7 @@
       "trust": "primary",
       "title": "OpenAI Codex subagents",
       "url": "https://developers.openai.com/codex/subagents",
-      "last_checked": "2026-07-11",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Applicable AGENTS.md or skill instructions can authorize delegation; keep max_depth at 1, prefer independent read-only lanes, and verify real child activity instead of parent markers."
     },
@@ -104,7 +104,7 @@
       "trust": "primary",
       "title": "Claude Code skills",
       "url": "https://code.claude.com/docs/en/skills",
-      "last_checked": "2026-06-11",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "Claude skills load only when used; move repeated procedures and long reference material out of CLAUDE.md into skills."
     },
@@ -114,7 +114,7 @@
       "trust": "primary",
       "title": "Claude Code hooks",
       "url": "https://code.claude.com/docs/en/hooks",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "Hooks are lifecycle automation with nested event/matcher/handler structure. Prefer command hooks for production enforcement."
     },
@@ -124,7 +124,7 @@
       "trust": "primary",
       "title": "Claude Code custom subagents",
       "url": "https://code.claude.com/docs/en/sub-agents",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-07-18",
       "requires_fresh_check": true,
       "local_conclusion": "Claude subagents are specialized workers with their own prompts, tools, permissions, and optional skills."
     },

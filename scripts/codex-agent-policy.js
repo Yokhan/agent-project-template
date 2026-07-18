@@ -5,7 +5,7 @@ const path = require("path");
 const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh"]);
 
 const AGENT_POLICY = Object.freeze({
-  version: "4.7.0",
+  version: "4.8.0",
   parent: Object.freeze({
     modelSource: "user-or-ide",
     recommendedModel: "gpt-5.6-sol",
@@ -103,6 +103,8 @@ const MUTATION_PATTERN =
   /\b(?:build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши/iu;
 const READ_ONLY_PATTERN =
   /\b(?:read[ -]?only|inspect|review|audit|analy[sz]e|evaluate|explain|report|research|look up)\b|без\s+изменений|только\s+чтение|проверь|аудит|разбери|оцени|посмотри|изучи|объясни|отч[её]т/iu;
+const NEGATED_MUTATION_PATTERN =
+  /\b(?:do not|don't|dont|never)\s+(?:edit|modify|change|patch|write)(?:\s+(?:files?|code))?\b|не\s+(?:редактир|изменя|патч|прав|трогай)|без\s+(?:правок|изменений)/iu;
 const XS_TASK_PATTERN =
   /\b(?:fix|check|inspect|update|change|rename|format)\b.{0,24}\b(?:a\s+)?(?:typo|one\s+line|single\s+line|one\s+comment|single\s+comment|spelling|label)\b|(?:исправ|проверь|обнов|измени|переименуй|формат).{0,24}(?:опечат|одну\s+строк|один\s+коммент|подпис)/iu;
 const PARALLEL_VALUE_PATTERN =
@@ -137,7 +139,8 @@ function getFanoutDecision(options) {
   const risk = options.risk || "LOW";
   const candidates = Array.from(new Set(options.candidates || []));
   const modes = Array.from(new Set(options.modes || []));
-  const isExplicitReadOnly = READ_ONLY_PATTERN.test(task) && !MUTATION_PATTERN.test(task);
+  const isExplicitReadOnly = NEGATED_MUTATION_PATTERN.test(task) ||
+    (READ_ONLY_PATTERN.test(task) && !MUTATION_PATTERN.test(task));
   const isStateChanging = options.isStateChanging ??
     (MUTATION_PATTERN.test(task) && !isExplicitReadOnly);
 
@@ -151,7 +154,7 @@ function getFanoutDecision(options) {
     return createDecision("skip", "xs-direct-task", []);
   }
 
-  const ranked = rankCandidates(candidates, modes);
+  const ranked = rankCandidates(candidates, modes, options.priorityCandidates || []);
   const selected = ranked.slice(0, AGENT_POLICY.fanout.maxChildren);
   if ((risk === "HIGH" || risk === "CRITICAL") && isStateChanging) {
     return createDecision("required", "high-risk-independent-verification", selected, ranked);
@@ -162,7 +165,7 @@ function getFanoutDecision(options) {
   return createDecision("conditional", "parallel-value-not-yet-proven", selected, ranked);
 }
 
-function rankCandidates(candidates, modes) {
+function rankCandidates(candidates, modes, priorityCandidates = []) {
   const priorityByMode = {
     security: ["security_reviewer", "tester"],
     openai: ["docs_researcher"],
@@ -181,7 +184,7 @@ function rankCandidates(candidates, modes) {
   };
   const orderedModes = Object.keys(priorityByMode).filter((mode) => modes.includes(mode));
   const preferred = orderedModes.flatMap((mode) => priorityByMode[mode]);
-  return Array.from(new Set([...preferred, ...candidates])).filter((name) =>
+  return Array.from(new Set([...priorityCandidates, ...preferred, ...candidates])).filter((name) =>
     candidates.includes(name),
   );
 }

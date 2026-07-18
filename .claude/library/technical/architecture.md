@@ -58,7 +58,7 @@ Default: **monolith**. Split ONLY when you have a concrete reason:
 - Reference: Startup Genome data — 74% of premature scalers fail. This applies to architecture too.
 
 ## API Boundary Design
-- **Internal APIs** (module-to-module): typed function calls, no serialization overhead. Change freely.
+- **Internal APIs** (module-to-module): typed function calls, no serialization overhead. Change freely only after checking for actual consumers and project-owned contracts; repository age alone does not make internals protected.
 - **External APIs** (exposed to consumers): versioned, stable, backward-compatible. Breaking changes = new version.
 - Version strategy: URL prefix (`/v1/`, `/v2/`) for REST; field deprecation for GraphQL.
 - Never expose internal models directly — use DTOs/response types at the boundary.
@@ -70,6 +70,11 @@ Default: **monolith**. Split ONLY when you have a concrete reason:
 - Trade-off: shared DB = easy consistency, hard independence. Separate DB = easy independence, hard consistency (eventual consistency, sagas).
 - Rule: even with shared DB, modules access ONLY their own tables. Cross-module data goes through the module's public API.
 - Migrations always versioned, reversible, and owned by the module that owns the table.
+
+When destination and transition alternatives compete, use
+`.claude/library/process/change-strategy-gate.md`. Preserve the boundary that
+users or consumers depend on; do not preserve the internal implementation by
+default.
 
 ## Cross-Cutting Concerns (auth, logging, validation)
 

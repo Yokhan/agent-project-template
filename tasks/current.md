@@ -1,17 +1,185 @@
 <!-- PROGRESSIVE_STATUS
-id: template-russian-writing-books-and-tool-truth
-status: done
-updated: 2026-07-17
-readiness: 100
+id: template-v4.8.0-release
+status: active
+updated: 2026-07-18
+readiness: 90
 plan: 100
 inventory: 100
-production: 100
+production: 85
 cleanup: 100
-tags: writing,russian,correspondence,explanation,glavred,tool-truth,routing
-next: preview v4.7.0 in representative downstream projects before rollout
+tags: release,change-strategy,destination,transition,compatibility,evidence,routing
+next: pass release gates, publish v4.8.0, and verify the remote release
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - Release v4.8.0
+
+### User Wants
+- Fix the independent review findings and deploy the completed Change Strategy Gate.
+
+### Success Means
+- Every decision that resumes edits is bound to a valid structured trigger.
+- Protected contracts derive required compatibility checks even when declared impacts are incomplete.
+- Local Windows checks and remote Linux/Windows release gates pass.
+- Tag `v4.8.0` and the published GitHub Release resolve to the same verified commit.
+
+### Verification
+- Change-strategy, route, CLI, sync, text, skill, agent, and downstream tests.
+- Manual Git diff and release payload review.
+- GitHub validation and release workflows plus authoritative release lookup.
+
+## Active Slice - Change Strategy Gate
+
+### Amendment - Pre-Repair Discovery Activation
+- Architecture fitness is assessed while reading the affected path, before the
+  first patch, not inferred only from failed repair count.
+- A discovered wrong ownership/SOT boundary, duplicate state or implementation,
+  obsolete final path, compatibility-only layer, or mismatch with the accepted
+  product plan activates Change Strategy immediately.
+- Research findings invoke the overlay in the existing pipeline. They cause one
+  semantic reroute only when pipeline, risk, or approval authority changes.
+- `blockEdits` lasts only until a machine-valid decision with the same trigger
+  kind and evidence reference is unblocked; then the original pipeline resumes.
+- A first isolated leaf defect skips the full gate when the bounded negative
+  check finds no causal system or protected-boundary evidence. No general
+  architecture proof is required. The second failed repair remains the
+  mandatory fallback circuit breaker when initial diagnosis missed the problem.
+
+### User Wants
+- Stop agents from cycling through local patches when the implementation or
+  architecture should be replaced.
+- Preserve necessary caution for users, data, public contracts, releases, and
+  migrations without treating old internal code as inherently valuable.
+- Compare destination and transition alternatives with objective evidence for user
+  and business outcome, maintainability, reliability, performance, security,
+  operability, transition cost, and reversibility.
+
+### Success Means
+- Repeated failures, compatibility shims, architecture drift, stale-path tests,
+  or sunk-cost behavior trigger one explicit change-strategy decision.
+- The agent classifies project posture and protected contracts before deciding
+  whether implementation is disposable, replaceable, or migration-bound.
+- Internal replacement can proceed without ritual approval when product
+  behavior and protected boundaries remain unchanged and rollback is proven.
+- The user receives 2-3 options and a recommendation when product behavior,
+  data, public contracts, scope, cost, release, or another material tradeoff
+  changes.
+- Claims such as "simpler", "faster", or "more maintainable" require a baseline,
+  comparable evidence, confidence, and explicit unknowns.
+
+### Product Goal Link
+- Product user: downstream teams and the real users of products built with the
+  template.
+- Product effect: fewer correction loops, less legacy accumulation, faster
+  delivery of the intended product, and safer preservation of live boundaries.
+- Business effect: lower maintenance and support cost, better reliability and
+  performance where measured, and less delivery time spent defending dead code.
+- Quality bar: compatibility protects verified contracts, not implementation;
+  replacement must not trade away data safety, security, product value, or
+  observed reliability.
+
+### System Map
+- Failure or planned change -> route -> change-strategy gate -> posture and
+  protected-contract inventory -> destination/transition comparison -> automatic
+  internal decision or client checkpoint -> implementation -> cleanup and
+  regression evidence.
+- Shared policy SOT: `.claude/library/process/change-strategy-gate.md`.
+- Hot pointers: `AGENTS.md` and `CLAUDE.md`.
+- Codex adapter: `.agents/skills/codex-change-strategy/` plus existing debug,
+  feature, product-goal, decomposition, strategy, and progressive JPEG skills.
+- Enforcement: semantic route fixtures, production-standard anchors, skill/SOT
+  validators, template smoke, text policy, and independent review.
+
+### Implementation Plan
+1. Add the shared change-strategy policy with lifecycle posture, protected
+   contracts, circuit-breaker triggers, decision authority, evidence matrix,
+   performance protocol, total-cost model, and client notification shape.
+2. Model decisions on two axes: destination (`repair`, `bounded-replace`,
+   `retire-remove`) and transition (`direct-swap`, `staged-swap`,
+   `versioned-coexistence`, `expand-migrate-contract`).
+3. Require evidence-bound hard constraints, repeated-attempt records, SOT and
+   owner for protected contracts, compatibility profiles when API/data/external
+   dependencies are affected, and a current approved change envelope.
+4. Add concise AGENTS/CLAUDE pointers and connect the policy to the product,
+   architecture, goal, client/executor, critical-thinking, and workflow rules.
+5. Create the Codex change-strategy skill as an overlay over the real bugfix,
+   feature, migration, product, strategy, or template pipeline.
+6. Add semantic activation and fixtures for repeated patching, greenfield
+   bounded replacement, protected production transition, read-only analysis,
+   and unsupported performance or maintainability claims.
+7. Add validator anchors and run rule, route, skill, SOT, text, progressive,
+   sync, and template checks plus independent systems/test review.
+
+### Complexity And Boundaries
+- Size: L; user approved implementation after reviewing the proposed design.
+- Risk: HIGH because this changes default agent decision behavior across
+  downstream projects.
+- Expected changes: one shared rule and one skill; about 12-18 existing rule,
+  route, test, validator, task, and convention files.
+- Public product/API behavior: none in this repository; downstream agents gain
+  a new default operating-contract gate. Release classification remains a
+  separate SOT decision after verification; do not predeclare patch/minor/major.
+- Out of scope: publishing a version, rewriting downstream projects, requiring
+  numeric performance tests where performance is not material, or treating LOC
+  as proof of maintainability.
+
+### Test Scenarios
+- Greenfield with no live users/data/contracts -> replace wrong internals without
+  asking solely to preserve compatibility.
+- Evolving project with named internal consumers -> preserve the named contract,
+  but allow internal replacement with rollback and checks.
+- Production data or public API change -> choose migration or ask the user with
+  options; never silently rewrite the boundary.
+- Second failed local repair or new compatibility shim -> block another patch
+  until destination and transition alternatives have been compared.
+- "Faster" without a comparable workload/baseline -> remain estimated or unknown,
+  never measured evidence.
+- Fewer lines alone -> do not claim lower maintenance cost.
+- Replacement -> remove the superseded path or time-box migration scaffolding
+  with owner and removal condition.
+
+### Progressive JPEG
+- First useful view: the approved decision protocol and objective evidence
+  criteria are explicit in this plan.
+- Next sharpened layer: the shared SOT and skill become callable through real
+  routes and current workflows.
+- Rough edge: prompt-level behavior can be regression-tested for routing and
+  required contract shape, but subjective architecture judgment still requires
+  evidence from the target project.
+- Replan trigger: the gate creates excessive prompts for internal reversible
+  changes, or routing cannot distinguish repeated patching from normal bugfixes.
+- Replacement/cleanup: consolidate overlapping sunk-cost, systemic-error, and
+  progressive-layer advice under one decision owner; retain concise pointers,
+  not competing procedures.
+
+### Plan B
+If structured JSON creates excessive ceremony, keep the same two-axis SOT and
+overlay skill but record the decision in the active AgentOS/Spec/Plan/Tasks
+artifact or response-only read-only report. JSON validation remains optional
+tooling for decisions that need durable machine checking.
+
+### Current View
+- Sharp now: the bounded repair-path check runs during reading. Causal
+  architecture/SOT/ownership evidence loads one change-strategy overlay before
+  the first patch; a second failed repair is the fallback breaker.
+- Lifecycle: local leaf defects continue normally; qualifying discovery blocks
+  edits pending a bound validated decision; resolution resumes the same base
+  pipeline without nested workflow or duplicate strategy/product-goal skills.
+- Decision model: destination and transition are separate; hard constraints,
+  compatibility profiles, objective evidence, total cost, KPI regressions, and
+  the approved change envelope are machine-validated when JSON is used.
+- Delivery: source checks and a native Windows `setup.bat` downstream smoke
+  confirm the shared SOT, skill, router helper, policy, CLI, tests, and manifest
+  payload are present and executable in a generated project.
+- Verification: change-strategy, routing, agent policy, skill, production, SOT,
+  progressive status, UTF-8/mojibake, exact-case Windows artifact detection,
+  and generated-project Windows checks pass.
+- Rough edge: Bash-only `test-template.sh` and synthetic `sync-template.sh`
+  execution were not run on this Windows host because no native Bash command is
+  available; their new fixture coverage was reviewed statically and remains a
+  Linux CI/release-gate check.
+- Release: no version bump, commit, tag, push, or release was requested or made.
 
 ## Active Slice - Release v4.7.0
 

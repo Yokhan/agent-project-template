@@ -19,6 +19,9 @@ Read `.claude/skills/decompose/SKILL.md` for detailed patterns.
 7. Define which accepted future capabilities need 1% callable hooks, contracts, states, events, flags, or no-op stubs in the first slice.
 8. Define the object readiness level for each slice: 1%, 10%, 30%, 60%, 90%, or 100%.
 9. Define the replacement/cleanup gate for each slice: what previous stubs, wrong iterations, tests, flags, routes, or harnesses must be deleted, replaced, or time-boxed.
+   When the slice follows repeated repair or architecture drift, use
+   `$codex-change-strategy` to choose destination separately from transition using
+   protected contracts and objective evidence.
 10. Define which working docs need `PROGRESSIVE_STATUS` and what project-slice bar should change after the slice.
 11. State what is deferred and why.
 

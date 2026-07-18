@@ -164,6 +164,7 @@ powershell -NoProfile -Command ^
   "  'mcp-servers/context-router/tsconfig.json'," ^
   "  'tests/rules/*.test.md'," ^
   "  'tests/fixtures/writing-tools/*.js'," ^
+  "  'tests/fixtures/change-strategy/*.json'," ^
   "  'docs/AGENT_PIPELINES.md'," ^
   "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
   "  'docs/CODEX_SKILLS_AUDIT.md'," ^

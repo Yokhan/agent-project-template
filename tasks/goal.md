@@ -18,9 +18,16 @@ The primary user is the downstream product team or operator using a generated pr
 - Docs: linked docs are treated as product surfaces and verified by route/layout/assets/404 checks.
 - Domain tone: plans, audits, and reports match the user's language and project vocabulary.
 - Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
+- Change strategy: compatibility protects verified user, data, and public
+  contracts rather than old implementation. Causal architecture evidence found
+  during reading triggers an evidence-backed destination and transition
+  decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-`v4.7.0` is published. Downstream projects should preview the pinned tag before applying it and review project-owned writing voice, terminology, external-tool adapters, and route overlays.
+The evidence-backed Change Strategy Gate, pre-repair discovery activation, and
+decision-to-resume lifecycle are implemented. The current state-changing step
+is the approved `v4.8.0` release: pass local and remote gates, bind one tag to
+the verified commit, publish it, and verify the authoritative GitHub Release.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
@@ -42,3 +49,5 @@ The primary user is the downstream product team or operator using a generated pr
 - Changing user-level Codex or IDE model/sandbox defaults.
 - Treating planning, research, architecture-only work, or a debug harness as a delivered product slice.
 - Recreating, proxying, or bundling Glavred.
+- Publishing or tagging the Change Strategy Gate before its behavior and
+  downstream sync contract are verified.

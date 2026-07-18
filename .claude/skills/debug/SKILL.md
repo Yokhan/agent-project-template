@@ -18,6 +18,9 @@ description: "Systematic debugging approach: reproduce, isolate, fix, verify, do
 - Use CodeGraphContext (if available) to find callers/callees
 - Narrow down to the specific module/function
 - Check recent changes: `git log --oneline -20` and `git diff`
+- Run a bounded negative check over the affected path and direct consumers for
+  causal final-plan, SOT/owner, duplicate-state, obsolete-path, or
+  protected-boundary mismatch. This is not a general architecture review.
 
 ### 3. Hypothesize
 - Form a specific hypothesis about the cause
@@ -30,7 +33,10 @@ description: "Systematic debugging approach: reproduce, isolate, fix, verify, do
   - Missing error handling
 
 ### 4. Fix
-- Make the minimal change that fixes the issue
+- If reading already proves a qualifying system mismatch, invoke the shared
+  Change Strategy Gate before the first patch. Reroute once only when pipeline,
+  risk, or approval authority changes.
+- Make the smallest reasonable change toward the accepted final architecture
 - Do not refactor unrelated code in the same change
 - Prefer fixing the root cause over symptoms
 
@@ -168,7 +174,9 @@ Stop when you reach something you can change structurally (architecture, process
 Sunk cost awareness is critical. Consider rewriting when:
 
 - **Time investment exceeds value**: you have spent 2+ hours on a function that would take 30 minutes to rewrite from scratch with tests
-- **Fix count is climbing**: the same area has been "fixed" 3+ times and keeps breaking -- the design is wrong, not the implementation
+- **Fix count is climbing**: a second repair failed against the same acceptance
+  criterion. This is the mandatory fallback circuit breaker; architecture
+  evidence found earlier must activate the gate without waiting for attempt two.
 - **Understanding is lost**: nobody (including you) can confidently explain what the code is supposed to do -- you are pattern-matching, not reasoning
 - **The bug reveals a design flaw**: the fix requires violating the module contract or adding special cases that make future bugs more likely
 - **Test coverage is zero**: adding characterization tests to understand behavior takes longer than rewriting with TDD

@@ -11,6 +11,7 @@ const SHARED_RULES = {
   writing: [".claude/library/technical/writing.md"],
   git: [".claude/library/technical/git-workflow.md"],
   safety: [".claude/library/domain/domain-guards.md"],
+  changeStrategy: [".claude/library/process/change-strategy-gate.md"],
 };
 const ROUTES = [
   {
@@ -31,6 +32,7 @@ const ROUTES = [
     pipeline: "bugfix",
     subagents: ["scout", "tester", "reviewer", "log_analyst"],
     rules: ["implementation", "testing"],
+    gates: ["bounded-repair-path-check"],
     risk: "MEDIUM",
   },
   {
@@ -47,7 +49,7 @@ const ROUTES = [
   {
     mode: "product-ux",
     pattern:
-      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|лк|личн|дешборд|дашборд|вход|выход|сесси|флоу|сценар|клик|сервис|главн|доки/i,
+      /user flow|dead end|dashboard|account|hub|login|logout|session|return path|service access|useful|ux|лк|личн\w*\s+(?:кабинет|аккаунт)|дешборд|дашборд|вход|выход|сесси|флоу|сценар|клик|сервис|главн|доки/i,
     skills: ["codex-product-ux-audit", "codex-design-workflow", "codex-domain-design-review"],
     pipeline: "product ux",
     subagents: ["design_reviewer", "tester", "reviewer"],

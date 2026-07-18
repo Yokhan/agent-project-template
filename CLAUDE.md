@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.7.0 -->
+<!-- Template Version: 4.8.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -84,6 +84,17 @@ Writing uses `.claude/skills/writing-workflow/SKILL.md` and the writer agent. Se
 
 External writing services are separate from sources and profiles. Without configured access and a successful response tied to the current artifact, never claim a Glavred check, score, warning list, or provider result; label public-method editing as manual.
 
+During initial bugfix reading, run a bounded repair-path check over the affected
+path and direct consumers. If causal evidence already shows architecture drift,
+wrong SOT/ownership, duplicate state, an obsolete path, or a compatibility-only
+layer, run the gate before the first patch. A second failed repair remains the
+mandatory fallback breaker. Use
+`.claude/library/process/change-strategy-gate.md`. Protect verified contracts,
+not implementation; choose destination separately from transition with objective evidence and
+ask only for material product, business outcome/KPI, data, public-contract, security, release, scope,
+cost, timeline, or irreversible tradeoffs. Notify the user whenever the gate
+fires, including automatic reversible internal replacement.
+
 Technical writing remains an informational or communication specialization. Use
 the technical-writer agent and technical-writing skill, select registry profile
 IDs, verify code/schema/version/OS, execute procedures, and require an independent
@@ -106,6 +117,7 @@ Translate vague requests into execution contracts:
 | `когда будет готово?` | Reliable forecast | Give next verifiable checkpoint; do not invent final certainty |
 | `план поехал` | Replan shape | Old assumption, reality, impact, options, recommendation |
 | `требования конфликтуют` | TRIZ contradiction | Need X without Y; resources, separation options, recommendation |
+| `мы опять чиним то же самое` | Change Strategy Gate | Posture, protected contracts, destination/transition evidence, approval boundary |
 | `проверь маркетинг` | GTM/communication review | ICP, positioning, offer, funnel, channel, proof, measurement, ethics |
 | `примени Сунь-цзы/стратагемы` | Competitive strategy | Terrain, center of gravity, asymmetry, timing, no dark patterns |
 
@@ -182,7 +194,7 @@ BUG or KNOWLEDGE_GAP → log to tasks/lessons.md with Track (BUG/KNOWLEDGE/PATTE
 When >50 entries → promote via `/weekly`.
 
 ## Systemic Error Analysis
-When an error, failed check, regression, or correction appears, classify it before patching: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict. For repeated, boundary, architecture, or HIGH-risk failures, name the broken link, root-cause hypothesis, smallest systemic fix, and regression guard before editing. Ask the user before applying a systemic fix that changes scope, ownership, release, timeline, or quality bar.
+When an error, failed check, regression, or correction appears, classify it while reading and before patching: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict. A bounded repair-path check covers the affected path and direct consumers without demanding a general architecture proof. If causal system evidence is already present, run the Change Strategy Gate before the first patch; reroute once only when pipeline, risk, or approval authority changes. After a second failed repair, the gate is mandatory. Record the decision in the active orchestrator artifact; optional `tasks/change-strategy.json` decisions must pass `node scripts/validate-change-strategy.js`. Ask only when the selected destination or transition changes a material client-owned tradeoff.
 
 ## Token Economy
 - Trust skills/memory over re-reading. Don't re-read files you read this session.
@@ -221,7 +233,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.7.0 - Run `bash scripts/check-drift.sh` to verify health.
+4.8.0 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

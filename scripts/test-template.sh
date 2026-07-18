@@ -369,6 +369,9 @@ check "scripts/validate-text-policy.js" test -f scripts/validate-text-policy.js
 check "scripts/progressive-status.js" test -f scripts/progressive-status.js
 check "scripts/validate-progressive-plan.js" test -f scripts/validate-progressive-plan.js
 check "scripts/test-progressive-plan.js" test -f scripts/test-progressive-plan.js
+check "scripts/validate-change-strategy.js" test -f scripts/validate-change-strategy.js
+check "scripts/lib/change-strategy-policy.js" test -f scripts/lib/change-strategy-policy.js
+check "scripts/test-change-strategy.js" test -f scripts/test-change-strategy.js
 check "scripts/validate-subagent-trace.js" test -f scripts/validate-subagent-trace.js
 check "scripts/test-subagent-trace.js" test -f scripts/test-subagent-trace.js
 check "scripts/sync-spec-kit.sh" test -f scripts/sync-spec-kit.sh
@@ -378,6 +381,10 @@ check "scripts/codex-routing-cases-a.js" test -f scripts/codex-routing-cases-a.j
 check "scripts/codex-routing-cases-b.js" test -f scripts/codex-routing-cases-b.js
 check "scripts/codex-route-config.js" test -f scripts/codex-route-config.js
 check "scripts/codex-route-task.js" test -f scripts/codex-route-task.js
+check "scripts/lib/codex-route-summary.js" test -f scripts/lib/codex-route-summary.js
+check "scripts/lib/codex-route-cli.js" test -f scripts/lib/codex-route-cli.js
+check "scripts/lib/codex-discovery-reroute.js" test -f scripts/lib/codex-discovery-reroute.js
+check "change strategy discovery fixture" test -f tests/fixtures/change-strategy/discovery-architecture-mismatch.json
 check "scripts/test-codex-routing.js" test -f scripts/test-codex-routing.js
 check "scripts/test-codex-agent-policy.js" test -f scripts/test-codex-agent-policy.js
 check "scripts/test-codex-subagents-live.sh" test -f scripts/test-codex-subagents-live.sh
@@ -386,6 +393,7 @@ echo ""
 echo "Codex skills:"
 check ">=42 Codex skill dirs" bash -c '[ $(ls -d .agents/skills/*/ 2>/dev/null | wc -l) -ge 42 ]'
 check "progressive JPEG planner skill" test -f .agents/skills/codex-progressive-jpeg-planner/SKILL.md
+check "change strategy skill" test -f .agents/skills/codex-change-strategy/SKILL.md
 check "four-mode writing workflow skill" test -f .agents/skills/codex-writing-workflow/SKILL.md
 check "technical writing skill" test -f .agents/skills/codex-technical-writing/SKILL.md
 check "technical writing review skill" test -f .agents/skills/codex-technical-writing-review/SKILL.md
@@ -402,6 +410,7 @@ check "core Codex model guidance skill" test -f .agents/skills/codex-openai-mode
 check "validate-codex-skills" node scripts/validate-codex-skills.js
 check "test-codex-agent-policy" node scripts/test-codex-agent-policy.js
 check "test-progressive-plan" node scripts/test-progressive-plan.js
+check "test-change-strategy" node scripts/test-change-strategy.js
 check "test-subagent-trace" node scripts/test-subagent-trace.js
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
@@ -508,6 +517,8 @@ check "route-task fallback honors alternate opt-out" bash -c 'bash scripts/route
 check "route-task fallback caps children at three" bash -c 'test "$(bash scripts/route-task.sh "template release" | sed -n "s/^CODEX_SUBAGENTS: //p" | wc -w | tr -d " ")" -le 3'
 check "Unix setup manages JavaScript helpers" grep -q 'scripts/lib/.*\.js' setup.sh
 check "Windows setup manages JavaScript helpers" grep -q "scripts/lib/\*.js" setup.bat
+check "Windows setup manages change strategy discovery fixtures" grep -q "tests/fixtures/change-strategy/\*.json" setup.bat
+check "Unix setup manages change strategy discovery fixtures" grep -q "tests/fixtures/change-strategy/" setup.sh
 
 echo ""
 echo "Bootstrap trust smoke:"
@@ -528,6 +539,7 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md _reference/tool-registry.md .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy
     GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
 
     [ ! -f "$project/$sentinel" ] &&
@@ -540,10 +552,12 @@ if is_template_source_repo; then
       [ -f "$project/.claude/library/product/production-product-standard.md" ] &&
       [ -f "$project/.claude/library/process/product-goal-loop.md" ] &&
       [ -f "$project/.claude/library/process/client-executor-contract.md" ] &&
+      [ -f "$project/.claude/library/process/change-strategy-gate.md" ] &&
       [ -f "$project/.claude/library/domain/domain-design-system.md" ] &&
       [ -f "$project/.claude/library/domain/domain-design-pipeline.md" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/references/design-command-modes.md" ] &&
       [ -f "$project/.agents/skills/codex-writing-workflow/SKILL.md" ] &&
+      [ -f "$project/.agents/skills/codex-change-strategy/SKILL.md" ] &&
       [ -f "$project/.agents/skills/codex-technical-writing/SKILL.md" ] &&
       [ -f "$project/.agents/skills/codex-technical-writing-review/SKILL.md" ] &&
       [ -f "$project/.claude/skills/writing-workflow/SKILL.md" ] &&
@@ -596,6 +610,13 @@ if is_template_source_repo; then
       [ -f "$project/scripts/validate-agent-sot.js" ] &&
       [ -f "$project/scripts/validate-spec-kit.js" ] &&
       [ -f "$project/scripts/validate-text-policy.js" ] &&
+      [ -f "$project/scripts/lib/change-strategy-policy.js" ] &&
+      [ -f "$project/scripts/lib/codex-route-summary.js" ] &&
+      [ -f "$project/scripts/lib/codex-route-cli.js" ] &&
+      [ -f "$project/scripts/lib/codex-discovery-reroute.js" ] &&
+      [ -f "$project/scripts/validate-change-strategy.js" ] &&
+      [ -f "$project/scripts/test-change-strategy.js" ] &&
+      [ -f "$project/tests/fixtures/change-strategy/discovery-architecture-mismatch.json" ] &&
       [ -f "$project/.github/workflows/validate-template.yml" ] &&
       [ ! -f "$project/.github/workflows/release-template.yml" ] &&
       [ -f "$project/scripts/test-codex-subagents-live.sh" ] &&
@@ -605,7 +626,8 @@ if is_template_source_repo; then
       [ -f "$project/scripts/progressive-status.js" ] &&
       (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) &&
       (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) &&
-      (cd "$project" && node scripts/test-codex-routing.js >/dev/null)
+      (cd "$project" && node scripts/test-codex-routing.js >/dev/null) &&
+      (cd "$project" && node scripts/test-change-strategy.js >/dev/null)
   }
   trap cleanup_smoke EXIT
   printf 'sentinel\n' > "$SMOKE_SENTINEL"
@@ -643,7 +665,9 @@ if is_template_source_repo; then
     local template="$1"
 
     mkdir -p \
+      "$template/.agents/skills/codex-change-strategy/agents" \
       "$template/.codex/agents" \
+      "$template/.claude/library/process" \
       "$template/scripts" \
       "$template/scripts/lib" \
       "$template/docs" \
@@ -651,7 +675,8 @@ if is_template_source_repo; then
       "$template/templates/project-starter/tasks" \
       "$template/tests/fixtures/design-policy/pass" \
       "$template/tests/fixtures/design-policy/fail" \
-      "$template/tests/fixtures/writing-tools"
+      "$template/tests/fixtures/writing-tools" \
+      "$template/tests/fixtures/change-strategy"
 
     printf '%s\n' '# Fixture Claude' '<!-- Template Version: 9.9.9 -->' > "$template/CLAUDE.md"
     printf '%s\n' '*.log' > "$template/.gitignore"
@@ -668,18 +693,28 @@ if is_template_source_repo; then
     cp scripts/test-codex-agent-policy.js "$template/scripts/test-codex-agent-policy.js"
     cp scripts/test-codex-routing.js "$template/scripts/test-codex-routing.js"
     cp scripts/test-progressive-plan.js "$template/scripts/test-progressive-plan.js"
+    cp scripts/test-change-strategy.js "$template/scripts/test-change-strategy.js"
     cp scripts/test-subagent-trace.js "$template/scripts/test-subagent-trace.js"
     cp scripts/validate-progressive-plan.js "$template/scripts/validate-progressive-plan.js"
+    cp scripts/validate-change-strategy.js "$template/scripts/validate-change-strategy.js"
     cp scripts/validate-subagent-trace.js "$template/scripts/validate-subagent-trace.js"
     cp scripts/validate-codex-agents.js "$template/scripts/validate-codex-agents.js"
     cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
+    cp scripts/lib/codex-route-summary.js "$template/scripts/lib/codex-route-summary.js"
+    cp scripts/lib/codex-route-cli.js "$template/scripts/lib/codex-route-cli.js"
+    cp scripts/lib/codex-discovery-reroute.js "$template/scripts/lib/codex-discovery-reroute.js"
     cp scripts/lib/writing-intent.js "$template/scripts/lib/writing-intent.js"
     cp scripts/lib/writing-route-policy.js "$template/scripts/lib/writing-route-policy.js"
     cp scripts/lib/writing-reference-policy.js "$template/scripts/lib/writing-reference-policy.js"
     cp scripts/lib/writing-external-tool-policy.js "$template/scripts/lib/writing-external-tool-policy.js"
     cp scripts/lib/writing-path-policy.js "$template/scripts/lib/writing-path-policy.js"
     cp scripts/lib/progressive-plan.js "$template/scripts/lib/progressive-plan.js"
+    cp scripts/lib/change-strategy-policy.js "$template/scripts/lib/change-strategy-policy.js"
     cp scripts/lib/subagent-trace.js "$template/scripts/lib/subagent-trace.js"
+    cp .claude/library/process/change-strategy-gate.md "$template/.claude/library/process/change-strategy-gate.md"
+    cp .agents/skills/codex-change-strategy/SKILL.md "$template/.agents/skills/codex-change-strategy/SKILL.md"
+    cp .agents/skills/codex-change-strategy/agents/openai.yaml "$template/.agents/skills/codex-change-strategy/agents/openai.yaml"
+    cp tests/fixtures/change-strategy/discovery-architecture-mismatch.json "$template/tests/fixtures/change-strategy/discovery-architecture-mismatch.json"
 
     node -e 'const fs=require("fs"),path=require("path"),q=String.fromCharCode(39); const name="skill"+q+"]);require("+q+"fs"+q+").writeFileSync("+q+"SYNC_PATH_INJECTION"+q+","+q+"x"+q+");console.log(m.files["+q+"skill"; const dir=path.join(process.argv[1],".agents","skills",name); fs.mkdirSync(dir,{recursive:true}); fs.writeFileSync(path.join(dir,"SKILL.md"),"# inert path fixture\n","utf8");' "$template"
 
@@ -739,6 +774,12 @@ if is_template_source_repo; then
     grep -q "WOULD ADD: .codex/agents/systems-reviewer.toml" "$output" || return 1
     grep -q "WOULD ADD: .codex/agents/scout.toml" "$output" || return 1
     grep -q "WOULD ADD: scripts/validate-progressive-plan.js" "$output" || return 1
+    grep -q "WOULD ADD: scripts/validate-change-strategy.js" "$output" || return 1
+    grep -q "WOULD ADD: scripts/lib/codex-route-summary.js" "$output" || return 1
+    grep -q "WOULD ADD: scripts/lib/codex-route-cli.js" "$output" || return 1
+    grep -q "WOULD ADD: scripts/lib/codex-discovery-reroute.js" "$output" || return 1
+    grep -q "WOULD ADD: .agents/skills/codex-change-strategy/SKILL.md" "$output" || return 1
+    grep -q "WOULD ADD: tests/fixtures/change-strategy/discovery-architecture-mismatch.json" "$output" || return 1
     grep -q "WOULD ADD: _reference/spec-kit/manifest.json" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/design-policy/fail/gradient-text.css" "$output" || return 1
     grep -q "WOULD ADD: tests/fixtures/writing-tools/external-tool-adapter.fixture.js" "$output" || return 1
@@ -756,6 +797,12 @@ if is_template_source_repo; then
     grep -q '".codex/agents/systems-reviewer.toml"' "$project/.template-manifest.json" || return 1
     grep -q '".codex/agents/scout.toml"' "$project/.template-manifest.json" || return 1
     grep -q '"scripts/validate-progressive-plan.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/validate-change-strategy.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/lib/codex-route-summary.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/lib/codex-route-cli.js"' "$project/.template-manifest.json" || return 1
+    grep -q '"scripts/lib/codex-discovery-reroute.js"' "$project/.template-manifest.json" || return 1
+    grep -q '".agents/skills/codex-change-strategy/SKILL.md"' "$project/.template-manifest.json" || return 1
+    grep -q '"tests/fixtures/change-strategy/discovery-architecture-mismatch.json"' "$project/.template-manifest.json" || return 1
     grep -q '"_reference/spec-kit/manifest.json"' "$project/.template-manifest.json" || return 1
     grep -q '"tests/fixtures/design-policy/fail/gradient-text.css"' "$project/.template-manifest.json" || return 1
     grep -q '"tests/fixtures/writing-tools/external-tool-adapter.fixture.js"' "$project/.template-manifest.json" || return 1
@@ -765,7 +812,9 @@ if is_template_source_repo; then
     ! grep -q '"setup.bat"' "$project/.template-manifest.json" || return 1
     (cd "$project" && node scripts/validate-codex-agents.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-codex-agent-policy.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-codex-routing.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-progressive-plan.js >/dev/null) || return 1
+    (cd "$project" && node scripts/test-change-strategy.js >/dev/null) || return 1
     (cd "$project" && node scripts/test-subagent-trace.js >/dev/null) || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
   }

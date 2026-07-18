@@ -5,6 +5,10 @@ description: "Validate or create API contracts, OpenAPI docs, endpoint behavior,
 
 # Codex API Contract
 
+When a public contract change depends on an unresolved destination or transition,
+use `$codex-change-strategy` before changing the contract. This
+skill then verifies the selected API path and compatibility evidence.
+
 Read `.claude/skills/api-contract/SKILL.md` and `docs/API_CONTRACTS.md` when present.
 
 ## Process

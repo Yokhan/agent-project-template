@@ -192,6 +192,19 @@ Do not send a final closeout for changed tagged docs until
 
 ## Replan Shape
 
+Before replanning another local repair after the second failed attempt, run the
+Change Strategy Gate in `.claude/library/process/change-strategy-gate.md`.
+Notify the client with the trigger, project posture, protected contracts,
+destination and transition options, evidence levels, recommendation, approval state,
+and removal or migration plan. Notification is required even when the executor
+can safely continue without approval.
+
+The executor may replace reversible internals when protected boundaries remain
+stable and rollback plus verification are concrete. The client must choose when
+the path changes product behavior, data, public contracts, security, release,
+scope, cost, timeline, or irreversible state. Do not ask the client to approve
+implementation details that remain inside the accepted contract.
+
 When reality breaks the plan, replan explicitly:
 
 ```text
@@ -227,6 +240,8 @@ Stop and re-evaluate when:
 - the plan now depends on an unstated assumption;
 - a shortcut hides product, safety, privacy, release, or platform risk;
 - the status report would describe effort but not evidence.
+- a second local repair failed or the next patch adds compatibility machinery
+  only to preserve the old path.
 
 In those cases, report the gap, recommend the next move, and continue only after
 the current step is honest.

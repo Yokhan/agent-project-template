@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.7.0
-git push origin v4.7.0
+git tag v4.8.0
+git push origin v4.8.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -54,7 +54,7 @@ If ownership is unclear, stop and ask instead of guessing.
 
 1. Explicit user tag > AgentOS-approved tag > verified latest stable release.
 2. Otherwise read the stable, non-draft, non-prerelease tag from
-   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.7.0`.
+   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.8.0`.
 3. Installed version is comparison data, never the target. Never infer the
    target from `main`, a badge, cached memory, or a stale local sync script.
 4. If no target can be verified, ask for a tag. Do not substitute a branch.
@@ -113,7 +113,7 @@ Use the target release checkout's script with `--project-dir` for this fallback.
 New project from a stable release:
 
 ```bash
-git clone --branch v4.7.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -124,8 +124,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.7.0
+bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.8.0
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -185,7 +185,9 @@ Version `4.6.2` is a compatible patch release that adds bounded Luna roles for d
 
 Version `4.7.0` is a compatible minor release that adds purpose-first literary, marketing, informational, communication, and technical-writing workflows; Russian business-correspondence and explanation profiles; source provenance with one authority group per profile; fail-closed route validation; and truthful external-tool states. Paid providers such as Glavred remain `not-configured` and `not-run` until a real project adapter, secret reference, owner, check date, artifact binding, and provider response exist. The release does not recreate or bundle Glavred.
 
-Downstream projects should sync `v4.7.0` with a dry run first and review local `project-*` skills and agents, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
+Version `4.8.0` is a compatible minor release that adds an evidence-backed Change Strategy Gate. Agents evaluate architecture fitness while reading, before the first patch; compare repair, bounded replacement, and retirement across explicit transition models; and bind any decision that resumes edits to a separate structured trigger. Protected contracts derive required API, data, and security checks instead of trusting self-declared impacts. The release also rejects duplicate alternatives and malformed route CLI flags, keeps read-only comparison out of the bugfix pipeline, and runs routing regressions in generated and synced payloads.
+
+Downstream projects should sync `v4.8.0` with a dry run first and review local `project-*` skills and agents, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -230,8 +232,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.7.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.7.0
+bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.8.0
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
