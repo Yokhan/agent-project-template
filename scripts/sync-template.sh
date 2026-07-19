@@ -464,7 +464,11 @@ fi
 
 # L2: Validate manifest structure
 if [ -z "$manifest_files" ]; then
-    echo "WARNING: Manifest has no trackable files. Is .template-manifest.json valid?"
+    if [ "$entry_count" = "0" ]; then
+        echo "WARNING: Manifest has no trackable files. Is .template-manifest.json valid?"
+    else
+        echo "INFO: Manifest has no template/hybrid entries; project-owned entries remain preserved."
+    fi
 fi
 
 # Create rollback metadata only after the manifest and every managed path have
