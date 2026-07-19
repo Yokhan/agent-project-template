@@ -202,6 +202,20 @@ if [ ! -f "$TEMPLATE_PATH/CLAUDE.md" ]; then
   exit 1
 fi
 
+SAFE_COPY_HELPER="$TEMPLATE_PATH/scripts/lib/sync-safe-copy.js"
+if [ ! -f "$SAFE_COPY_HELPER" ]; then
+  echo "ERROR: Target release is missing scripts/lib/sync-safe-copy.js"
+  exit 1
+fi
+
+# The managed MCP merger always touches this hybrid path, even when a legacy
+# manifest still calls it project-owned. Enforce the same symlink/reparse
+# boundary before reading or mutating backup/bootstrap/manifest state.
+node "$SAFE_COPY_HELPER" --project-root "$PROJECT_PATH" --path ".codex/config.toml" --check-only true || {
+  echo "ERROR: Unsafe .codex/config.toml path"
+  exit 1
+}
+
 # --- Read manifest ---
 MANIFEST=".template-manifest.json"
 
@@ -408,19 +422,6 @@ echo ""
 
 # --- Counters ---
 UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0; SOURCE_ONLY_MANIFEST=0; CONFLICTS=0
-SAFE_COPY_HELPER="$TEMPLATE_PATH/scripts/lib/sync-safe-copy.js"
-if [ ! -f "$SAFE_COPY_HELPER" ]; then
-  echo "ERROR: Target release is missing scripts/lib/sync-safe-copy.js"
-  exit 1
-fi
-
-# The managed MCP merger always touches this hybrid path, even when a legacy
-# manifest still calls it project-owned. Enforce the same symlink/reparse
-# boundary before any backup, manifest reconciliation, or merger execution.
-node "$SAFE_COPY_HELPER" --project-root "$PROJECT_PATH" --path ".codex/config.toml" --check-only true || {
-  echo "ERROR: Unsafe .codex/config.toml path"
-  exit 1
-}
 
 # --- Phase A: Update template files in manifest ---
 echo "--- Phase A: Updating template files ---"
