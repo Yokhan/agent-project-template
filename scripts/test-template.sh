@@ -550,7 +550,9 @@ check "_reference/agent-sot/top-works.md" test -f _reference/agent-sot/top-works
 check "local ai-agent spec original" test -f _reference/agent-sot/originals/ai-agent-spec-v3-final.md
 check "Agent SOT has >=20 top works" bash -c '[ $(grep -c "^## TW-" _reference/agent-sot/top-works.md) -ge 20 ]'
 check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
+check "AGENTS names canonical template source without downstream self-ownership" bash -c "grep -q 'canonical .*agent-project-template.*source repository' AGENTS.md && ! grep -q 'Template releases belong to this repository' AGENTS.md"
 check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
+check "ownership SOT distinguishes new and declared project AGENTS" bash -c "grep -q 'Newly bootstrapped .*AGENTS.md.*template-owned' docs/PRODUCT_BOUNDARY.md && grep -q 'that declared' docs/PRODUCT_BOUNDARY.md && grep -q 'ownership is authoritative' docs/PRODUCT_BOUNDARY.md && grep -q 'explicitly marks .*AGENTS.md.*project' README.md && grep -q 'Entries explicitly marked project are preserved' scripts/sync-template.sh"
 
 echo ""
 echo "Spec Kit snapshot:"
@@ -647,6 +649,7 @@ if is_template_source_repo; then
       [ -f "$project/scripts/lib/sync-safe-copy.js" ] &&
       node -e 'const fs=require("fs");const expected=fs.readFileSync("CLAUDE.md","utf8")+"\n"+fs.readFileSync("templates/orchestrator/CLAUDE.md","utf8");if(fs.readFileSync(process.argv[1],"utf8")!==expected)process.exit(1)' "$project/CLAUDE.md" &&
       [ -z "$(git -C "$project" status --porcelain)" ] &&
+      node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8")),h=crypto.createHash("sha256").update(fs.readFileSync(p+"/AGENTS.md")).digest("hex"),source=crypto.createHash("sha256").update(fs.readFileSync("AGENTS.md")).digest("hex");if(m.files?.["AGENTS.md"]?.category!=="template"||m.files["AGENTS.md"].hash!==h||h!==source)process.exit(1)' "$project" &&
       node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8"));const h=crypto.createHash("sha256").update(fs.readFileSync(p+"/CLAUDE.md")).digest("hex");if(m.files?.["CLAUDE.md"]?.category!=="project"||m.files["CLAUDE.md"].hash!==h)process.exit(1)' "$project" &&
       [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
       [ -f "$project/.codex/agents/pr-explorer.toml" ] &&
@@ -955,7 +958,7 @@ if is_template_source_repo; then
       '  }' \
       '}' > "$project/.template-manifest.json"
   }
-  run_legacy_47_safe_sync_smoke() {
+  run_legacy_47_project_agents_sync_smoke() {
     local project="$1"
     local output="$2"
     local template="$3"
@@ -970,7 +973,7 @@ if is_template_source_repo; then
 
     bash scripts/sync-template.sh "$template" --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
     grep -q "Current: 4.7.0.*New: 9.9.9" "$output" || return 1
-    grep -q "WOULD MIGRATE: AGENTS.md" "$output" || return 1
+    ! grep -q "AGENTS.md" "$output" || return 1
     grep -q "WOULD UPDATE: README.md" "$output" || return 1
     ! grep -q "CLAUDE.md" "$output" || return 1
     ! grep -q ".codex/README.md" "$output" || return 1
@@ -982,12 +985,12 @@ if is_template_source_repo; then
       cat "$output.apply"
       return 1
     fi
-    cmp -s "$project/AGENTS.md" "$template/AGENTS.md" || return 1
+    [ "$agents_before" = "$(_get_hash "$project/AGENTS.md")" ] || return 1
     cmp -s "$project/README.md" "$template/README.md" || return 1
     [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
     [ "$codex_readme_before" = "$(_get_hash "$project/.codex/README.md")" ] || return 1
     [ "$notes_before" = "$(_get_hash "$project/notes/local.md")" ] || return 1
-    node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8"));const h=f=>crypto.createHash("sha256").update(fs.readFileSync(p+"/"+f)).digest("hex");if(m.template_version!=="9.9.9"||m.files["AGENTS.md"].category!=="template"||m.files["AGENTS.md"].hash!==h("AGENTS.md")||m.files["CLAUDE.md"].category!=="project"||m.files[".codex/README.md"]||m.files["notes/local.md"])process.exit(1);' "$project" || return 1
+    node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8"));const h=f=>crypto.createHash("sha256").update(fs.readFileSync(p+"/"+f)).digest("hex");if(m.template_version!=="9.9.9"||m.files["AGENTS.md"].category!=="project"||m.files["AGENTS.md"].hash!==h("AGENTS.md")||m.files["CLAUDE.md"].category!=="project"||m.files[".codex/README.md"]||m.files["notes/local.md"])process.exit(1);' "$project" || return 1
 
     local converged_manifest converged_agents converged_claude
     converged_manifest="$(_get_hash "$project/.template-manifest.json")"
@@ -1006,7 +1009,7 @@ if is_template_source_repo; then
     [ "$codex_readme_before" = "$(_get_hash "$project/.codex/README.md")" ] || return 1
     node -e 'const m=require(process.argv[1]);if(m.files[".codex/README.md"])process.exit(1);' "$project/.template-manifest.json" || return 1
   }
-  run_legacy_47_conflict_sync_smoke() {
+  run_legacy_47_custom_agents_sync_smoke() {
     local project="$1"
     local output="$2"
     local template="$3"
@@ -1017,33 +1020,21 @@ if is_template_source_repo; then
     claude_before="$(_get_hash "$project/CLAUDE.md")"
     codex_readme_before="$(_get_hash "$project/.codex/README.md")"
     manifest_before="$(_get_hash "$project/.template-manifest.json")"
-    if bash scripts/sync-template.sh "$template" --project-dir "$project" --dry-run > "$output" 2>&1; then
-      return 1
-    fi
-    grep -q "CONFLICT: AGENTS.md" "$output" || return 1
+    bash scripts/sync-template.sh "$template" --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
+    ! grep -q "AGENTS.md" "$output" || return 1
     [ "$manifest_before" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
     [ "$agents_before" = "$(_get_hash "$project/AGENTS.md")" ] || return 1
 
-    if bash scripts/sync-template.sh "$template" --project-dir "$project" > "$output.apply" 2>&1; then
-      return 1
-    fi
+    bash scripts/sync-template.sh "$template" --project-dir "$project" > "$output.apply" 2>&1 || return 1
     [ "$agents_before" = "$(_get_hash "$project/AGENTS.md")" ] || return 1
     [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
     [ "$codex_readme_before" = "$(_get_hash "$project/.codex/README.md")" ] || return 1
-    cmp -s "$project/AGENTS.md.template-new" "$template/AGENTS.md" || return 1
-    node -e 'const m=require(process.argv[1]);if(m.template_version!=="4.7.0"||m.files["AGENTS.md"].category!=="project"||m.files[".codex/README.md"])process.exit(1);' "$project/.template-manifest.json" || return 1
+    [ ! -e "$project/AGENTS.md.template-new" ] || return 1
+    node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8")),h=crypto.createHash("sha256").update(fs.readFileSync(p+"/AGENTS.md")).digest("hex");if(m.template_version!=="9.9.9"||m.files["AGENTS.md"].category!=="project"||m.files["AGENTS.md"].hash!==h||m.files[".codex/README.md"])process.exit(1);' "$project" || return 1
 
-    if bash scripts/sync-template.sh "$template" --project-dir "$project" > "$output.repeat" 2>&1; then
-      return 1
-    fi
-    [ "$agents_before" = "$(_get_hash "$project/AGENTS.md")" ] || return 1
-    cmp -s "$project/AGENTS.md.template-new" "$template/AGENTS.md" || return 1
-
-    cp "$project/AGENTS.md.template-new" "$project/AGENTS.md" || return 1
-    rm -f "$project/AGENTS.md.template-new"
-    bash scripts/sync-template.sh "$template" --project-dir "$project" >> "$output.repeat" 2>&1 || return 1
-    node -e 'const m=require(process.argv[1]);if(m.template_version!=="9.9.9"||m.files["AGENTS.md"].category!=="template")process.exit(1)' "$project/.template-manifest.json" || return 1
     local resolved_manifest="$(_get_hash "$project/.template-manifest.json")"
+    bash scripts/sync-template.sh "$template" --project-dir "$project" --dry-run > "$output.repeat" 2>&1 || return 1
+    ! grep -Eq "^  (WOULD (UPDATE|ADD|ADOPT|MIGRATE)|CONFLICT:)" "$output.repeat" || return 1
     bash scripts/sync-template.sh "$template" --project-dir "$project" >> "$output.repeat" 2>&1 || return 1
     [ "$resolved_manifest" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
   }
@@ -1109,6 +1100,18 @@ if is_template_source_repo; then
     [ "$conflict_hash" = "$(_get_hash "$conflict_external")" ] || return 1
     [ "$conflict_manifest" = "$(_get_hash "$conflict_project/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: conflict sidecar symlink"
+
+    local project_agents="$root/project-agents" project_agents_external="$root/project-agents-external"
+    mkdir -p "$project_agents"
+    printf '%s\n' 'external project agents sentinel' > "$project_agents_external"
+    ln -s "$project_agents_external" "$project_agents/AGENTS.md" || return 1
+    printf '{"template_version":"4.7.0","files":{"AGENTS.md":{"category":"project","hash":"deadbeef"}}}\n' > "$project_agents/.template-manifest.json"
+    local project_agents_hash="$(_get_hash "$project_agents_external")" project_agents_manifest="$(_get_hash "$project_agents/.template-manifest.json")"
+    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project_agents" >> "$output" 2>&1; then return 1; fi
+    grep -q "Symlink/reparse manifest path is not allowed: AGENTS.md" "$output" || return 1
+    [ "$project_agents_hash" = "$(_get_hash "$project_agents_external")" ] || return 1
+    [ "$project_agents_manifest" = "$(_get_hash "$project_agents/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: project-owned AGENTS symlink"
 
     local config_project="$root/config-target" config_external="$root/config-target-external"
     mkdir -p "$config_project/.codex"
@@ -1391,8 +1394,8 @@ if is_template_source_repo; then
   trap cleanup_sync_smoke EXIT
   create_sync_template_fixture "$SYNC_TEMPLATE_FIXTURE"
   create_migration_template_fixture "$SYNC_MIGRATION_FIXTURE"
-  check "sync-template safely migrates legacy 4.7 AGENTS ownership" run_legacy_47_safe_sync_smoke "$SYNC_LEGACY_SAFE_PROJECT" "$SYNC_LEGACY_SAFE_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
-  check "sync-template preserves and converges conflicting legacy 4.7 AGENTS ownership" run_legacy_47_conflict_sync_smoke "$SYNC_LEGACY_CONFLICT_PROJECT" "$SYNC_LEGACY_CONFLICT_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
+  check "sync-template preserves declared legacy 4.7 AGENTS ownership" run_legacy_47_project_agents_sync_smoke "$SYNC_LEGACY_SAFE_PROJECT" "$SYNC_LEGACY_SAFE_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
+  check "sync-template preserves and converges customized legacy 4.7 AGENTS ownership" run_legacy_47_custom_agents_sync_smoke "$SYNC_LEGACY_CONFLICT_PROJECT" "$SYNC_LEGACY_CONFLICT_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
   check "sync-template rejects traversal and symlink write targets" run_sync_path_safety_smoke "$SYNC_PATH_SAFETY_ROOT" "$SYNC_PATH_SAFETY_OUTPUT" "$SYNC_TRAVERSAL_SOURCE"
   check "sync-template converges new-path adoption, conflicts, project ownership, and hybrid hashes" run_new_path_convergence_smoke "$SYNC_NEW_PATH_ROOT" "$SYNC_NEW_PATH_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"

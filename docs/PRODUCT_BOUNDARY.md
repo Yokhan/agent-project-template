@@ -36,6 +36,11 @@ Template-owned files are updated by `sync-template.sh` and should be treated as 
 - release-facing bootstrap docs such as `README.md` and `SETUP_GUIDE.md`
 - `_reference/tool-registry.md` and generated bootstrap metadata
 
+Newly bootstrapped `AGENTS.md` is template-owned. An existing downstream
+manifest may explicitly classify `AGENTS.md` as `project`; that declared
+ownership is authoritative, so sync preserves the file and never silently
+migrates or overwrites it.
+
 Project-owned files are expected to evolve per repo and are preserved by template sync:
 
 - `CLAUDE.md`

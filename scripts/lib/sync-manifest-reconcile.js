@@ -40,6 +40,30 @@ function hashFile(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
+function getSafeRegularFile(root, relativePath) {
+  let current = root;
+  const parts = relativePath.split("/");
+  for (let index = 0; index < parts.length; index += 1) {
+    current = path.join(current, parts[index]);
+    let stat;
+    try {
+      stat = fs.lstatSync(current);
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    }
+    if (stat.isSymbolicLink()) throw new Error(`Symlink/reparse manifest path is not allowed: ${relativePath}`);
+    if (index < parts.length - 1 && !stat.isDirectory()) throw new Error(`Non-directory manifest path component: ${relativePath}`);
+    if (index === parts.length - 1 && !stat.isFile()) throw new Error(`Manifest target is not a regular file: ${relativePath}`);
+    const real = fs.realpathSync.native(current);
+    const relation = path.relative(root, real);
+    if (real !== root && (relation.startsWith("..") || path.isAbsolute(relation))) {
+      throw new Error(`Manifest path resolves outside project: ${relativePath}`);
+    }
+  }
+  return current;
+}
+
 function isSourceOnlyPath(relativePath) {
   return relativePath === "setup.sh" ||
     relativePath === "setup.bat" ||
@@ -81,8 +105,8 @@ function main() {
   }
 
   const manifestPath = path.resolve(args.manifest);
-  const templateRoot = path.resolve(args["template-root"]);
-  const projectRoot = path.resolve(args["project-root"]);
+  const templateRoot = fs.realpathSync.native(path.resolve(args["template-root"]));
+  const projectRoot = fs.realpathSync.native(path.resolve(args["project-root"]));
   const conflictCount = Number.parseInt(args.conflicts, 10);
   if (!Number.isSafeInteger(conflictCount) || conflictCount < 0) {
     throw new Error(`Invalid conflict count: ${args.conflicts}`);
@@ -108,22 +132,18 @@ function main() {
     if (info.hash) info.hash = String(info.hash).replace(/^[\\/]+/, "");
     const templatePath = resolveInside(templateRoot, relativePath);
     const projectPath = resolveInside(projectRoot, relativePath);
+    const safeProjectFile = getSafeRegularFile(projectRoot, relativePath);
 
-    if (relativePath === ".codex/config.toml" && fs.existsSync(projectPath) && fs.statSync(projectPath).isFile()) {
-      nextFiles[relativePath] = { category: "hybrid", hash: hashFile(projectPath) };
+    if (relativePath === ".codex/config.toml" && safeProjectFile) {
+      nextFiles[relativePath] = { category: "hybrid", hash: hashFile(safeProjectFile) };
       if (info.category === "project") migrated += 1;
       continue;
     }
 
     if (info.category === "project") {
-      if (relativePath === "AGENTS.md" &&
-          fs.existsSync(templatePath) && fs.existsSync(projectPath) &&
-          hashFile(templatePath) === hashFile(projectPath)) {
-        nextFiles[relativePath] = { category: "template", hash: hashFile(templatePath) };
-        migrated += 1;
-      } else {
-        nextFiles[relativePath] = info;
-      }
+      nextFiles[relativePath] = safeProjectFile
+        ? { ...info, hash: hashFile(safeProjectFile) }
+        : info;
       continue;
     }
 

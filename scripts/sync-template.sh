@@ -2,8 +2,8 @@
 # sync-template.sh — Sync project with newer template version
 # Usage: ./scripts/sync-template.sh /path/to/agent-project-template [--dry-run] [--force]
 #
-# Template files (in manifest) are ALWAYS updated from the new template.
-# Project files (project-* prefix, not in manifest) are NEVER touched.
+# Manifest entries marked template or hybrid are updated from the new template.
+# Entries explicitly marked project are preserved, including legacy AGENTS.md.
 # See .template-manifest.json for the file registry.
 
 set -euo pipefail
@@ -455,8 +455,8 @@ for(const[p,i]of Object.entries(m.files||{})){
     throw new Error('Unsafe manifest path: '+p);
   }
   if(!['template','hybrid','project'].includes(category)||/[\r\n|]/.test(hash))throw new Error('Invalid manifest entry: '+p);
-  if(category!=='project'||clean==='AGENTS.md'||clean==='.codex/config.toml'){
-    assertSafeExisting(clean);
+  assertSafeExisting(clean);
+  if(category!=='project'||clean==='.codex/config.toml'){
     console.log(clean+'|'+hash+'|'+category);
   }
 }" "$MANIFEST" 2>&1); then
@@ -510,10 +510,6 @@ while IFS='|' read -r filepath old_hash category; do
   fi
 
   template_file="$TEMPLATE_PATH/$filepath"
-  legacy_agents_migration=false
-  if [ "$filepath" = "AGENTS.md" ] && [ "$category" = "project" ]; then
-    legacy_agents_migration=true
-  fi
 
   if [ ! -f "$template_file" ]; then
     # File removed from template
@@ -535,9 +531,7 @@ while IFS='|' read -r filepath old_hash category; do
   fi
 
   # Restore deleted template files even when the release hash is unchanged.
-  # Legacy AGENTS ownership also needs an explicit migration decision.
-  if [ "$legacy_agents_migration" = false ] &&
-     [ "$new_hash" = "$old_hash" ] && [ -n "$local_hash" ]; then
+  if [ "$new_hash" = "$old_hash" ] && [ -n "$local_hash" ]; then
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
@@ -556,14 +550,6 @@ while IFS='|' read -r filepath old_hash category; do
     fi
     CONFLICTS=$((CONFLICTS + 1))
     continue
-  fi
-
-  if [ "$legacy_agents_migration" = true ]; then
-    if [ "$DRY_RUN" = true ]; then
-      echo "  WOULD MIGRATE: $filepath (legacy project -> template ownership)"
-    else
-      echo "  MIGRATING: $filepath (legacy project -> template ownership)"
-    fi
   fi
 
   if [ "$DRY_RUN" = true ]; then

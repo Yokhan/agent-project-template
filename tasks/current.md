@@ -1,17 +1,62 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v4.9.2
-status: done
+id: template-release-v4.9.3
+status: active
 updated: 2026-07-19
-readiness: 100
+readiness: 90
 plan: 100
 inventory: 100
-production: 100
-cleanup: 100
+production: 90
+cleanup: 80
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: resolve the reported PersonalAssistant AGENTS and Codex MCP ownership conflicts before any downstream apply
+next: preserve declared downstream AGENTS ownership, prove convergence, publish v4.9.3, then apply the pinned release to PersonalAssistant
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - Release v4.9.3 Downstream AGENTS Ownership Repair
+
+### User Wants
+- Fix the critical template update bug, publish the corrected patch release,
+  and update `PersonalAssistant` without losing its project-specific agent rules.
+
+### Success Means
+- A manifest entry explicitly marked `project` is never silently migrated to
+  template ownership, including legacy `AGENTS.md` entries.
+- A customized downstream `AGENTS.md` remains byte-identical, its manifest hash
+  reflects the preserved file, and the installed template version advances.
+- A second same-tag dry-run reports no update, adoption, migration, or conflict.
+- Newly bootstrapped projects still receive template-owned `AGENTS.md` guidance,
+  and that guidance is truthful in both the source and downstream repositories.
+- The exact published patch tag passes release gates before PersonalAssistant
+  consumes it.
+
+### Goal, Constraints, Approach, Verification, Risk
+- Goal: restore safe convergence so downstream teams can receive new agent tools
+  without sacrificing project-owned context.
+- Constraints: preserve dirty worktrees and manifest compatibility; never rewrite
+  project-owned files; keep source and downstream ownership claims truthful.
+- Approach: remove the legacy forced-ownership exception, refresh preserved
+  project hashes during reconciliation, neutralize the source-only wording, and
+  replace the old migration fixtures with preservation and idempotence fixtures.
+- Verification: focused legacy sync smoke, generated-project ownership check,
+  complete template/release validation, public tag verification, then pinned
+  PersonalAssistant dry-run/apply/repeat-dry-run.
+- Risk/doubt: PersonalAssistant also has an independent unmanaged Codex MCP block
+  conflict; that must be migrated explicitly after the AGENTS fix is released.
+
+### Verification Evidence
+- `scripts/test-template.sh`: 205/205 passed after removing a stale concurrent
+  Git Bash test process that had exhausted Windows fork resources.
+- `scripts/validate-template.sh`: 0 errors, 0 warnings; hooks: 12/12 passed;
+  agent sync: 0 blocking issues and one existing size warning.
+- Ownership fixtures prove preserved legacy and customized `AGENTS.md`, current
+  project hash, version advancement, no sidecar, and clean same-tag repetition.
+- Fresh bootstrap proves `AGENTS.md` remains template-owned and byte-matches the
+  release source; project-owned symlink/reparse paths are rejected before copy.
+- Context-router `npm ci`, test, and build passed with 0 vulnerabilities; the
+  full ten-tool health profile reports every required tool available.
+- Independent systems review found no remaining ownership/convergence blocker
+  after SOT wording, bootstrap assertion, and symlink fixture were added.
 
 ## Active Slice - Release v4.9.2 Safety Repair
 

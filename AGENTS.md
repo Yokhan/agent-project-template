@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.9.2 -->
+<!-- Template Version: 4.9.3 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -263,7 +263,7 @@ AgentOS, when present, is the orchestrator. Codex must not create a competing ta
 
 If AgentOS is absent, the parent Codex thread is the orchestrator: it owns sequencing, consolidation, edits, verification, and release notes.
 
-Template releases belong to this repository. Downstream projects and AgentOS workspaces consume released template versions through git tags and `scripts/sync-template.sh --from-git --ref <tag>`.
+Template releases belong to the canonical `agent-project-template` source repository. Downstream projects and AgentOS workspaces consume released template versions through git tags and `scripts/sync-template.sh --from-git --ref <tag>`; they must not treat themselves as the release source.
 
 ## Code Conventions (Critical Subset — Inline)
 
@@ -378,4 +378,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.9.2
+4.9.3

@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.9.2-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.9.3-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -21,12 +21,12 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-Release snapshot: `v4.9.2`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v4.9.3`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
 
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v4.9.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -37,18 +37,18 @@ Update an existing generated project from the verified pinned tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.2 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.2
+bash scripts/sync-template.sh --from-git --ref v4.9.3 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.3
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
-The commands below target release snapshot `v4.9.2`; verify its GitHub Release before use.
+The commands below target release snapshot `v4.9.3`; verify its GitHub Release before use.
 
 ```bash
-git clone --branch v4.9.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -66,7 +66,7 @@ project MCP servers.
 
 **Windows**: run `setup.bat`. It detects the Windows environment and prepares the context-router with native `npm.cmd`; do not substitute Unix bootstrap commands in PowerShell.
 
-`AGENTS.md`, `README.md`, and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `docs/`, and `project-*` overlays.
+Newly bootstrapped `AGENTS.md`, `README.md`, and `SETUP_GUIDE.md` are template-owned. If an existing manifest explicitly marks `AGENTS.md` as `project`, sync preserves that declared ownership and never overwrites the file. Put new project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `docs/`, and `project-*` overlays.
 
 Optional Spec Kit setup is shipped but inert by default:
 
@@ -113,10 +113,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.2 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.3 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.2
+bash scripts/sync-template.sh --from-git --ref v4.9.3
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -144,11 +144,11 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.9.2 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.2
+bash scripts/sync-template.sh --from-git --ref v4.9.3 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.3
 ```
 
-**What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
+**What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
 **What's preserved**: Your code (`src/`), project docs, `brain/`, `tasks/`, `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and all `project-*` files
 **Convention**: Template files are read-only baseline. Project customizations go to `project-*` prefixed files (e.g., `rules/project-no-mock-db.md`).
 
@@ -344,6 +344,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.9.3** | Patch release: preserves every explicitly project-owned manifest entry, fixes the legacy `AGENTS.md` convergence loop, refreshes preserved project hashes without overwriting content, and makes root release ownership truthful in source and downstream projects |
 | **4.9.2** | Patch release: makes legacy 4.7 ownership migration deterministic, rejects traversal/symlink write targets, restores incomplete project ownership, keeps generated AgentOS/orchestrator workspaces clean, redacts MCP secrets and argv payloads, and isolates pinned release publication credentials from third-party installation; supersedes the failed, unpublished v4.9.1 tag |
 | **4.9.0** | Minor release: makes the ten-tool code-intelligence workflow installable and health-checked as one pinned stack; adds a parser-backed graph, bounded zero-index fallback, task routing, safe Codex MCP merge, trusted-project guidance, Codex 0.125.0 config smoke, and AgentOS ownership regression coverage |
 | **4.8.0** | Minor release: adds an evidence-backed Change Strategy Gate that evaluates architecture fitness during reading, compares repair/replacement/retirement destinations and transitions, binds decisions to structured triggers, derives compatibility checks from protected contracts, blocks fake alternatives and malformed CLI input, and verifies the behavior through setup and sync payload tests |

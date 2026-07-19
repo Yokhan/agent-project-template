@@ -24,11 +24,10 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Benchmark released `v4.9.0` on representative downstream projects before broad
-rollout. Measure answer recall first, then token use, tool calls, latency, index
-time, peak memory, and disk. Keep Engram for decisions, codebase-memory as the
-only persistent code graph, and the remaining tools task-routed and on-demand.
-Do not claim realized savings until the benchmark gate passes.
+Repair the legacy downstream `AGENTS.md` ownership contract, publish the exact
+validated `v4.9.3` patch, and use that pinned release to update PersonalAssistant
+without overwriting its project-specific guidance. Prove convergence with a
+second same-tag dry-run before resuming broader downstream benchmarks.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
