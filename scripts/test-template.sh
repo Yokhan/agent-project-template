@@ -295,6 +295,7 @@ requireText("publish verifies bundle checksum", publish, /sha256sum -c SHA256SUM
 requireText("publish verifies remote tag", publish, /gh api .*commits\/\$RELEASE_TAG/);
 requireText("publish refuses replacement", publish, /already exists; refusing to replace/);
 requireText("publish verifies tag on release", publish, /gh release create[\s\S]*--verify-tag/);
+requireText("publish binds repository without checkout", publish, /GH_REPO:\s*\$\{\{ github\.repository \}\}/);
 
 if (/npm install|bootstrap-mcp\.sh --install|code-intelligence-tools\.js install/.test(publish)) {
   throw new Error("Publish job must not install or execute third-party tools");

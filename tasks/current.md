@@ -8,7 +8,7 @@ inventory: 100
 production: 90
 cleanup: 90
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: validate the cross-platform fixes, publish exact tag v4.9.2, then run a pinned PersonalAssistant dry-run
+next: retry v4.9.2 publication with explicit GH_REPO, then run a pinned PersonalAssistant dry-run
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -78,6 +78,10 @@ next: validate the cross-platform fixes, publish exact tag v4.9.2, then run a pi
   merger itself, with target and parent regression coverage.
 - The `v4.9.1` tag failed Linux/Windows validation before package or publish;
   no GitHub Release was created and the tag remains immutable as failure evidence.
+- The first `v4.9.2` run passed validation, ten-tool health checks, packaging,
+  checksum, and remote-tag verification; publish stopped because the no-checkout
+  job lacked explicit `GH_REPO`. The retry uses the fixed workflow against the
+  same immutable tag and rebuilds the verified artifact from scratch.
 - Remaining gate: GitHub validation and isolated release workflows for exact tag
   `v4.9.2`, followed by a read-only pinned PersonalAssistant preview.
 
