@@ -1082,8 +1082,16 @@ if is_template_source_repo; then
 
     printf '{"template_version":"4.7.0","files":{"README.md":{"category":"project","hash":"deadbeef"}}}\n' > "$final_project/.template-manifest.json"
     final_manifest="$(_get_hash "$final_project/.template-manifest.json")"
-    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$final_project" >> "$output" 2>&1; then return 1; fi
-    grep -q "Symlink/reparse manifest path is not allowed: README.md" "$output" || return 1
+    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$final_project" >> "$output" 2>&1; then
+      echo "path-safety failure: project-owned final symlink was accepted"
+      tail -20 "$output"
+      return 1
+    fi
+    if ! grep -q "Symlink/reparse manifest path is not allowed: README.md" "$output"; then
+      echo "path-safety failure: project-owned final rejection reason missing"
+      tail -20 "$output"
+      return 1
+    fi
     [ "$final_hash" = "$(_get_hash "$final_external")" ] || return 1
     [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: project-owned final symlink"
