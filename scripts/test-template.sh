@@ -1080,6 +1080,14 @@ if is_template_source_repo; then
     [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: managed final symlink"
 
+    printf '{"template_version":"4.7.0","files":{"README.md":{"category":"project","hash":"deadbeef"}}}\n' > "$final_project/.template-manifest.json"
+    final_manifest="$(_get_hash "$final_project/.template-manifest.json")"
+    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$final_project" >> "$output" 2>&1; then return 1; fi
+    grep -q "Symlink/reparse manifest path is not allowed: README.md" "$output" || return 1
+    [ "$final_hash" = "$(_get_hash "$final_external")" ] || return 1
+    [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: project-owned final symlink"
+
     local parent_project="$root/parent" parent_external="$root/parent-external"
     mkdir -p "$parent_project" "$parent_external"
     ln -s "$parent_external" "$parent_project/scripts" || return 1
@@ -1100,22 +1108,6 @@ if is_template_source_repo; then
     [ "$conflict_hash" = "$(_get_hash "$conflict_external")" ] || return 1
     [ "$conflict_manifest" = "$(_get_hash "$conflict_project/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: conflict sidecar symlink"
-
-    local project_agents="$root/project-agents" project_agents_external="$root/project-agents-external"
-    mkdir -p "$project_agents"
-    printf '%s\n' 'external project agents sentinel' > "$project_agents_external"
-    ln -s "$project_agents_external" "$project_agents/AGENTS.md" || return 1
-    printf '{"template_version":"4.7.0","files":{"AGENTS.md":{"category":"project","hash":"deadbeef"}}}\n' > "$project_agents/.template-manifest.json"
-    local project_agents_hash="$(_get_hash "$project_agents_external")" project_agents_manifest="$(_get_hash "$project_agents/.template-manifest.json")"
-    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project_agents" >> "$output" 2>&1; then return 1; fi
-    if ! grep -q "Symlink/reparse manifest path is not allowed: AGENTS.md" "$output"; then
-      echo "path-safety failure: project-owned AGENTS rejection reason missing"
-      tail -20 "$output"
-      return 1
-    fi
-    [ "$project_agents_hash" = "$(_get_hash "$project_agents_external")" ] || return 1
-    [ "$project_agents_manifest" = "$(_get_hash "$project_agents/.template-manifest.json")" ] || return 1
-    echo "path-safety stage passed: project-owned AGENTS symlink"
 
     local config_project="$root/config-target" config_external="$root/config-target-external"
     mkdir -p "$config_project/.codex"
