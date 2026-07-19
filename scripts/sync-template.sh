@@ -228,26 +228,24 @@ if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
   fi
 fi
 
-manifest_trackable_count() {
+manifest_entry_count() {
   _node -e "
 const fs=require('fs');
 const m=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
-let count=0;
-for(const[,info]of Object.entries(m.files||{})){
-  if((info.category||'template')!=='project')count++;
-}
-console.log(count);
+console.log(Object.keys(m.files||{}).length);
 " "$MANIFEST" 2>/dev/null
 }
 
 if [ -f "$MANIFEST" ]; then
-  trackable_count="$(manifest_trackable_count || echo parse_error)"
-  if [ "$trackable_count" = "parse_error" ]; then
+  entry_count="$(manifest_entry_count || echo parse_error)"
+  if [ "$entry_count" = "parse_error" ]; then
     echo "ERROR: Failed to parse $MANIFEST"
     exit 1
   fi
 
-  if [ "$trackable_count" = "0" ]; then
+  # Explicit project-owned entries are valid registry state. Only a literally
+  # empty files object may enter the legacy manifest rebuild path.
+  if [ "$entry_count" = "0" ]; then
     if [ "$DRY_RUN" = true ]; then
       EMPTY_TRACKABLE_MANIFEST=true
       echo "WARNING: Manifest has no trackable files. Dry-run will report template additions without changing files."

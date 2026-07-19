@@ -1080,17 +1080,14 @@ if is_template_source_repo; then
     [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: managed final symlink"
 
-    echo "path-safety stage preparing: project-owned final manifest"
     if ! printf '{"template_version":"4.7.0","files":{"README.md":{"category":"project","hash":"deadbeef"}}}\n' > "$final_project/.template-manifest.json"; then
       echo "path-safety failure: project-owned manifest write failed"
       return 1
     fi
-    echo "path-safety stage preparing: project-owned final manifest hash"
     if ! final_manifest="$(_get_hash "$final_project/.template-manifest.json")"; then
       echo "path-safety failure: project-owned manifest hash failed"
       return 1
     fi
-    echo "path-safety stage preparing: project-owned final sync"
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$final_project" >> "$output" 2>&1; then
       echo "path-safety failure: project-owned final symlink was accepted"
       tail -20 "$output"

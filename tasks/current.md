@@ -60,6 +60,10 @@ next: validate v4.9.4 on Linux and Windows, publish it, then apply the pinned re
 - The immutable `v4.9.3` tag failed the Linux path-safety fixture before package
   or publish; no GitHub Release exists. `v4.9.4` carries the same product fix
   plus cross-platform fixture diagnostics and must pass branch CI before tagging.
+- Linux diagnosis found that a manifest containing only `project` entries was
+  incorrectly treated as empty and rebuilt before preflight. `v4.9.4` now
+  reserves that rebuild path for a literal `files: {}` manifest, preserving the
+  declared ownership registry before safety validation.
 
 ## Active Slice - Release v4.9.2 Safety Repair
 
