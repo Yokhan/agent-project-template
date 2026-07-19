@@ -770,6 +770,8 @@ if is_template_source_repo; then
   SYNC_MIGRATION_FIXTURE="$TEMPLATE_DIR/template-migration-fixture-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_PROJECT="$TEMPLATE_DIR/template-empty-manifest-smoke-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_OUTPUT="$SYNC_EMPTY_MANIFEST_PROJECT.out"
+  SYNC_PROJECT_ONLY_MANIFEST_PROJECT="$TEMPLATE_DIR/template-project-only-manifest-smoke-$RANDOM-$$"
+  SYNC_PROJECT_ONLY_MANIFEST_OUTPUT="$SYNC_PROJECT_ONLY_MANIFEST_PROJECT.out"
   SYNC_SOURCE_ONLY_PROJECT="$TEMPLATE_DIR/template-source-only-sync-smoke-$RANDOM-$$"
   SYNC_SOURCE_ONLY_OUTPUT="$SYNC_SOURCE_ONLY_PROJECT.out"
   SYNC_BOOTSTRAP_DRY_RUN_PROJECT="$TEMPLATE_DIR/template-bootstrap-dry-run-smoke-$RANDOM-$$"
@@ -793,6 +795,7 @@ if is_template_source_repo; then
     for path in \
       "$SYNC_TEMPLATE_FIXTURE" "$SYNC_MIGRATION_FIXTURE" \
       "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
+      "$SYNC_PROJECT_ONLY_MANIFEST_PROJECT" "$SYNC_PROJECT_ONLY_MANIFEST_OUTPUT" "$SYNC_PROJECT_ONLY_MANIFEST_OUTPUT.apply" "$SYNC_PROJECT_ONLY_MANIFEST_OUTPUT.repeat" \
       "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply" \
       "$SYNC_BOOTSTRAP_DRY_RUN_PROJECT" "$SYNC_BOOTSTRAP_DRY_RUN_OUTPUT" \
       "$SYNC_BOOTSTRAP_OWNERSHIP_PROJECT" "$SYNC_BOOTSTRAP_OWNERSHIP_OUTPUT" \
@@ -904,8 +907,24 @@ if is_template_source_repo; then
       '  "created": "2000-01-01",' \
       '  "updated": "2000-01-01",' \
       '  "template_remote": "",' \
+      '  "files": {}' \
+      '}' > "$project/.template-manifest.json"
+  }
+  write_project_only_manifest() {
+    local project="$1"
+    local claude_hash
+
+    mkdir -p "$project"
+    printf '%s\n' '# Preserved project Claude' > "$project/CLAUDE.md"
+    claude_hash="$(_get_hash "$project/CLAUDE.md")"
+    printf '%s\n' \
+      '{' \
+      '  "template_version": "4.7.0",' \
+      '  "created": "2000-01-01",' \
+      '  "updated": "2000-01-01",' \
+      '  "template_remote": "",' \
       '  "files": {' \
-      '    "CLAUDE.md": {"category": "project", "hash": "fixture"}' \
+      "    \"CLAUDE.md\": {\"category\": \"project\", \"hash\": \"$claude_hash\"}" \
       '  }' \
       '}' > "$project/.template-manifest.json"
   }
@@ -1295,6 +1314,30 @@ if is_template_source_repo; then
     (cd "$project" && node scripts/test-subagent-trace.js >/dev/null) || return 1
     [ ! -e "$project/SYNC_PATH_INJECTION" ] || return 1
   }
+  run_project_only_manifest_sync_smoke() {
+    local project="$1"
+    local output="$2"
+    local claude_before manifest_before
+
+    write_project_only_manifest "$project" || return 1
+    claude_before="$(_get_hash "$project/CLAUDE.md")"
+    manifest_before="$(_get_hash "$project/.template-manifest.json")"
+
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output" 2>&1 || return 1
+    ! grep -q "Manifest has no trackable files" "$output" || return 1
+    grep -q "WOULD ADD: AGENTS.md" "$output" || return 1
+    [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
+    [ "$manifest_before" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
+
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" > "$output.apply" 2>&1 || return 1
+    [ "$claude_before" = "$(_get_hash "$project/CLAUDE.md")" ] || return 1
+    node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=require(p+"/.template-manifest.json"),h=crypto.createHash("sha256").update(fs.readFileSync(p+"/CLAUDE.md")).digest("hex");if(m.template_version!=="9.9.9"||m.files["CLAUDE.md"]?.category!=="project"||m.files["CLAUDE.md"].hash!==h)process.exit(1)' "$project" || return 1
+
+    manifest_before="$(_get_hash "$project/.template-manifest.json")"
+    bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project" --dry-run > "$output.repeat" 2>&1 || return 1
+    ! grep -Eq "^  (WOULD (UPDATE|ADD|ADOPT|MIGRATE)|CONFLICT:)" "$output.repeat" || return 1
+    [ "$manifest_before" = "$(_get_hash "$project/.template-manifest.json")" ] || return 1
+  }
   run_source_only_sync_smoke() {
     local project="$1"
     local output="$2"
@@ -1415,6 +1458,7 @@ if is_template_source_repo; then
   check "sync-template preserves and converges customized legacy 4.7 AGENTS ownership" run_legacy_47_custom_agents_sync_smoke "$SYNC_LEGACY_CONFLICT_PROJECT" "$SYNC_LEGACY_CONFLICT_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
   check "sync-template rejects traversal and symlink write targets" run_sync_path_safety_smoke "$SYNC_PATH_SAFETY_ROOT" "$SYNC_PATH_SAFETY_OUTPUT" "$SYNC_TRAVERSAL_SOURCE"
   check "sync-template converges new-path adoption, conflicts, project ownership, and hybrid hashes" run_new_path_convergence_smoke "$SYNC_NEW_PATH_ROOT" "$SYNC_NEW_PATH_OUTPUT" "$SYNC_MIGRATION_FIXTURE"
+  check "sync-template preserves a project-only manifest without rebuilding ownership" run_project_only_manifest_sync_smoke "$SYNC_PROJECT_ONLY_MANIFEST_PROJECT" "$SYNC_PROJECT_ONLY_MANIFEST_OUTPUT"
   check "sync-template dry-run handles empty trackable manifest" run_empty_manifest_sync_smoke "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT"
   check "sync-template keeps source-only files out of generated projects" run_source_only_sync_smoke "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT"
   check "sync-template bootstrap dry-run leaves legacy project unchanged" run_bootstrap_dry_run_smoke "$SYNC_TEMPLATE_FIXTURE" "$SYNC_BOOTSTRAP_DRY_RUN_PROJECT" "$SYNC_BOOTSTRAP_DRY_RUN_OUTPUT"
