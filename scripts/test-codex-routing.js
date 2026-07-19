@@ -4,7 +4,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const { formatSummary, getRoute } = require("./codex-route-task.js");
+const { formatSummary, getRoute: getProductionRoute } = require("./codex-route-task.js");
 const { runRouteCli } = require("./lib/codex-route-cli.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } =
   require("./lib/codex-discovery-reroute.js");
@@ -12,6 +12,12 @@ const { AGENT_POLICY, getAgentProfiles } = require("./codex-agent-policy.js");
 const { runRouteCasesA } = require("./codex-routing-cases-a.js");
 const { runRouteCasesB } = require("./codex-routing-cases-b.js");
 const { makeArchitectureDecision, makeDecision } = require("./test-change-strategy.js");
+
+const BASE_ROUTE_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), "codex-route-base-"));
+
+function getRoute(task, options = {}) {
+  return getProductionRoute(task, { cwd: BASE_ROUTE_ROOT, ...options });
+}
 
 function assertIncludes(values, expected, message) {
   assert(
@@ -391,4 +397,8 @@ function main() {
   console.log("Codex routing smoke passed");
 }
 
-main();
+try {
+  main();
+} finally {
+  fs.rmSync(BASE_ROUTE_ROOT, { recursive: true, force: true });
+}

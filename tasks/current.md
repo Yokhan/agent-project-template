@@ -1,5 +1,5 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v4.9.4
+id: template-release-v4.9.5
 status: active
 updated: 2026-07-19
 readiness: 90
@@ -8,12 +8,12 @@ inventory: 100
 production: 90
 cleanup: 80
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: validate v4.9.4 on Linux and Windows, publish it, then apply the pinned release to PersonalAssistant
+next: validate v4.9.5 on Linux and Windows, publish it, then apply the pinned release to PersonalAssistant
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-## Active Slice - Release v4.9.4 Downstream AGENTS Ownership Repair
+## Active Slice - Release v4.9.5 Downstream AGENTS Ownership and Routing Test Repair
 
 ### User Wants
 - Fix the critical template update bug, publish the corrected patch release,
@@ -64,6 +64,11 @@ next: validate v4.9.4 on Linux and Windows, publish it, then apply the pinned re
   incorrectly treated as empty and rebuilt before preflight. `v4.9.4` now
   reserves that rebuild path for a literal `files: {}` manifest, preserving the
   declared ownership registry before safety validation.
+- PersonalAssistant exposed a second systemic validator defect after the `v4.9.4`
+  rollout: baseline routing tests inherited live downstream Spec Kit artifacts
+  from `process.cwd()`, so ordinary bugfix cases falsely gained strategic-review
+  requirements. `v4.9.5` runs baseline cases in an empty temporary project and
+  keeps orchestrator/artifact behavior behind explicit fixtures.
 
 ## Active Slice - Release v4.9.2 Safety Repair
 

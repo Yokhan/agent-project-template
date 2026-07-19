@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 4.9.4 -->
+<!-- Template Version: 4.9.5 -->
 
 > This file is for OpenAI Codex. Claude Code reads `CLAUDE.md` instead.
 > Both agents share rules in `.claude/library/` — single source of truth.
@@ -378,4 +378,4 @@ Final reports about completed work must follow the client-facing report rules in
 After compaction: re-read `tasks/current.md` and `AGENTS.md` to recover context.
 
 ## Template Version
-4.9.4
+4.9.5

@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.9.4-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.9.5-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -21,12 +21,12 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-Release snapshot: `v4.9.4`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v4.9.5`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
 
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v4.9.4 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -37,18 +37,18 @@ Update an existing generated project from the verified pinned tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.4 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.4
+bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.5
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
-The commands below target release snapshot `v4.9.4`; verify its GitHub Release before use.
+The commands below target release snapshot `v4.9.5`; verify its GitHub Release before use.
 
 ```bash
-git clone --branch v4.9.4 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -113,10 +113,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.4 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.4
+bash scripts/sync-template.sh --from-git --ref v4.9.5
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -144,8 +144,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.9.4 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.4
+bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.5
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -344,6 +344,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.9.5** | Patch release: makes routing smoke tests independent from live downstream Spec Kit and AgentOS artifacts, so mature projects validate the same route contract as the source template instead of receiving false strategic-review failures |
 | **4.9.4** | Patch release: preserves every explicitly project-owned manifest entry, fixes the legacy `AGENTS.md` convergence loop, refreshes preserved project hashes without overwriting content, and makes root release ownership truthful in source and downstream projects; supersedes the failed, unpublished v4.9.3 tag |
 | **4.9.3** | Failed validation tag: the Linux path-safety fixture stopped before publication; no GitHub Release was created |
 | **4.9.2** | Patch release: makes legacy 4.7 ownership migration deterministic, rejects traversal/symlink write targets, restores incomplete project ownership, keeps generated AgentOS/orchestrator workspaces clean, redacts MCP secrets and argv payloads, and isolates pinned release publication credentials from third-party installation; supersedes the failed, unpublished v4.9.1 tag |

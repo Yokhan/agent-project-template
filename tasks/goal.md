@@ -24,10 +24,11 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Repair the legacy downstream `AGENTS.md` ownership contract, publish the exact
-validated `v4.9.4` patch, and use that pinned release to update PersonalAssistant
-without overwriting its project-specific guidance. Prove convergence with a
-second same-tag dry-run before resuming broader downstream benchmarks.
+Repair the legacy downstream `AGENTS.md` ownership contract and the environment-
+dependent routing smoke, publish the exact validated `v4.9.5` patch, and use that
+pinned release to update PersonalAssistant without overwriting its project-
+specific guidance. Prove convergence with a second same-tag dry-run before
+resuming broader downstream benchmarks.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
