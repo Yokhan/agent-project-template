@@ -268,7 +268,7 @@ NODE
 validate_release_workflow_boundary() {
   node <<'NODE'
 const fs = require("fs");
-const workflow = fs.readFileSync(".github/workflows/release-template.yml", "utf8");
+const workflow = fs.readFileSync(".github/workflows/release-template.yml", "utf8").replace(/\r\n/g, "\n");
 const section = (name, next) => {
   const start = workflow.indexOf(`  ${name}:\n`);
   const end = next ? workflow.indexOf(`  ${next}:\n`, start + 1) : workflow.length;

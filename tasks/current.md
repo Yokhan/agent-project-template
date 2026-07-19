@@ -1,5 +1,5 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v4.9.1
+id: template-release-v4.9.2
 status: active
 updated: 2026-07-19
 readiness: 95
@@ -8,12 +8,12 @@ inventory: 100
 production: 90
 cleanup: 90
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: commit the verified patch, publish exact tag v4.9.1, then run a pinned PersonalAssistant dry-run
+next: validate the cross-platform fixes, publish exact tag v4.9.2, then run a pinned PersonalAssistant dry-run
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-## Active Slice - Release v4.9.1 Safety Repair
+## Active Slice - Release v4.9.2 Safety Repair
 
 ### User Wants
 - Fix the release blockers found while previewing `v4.9.0` against the real
@@ -76,12 +76,14 @@ next: commit the verified patch, publish exact tag v4.9.1, then run a pinned Per
 - Independent systems and test reviews report no P0/P1. Security review's final
   `.codex/config.toml` symlink bypass was fixed in both sync preflight and the
   merger itself, with target and parent regression coverage.
+- The `v4.9.1` tag failed Linux/Windows validation before package or publish;
+  no GitHub Release was created and the tag remains immutable as failure evidence.
 - Remaining gate: GitHub validation and isolated release workflows for exact tag
-  `v4.9.1`, followed by a read-only pinned PersonalAssistant preview.
+  `v4.9.2`, followed by a read-only pinned PersonalAssistant preview.
 
 ### Rollback And Replan Trigger
-- Source changes remain one revertable patch-release commit; v4.9.0 stays
-  immutable and can be marked superseded only after v4.9.1 is live.
+- Source changes remain revertable patch-release commits; v4.9.0 and the failed
+  v4.9.1 tag stay immutable, and only a green v4.9.2 Release is rollout-safe.
 - Replan if a legacy fixture requires overwriting a project-owned file, if the
   manifest format must break compatibility, or if package/publish isolation
   cannot verify the exact same archive and tag commit.

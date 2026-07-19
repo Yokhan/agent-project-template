@@ -43,7 +43,7 @@
 
 ## Current State
 - Goal: Ship ten pinned code-intelligence tools as one task-routed Codex workflow without a second persistent graph.
-- Status: `v4.9.1` release snapshot under validation; publication must be verified from the authoritative GitHub Release and workflow state.
+- Status: `v4.9.2` release snapshot under validation; publication must be verified from the authoritative GitHub Release and workflow state.
 - Next: Benchmark the graph workflow on representative downstream projects before claiming measured token savings or applying the release broadly.
 
 ## Last Scan
