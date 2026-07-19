@@ -1115,9 +1115,21 @@ if is_template_source_repo; then
     ln -s "$config_external" "$config_project/.codex/config.toml" || return 1
     printf '{"template_version":"4.7.0","files":{".codex/config.toml":{"category":"project","hash":"deadbeef"}}}\n' > "$config_project/.template-manifest.json"
     local config_hash="$(_get_hash "$config_external")" config_manifest="$(_get_hash "$config_project/.template-manifest.json")"
-    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_project" >> "$output" 2>&1; then return 1; fi
-    [ "$config_hash" = "$(_get_hash "$config_external")" ] || return 1
-    [ "$config_manifest" = "$(_get_hash "$config_project/.template-manifest.json")" ] || return 1
+    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_project" >> "$output" 2>&1; then
+      echo "path-safety failure: legacy project config symlink was accepted"
+      tail -20 "$output"
+      return 1
+    fi
+    if [ "$config_hash" != "$(_get_hash "$config_external")" ]; then
+      echo "path-safety failure: legacy project config external target changed"
+      tail -20 "$output"
+      return 1
+    fi
+    if [ "$config_manifest" != "$(_get_hash "$config_project/.template-manifest.json")" ]; then
+      echo "path-safety failure: legacy project config manifest changed"
+      tail -20 "$output"
+      return 1
+    fi
     echo "path-safety stage passed: legacy project config symlink"
 
     local config_parent_project="$root/config-parent" config_parent_external="$root/config-parent-external"
@@ -1126,9 +1138,21 @@ if is_template_source_repo; then
     ln -s "$config_parent_external" "$config_parent_project/.codex" || return 1
     printf '{"template_version":"4.7.0","files":{".codex/config.toml":{"category":"project","hash":"deadbeef"}}}\n' > "$config_parent_project/.template-manifest.json"
     local config_parent_hash="$(_get_hash "$config_parent_external/config.toml")" config_parent_manifest="$(_get_hash "$config_parent_project/.template-manifest.json")"
-    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_parent_project" >> "$output" 2>&1; then return 1; fi
-    [ "$config_parent_hash" = "$(_get_hash "$config_parent_external/config.toml")" ] || return 1
-    [ "$config_parent_manifest" = "$(_get_hash "$config_parent_project/.template-manifest.json")" ] || return 1
+    if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_parent_project" >> "$output" 2>&1; then
+      echo "path-safety failure: legacy project config parent symlink was accepted"
+      tail -20 "$output"
+      return 1
+    fi
+    if [ "$config_parent_hash" != "$(_get_hash "$config_parent_external/config.toml")" ]; then
+      echo "path-safety failure: legacy project config parent external target changed"
+      tail -20 "$output"
+      return 1
+    fi
+    if [ "$config_parent_manifest" != "$(_get_hash "$config_parent_project/.template-manifest.json")" ]; then
+      echo "path-safety failure: legacy project config parent manifest changed"
+      tail -20 "$output"
+      return 1
+    fi
     echo "path-safety stage passed: legacy project config parent symlink"
   }
   run_new_path_convergence_smoke() {
