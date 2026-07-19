@@ -56,7 +56,7 @@ powershell -NoProfile -Command ^
   "$projectRoot = (Resolve-Path $env:RAW_PROJECT_DIR).Path;" ^
   "$payloadPrefixes = @('.agents/','.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
   "$payloadFiles = @('.editorconfig','.env.example','.gitattributes','.gitignore','.mcp.json','AGENTS.md','CLAUDE.md','CONTRIBUTING.md','ecosystem.md','Makefile','PROJECT_SPEC.md','README.md','SECURITY.md','SETUP_GUIDE.md','upgrade-project.sh');" ^
-  "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','tasks/toolchain-discovery.json','tasks/toolchain-change-strategy.json','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
+  "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','tasks/toolchain-discovery.json','tasks/toolchain-change-strategy.json','tasks/change-strategy.json','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
   "$starterOverrides = @('tasks/current.md','tasks/goal.md','tasks/.research-cache.md','tasks/lessons.md');" ^
   "$candidateMap = @{};" ^
   "foreach ($rel in (& git -C $templateRoot ls-files)) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^

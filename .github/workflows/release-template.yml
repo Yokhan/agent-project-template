@@ -7,17 +7,21 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v3.8.0"
+        description: "Existing tag to publish, for example v4.9.1"
         required: true
         type: string
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
-  release:
-    name: Validate And Publish Release
+  validate:
+    name: Validate Release Candidate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      commit: ${{ steps.tag.outputs.commit }}
     defaults:
       run:
         shell: bash
@@ -88,40 +92,103 @@ jobs:
           grep -q 'engram' codex-mcp-list.txt
           grep -q 'codebase-memory-mcp' codex-mcp-list.txt
 
-      - name: Build release archive
+  package:
+    name: Package Verified Tag
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      archive: ${{ steps.bundle.outputs.archive }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+
+      - name: Build immutable release bundle
+        id: bundle
         env:
-          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
-          RELEASE_COMMIT: ${{ steps.tag.outputs.commit }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
         run: |
           tag="$RELEASE_TAG"
           archive="agent-project-template-${tag}.tar.gz"
+          tag_commit="$(git rev-parse "refs/tags/$tag^{commit}")"
+          head_commit="$(git rev-parse HEAD)"
+          [ "$tag_commit" = "$RELEASE_COMMIT" ] || { echo "Tag moved from $RELEASE_COMMIT to $tag_commit"; exit 1; }
+          [ "$head_commit" = "$RELEASE_COMMIT" ] || { echo "Package checkout $head_commit does not match $RELEASE_COMMIT"; exit 1; }
           git archive --format=tar.gz --prefix="agent-project-template-${tag}/" -o "$archive" "$RELEASE_COMMIT"
+          sha256sum "$archive" > SHA256SUMS
+          node -e 'const fs=require("fs"); const [tag,commit,archive]=process.argv.slice(1); const sha=fs.readFileSync("SHA256SUMS","utf8").trim().split(/\s+/)[0]; fs.writeFileSync("release-metadata.json",JSON.stringify({tag,commit,archive,sha256:sha},null,2)+"\n");' "$tag" "$RELEASE_COMMIT" "$archive"
           {
             echo "# Agent Project Template ${tag}"
             echo ""
             echo "Update downstream projects with:"
             echo ""
-            echo '```bash'
+            echo '~~~bash'
             echo "bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run"
             echo "bash scripts/sync-template.sh --from-git --ref ${tag}"
-            echo '```'
+            echo '~~~'
             echo ""
-            echo "AgentOS may orchestrate rollout order, but projects consume this template through the same sync command."
+            echo "AgentOS may orchestrate rollout order, but projects consume this template through the same pinned sync contract."
           } > release-notes.md
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Upload verified release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-bundle-${{ needs.validate.outputs.tag }}
+          path: |
+            ${{ steps.bundle.outputs.archive }}
+            SHA256SUMS
+            release-metadata.json
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish Verified Bundle
+    needs: [validate, package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download verified release bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-bundle-${{ needs.validate.outputs.tag }}
+
+      - name: Verify bundle and remote tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+          RELEASE_ARCHIVE: ${{ needs.package.outputs.archive }}
+        run: |
+          sha256sum -c SHA256SUMS
+          node -e 'const fs=require("fs"); const [tag,commit,archive]=process.argv.slice(1); const m=JSON.parse(fs.readFileSync("release-metadata.json","utf8")); if(m.tag!==tag||m.commit!==commit||m.archive!==archive)throw new Error("Release metadata mismatch");' "$RELEASE_TAG" "$RELEASE_COMMIT" "$RELEASE_ARCHIVE"
+          remote_commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq .sha)"
+          [ "$remote_commit" = "$RELEASE_COMMIT" ] || { echo "Remote tag resolves to $remote_commit, expected $RELEASE_COMMIT"; exit 1; }
 
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
-          RELEASE_COMMIT: ${{ steps.tag.outputs.commit }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_ARCHIVE: ${{ needs.package.outputs.archive }}
         run: |
-          tag="$RELEASE_TAG"
-          archive="agent-project-template-${tag}.tar.gz"
-          current_tag_commit="$(git rev-parse "refs/tags/$tag^{commit}")"
-          [ "$current_tag_commit" = "$RELEASE_COMMIT" ] || { echo "Tag moved from $RELEASE_COMMIT to $current_tag_commit"; exit 1; }
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists; refusing to replace a published asset."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; refusing to replace a published asset."
             exit 1
-          else
-            gh release create "$tag" "$archive" --title "Agent Project Template ${tag}" --notes-file release-notes.md
           fi
+          gh release create "$RELEASE_TAG" "$RELEASE_ARCHIVE" SHA256SUMS release-metadata.json \
+            --verify-tag \
+            --title "Agent Project Template ${RELEASE_TAG}" \
+            --notes-file release-notes.md

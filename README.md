@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.9.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.9.1-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,38 +15,40 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.9.0`.
+3. Explicit user/AgentOS tag wins. Only when no tag was selected, resolve the current stable release at <https://github.com/Yokhan/agent-project-template/releases/latest>.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-Create a new project from the stable tag:
+Release snapshot: `v4.9.1`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+
+Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
 
-Update an existing generated project from the stable tag:
+Update an existing generated project from the verified pinned tag:
 
 ```bash
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
-The commands below target stable release `v4.9.0`.
+The commands below target release snapshot `v4.9.1`; verify its GitHub Release before use.
 
 ```bash
-git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -64,7 +66,7 @@ project MCP servers.
 
 **Windows**: run `setup.bat`. It detects the Windows environment and prepares the context-router with native `npm.cmd`; do not substitute Unix bootstrap commands in PowerShell.
 
-`README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `AGENTS.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
+`AGENTS.md`, `README.md`, and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `docs/`, and `project-*` overlays.
 
 Optional Spec Kit setup is shipped but inert by default:
 
@@ -111,10 +113,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -142,8 +144,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -342,6 +344,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.9.1** | Patch release: makes legacy 4.7 ownership migration deterministic, rejects traversal/symlink write targets, restores incomplete project ownership, keeps generated AgentOS/orchestrator workspaces clean, redacts MCP secrets and argv payloads, and isolates pinned release publication credentials from third-party installation |
 | **4.9.0** | Minor release: makes the ten-tool code-intelligence workflow installable and health-checked as one pinned stack; adds a parser-backed graph, bounded zero-index fallback, task routing, safe Codex MCP merge, trusted-project guidance, Codex 0.125.0 config smoke, and AgentOS ownership regression coverage |
 | **4.8.0** | Minor release: adds an evidence-backed Change Strategy Gate that evaluates architecture fitness during reading, compares repair/replacement/retirement destinations and transitions, binds decisions to structured triggers, derives compatibility checks from protected contracts, blocks fake alternatives and malformed CLI input, and verifies the behavior through setup and sync payload tests |
 | **4.7.0** | Minor release: adds purpose-first literary, marketing, informational, communication, and technical-writing workflows; Russian editorial profiles and provenance; authority-isolated reference routing; and a fail-closed external-tool truth contract that keeps paid providers such as Glavred explicitly not configured and not run until real adapter evidence exists |

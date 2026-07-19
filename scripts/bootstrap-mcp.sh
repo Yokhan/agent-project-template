@@ -600,20 +600,29 @@ DISABLED+=("codegraphcontext")
 echo ""
 echo "--- Merge (.mcp.json for Claude Code) ---"
 
-EXISTING_JSON="{}"
+EXISTING_JSON_PATH=""
 if [ -f ".mcp.json" ]; then
-  EXISTING_JSON=$(cat .mcp.json)
+  EXISTING_JSON_PATH=".mcp.json"
   echo "Found existing .mcp.json — merging (existing servers preserved)"
 else
   echo "No existing .mcp.json — creating new"
 fi
 
+MCP_TEMP_FILES=()
+cleanup_mcp_temp_files() {
+  [ "${#MCP_TEMP_FILES[@]}" -eq 0 ] || rm -f -- "${MCP_TEMP_FILES[@]}"
+}
+trap cleanup_mcp_temp_files EXIT
+DETECTED_SERVERS_PATH=$(create_temp_json_file)
 MERGED_JSON_PATH=$(create_temp_json_file)
+MCP_TEMP_FILES+=("$DETECTED_SERVERS_PATH" "$MERGED_JSON_PATH")
+chmod 600 "$DETECTED_SERVERS_PATH" "$MERGED_JSON_PATH" 2>/dev/null || true
+printf '%s' "$DETECTED_SERVERS" > "$DETECTED_SERVERS_PATH"
 MERGED_JSON=$(node -e "
 const fs=require('fs');
-const existing=JSON.parse(process.argv[1]);
+const existing=process.argv[1]?JSON.parse(fs.readFileSync(process.argv[1],'utf8')):{};
 const servers=existing.mcpServers||{};
-const lines=process.argv[2].trim().split('\n');
+const lines=fs.readFileSync(process.argv[2],'utf8').trim().split('\n');
 const managed=new Set(['context-router','engram','codebase-memory-mcp']);
 const added=[],updated=[],preserved=[];
 for(const line of lines){
@@ -631,8 +640,8 @@ if(updated.length)process.stderr.write('Updated managed: '+updated.join(',')+'\n
 if(preserved.length)process.stderr.write('Preserved: '+preserved.join(',')+'\n');
 if(disabled.length)process.stderr.write('Disabled (deprecated): '+disabled.join(',')+'\n');
 existing.mcpServers=servers;
-fs.writeFileSync(process.argv[3],JSON.stringify(existing,null,2));
-" "$EXISTING_JSON" "$DETECTED_SERVERS" "$MERGED_JSON_PATH" 2>&1)
+fs.writeFileSync(process.argv[3],JSON.stringify(existing,null,2)+'\n',{mode:0o600});
+" "$EXISTING_JSON_PATH" "$DETECTED_SERVERS_PATH" "$MERGED_JSON_PATH" 2>&1)
 
 if [ -n "$MERGED_JSON" ]; then
   echo "$MERGED_JSON"
@@ -643,9 +652,6 @@ if [ ! -f "$MERGED_JSON_PATH" ]; then
   exit 1
 fi
 
-MCP_JSON=$(cat "$MERGED_JSON_PATH")
-rm -f "$MERGED_JSON_PATH"
-
 echo ""
 echo "--- Summary ---"
 echo "Enabled:  ${ENABLED[*]}"
@@ -653,18 +659,17 @@ echo "Disabled: ${DISABLED[*]}"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
-  echo "Would write .mcp.json:"
-  echo "$MCP_JSON"
-  echo ""
+  echo "Would update .mcp.json (server payload, args, URLs, and env values are redacted)."
   echo "(Dry run — no files modified)"
 else
   if [ -f ".mcp.json" ]; then
     cp ".mcp.json" ".mcp.json.bak"
     echo "Backed up .mcp.json to .mcp.json.bak"
   fi
-  echo "$MCP_JSON" > .mcp.json
+  cp "$MERGED_JSON_PATH" .mcp.json
   echo "Generated .mcp.json"
 fi
+rm -f "$MERGED_JSON_PATH"
 
 echo ""
 echo "--- Merge (.codex/config.toml for Codex) ---"
@@ -687,9 +692,14 @@ if [ "$DO_ZED" = true ] || is_zed_environment; then
 
   ZED_SETTINGS_PATH=$(detect_zed_settings_path)
 
-  # Generate context_servers snippet from detected servers
-  ZED_SNIPPET=$(node -e "
-const lines=process.argv[1].trim().split('\n');
+  # Generate context_servers snippet from detected servers without placing the
+  # payload in process arguments.
+  ZED_SNIPPET_PATH=$(create_temp_json_file)
+  MCP_TEMP_FILES+=("$ZED_SNIPPET_PATH")
+  chmod 600 "$ZED_SNIPPET_PATH" 2>/dev/null || true
+  node -e "
+const fs=require('fs');
+const lines=fs.readFileSync(process.argv[1],'utf8').trim().split('\n');
 const cs={};
 for(const line of lines){
   if(!line.trim())continue;
@@ -698,34 +708,35 @@ for(const line of lines){
   if(val.command){const e={command:{path:val.command,args:val.args||[]}};if(val.env)e.command.env=val.env;cs[key]=e;}
   else if(val.url){cs[key]={url:val.url};}
 }
-console.log(JSON.stringify({context_servers:cs},null,2));
-" "$DETECTED_SERVERS")
+fs.writeFileSync(process.argv[2],JSON.stringify({context_servers:cs},null,2)+'\n',{mode:0o600});
+" "$DETECTED_SERVERS_PATH" "$ZED_SNIPPET_PATH"
 
   if [ "$DRY_RUN" = true ]; then
     echo "Would add to Zed settings ($ZED_SETTINGS_PATH):"
-    echo "$ZED_SNIPPET"
+    echo "  Server names: $(cut -d'|' -f1 "$DETECTED_SERVERS_PATH" | paste -sd, -)"
+    echo "  Command, URL, args, and env values are redacted."
   else
     if [ -f "$ZED_SETTINGS_PATH" ]; then
       # Merge into existing Zed settings
       cp "$ZED_SETTINGS_PATH" "${ZED_SETTINGS_PATH}.bak"
       node -e "
 const fs=require('fs');
-const settings=JSON.parse(fs.readFileSync('$ZED_SETTINGS_PATH','utf8'));
-const snippet=JSON.parse(process.argv[1]);
+const settings=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
+const snippet=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const cs=settings.context_servers||{};
 const newCs=snippet.context_servers||{};
 const added=[];
 for(const[k,v]of Object.entries(newCs)){if(!cs[k]){cs[k]=v;added.push(k);}}
 settings.context_servers=cs;
-fs.writeFileSync('$ZED_SETTINGS_PATH',JSON.stringify(settings,null,2));
+fs.writeFileSync(process.argv[1],JSON.stringify(settings,null,2));
 console.log(added.length?'Added to Zed: '+added.join(','):'Zed settings already up to date.');
-" "$ZED_SNIPPET"
+" "$ZED_SETTINGS_PATH" "$ZED_SNIPPET_PATH"
       echo "Updated $ZED_SETTINGS_PATH (backup: .bak)"
     else
       echo "Zed settings not found at: $ZED_SETTINGS_PATH"
       echo ""
       echo "Add this to your Zed settings.json manually:"
-      echo "$ZED_SNIPPET"
+      cat "$ZED_SNIPPET_PATH"
     fi
   fi
 fi

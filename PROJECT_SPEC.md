@@ -43,7 +43,7 @@
 
 ## Current State
 - Goal: Ship ten pinned code-intelligence tools as one task-routed Codex workflow without a second persistent graph.
-- Status: `v4.9.0` published from verified commit `e00b714505ac4b1efb05c29e60e148a8ee7b2c85`; Linux/Windows full-profile, Codex MCP, AgentOS, and generated-project gates passed.
+- Status: `v4.9.1` release snapshot under validation; publication must be verified from the authoritative GitHub Release and workflow state.
 - Next: Benchmark the graph workflow on representative downstream projects before claiming measured token savings or applying the release broadly.
 
 ## Last Scan

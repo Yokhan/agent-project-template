@@ -2,7 +2,12 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-19 for published template `4.9.0`. Validation run `29672263414` passed all six Linux/Windows validation, bootstrap, full-toolchain, Codex MCP, and AgentOS jobs on commit `e00b714505ac4b1efb05c29e60e148a8ee7b2c85`. Release run `29672457240` revalidated the exact tag, built the archive, and published the non-draft, non-prerelease GitHub Release. The live Codex subagent probe is reported separately because it consumes quota; static markers never count as runtime proof.
+Release target: `v4.9.1`. This checklist records required evidence, not a
+publication claim. Record the exact commit and workflow run after validation;
+call the release live only after the GitHub Release is non-draft,
+non-prerelease, its tag resolves to that commit, and its assets pass checksum
+verification. The live Codex subagent probe is reported separately because it
+consumes quota; static markers never count as runtime proof.
 
 ## Validation Gate
 
@@ -82,6 +87,6 @@ Last reviewed: 2026-07-19 for published template `4.9.0`. Validation run `296722
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
 - [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`
-- [ ] README, SETUP_GUIDE, and docs/TEMPLATE_RELEASES show the current stable release tag, link to `/releases/latest`, and warn that `main` is for canary/template development only
+- [ ] README, SETUP_GUIDE, and docs/TEMPLATE_RELEASES show the immutable release snapshot, use `/releases/latest` only when selecting an unspecified target, require exact-release verification, and warn that `main` is for canary/template development only
 - [ ] AGENTS, CLAUDE, `/update-template`, and Codex sync skill point to the canonical source/downstream update protocol
 - [ ] AgentOS rollout notes state whether AgentOS is the orchestrator or the project uses Codex parent orchestration

@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 4.9.0 | 2026-07-19
+> Версия: 4.9.1 | 2026-07-19
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -18,11 +18,12 @@
 
 ## Быстрый старт (5 минут)
 
-Ниже указан текущий stable-релиз `v4.9.0`. Перед rollout всё равно проверьте,
-что GitHub `releases/latest` разрешается в этот tag.
+Целевой release snapshot: `v4.9.1`. Сам файл в source checkout не доказывает,
+что релиз опубликован: перед rollout проверьте exact tag в GitHub Releases и
+убедитесь, что он не draft и не prerelease.
 
 ```bash
-git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -32,7 +33,7 @@ codex
 
 Windows:
 ```powershell
-git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 setup.bat
 cd <generated-project>
@@ -227,7 +228,7 @@ bash scripts/check-drift.sh
 
 1. Определите тип рабочего каталога: исходный репозиторий шаблона, downstream-проект или старый проект без manifest. Шаблон нельзя синхронизировать в самого себя.
 2. Прочитайте установленную версию из `.template-manifest.json`.
-3. Явно указанная пользователем версия имеет приоритет. Иначе проверьте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest. Текущий stable tag: `v4.9.0`.
+3. Явно указанная пользователем версия имеет приоритет. Только если tag не задан, определите последний стабильный релиз через https://github.com/Yokhan/agent-project-template/releases/latest.
 4. Проверьте `git remote get-url template` и не заменяйте конфликтующий remote без решения пользователя.
 5. Запустите `--from-git --ref <tag> --dry-run`, затем примените тот же tag. Bare `--from-git` разрешён только для явно согласованного canary.
 6. Если локальный sync-скрипт устарел или сломан, используйте скрипт из checkout целевого release tag с `--project-dir`.
@@ -244,8 +245,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.

@@ -37,7 +37,7 @@ is_payload_path() {
 
 is_excluded_payload_path() {
   case "$1" in
-    .claude/settings.local.json|.github/workflows/release-template.yml|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|tasks/toolchain-discovery.json|tasks/toolchain-change-strategy.json|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
+    .claude/settings.local.json|.github/workflows/release-template.yml|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|tasks/toolchain-discovery.json|tasks/toolchain-change-strategy.json|tasks/change-strategy.json|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -176,6 +176,21 @@ fi
 
 # Remove template git history
 rm -rf .git
+
+# Materialize orchestrator-owned project state before hashing or committing it.
+# The generated manifest and initial commit must describe the actual checkout.
+if [ "$IS_ORCHESTRATOR" = true ]; then
+  echo "Setting up as ORCHESTRATOR project..."
+  ORCH_TEMPLATE="$SCRIPT_DIR/templates/orchestrator/CLAUDE.md"
+  if [ -f "$ORCH_TEMPLATE" ]; then
+    cp "$SCRIPT_DIR/CLAUDE.md" CLAUDE.md
+    printf '\n' >> CLAUDE.md
+    cat "$ORCH_TEMPLATE" >> CLAUDE.md
+    echo "Shared contract and orchestrator CLAUDE.md overlay installed"
+  fi
+  mkdir -p tasks/chats brain
+  echo "Orchestrator directories created"
+fi
 
 # Generate template manifest
 generate_manifest() {
@@ -436,18 +451,6 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
     echo "Run 'bash scripts/sync-template.sh --from-git' to check for updates."
     echo "For pinned releases, run 'bash scripts/sync-template.sh --from-git --ref vX.Y.Z'."
   fi
-
-# If orchestrator — preserve the legacy Claude compatibility overlay too
-if [ "$IS_ORCHESTRATOR" = true ]; then
-  echo "Setting up as ORCHESTRATOR project..."
-  ORCH_TEMPLATE="$SCRIPT_DIR/templates/orchestrator/CLAUDE.md"
-  if [ -f "$ORCH_TEMPLATE" ]; then
-    cp "$ORCH_TEMPLATE" CLAUDE.md
-    echo "Orchestrator CLAUDE.md installed"
-  fi
-  mkdir -p tasks/chats brain
-  echo "Orchestrator directories created"
-fi
 
 echo ""
 echo "Project '$PROJECT_DIR' created successfully."

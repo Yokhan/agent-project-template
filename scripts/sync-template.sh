@@ -208,12 +208,7 @@ if grep -q '\\\\' .template-manifest.json 2>/dev/null; then
   if [ "$DRY_RUN" = true ]; then
     echo "WOULD NORMALIZE: Windows backslash paths in manifest"
   else
-    echo "Fixing Windows backslash paths in manifest..."
-    if command -v _sed_i &>/dev/null; then
-      _sed_i 's/\\\\/\//g' .template-manifest.json
-    else
-      sed -i 's/\\\\/\//g' .template-manifest.json 2>/dev/null || sed -i '' 's/\\\\/\//g' .template-manifest.json
-    fi
+    echo "Windows backslash paths will be normalized during safe manifest reconciliation."
   fi
 fi
 
@@ -272,7 +267,7 @@ if [ ! -f "$MANIFEST" ]; then
     # Determine category for a file path
     get_category() {
       case "$1" in
-        CLAUDE.md|PROJECT_SPEC.md|ecosystem.md|tasks/*|brain/*) echo "project" ;;
+        CLAUDE.md|DESIGN.md|design-policy.ignore|PROJECT_SPEC.md|ecosystem.md|tasks/*|brain/*) echo "project" ;;
         .gitignore|.codex/config.toml|.mcp.json|.vscode/*) echo "hybrid" ;;
         *) echo "template" ;;
       esac
@@ -409,40 +404,51 @@ echo "=== Template Sync ==="
 echo "Current: $CURRENT_VER → New: $NEW_VER"
 echo ""
 
-# --- Backup ---
-if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
-  if git rev-parse --git-dir > /dev/null 2>&1; then
-    GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-    if [ -n "$GIT_ROOT" ] && [ "$(cd "$GIT_ROOT" && pwd)" = "$PROJECT_PATH" ]; then
-      # Stash if dirty
-      if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-        echo "Stashing uncommitted changes..."
-        git stash push -m "pre-sync backup $(date +%Y%m%d-%H%M%S)"
-      fi
-      # Tag for rollback (M3: add seconds)
-      git tag "backup/pre-sync-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
-      echo "Backup tag created."
-    else
-      echo "Skipping git backup: project directory is not a git repository root."
-    fi
-  fi
-fi
-
 # --- Counters ---
-UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0; SOURCE_ONLY_MANIFEST=0
+UPDATED=0; SKIPPED=0; NEW_FILES=0; PRESERVED=0; DEPRECATED=0; SOURCE_ONLY_MANIFEST=0; CONFLICTS=0
+SAFE_COPY_HELPER="$TEMPLATE_PATH/scripts/lib/sync-safe-copy.js"
+if [ ! -f "$SAFE_COPY_HELPER" ]; then
+  echo "ERROR: Target release is missing scripts/lib/sync-safe-copy.js"
+  exit 1
+fi
 
 # --- Phase A: Update template files in manifest ---
 echo "--- Phase A: Updating template files ---"
 
 # Read manifest files using node (portable JSON parsing)
-manifest_files=$(_node -e "
-const fs=require('fs');
+if ! manifest_files=$(_node -e "
+const fs=require('fs'),path=require('path');
 const m=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
+const projectRoot=fs.realpathSync.native(process.cwd());
+function assertSafeExisting(relativePath){
+  let current=projectRoot;
+  const parts=relativePath.split('/');
+  for(let index=0;index<parts.length;index+=1){
+    current=path.join(current,parts[index]);
+    let stat;
+    try{stat=fs.lstatSync(current);}catch(error){if(error.code==='ENOENT')return;throw error;}
+    if(stat.isSymbolicLink())throw new Error('Symlink/reparse manifest path is not allowed: '+relativePath);
+    if(index<parts.length-1&&!stat.isDirectory())throw new Error('Non-directory manifest path component: '+relativePath);
+    if(index===parts.length-1&&!stat.isFile())throw new Error('Manifest target is not a regular file: '+relativePath);
+    const real=fs.realpathSync.native(current),relation=path.relative(projectRoot,real);
+    if(real!==projectRoot&&(relation.startsWith('..')||path.isAbsolute(relation)))throw new Error('Manifest path resolves outside project: '+relativePath);
+  }
+}
 for(const[p,i]of Object.entries(m.files||{})){
   const normalized=p.replaceAll('\\\\','/');
-  if(i.category!=='project')console.log(normalized+'|'+(i.hash||'')+'|'+(i.category||'template'));
-}" "$MANIFEST" 2>&1)
-if [ $? -ne 0 ]; then
+  const clean=path.posix.normalize(normalized);
+  const category=String(i.category||'template');
+  const hash=String(i.hash||'');
+  if(!normalized || clean==='.' || clean!==normalized || clean.startsWith('../') ||
+     path.posix.isAbsolute(clean) || /^[A-Za-z]:/.test(clean) || /[\r\n|]/.test(clean)) {
+    throw new Error('Unsafe manifest path: '+p);
+  }
+  if(!['template','hybrid','project'].includes(category)||/[\r\n|]/.test(hash))throw new Error('Invalid manifest entry: '+p);
+  if(category!=='project'||clean==='AGENTS.md'||clean==='.codex/config.toml'){
+    assertSafeExisting(clean);
+    console.log(clean+'|'+hash+'|'+category);
+  }
+}" "$MANIFEST" 2>&1); then
     echo "ERROR: Failed to parse $MANIFEST: $manifest_files"
     exit 1
 fi
@@ -450,6 +456,24 @@ fi
 # L2: Validate manifest structure
 if [ -z "$manifest_files" ]; then
     echo "WARNING: Manifest has no trackable files. Is .template-manifest.json valid?"
+fi
+
+# Create rollback metadata only after the manifest and every managed path have
+# passed the read-only safety preflight.
+if [ "$DRY_RUN" = false ] && [ "$FORCE" = false ]; then
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -n "$GIT_ROOT" ] && [ "$(cd "$GIT_ROOT" && pwd)" = "$PROJECT_PATH" ]; then
+      if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        echo "Dirty worktree detected; preserving changes in place (no automatic stash)."
+        echo "The backup tag records the committed baseline; review the accepted dry-run before continuing."
+      fi
+      git tag "backup/pre-sync-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+      echo "Backup tag created."
+    else
+      echo "Skipping git backup: project directory is not a git repository root."
+    fi
+  fi
 fi
 
 while IFS='|' read -r filepath old_hash category; do
@@ -475,6 +499,10 @@ while IFS='|' read -r filepath old_hash category; do
   fi
 
   template_file="$TEMPLATE_PATH/$filepath"
+  legacy_agents_migration=false
+  if [ "$filepath" = "AGENTS.md" ] && [ "$category" = "project" ]; then
+    legacy_agents_migration=true
+  fi
 
   if [ ! -f "$template_file" ]; then
     # File removed from template
@@ -482,34 +510,49 @@ while IFS='|' read -r filepath old_hash category; do
     DEPRECATED=$((DEPRECATED + 1))
     continue
   fi
+  if [ -L "$template_file" ]; then
+    echo "ERROR: Template source must be a regular non-symlink file: $filepath"
+    exit 1
+  fi
 
   new_hash=$(get_hash "$template_file")
 
-  if [ "$new_hash" = "$old_hash" ]; then
-    SKIPPED=$((SKIPPED + 1))
-    continue
-  fi
-
   # Check if local file was modified (conflict detection)
   local_hash=""
-  CONFLICTS=${CONFLICTS:-0}
   if [ -f "$filepath" ]; then
     local_hash=$(get_hash "$filepath")
   fi
 
-  if [ -n "$local_hash" ] && [ "$local_hash" != "$old_hash" ] && [ "$FORCE" = false ]; then
+  # Restore deleted template files even when the release hash is unchanged.
+  # Legacy AGENTS ownership also needs an explicit migration decision.
+  if [ "$legacy_agents_migration" = false ] &&
+     [ "$new_hash" = "$old_hash" ] && [ -n "$local_hash" ]; then
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+
+  if [ -n "$local_hash" ] && [ "$local_hash" != "$old_hash" ] &&
+     [ "$local_hash" != "$new_hash" ] && [ "$FORCE" = false ]; then
     # File modified BOTH locally AND in template = CONFLICT
     if [ "$DRY_RUN" = true ]; then
       diff_info=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "cannot diff")
-      echo "  CONFLICT: $filepath (modified locally AND in template) — $diff_info"
+      echo "  CONFLICT: $filepath (modified locally AND in template) — $diff_info; apply would save ${filepath}.template-new"
     else
       # Save template version alongside, don't overwrite
-      cp "$template_file" "${filepath}.template-new"
+      node "$SAFE_COPY_HELPER" --source-root "$TEMPLATE_PATH" --project-root "$PROJECT_PATH" --path "$filepath" --suffix ".template-new"
       echo "  CONFLICT: $filepath — local changes detected. Template version saved as ${filepath}.template-new"
       echo "    Review: diff $filepath ${filepath}.template-new"
     fi
     CONFLICTS=$((CONFLICTS + 1))
     continue
+  fi
+
+  if [ "$legacy_agents_migration" = true ]; then
+    if [ "$DRY_RUN" = true ]; then
+      echo "  WOULD MIGRATE: $filepath (legacy project -> template ownership)"
+    else
+      echo "  MIGRATING: $filepath (legacy project -> template ownership)"
+    fi
   fi
 
   if [ "$DRY_RUN" = true ]; then
@@ -518,12 +561,18 @@ while IFS='|' read -r filepath old_hash category; do
       diff_info=$(diff --stat "$filepath" "$template_file" 2>/dev/null | tail -1 || echo "")
       [ -n "$diff_info" ] && diff_info=" — $diff_info"
     fi
-    echo "  WOULD UPDATE: $filepath$diff_info"
+    if [ "$local_hash" = "$new_hash" ]; then
+      echo "  WOULD ADOPT: $filepath (already matches target release)$diff_info"
+    else
+      echo "  WOULD UPDATE: $filepath$diff_info"
+    fi
   else
-    # Ensure parent directory exists
-    mkdir -p "$(dirname "$filepath")"
-    cp "$template_file" "$filepath"
-    echo "  UPDATED: $filepath"
+    if [ "$local_hash" = "$new_hash" ]; then
+      echo "  ADOPTED: $filepath (already matches target release)"
+    else
+      node "$SAFE_COPY_HELPER" --source-root "$TEMPLATE_PATH" --project-root "$PROJECT_PATH" --path "$filepath"
+      echo "  UPDATED: $filepath"
+    fi
   fi
   UPDATED=$((UPDATED + 1))
 done < <(echo "$manifest_files")
@@ -557,12 +606,18 @@ fi
 
 PHASE_B_COPY_FILES=()
 PHASE_B_COPY_LABELS=()
+PHASE_B_MANIFEST_FILES=()
+PHASE_B_PROJECT_MANIFEST_FILES=()
 
 # Define template file patterns to check
 for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/technical/*.json" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/product/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "scripts/lib/*.js" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "tests/fixtures/design-policy/pass/*.css" "tests/fixtures/design-policy/fail/*.css" "tests/fixtures/writing-tools/*.js" "tests/fixtures/change-strategy/*.json" "brain/03-knowledge/communication/*.md" "docs/AGENT_CONTEXT_SOT.md" "integrations/spec-kit/*.md" "_reference/agent-sot/*.md" "_reference/agent-sot/*.json" "_reference/agent-sot/originals/*.md" "_reference/spec-kit/*.md" "_reference/spec-kit/*.json" "_reference/spec-kit/upstream/*.md" "_reference/spec-kit/upstream/LICENSE" "_reference/spec-kit/upstream/docs/*.md" "_reference/spec-kit/upstream/docs/reference/*.md" "_reference/spec-kit/upstream/integrations/*.json" "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" "_reference/spec-kit/upstream/templates/commands/*.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/CODE_INTELLIGENCE_TOOLCHAIN.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/WRITING_REFERENCE_PROVENANCE.md" "docs/WRITING_WORKFLOW.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" "_reference/*.json" "_reference/*.toml" ".github/*.template" ".github/workflows/validate-template.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" ".gitignore" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "CLAUDE.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
+    if [ -L "$template_file" ]; then
+      echo "ERROR: Template source must be a regular non-symlink file: $template_file"
+      exit 1
+    fi
     # Get relative path
     rel_path="${template_file#$TEMPLATE_PATH/}"
 
@@ -592,27 +647,46 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" "
       in_manifest="no"
     fi
 
-    is_unmanaged_route_helper=false
-    if [ "$rel_path" = "scripts/lib/codex-route-intents.js" ] &&
-       [ "$in_manifest" = "no" ] && [ -f "$rel_path" ]; then
-      is_unmanaged_route_helper=true
-    fi
-
-    if [ "$in_manifest" = "no" ] &&
-       { [ ! -f "$rel_path" ] || [ "$is_unmanaged_route_helper" = true ]; }; then
-      if [ "$DRY_RUN" = true ]; then
-        if [ "$is_unmanaged_route_helper" = true ]; then
-          echo "  WOULD UPDATE: $rel_path (v4.5 unmanaged template helper)"
+    if [ "$in_manifest" = "no" ] && { [ -e "$rel_path" ] || [ -L "$rel_path" ]; }; then
+      node "$SAFE_COPY_HELPER" --project-root "$PROJECT_PATH" --path "$rel_path" --check-only true || exit 1
+      case "$rel_path" in
+        CLAUDE.md|DESIGN.md|design-policy.ignore|PROJECT_SPEC.md|ecosystem.md|tasks/*|brain/*)
+          if [ "$DRY_RUN" = true ]; then
+            echo "  WOULD PRESERVE: $rel_path (project-owned path missing from legacy manifest)"
+          else
+            PHASE_B_PROJECT_MANIFEST_FILES+=("$rel_path")
+            echo "  PRESERVED: $rel_path (project-owned path restored to manifest)"
+          fi
+          NEW_FILES=$((NEW_FILES + 1))
+          continue
+          ;;
+      esac
+      local_new_hash=$(get_hash "$rel_path")
+      source_new_hash=$(get_hash "$template_file")
+      if [ "$local_new_hash" = "$source_new_hash" ]; then
+        if [ "$DRY_RUN" = true ]; then
+          echo "  WOULD ADOPT: $rel_path (local file already matches new release path)"
         else
-          echo "  WOULD ADD: $rel_path (new in template)"
+          PHASE_B_MANIFEST_FILES+=("$rel_path")
+          echo "  ADOPTED: $rel_path (local file already matches new release path)"
         fi
+        NEW_FILES=$((NEW_FILES + 1))
+      else
+        if [ "$DRY_RUN" = true ]; then
+          echo "  CONFLICT: $rel_path (new release path already exists locally with different content)"
+        else
+          node "$SAFE_COPY_HELPER" --source-root "$TEMPLATE_PATH" --project-root "$PROJECT_PATH" --path "$rel_path" --suffix ".template-new"
+          echo "  CONFLICT: $rel_path - local file preserved. Template version saved as ${rel_path}.template-new"
+        fi
+        CONFLICTS=$((CONFLICTS + 1))
+      fi
+    elif [ "$in_manifest" = "no" ]; then
+      if [ "$DRY_RUN" = true ]; then
+        echo "  WOULD ADD: $rel_path (new in template)"
       else
         PHASE_B_COPY_FILES+=("$rel_path")
-        if [ "$is_unmanaged_route_helper" = true ]; then
-          PHASE_B_COPY_LABELS+=("UPDATED: $rel_path (v4.5 unmanaged template helper)")
-        else
-          PHASE_B_COPY_LABELS+=("NEW: $rel_path")
-        fi
+        PHASE_B_COPY_LABELS+=("NEW: $rel_path")
+        PHASE_B_MANIFEST_FILES+=("$rel_path")
       fi
       NEW_FILES=$((NEW_FILES + 1))
     fi
@@ -620,29 +694,14 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" "
 done
 
 if [ "$DRY_RUN" = false ] && [ "${#PHASE_B_COPY_FILES[@]}" -gt 0 ]; then
-  if command -v node >/dev/null 2>&1; then
-    node_template_root="$TEMPLATE_PATH"
-    node_project_root="$PROJECT_PATH"
-    if command -v cygpath >/dev/null 2>&1; then
-      node_template_root="$(cygpath -w "$node_template_root")"
-      node_project_root="$(cygpath -w "$node_project_root")"
-    fi
-    node -e '
-      const fs=require("node:fs");
-      const path=require("node:path");
-      const [templateRoot,projectRoot,...files]=process.argv.slice(1);
-      for(const file of files){
-        const target=path.join(projectRoot,file);
-        fs.mkdirSync(path.dirname(target),{recursive:true});
-        fs.copyFileSync(path.join(templateRoot,file),target);
-      }
-    ' -- "$node_template_root" "$node_project_root" "${PHASE_B_COPY_FILES[@]}"
-  else
-    for rel_path in "${PHASE_B_COPY_FILES[@]}"; do
-      mkdir -p "$(dirname "$rel_path")"
-      cp "$TEMPLATE_PATH/$rel_path" "$rel_path"
-    done
-  fi
+  PHASE_B_COPY_FILE="$(_temp_file template-sync-copy-paths)"
+  chmod 600 "$PHASE_B_COPY_FILE" 2>/dev/null || true
+  printf '%s\n' "${PHASE_B_COPY_FILES[@]}" > "$PHASE_B_COPY_FILE"
+  node "$SAFE_COPY_HELPER" --source-root "$TEMPLATE_PATH" --project-root "$PROJECT_PATH" --paths-file "$PHASE_B_COPY_FILE" || {
+    rm -f "$PHASE_B_COPY_FILE"
+    exit 1
+  }
+  rm -f "$PHASE_B_COPY_FILE"
   for phase_b_label in "${PHASE_B_COPY_LABELS[@]}"; do
     echo "  $phase_b_label"
   done
@@ -691,125 +750,34 @@ for dir in .codex/agents .agents/skills .claude/rules .claude/agents .claude/ski
 done
 
 # --- Update manifest ---
-if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES + SOURCE_ONLY_MANIFEST)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
+if [ "$DRY_RUN" = false ] && { [ $((UPDATED + NEW_FILES + DEPRECATED + SOURCE_ONLY_MANIFEST)) -gt 0 ] || [ "$CURRENT_VER" != "$NEW_VER" ]; }; then
   echo "--- Updating manifest ---"
-  _node -e "
-const fs=require('fs'),path=require('path'),crypto=require('crypto');
-const [manifestPath,newVer]=process.argv.slice(1),syncDate=new Date().toISOString().slice(0,10);
-const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
-m.template_version=newVer;m.updated=syncDate;
-function toPosix(fp){return fp.split(path.sep).join('/').replace(/\/+/g,'/');}
-function cleanHash(hash){return String(hash||'').replace(/^[\\\\/]+/,'');}
-function isSourceOnlyPath(fp){
-  return fp==='setup.sh' ||
-    fp==='setup.bat' ||
-    fp==='.github/workflows/release-template.yml' ||
-    fp.startsWith('templates/');
-}
-
-const normalizedFiles={};
-for(const[rawFp,rawInfo]of Object.entries(m.files||{})){
-  const fp=toPosix(rawFp);
-  if(fp==='.claude/settings.local.json')continue;
-  if(fp.startsWith('docs/.setup-leak-sentinel-'))continue;
-  if(isSourceOnlyPath(fp))continue;
-  if(rawInfo.category!=='project'&&!fs.existsSync(fp))continue;
-  const info={...rawInfo};
-  if(info.hash)info.hash=cleanHash(info.hash);
-  normalizedFiles[fp]=info;
-}
-m.files=normalizedFiles;
-
-function getHash(fp){
-  try{return crypto.createHash('sha256').update(fs.readFileSync(fp)).digest('hex');}catch{return null;}
-}
-
-// Rehash template files
-for(const[fp,info]of Object.entries(m.files||{})){
-  if(info.category==='project'||!fs.existsSync(fp))continue;
-  const h=getHash(fp);if(h)info.hash=h;
-}
-
-function getCategory(fp){
-  if(fp==='CLAUDE.md'||fp==='DESIGN.md'||fp==='design-policy.ignore'||fp==='PROJECT_SPEC.md'||fp==='ecosystem.md'||fp.startsWith('tasks/')||fp.startsWith('brain/'))return 'project';
-  if(fp==='.gitignore'||fp==='.codex/config.toml'||fp==='.mcp.json'||fp.startsWith('.vscode/'))return 'hybrid';
-  return 'template';
-}
-
-function addManagedFile(fp){
-  if(!fp||m.files[fp])return;
-  if(fp==='.claude/settings.local.json')return;
-  if(fp.startsWith('docs/.setup-leak-sentinel-'))return;
-  if(isSourceOnlyPath(fp))return;
-  const base=path.basename(fp);
-  if(base.startsWith('project-'))return;
-  if(!fs.existsSync(fp)||!fs.statSync(fp).isFile())return;
-  const h=getHash(fp);if(h)m.files[fp]={category:getCategory(fp),hash:h};
-}
-
-function addManagedTree(dir){
-  if(!fs.existsSync(dir))return;
-  for(const f of fs.readdirSync(dir)){
-    const diskPath=path.join(dir,f);
-    const fp=toPosix(diskPath);
-    const st=fs.statSync(diskPath);
-    if(st.isDirectory()){
-      if(f.startsWith('project-'))continue;
-      addManagedTree(fp);
-    }else if(st.isFile()){
-      addManagedFile(fp);
+  MANIFEST_ADDITIONS_FILE="$(_temp_file template-manifest-additions)"
+  PROJECT_MANIFEST_ADDITIONS_FILE="$(_temp_file template-project-manifest-additions)"
+  chmod 600 "$MANIFEST_ADDITIONS_FILE" 2>/dev/null || true
+  chmod 600 "$PROJECT_MANIFEST_ADDITIONS_FILE" 2>/dev/null || true
+  if [ "${#PHASE_B_MANIFEST_FILES[@]}" -gt 0 ]; then
+    printf '%s\n' "${PHASE_B_MANIFEST_FILES[@]}" > "$MANIFEST_ADDITIONS_FILE"
+  fi
+  if [ "${#PHASE_B_PROJECT_MANIFEST_FILES[@]}" -gt 0 ]; then
+    printf '%s\n' "${PHASE_B_PROJECT_MANIFEST_FILES[@]}" > "$PROJECT_MANIFEST_ADDITIONS_FILE"
+  fi
+  node "$TEMPLATE_PATH/scripts/lib/sync-manifest-reconcile.js" \
+    --manifest "$PROJECT_PATH/$MANIFEST" \
+    --template-root "$TEMPLATE_PATH" \
+    --project-root "$PROJECT_PATH" \
+    --new-version "$NEW_VER" \
+    --conflicts "$CONFLICTS" \
+    --additions-file "$MANIFEST_ADDITIONS_FILE" \
+    --project-additions-file "$PROJECT_MANIFEST_ADDITIONS_FILE" || {
+      rm -f "$MANIFEST_ADDITIONS_FILE" "$PROJECT_MANIFEST_ADDITIONS_FILE"
+      echo "ERROR: Could not update manifest safely."
+      exit 1
     }
-  }
-}
-
-// Add new files from standard dirs
-const dirs=['.claude','.claude/docs','.claude/docs/domain-full','.claude/rules','.claude/library/process','.claude/library/technical','.claude/library/meta','.claude/library/domain','.claude/library/product','.claude/library/conflict','.claude/agents','.claude/commands','.claude/hooks','.claude/pipelines','scripts','scripts/lib','mcp-servers/context-router/src','tests/rules','tests/fixtures/design-policy/pass','tests/fixtures/design-policy/fail','tests/fixtures/writing-tools','tests/fixtures/change-strategy','brain/03-knowledge/communication','templates/project-starter/tasks','templates/project-starter/tasks/audit','templates/project-starter/brain/01-daily','templates/project-starter/brain/03-knowledge/research','templates/project-starter/brain/03-knowledge/audits','_reference','.github','.github/workflows','.codex','.codex/agents'];
-for(const d of dirs){
-  if(!fs.existsSync(d))continue;
-  for(const f of fs.readdirSync(d)){
-    const diskPath=path.join(d,f);
-    const fp=toPosix(diskPath);
-    addManagedFile(fp);
-  }
-}
-
-for(const d of ['integrations/spec-kit','_reference/agent-sot','_reference/spec-kit']){
-  addManagedTree(d);
-}
-
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','CLAUDE.md','DESIGN.md','design-policy.ignore','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/CODE_INTELLIGENCE_TOOLCHAIN.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
-for(const fp of rootFiles){
-  if(!fs.existsSync(fp)||m.files[fp])continue;
-  const h=getHash(fp);
-  if(h)m.files[fp]={category:getCategory(fp),hash:h};
-}
-
-// Skills scanning
-for(const sd of ['.claude/skills','.agents/skills']){
- if(!fs.existsSync(sd))continue;
- for(const sn of fs.readdirSync(sd)){
-    if(sn.startsWith('project-'))continue;
-    const skillDir=path.join(sd,sn);
-    const candidates=[path.join(skillDir,'SKILL.md'),path.join(skillDir,'agents','openai.yaml')];
-    const refs=path.join(skillDir,'references');
-    if(fs.existsSync(refs)){
-      for(const f of fs.readdirSync(refs)){
-        candidates.push(path.join(refs,f));
-      }
-    }
-    for(const candidate of candidates){
-      const sf=toPosix(candidate);
-      if(fs.existsSync(sf)&&fs.statSync(sf).isFile()){
-        const h=getHash(sf);
-        if(h){if(!m.files[sf])m.files[sf]={category:'template',hash:h};else m.files[sf].hash=h;}
-      }
-    }
-  }
-}
-
-fs.writeFileSync(manifestPath,JSON.stringify(m,null,2));
-console.log('Manifest updated.');
-" "$MANIFEST" "$NEW_VER" || { echo "ERROR: Could not update manifest automatically."; exit 1; }
+  rm -f "$MANIFEST_ADDITIONS_FILE" "$PROJECT_MANIFEST_ADDITIONS_FILE"
+  if [ "$CONFLICTS" -gt 0 ]; then
+    echo "Manifest version remains $CURRENT_VER until all conflicts are resolved."
+  fi
 fi
 
 # --- Validation ---
@@ -827,6 +795,7 @@ if [ "$DRY_RUN" = false ]; then
     echo "  settings.json: not present (skipped)"
   fi
   for script in scripts/*.sh; do
+    [ -f "$script" ] || continue
     if bash -n "$script" 2>/dev/null; then
       echo "  $script: valid bash"
     else
@@ -890,4 +859,9 @@ if [ "$DRY_RUN" = false ] && [ $((UPDATED + NEW_FILES)) -gt 0 ]; then
 fi
 
 echo ""
+if [ "$CONFLICTS" -gt 0 ]; then
+  echo "Sync incomplete: resolve conflicts before treating the target version as installed."
+  exit 2
+fi
+
 echo "Done. Run 'bash scripts/check-drift.sh' to verify project health."

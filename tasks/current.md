@@ -1,17 +1,90 @@
 <!-- PROGRESSIVE_STATUS
-id: code-intelligence-toolchain
-status: done
+id: template-release-v4.9.1
+status: active
 updated: 2026-07-19
-readiness: 100
+readiness: 95
 plan: 100
 inventory: 100
-production: 100
-cleanup: 100
-tags: tooling,context,code-graph,mcp,template,benchmark,change-strategy
-next: benchmark the released graph workflow on representative downstream projects before rollout
+production: 90
+cleanup: 90
+tags: template,release,security,migration,manifest,mcp,change-strategy
+next: commit the verified patch, publish exact tag v4.9.1, then run a pinned PersonalAssistant dry-run
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - Release v4.9.1 Safety Repair
+
+### User Wants
+- Fix the release blockers found while previewing `v4.9.0` against the real
+  `PersonalAssistant` 4.7.0 manifest and finish a production-safe patch release.
+
+### Success Means
+- Sync ownership comes only from the target release payload and the existing
+  explicit project-owned contract; local downstream files can never appoint
+  themselves template-owned.
+- A safe legacy `AGENTS.md` ownership migration converges, while a locally
+  modified `AGENTS.md` remains untouched, produces an explicit conflict, and
+  prevents the manifest version from advancing.
+- `CLAUDE.md` remains project-owned by design; `.codex/README.md` and other
+  local-only files remain byte-identical and absent from the manifest.
+- Conflict hashes are never rewritten to local content, so repeated sync cannot
+  turn a conflict into a silent overwrite.
+- MCP dry-run and merge plumbing never print or place existing MCP secrets in
+  process arguments.
+- Third-party tool installation runs without release write permission; packaging
+  and publication occur on separate runners with checksum and tag verification.
+- Tagged docs describe an immutable release snapshot, while GitHub owns live
+  publication status.
+
+### Failure Classification And Root Cause
+- Observed failure: `v4.9.0` passed clean bootstrap CI but failed a real 4.7.0
+  downstream preflight.
+- Immediate symptom: manifest could say 4.9.0 while root Codex guidance remained
+  4.7.0, and local `.codex/README.md` could enter template ownership.
+- Broken link: downstream manifest was used both as installed baseline and as
+  the authority for future ownership, then rebuilt by scanning downstream.
+- Root cause: ownership policy, observed local state, and applied-version state
+  were collapsed into one self-mutating reconciliation step.
+- Smallest systemic fix: bounded replacement of reconciliation behind the
+  existing manifest format, plus staged legacy migration and canary coverage.
+- Regression guard: 4.7.0 safe/conflicting AGENTS fixtures, local-file poisoning,
+  repeated-sync data-loss, MCP sentinel redaction, and workflow permission tests.
+
+### Change Strategy
+- Trigger: ownership conflict proven in `scripts/sync-template.sh` Phase A,
+  Phase B, and manifest reconciliation.
+- Posture: production; published tags and many downstream consumers exist.
+- Destination x transition: `bounded-replace x staged-swap`.
+- Protected: project-owned files, dirty worktree contents, manifest JSON shape,
+  public sync CLI, secrets, exact tag/archive identity, and rollback.
+- Rejected: add exclusions for `.codex/README.md` while retaining downstream
+  scanning. That leaves the same self-ownership and repeated-overwrite paths.
+- Approval: the user's `исправляй` follows the explicit defect review and covers
+  the bounded source fix and patch release; downstream PA apply remains gated by
+  a clean pinned preview.
+
+### Verification
+- Shell/Node syntax, `git diff --check`, MCP path-safety, secret-redaction, and
+  release-workflow structure checks pass.
+- `scripts/test-template.sh` passes 203/203, including safe and conflicting
+  legacy 4.7 ownership, traversal/symlink rejection, new-path convergence,
+  AgentOS setup, source-only exclusion, and exact pinned-ref application.
+- Template validation passes with 0 errors and 0 warnings; hooks pass 12/12;
+  routing, policy, skills, agents, SOT, text, production, design, Spec Kit, and
+  progressive gates pass. Drift reports only two age warnings and 0 errors.
+- Independent systems and test reviews report no P0/P1. Security review's final
+  `.codex/config.toml` symlink bypass was fixed in both sync preflight and the
+  merger itself, with target and parent regression coverage.
+- Remaining gate: GitHub validation and isolated release workflows for exact tag
+  `v4.9.1`, followed by a read-only pinned PersonalAssistant preview.
+
+### Rollback And Replan Trigger
+- Source changes remain one revertable patch-release commit; v4.9.0 stays
+  immutable and can be marked superseded only after v4.9.1 is live.
+- Replan if a legacy fixture requires overwriting a project-owned file, if the
+  manifest format must break compatibility, or if package/publish isolation
+  cannot verify the exact same archive and tag commit.
 
 ## Active Slice - Code Intelligence Toolchain
 
@@ -798,8 +871,8 @@ Make downstream Codex work faster and more reliable by routing independent explo
 ### Current View
 - Sharp now: one policy SOT owns all nine role profiles, fan-out limits, opt-out behavior, write-scope checks, and the `xhigh` ceiling; TOML manifests and route output are validated against it.
 - Sharp now: semantic routing distinguishes research about release pages/diagrams from state-changing release work in Russian and English.
-- Sharp now: setup and sync manage JavaScript route helpers on Windows and Unix; v4.5 unmanaged helpers are migrated before their hashes are accepted.
-- Sharp now: downstream setup, empty-manifest recovery, source-only exclusion, legacy-helper migration, and from-git preview pass in a generated project.
+- Sharp now: setup and sync manage JavaScript route helpers on Windows and Unix; an unowned legacy helper is adopted only when it matches the target, otherwise sync preserves it and emits a normal conflict.
+- Sharp now: downstream setup, empty-manifest recovery, source-only exclusion, legacy-helper adopt/conflict handling, and from-git preview pass in a generated project.
 - Published: source commit `40c72265cf91056fb5d63f766ca212279a4e07f5`, tag `v4.6.0`, workflow `29077360521`, and the release archive are live.
 - Replan trigger: any final gate or GitHub workflow failure blocks the tag or release claim.
 

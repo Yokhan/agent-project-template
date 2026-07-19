@@ -1,0 +1,140 @@
+{
+  "schema_version": 2,
+  "trigger": {
+    "kind": "ownership-conflict",
+    "evidence_ref": "scripts/sync-template.sh:434-812 and PersonalAssistant .template-manifest.json legacy 4.7.0 ownership",
+    "summary": "Initial reading proved that downstream state can redefine template ownership and applied-version evidence.",
+    "root_cause": "One reconciliation block owns release policy, local observation, baseline hashes, and version convergence, then rebuilds them by scanning downstream."
+  },
+  "project": {
+    "posture": "production",
+    "posture_evidence": [
+      {
+        "level": "observed",
+        "summary": "Published template tags have active downstream manifests, including PersonalAssistant 4.7.0.",
+        "ref": "GitHub release v4.9.0 and PersonalAssistant preflight 2026-07-19"
+      }
+    ],
+    "protected_contracts": [
+      {
+        "id": "project-owned downstream files",
+        "kind": "user-data",
+        "owner": "downstream project team",
+        "sot": "docs/PRODUCT_BOUNDARY.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "template manifest JSON shape",
+        "kind": "public-file-format",
+        "owner": "template sync subsystem",
+        "sot": "docs/TEMPLATE_RELEASES.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "sync CLI and conflict behavior",
+        "kind": "public-cli",
+        "owner": "template sync subsystem",
+        "sot": "scripts/sync-template.sh --help and docs/TEMPLATE_RELEASES.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "MCP and GitHub release secrets",
+        "kind": "security-boundary",
+        "owner": "project operator and release workflow",
+        "sot": "docs/SAFE_DEFAULTS.md and GitHub Actions permissions",
+        "impact": "preserved"
+      }
+    ]
+  },
+  "product": {
+    "user_victory": "A downstream operator can preview and apply one pinned template tag without losing local work or receiving a false convergence signal.",
+    "final_path": "Exact release payload through deterministic ownership policy, conflict-safe apply, isolated packaging, and verified publication.",
+    "falsifier": "A local source-absent file enters the manifest, a repeated conflict overwrites local content, a secret appears in dry-run or argv, or publish shares write authority with installers."
+  },
+  "change": {
+    "summary": "Replace self-mutating downstream reconciliation with release-payload ownership and staged legacy AGENTS migration.",
+    "scope": "Template sync reconciliation, MCP merge output, release workflow isolation, focused tests, and release-facing version docs.",
+    "impacts": ["ownership", "security-boundary", "release"],
+    "reversible": true
+  },
+  "options": [
+    {
+      "id": "exclude-known-local-files",
+      "destination": "repair",
+      "transition": "direct-swap",
+      "summary": "Add exclusions for currently known local files while retaining downstream scanning and global rehashing.",
+      "hard_constraints": {
+        "product_function": {"status": "pass", "evidence": [{"level": "observed", "summary": "A narrow exclusion would stop the current .codex README example.", "ref": "scripts/sync-template.sh current path scan"}]},
+        "data_safety": {"status": "fail", "reason": "Unknown local paths and repeated conflict rehashing remain capable of future overwrite."},
+        "security": {"status": "fail", "reason": "The self-ownership path remains available for other managed-looking downstream paths."},
+        "protected_contracts": {"status": "fail", "reason": "Project-owned downstream files are not protected generically by path exclusions."},
+        "verification": {"status": "pass", "evidence": [{"level": "observed", "summary": "Focused exclusions can be fixture-tested but do not prove the general invariant.", "ref": "scripts/test-template.sh fixture surface"}]},
+        "rollback_recovery": {"status": "pass", "evidence": [{"level": "observed", "summary": "The narrow source patch remains revertable in git.", "ref": "git revert of patch commit"}]}
+      },
+      "evidence": {
+        "product_outcome": {"direction": "worse", "level": "observed", "basis": "Unknown local files remain exposed under the same algorithm.", "baseline": "Current downstream scan accepts arbitrary immediate files.", "result": "Only named files become excluded.", "ref": "scripts/sync-template.sh:739-784"},
+        "business_outcome": {"direction": "same", "level": "estimated", "basis": "The patch does not change release lead time reliably."},
+        "correctness": {"direction": "worse", "level": "observed", "basis": "The repeated-conflict overwrite remains reproducible.", "baseline": "Conflict hash is replaced by local hash.", "result": "Exclusions do not change rehashing.", "ref": "scripts/sync-template.sh:727-730"},
+        "maintainability": {"direction": "worse", "level": "observed", "basis": "Every new collision requires another exclusion.", "baseline": "One generic downstream scan owns all paths.", "result": "An expanding exception list remains.", "ref": "scripts/sync-template.sh:739-784", "metrics": ["exception-count", "ownership-rules"]},
+        "reliability": {"direction": "worse", "level": "observed", "basis": "Convergence still depends on untrusted local directory contents.", "baseline": "Local scan rebuilds ownership.", "result": "Local scan remains active.", "ref": "scripts/sync-template.sh:765-784"},
+        "performance": {"direction": "same", "level": "estimated", "basis": "No comparable performance change is expected."},
+        "security": {"direction": "worse", "level": "observed", "basis": "Unknown ownership poisoning and secret output remain possible.", "baseline": "Generic path and full JSON output exist.", "result": "Only one path is excluded.", "ref": "scripts/sync-template.sh and scripts/bootstrap-mcp.sh"},
+        "transition_cost": {"direction": "better", "level": "observed", "basis": "A narrow exclusion is smaller to implement initially.", "baseline": "Systemic repair changes reconciliation and tests.", "result": "One exclusion needs fewer changed modules.", "ref": "bounded repair-path comparison"},
+        "reversibility": {"direction": "same", "level": "estimated", "basis": "Both source patches are git-revertable."}
+      },
+      "total_cost": {"implementation": "S", "transition": "none", "verification": "S", "maintenance": "L", "operations": "L", "change_amplification": "L", "basis": "Low initial diff but recurring exclusions and incident risk remain."}
+    },
+    {
+      "id": "replace-manifest-reconciliation",
+      "destination": "bounded-replace",
+      "transition": "staged-swap",
+      "summary": "Use target release payload as the only source of template ownership and migrate legacy AGENTS only when conflict-safe.",
+      "hard_constraints": {
+        "product_function": {"status": "pass", "evidence": [{"level": "observed", "summary": "Existing sync phases already expose target payload, old hashes, and conflict output needed by the replacement.", "ref": "scripts/sync-template.sh:434-630"}]},
+        "data_safety": {"status": "pass", "evidence": [{"level": "observed", "summary": "The design never adopts source-absent local files and preserves conflicting local content.", "ref": "legacy 4.7 fixture acceptance contract"}]},
+        "security": {"status": "pass", "evidence": [{"level": "authoritative", "summary": "Least-privilege job permissions and redacted secret handling remove the identified trust paths.", "ref": "GitHub Actions GITHUB_TOKEN official guidance and local MCP sentinel test"}]},
+        "protected_contracts": {"status": "pass", "evidence": [{"level": "observed", "summary": "Manifest JSON shape, CLI flags, project files, and conflict artifacts remain preserved.", "ref": "docs/PRODUCT_BOUNDARY.md and regression fixture plan"}]},
+        "verification": {"status": "pass", "evidence": [{"level": "observed", "summary": "Safe, conflicting, poisoned, repeated, redaction, and workflow fixtures cover each exploit path.", "ref": "planned scripts/test-template.sh regressions"}]},
+        "rollback_recovery": {"status": "pass", "evidence": [{"level": "observed", "summary": "The source patch is revertable and legacy apply remains preview-first with local conflicts untouched.", "ref": "docs/TEMPLATE_RELEASES.md rollback contract"}]}
+      },
+      "evidence": {
+        "product_outcome": {"direction": "better", "level": "observed", "basis": "The operator gets truthful convergence and preserved local work.", "baseline": "v4.9.0 can advance version and poison ownership.", "result": "Target-only ownership and conflict-gated versioning remove both paths.", "ref": "PersonalAssistant preflight and legacy fixture contract"},
+        "business_outcome": {"direction": "better", "level": "observed", "basis": "Preventing false rollout and recovery work reduces downstream support load.", "baseline": "v4.9.0 rollout stopped after release.", "result": "One fixture-backed patch release supports a deterministic preview gate.", "ref": "PersonalAssistant preflight 2026-07-19"},
+        "correctness": {"direction": "better", "level": "observed", "basis": "Ownership, baseline hash, and applied version become separate decisions.", "baseline": "One block scans, rehashes, and advances all state.", "result": "Only applied target files update hashes and zero conflicts advance version.", "ref": "bounded repair-path analysis"},
+        "maintainability": {"direction": "better", "level": "observed", "basis": "One source payload rule replaces path-by-path downstream exclusions.", "baseline": "Local directory contents implicitly extend ownership.", "result": "Only target payload additions can enter ownership.", "ref": "sync reconciliation comparison", "metrics": ["implicit-ownership-sources", "exception-count"]},
+        "reliability": {"direction": "better", "level": "observed", "basis": "Repeated sync keeps conflicts stable instead of turning them into overwrites.", "baseline": "Conflict rehash changes the next run decision.", "result": "Conflict baseline and version remain unchanged.", "ref": "repeated-sync regression contract"},
+        "performance": {"direction": "same", "level": "estimated", "basis": "No performance advantage is claimed without a comparable benchmark."},
+        "security": {"direction": "better", "level": "authoritative", "basis": "Secrets leave argv/output and write permission is limited to the publish job.", "baseline": "Full MCP JSON and job-wide write permission exist.", "result": "Sentinel redaction and job isolation are explicit invariants.", "ref": "GitHub Actions token guidance and security review"},
+        "transition_cost": {"direction": "worse", "level": "estimated", "basis": "The systemic replacement requires more fixtures and workflow changes than exclusions."},
+        "reversibility": {"direction": "better", "level": "observed", "basis": "Conflict state remains recoverable and release artifact identity is checked between isolated jobs.", "baseline": "Manifest evidence mutates before conflict resolution.", "result": "Source commit and downstream preview provide explicit rollback points.", "ref": "staged release and sync rollback plan"}
+      },
+      "total_cost": {"implementation": "M", "transition": "S", "verification": "L", "maintenance": "S", "operations": "S", "change_amplification": "S", "basis": "Higher one-time verification cost removes recurring ownership and release incident paths."},
+      "cleanup": {"owner": "template sync and release subsystem", "removal_condition": "Remove downstream directory scanning and job-wide write permission in the same patch before tagging.", "absence_check": "Search for addManagedTree downstream reconciliation, full MCP JSON dry-run output, and workflow-level contents write; run regression and release gates."}
+    }
+  ],
+  "recommendation": {
+    "option_id": "replace-manifest-reconciliation",
+    "advantages": ["product_outcome", "business_outcome", "correctness", "maintainability", "reliability", "security", "reversibility"],
+    "reason": "Bounded replacement removes the proven duplicate ownership and version-state path while preserving the public manifest and CLI contracts.",
+    "rejected_alternative": "Known-file exclusions leave generic ownership poisoning, conflict rehashing, and repeated silent overwrite intact."
+  },
+  "approval": {
+    "status": "approved",
+    "envelope": {
+      "outcome": "Publish a production-safe v4.9.1 that can preview legacy downstream projects without losing local work or secrets.",
+      "scope": "Template source sync, MCP merge, release workflow, regression fixtures, version declarations, and release docs only.",
+      "protected_contract_ids": ["project-owned downstream files", "template manifest JSON shape", "sync CLI and conflict behavior", "MCP and GitHub release secrets"],
+      "destination": "bounded-replace",
+      "transitions": ["staged-swap"],
+      "risk_limit": "HIGH template and release risk with no destructive downstream apply before a clean pinned preview.",
+      "downtime_limit": "No downstream runtime downtime and no automatic modification of PersonalAssistant during source repair.",
+      "cost_limit": "Remain inside the requested production repair and patch-release work.",
+      "release_limit": "Publish only v4.9.1 after local and GitHub validation gates pass; never move or replace v4.9.0 assets.",
+      "environment_limit": "Source repository, synthetic fixtures, isolated GitHub runners, and read-only PersonalAssistant preview after publication.",
+      "rollback_requirement": "Keep one revertable source commit, immutable old tag, checksum-bound artifact, and conflict-preserving downstream behavior.",
+      "ref": "user instruction 2026-07-19: исправляй",
+      "current": true,
+      "invalidation_conditions": ["manifest schema break", "project-owned overwrite requirement", "unresolved security regression", "release workflow cannot bind exact tag and artifact"]
+    }
+  }
+}

@@ -40,5 +40,8 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 ## Update Contract
 
 - `sync-template.sh` updates template-owned files from the manifest.
+- Sync rejects non-canonical manifest paths, symlink/reparse targets and parent
+  directories, and non-regular release sources before copying. Applied files
+  are written through a temporary sibling and atomic rename.
 - `project-*` files, `.agents/skills/project-*`, `.codex/agents/project-*`, `CLAUDE.md`, `DESIGN.md`, `design-policy.ignore`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
 - When both local and template versions changed, sync writes `*.template-new` instead of overwriting silently.

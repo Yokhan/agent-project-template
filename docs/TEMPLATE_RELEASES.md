@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.9.0
-git push origin v4.9.0
+git tag v4.9.1
+git push origin v4.9.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -53,8 +53,9 @@ If ownership is unclear, stop and ask instead of guessing.
 ### 2. Resolve One Explicit Target
 
 1. Explicit user tag > AgentOS-approved tag > verified latest stable release.
-2. Otherwise read the stable, non-draft, non-prerelease tag from
-   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.9.0`.
+2. Only when no explicit tag was selected, read the stable, non-draft,
+   non-prerelease tag from
+   <https://github.com/Yokhan/agent-project-template/releases/latest>.
 3. Installed version is comparison data, never the target. Never infer the
    target from `main`, a badge, cached memory, or a stale local sync script.
 4. If no target can be verified, ask for a tag. Do not substitute a branch.
@@ -108,12 +109,17 @@ Use the target release checkout's script with `--project-dir` for this fallback.
 5. A local tag proves only tag resolution. Say "published/live" only after
    checking the authoritative GitHub Release/workflow state.
 
-### Current Stable Flow
+### Pinned Release Flow
 
-After verifying that `releases/latest` resolves to `v4.9.0`, create a new project with:
+Release snapshot: `v4.9.1`. This source snapshot does not assert GitHub
+publication. Verify that the exact `v4.9.1` release exists and is non-draft and
+non-prerelease. `/releases/latest` selects a target only when no explicit tag
+was chosen; an already approved pinned tag does not need to remain latest.
+
+After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -124,8 +130,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -189,7 +195,21 @@ Version `4.8.0` is a compatible minor release that adds an evidence-backed Chang
 
 Version `4.9.0` is a compatible minor release that turns the selected ten-tool arsenal into one delivered workflow. It installs and health-checks the full pinned profile on Linux and Windows, keeps only Engram and one parser-backed code graph permanently available, routes the other tools on demand, safely merges the Codex MCP block without overwriting project settings, verifies the config with Codex `0.125.0`, and keeps AgentOS as the owner of its own task graph.
 
-Downstream projects should sync `v4.9.0` with a dry run first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
+Version `4.9.1` is a compatible patch release that repairs the release and
+migration boundary. A legacy `4.7.x` project migrates `AGENTS.md` from project-
+owned to template-owned only when its content still matches the recorded
+baseline; `CLAUDE.md` remains project-owned. Sync no longer discovers arbitrary
+downstream files or rehashes conflicts into a future overwrite baseline. MCP
+dry-run output redacts existing arguments, URLs, and environment values. The
+release workflow validates and packages with read-only credentials, then gives
+write authority only to the isolated publication job consuming the verified
+same-run artifact. Sync also rejects traversal and symlink/reparse write
+targets, uses atomic sibling replacement, restores missing project-owned
+entries without overwriting them, records the merged Codex hybrid hash, and
+creates AgentOS/orchestrator projects with a clean initial commit and matching
+manifest. Release artifact actions are pinned by full commit SHA.
+
+Downstream projects should sync `v4.9.1` with a dry run first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -234,8 +254,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.0
+bash scripts/sync-template.sh --from-git --ref v4.9.1 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.1
 ```
 
 Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
