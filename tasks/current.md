@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-release-v4.9.5
-status: active
+status: done
 updated: 2026-07-19
-readiness: 90
+readiness: 100
 plan: 100
 inventory: 100
-production: 90
-cleanup: 80
+production: 100
+cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: validate v4.9.5 on Linux and Windows, publish it, then apply the pinned release to PersonalAssistant
+next: monitor downstream adoption; start a new slice only from a concrete regression or requested capability
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -69,6 +69,14 @@ next: validate v4.9.5 on Linux and Windows, publish it, then apply the pinned re
   from `process.cwd()`, so ordinary bugfix cases falsely gained strategic-review
   requirements. `v4.9.5` runs baseline cases in an empty temporary project and
   keeps orchestrator/artifact behavior behind explicit fixtures.
+- Local aggregate smoke passed `206/206`; branch CI run `29705663077` passed all
+  six Linux/Windows validation, bootstrap, and full-toolchain jobs.
+- GitHub Release `v4.9.5` is public, non-draft, non-prerelease, and resolves to
+  commit `f47fbbfe525ccb0941ea2b98e855bd60202fd862`.
+- PersonalAssistant advanced from `4.7.0` through the verified patches to
+  `4.9.5`; its project-owned `AGENTS.md` and `CLAUDE.md` retained local context,
+  MCP health and all ten tools passed, and the final same-tag dry-run reported
+  `UPDATED=0`, `NEW=0`, `CONFLICTS=0`.
 
 ## Active Slice - Release v4.9.2 Safety Repair
 
