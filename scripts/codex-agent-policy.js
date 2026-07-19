@@ -5,7 +5,7 @@ const path = require("path");
 const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh"]);
 
 const AGENT_POLICY = Object.freeze({
-  version: "4.9.3",
+  version: "4.9.4",
   parent: Object.freeze({
     modelSource: "user-or-ide",
     recommendedModel: "gpt-5.6-sol",

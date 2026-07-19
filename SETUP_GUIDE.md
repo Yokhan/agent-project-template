@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 4.9.3 | 2026-07-19
+> Версия: 4.9.4 | 2026-07-19
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -18,12 +18,12 @@
 
 ## Быстрый старт (5 минут)
 
-Целевой release snapshot: `v4.9.3`. Сам файл в source checkout не доказывает,
+Целевой release snapshot: `v4.9.4`. Сам файл в source checkout не доказывает,
 что релиз опубликован: перед rollout проверьте exact tag в GitHub Releases и
 убедитесь, что он не draft и не prerelease.
 
 ```bash
-git clone --branch v4.9.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.4 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -33,7 +33,7 @@ codex
 
 Windows:
 ```powershell
-git clone --branch v4.9.3 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.4 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 setup.bat
 cd <generated-project>
@@ -245,8 +245,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.3 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.3
+bash scripts/sync-template.sh --from-git --ref v4.9.4 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.4
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.

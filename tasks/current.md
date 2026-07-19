@@ -1,5 +1,5 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v4.9.3
+id: template-release-v4.9.4
 status: active
 updated: 2026-07-19
 readiness: 90
@@ -8,12 +8,12 @@ inventory: 100
 production: 90
 cleanup: 80
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: preserve declared downstream AGENTS ownership, prove convergence, publish v4.9.3, then apply the pinned release to PersonalAssistant
+next: validate v4.9.4 on Linux and Windows, publish it, then apply the pinned release to PersonalAssistant
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-## Active Slice - Release v4.9.3 Downstream AGENTS Ownership Repair
+## Active Slice - Release v4.9.4 Downstream AGENTS Ownership Repair
 
 ### User Wants
 - Fix the critical template update bug, publish the corrected patch release,
@@ -57,6 +57,9 @@ next: preserve declared downstream AGENTS ownership, prove convergence, publish 
   full ten-tool health profile reports every required tool available.
 - Independent systems review found no remaining ownership/convergence blocker
   after SOT wording, bootstrap assertion, and symlink fixture were added.
+- The immutable `v4.9.3` tag failed the Linux path-safety fixture before package
+  or publish; no GitHub Release exists. `v4.9.4` carries the same product fix
+  plus cross-platform fixture diagnostics and must pass branch CI before tagging.
 
 ## Active Slice - Release v4.9.2 Safety Repair
 

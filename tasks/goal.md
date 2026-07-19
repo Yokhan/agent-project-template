@@ -25,7 +25,7 @@ The primary user is the downstream product team or operator using a generated pr
 
 ## Current Step
 Repair the legacy downstream `AGENTS.md` ownership contract, publish the exact
-validated `v4.9.3` patch, and use that pinned release to update PersonalAssistant
+validated `v4.9.4` patch, and use that pinned release to update PersonalAssistant
 without overwriting its project-specific guidance. Prove convergence with a
 second same-tag dry-run before resuming broader downstream benchmarks.
 

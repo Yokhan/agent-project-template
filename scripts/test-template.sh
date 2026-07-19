@@ -1108,7 +1108,11 @@ if is_template_source_repo; then
     printf '{"template_version":"4.7.0","files":{"AGENTS.md":{"category":"project","hash":"deadbeef"}}}\n' > "$project_agents/.template-manifest.json"
     local project_agents_hash="$(_get_hash "$project_agents_external")" project_agents_manifest="$(_get_hash "$project_agents/.template-manifest.json")"
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$project_agents" >> "$output" 2>&1; then return 1; fi
-    grep -q "Symlink/reparse manifest path is not allowed: AGENTS.md" "$output" || return 1
+    if ! grep -q "Symlink/reparse manifest path is not allowed: AGENTS.md" "$output"; then
+      echo "path-safety failure: project-owned AGENTS rejection reason missing"
+      tail -20 "$output"
+      return 1
+    fi
     [ "$project_agents_hash" = "$(_get_hash "$project_agents_external")" ] || return 1
     [ "$project_agents_manifest" = "$(_get_hash "$project_agents/.template-manifest.json")" ] || return 1
     echo "path-safety stage passed: project-owned AGENTS symlink"
