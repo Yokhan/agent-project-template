@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-release-v4.9.2
-status: active
+status: done
 updated: 2026-07-19
-readiness: 95
+readiness: 100
 plan: 100
 inventory: 100
-production: 90
-cleanup: 90
+production: 100
+cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: retry v4.9.2 publication with explicit GH_REPO, then run a pinned PersonalAssistant dry-run
+next: resolve the reported PersonalAssistant AGENTS and Codex MCP ownership conflicts before any downstream apply
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -80,10 +80,19 @@ next: retry v4.9.2 publication with explicit GH_REPO, then run a pinned Personal
   no GitHub Release was created and the tag remains immutable as failure evidence.
 - The first `v4.9.2` run passed validation, ten-tool health checks, packaging,
   checksum, and remote-tag verification; publish stopped because the no-checkout
-  job lacked explicit `GH_REPO`. The retry uses the fixed workflow against the
-  same immutable tag and rebuilds the verified artifact from scratch.
-- Remaining gate: GitHub validation and isolated release workflows for exact tag
-  `v4.9.2`, followed by a read-only pinned PersonalAssistant preview.
+  job lacked explicit `GH_REPO`. Commit `75c4460` bound the isolated publisher to
+  the repository, and retry run `29687478584` completed validation, packaging,
+  checksum/tag verification, and publication against the same immutable tag.
+- GitHub Release `v4.9.2` is public and non-prerelease. Its archive checksum is
+  `a4bde998a166ae6a9d9095bcedd3971c0c26bd3071e75c642d048514be095901`,
+  and release metadata binds it to tag commit
+  `755afd633582b3b9804b100d132398e813cbb1dc`.
+- A pinned `v4.9.2` PersonalAssistant dry-run exited before apply on the expected
+  protected boundaries: locally modified `AGENTS.md` and unmanaged legacy
+  `context-router`/`engram` tables that overlap the new managed Codex MCP block.
+  The downstream worktree retained all 205 porcelain entries, and the manifest,
+  `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, and `.codex/README.md` hashes
+  remained unchanged. Downstream conflict resolution and apply are separate work.
 
 ### Rollback And Replan Trigger
 - Source changes remain revertable patch-release commits; v4.9.0 and the failed
