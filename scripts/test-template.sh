@@ -1066,6 +1066,7 @@ if is_template_source_repo; then
     grep -q "Unsafe manifest path" "$output" || return 1
     [ "$victim_hash" = "$(_get_hash "$traversal_victim")" ] || return 1
     [ "$manifest_hash" = "$(_get_hash "$traversal_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: traversal"
 
     local link_probe="$root/link-probe" link_target="$root/link-target"
     printf '%s\n' probe > "$link_target"
@@ -1085,6 +1086,7 @@ if is_template_source_repo; then
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$final_project" >> "$output" 2>&1; then return 1; fi
     [ "$final_hash" = "$(_get_hash "$final_external")" ] || return 1
     [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: managed final symlink"
 
     local parent_project="$root/parent" parent_external="$root/parent-external"
     mkdir -p "$parent_project" "$parent_external"
@@ -1093,6 +1095,7 @@ if is_template_source_repo; then
     local parent_manifest="$(_get_hash "$parent_project/.template-manifest.json")"
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$parent_project" >> "$output" 2>&1; then return 1; fi
     [ "$parent_manifest" = "$(_get_hash "$parent_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: managed parent symlink"
 
     local conflict_project="$root/conflict" conflict_external="$root/conflict-external"
     mkdir -p "$conflict_project"
@@ -1104,6 +1107,7 @@ if is_template_source_repo; then
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$conflict_project" >> "$output" 2>&1; then return 1; fi
     [ "$conflict_hash" = "$(_get_hash "$conflict_external")" ] || return 1
     [ "$conflict_manifest" = "$(_get_hash "$conflict_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: conflict sidecar symlink"
 
     local config_project="$root/config-target" config_external="$root/config-target-external"
     mkdir -p "$config_project/.codex"
@@ -1114,6 +1118,7 @@ if is_template_source_repo; then
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_project" >> "$output" 2>&1; then return 1; fi
     [ "$config_hash" = "$(_get_hash "$config_external")" ] || return 1
     [ "$config_manifest" = "$(_get_hash "$config_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: legacy project config symlink"
 
     local config_parent_project="$root/config-parent" config_parent_external="$root/config-parent-external"
     mkdir -p "$config_parent_project" "$config_parent_external"
@@ -1124,6 +1129,7 @@ if is_template_source_repo; then
     if bash scripts/sync-template.sh "$SYNC_TEMPLATE_FIXTURE" --project-dir "$config_parent_project" >> "$output" 2>&1; then return 1; fi
     [ "$config_parent_hash" = "$(_get_hash "$config_parent_external/config.toml")" ] || return 1
     [ "$config_parent_manifest" = "$(_get_hash "$config_parent_project/.template-manifest.json")" ] || return 1
+    echo "path-safety stage passed: legacy project config parent symlink"
   }
   run_new_path_convergence_smoke() {
     local root="$1"
