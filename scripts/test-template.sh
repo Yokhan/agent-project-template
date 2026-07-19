@@ -517,6 +517,7 @@ check "README/SETUP_GUIDE release entrypoint is agent-safe" validate_agent_safe_
 check "SETUP_GUIDE has no legacy --from sync syntax" bash -c "! grep -q 'sync-template\\.sh --from ' SETUP_GUIDE.md"
 check "SETUP_GUIDE has no Python 3 bootstrap prerequisite" bash -c "! grep -q 'Python 3' SETUP_GUIDE.md"
 check "GitHub workflows use Node24-compatible actions" github_workflows_use_node24_actions
+check "Codex CI trust uses canonical user config" bash -c 'grep -q realpathSync .github/workflows/validate-template.yml && grep -q realpathSync .github/workflows/release-template.yml && ! grep -q project_key .github/workflows/validate-template.yml .github/workflows/release-template.yml'
 check "Release workflow passes dispatch input through env" grep -q 'INPUT_TAG:.*inputs.tag' .github/workflows/release-template.yml
 check "Release workflow validates semantic tag" grep -q 'Invalid release tag' .github/workflows/release-template.yml
 check "Release workflow checks out resolved ref" grep -q "ref:.*workflow_dispatch.*inputs.tag" .github/workflows/release-template.yml
