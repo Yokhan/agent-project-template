@@ -106,6 +106,7 @@ github_workflows_use_node24_actions() {
 validate_release_facing_doc_counts() {
   node <<'NODE'
 const fs = require("fs");
+const { execFileSync } = require("child_process");
 
 const countDirs = (directory) =>
   fs.readdirSync(directory, { withFileTypes: true }).filter((entry) => entry.isDirectory()).length;
@@ -117,14 +118,25 @@ const countFilesRecursive = (directory, extension) =>
     if (entry.isDirectory()) return total + countFilesRecursive(fullPath, extension);
     return total + (entry.name.endsWith(extension) ? 1 : 0);
   }, 0);
+const countTrackedSkillDirs = (directory) => {
+  try {
+    const files = execFileSync("git", ["ls-files", `${directory}/*/SKILL.md`], { encoding: "utf8" })
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean);
+    return new Set(files.map((file) => file.split("/").slice(0, 3).join("/"))).size;
+  } catch {
+    return countDirs(directory);
+  }
+};
 
 const readme = fs.readFileSync("README.md", "utf8");
 const claude = fs.readFileSync("CLAUDE.md", "utf8");
 const counts = new Map([
   ["Rules", countFiles(".claude/rules", ".md") + countFilesRecursive(".claude/library", ".md")],
   ["Hooks", countFiles(".claude/hooks", ".sh")],
-  ["Claude Skills", countDirs(".claude/skills")],
-  ["Codex Skills", countDirs(".agents/skills")],
+  ["Claude Skills", countTrackedSkillDirs(".claude/skills")],
+  ["Codex Skills", countTrackedSkillDirs(".agents/skills")],
   ["Codex Subagents", countFiles(".codex/agents", ".toml")],
   ["Agents", countFiles(".claude/agents", ".md")],
   ["Commands", countFiles(".claude/commands", ".md")],

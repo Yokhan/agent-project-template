@@ -48,9 +48,11 @@ function getTrackedFiles(rootDir) {
   return result.stdout.split(/\r?\n/).filter(Boolean);
 }
 
-function normalizeVersion(value) {
-  const match = String(value || "").match(/\bv?(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\b/i);
-  return match ? match[1] : "unknown";
+function normalizeVersion(value, preferred = "") {
+  const matches = [...String(value || "").matchAll(/\bv?(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\b/gi)]
+    .map((match) => match[1]);
+  if (preferred && matches.includes(preferred)) return preferred;
+  return matches.at(-1) || "unknown";
 }
 
 function compareVersions(left, right) {
@@ -104,10 +106,10 @@ function getCommandHealth(tool, rootDir) {
     timeout: tool.health_timeout_ms || 5000,
   });
   if (result.error || result.status !== 0) return { status: "missing", version: "unknown", detail: result.error?.message || result.stderr.trim() };
-  const version = normalizeVersion(`${result.stdout}\n${result.stderr}`);
+  const expectedVersion = tool.health_version || tool.version;
+  const version = normalizeVersion(`${result.stdout}\n${result.stderr}`, expectedVersion);
   const minimum = tool.install.minimum_version;
   const isCompatibleSystem = tool.install.kind === "system" && minimum && compareVersions(version, minimum) >= 0;
-  const expectedVersion = tool.health_version || tool.version;
   const status = version === expectedVersion ? "ok" : isCompatibleSystem ? "compatible" : "drift";
   return { status, version, detail: status === "compatible" ? `host-managed; catalog target ${tool.version}` : "command responded" };
 }
@@ -160,21 +162,22 @@ function runInstallCommand(command, rootDir, dryRun) {
   return { status: result.status === 0 ? "installed" : "failed", command: [command.command, ...command.args].join(" "), detail };
 }
 
-function getGithubReleaseAsset(tool) {
-  const osName = { win32: "windows", linux: "linux", darwin: "darwin" }[process.platform];
-  const archName = { x64: "x64", arm64: "arm64" }[process.arch];
-  if (!osName || !archName) throw new Error(`Unsupported release platform: ${process.platform}/${process.arch}`);
-  const ext = process.platform === "win32" ? "zip" : "tar.gz";
+function getGithubReleaseAsset(tool, platform = process.platform, architecture = process.arch) {
+  const osName = { win32: "windows", linux: "linux", darwin: "darwin" }[platform];
+  const archName = { x64: "x64", arm64: "arm64" }[architecture];
+  if (!osName || !archName) throw new Error(`Unsupported release platform: ${platform}/${architecture}`);
+  const ext = platform === "win32" ? "zip" : "tar.gz";
   const target = {
     win32: { x64: "x86_64-pc-windows-msvc", arm64: "aarch64-pc-windows-msvc" },
     linux: { x64: "x86_64-unknown-linux-gnu", arm64: "aarch64-unknown-linux-gnu" },
     darwin: { x64: "x86_64-apple-darwin", arm64: "aarch64-apple-darwin" },
-  }[process.platform][process.arch];
+  }[platform][architecture];
+  const releaseTarget = tool.install.targets?.[`${osName}-${archName}`] || target;
   const replace = (value) => value
     .replaceAll("{version}", tool.version)
     .replaceAll("{os}", osName)
     .replaceAll("{arch}", archName)
-    .replaceAll("{target}", target)
+    .replaceAll("{target}", releaseTarget)
     .replaceAll("{ext}", ext);
   const base = `https://github.com/${tool.install.repository}/releases/download/${tool.install.tag}`;
   const asset = replace(tool.install.asset);
@@ -369,4 +372,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { getReport, parseArgs };
+module.exports = { getGithubReleaseAsset, getReport, normalizeVersion, parseArgs };

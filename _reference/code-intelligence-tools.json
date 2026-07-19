@@ -37,6 +37,7 @@
         "tag": "15.2.0",
         "asset": "ripgrep-{version}-{target}.{ext}",
         "checksums_asset": "ripgrep-{version}-{target}.{ext}.sha256",
+        "targets": { "linux-x64": "x86_64-unknown-linux-musl" },
         "binary": "rg"
       },
       "activation": { "mode": "always", "stacks": [] },

@@ -13,7 +13,7 @@ const {
   selectTools,
   validateCatalog,
 } = require("./lib/code-intelligence-policy.js");
-const { getReport, parseArgs } = require("./code-intelligence-tools.js");
+const { getGithubReleaseAsset, getReport, normalizeVersion, parseArgs } = require("./code-intelligence-tools.js");
 
 function main() {
   const rootDir = path.join(__dirname, "..");
@@ -68,6 +68,16 @@ function main() {
     command: "npm.cmd",
     args: ["install", "--global", "codebase-memory-mcp@0.9.0"],
   });
+
+  const ripgrep = catalog.tools.find((tool) => tool.id === "ripgrep");
+  assert.strictEqual(
+    getGithubReleaseAsset(ripgrep, "linux", "x64").asset,
+    "ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
+  );
+  assert.strictEqual(
+    normalizeVersion("cache/probe-0.6.0-rc325.lock\nprobe-code 0.6.0", "0.6.0"),
+    "0.6.0",
+  );
 
   assert.strictEqual(getBenchmarkGate(catalog).minimum_median_token_reduction, 0.5);
   assert(!catalog.tools.some((tool) => tool.id === "codegraphcontext"));
