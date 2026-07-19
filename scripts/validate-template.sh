@@ -146,6 +146,12 @@ if ! node scripts/test-change-strategy.js >/dev/null 2>&1; then
 else
   echo "  OK: Change strategy validates"
 fi
+if ! node scripts/test-code-intelligence-tools.js >/dev/null 2>&1 || ! node scripts/code-intelligence-tools.js validate >/dev/null 2>&1; then
+  echo "  ERROR: Code-intelligence catalog validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Code-intelligence catalog and selection validate"
+fi
 if ! node scripts/test-writing-references.js >/dev/null 2>&1 || ! node scripts/validate-writing-references.js >/dev/null 2>&1; then
   echo "  ERROR: Writing reference registry validation failed"
   ERRORS=$((ERRORS + 1))
@@ -230,6 +236,7 @@ REQUIRED_FILES=(
   "docs/CODEX_SUBAGENTS_AUDIT.md"
   "docs/MIGRATION_MATRIX.md"
   "docs/OPENAI_MODEL_GUIDANCE.md"
+  "docs/CODE_INTELLIGENCE_TOOLCHAIN.md"
   "docs/PRODUCT_BOUNDARY.md"
   "docs/RELEASE_CHECKLIST.md"
   "docs/TEMPLATE_RELEASES.md"
@@ -250,6 +257,11 @@ REQUIRED_FILES=(
   "scripts/lib/codex-discovery-reroute.js"
   "scripts/lib/codex-route-cli.js"
   "scripts/test-change-strategy.js"
+  "scripts/code-intelligence-tools.js"
+  "scripts/lib/code-intelligence-policy.js"
+  "scripts/test-code-intelligence-tools.js"
+  "scripts/configure-codex-mcp.js"
+  "scripts/test-codex-mcp-config.js"
   "scripts/validate-writing-references.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"
@@ -268,6 +280,8 @@ REQUIRED_FILES=(
   "scripts/test-codex-subagents-live.sh"
   "_reference/README.md"
   "_reference/tool-registry.md"
+  "_reference/code-intelligence-tools.json"
+  "_reference/codex-mcp-config.toml"
   "_reference/agent-sot/README.md"
   "_reference/agent-sot/sources.json"
   "_reference/agent-sot/top-works.md"

@@ -75,6 +75,20 @@ append_unique() {
   esac
 }
 
+has_project_file() {
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    [ -n "$(git ls-files "$@" 2>/dev/null | sed -n '1p')" ]
+    return
+  fi
+  local pattern=""
+  local find_args=()
+  for pattern in "$@"; do
+    find_args+=( -name "$pattern" -o )
+  done
+  unset "find_args[$((${#find_args[@]} - 1))]"
+  [ -n "$(find . \( -path './.git' -o -path './node_modules' -o -path './.session-cache' -o -path './.codebase-memory' \) -prune -o -type f \( "${find_args[@]}" \) -print 2>/dev/null | sed -n '1p')" ]
+}
+
 detect_stack_summary() {
   local languages=""
   local manifests=""
@@ -93,22 +107,22 @@ detect_stack_summary() {
     nested_package_json_count=$(find . -path './node_modules' -prune -o -path './.git' -prune -o -type f -name 'package.json' ! -path './package.json' -print | wc -l | tr -d ' ')
   fi
 
-  if find . -path './node_modules' -prune -o -type f \( -name '*.ts' -o -name '*.tsx' \) -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.ts' '*.tsx'; then
     languages="$(append_unique "TypeScript" "$languages")"
   fi
-  if find . -path './node_modules' -prune -o -type f \( -name '*.js' -o -name '*.jsx' \) -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.js' '*.jsx'; then
     languages="$(append_unique "JavaScript" "$languages")"
   fi
-  if find . -type f -name '*.py' -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.py'; then
     languages="$(append_unique "Python" "$languages")"
   fi
-  if find . -type f -name '*.rs' -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.rs'; then
     languages="$(append_unique "Rust" "$languages")"
   fi
-  if find . -type f -name '*.go' -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.go'; then
     languages="$(append_unique "Go" "$languages")"
   fi
-  if find . -type f -name '*.sh' -print -quit 2>/dev/null | grep -q .; then
+  if has_project_file '*.sh'; then
     languages="$(append_unique "Shell" "$languages")"
   fi
   if [ -z "$languages" ]; then

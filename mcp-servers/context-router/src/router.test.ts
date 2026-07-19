@@ -42,6 +42,7 @@ assertRoute(
   "codex-writing-workflow",
   ["code", "git"],
 );
+assert.deepEqual(routeKeywords("Rewrite the landing page offer to improve conversion").codeIntelligence.tools, []);
 assertRoute(
   "Напиши руководство для нового пользователя",
   "writing-informational",
@@ -80,6 +81,15 @@ const implementation = routeKeywords("Implement an API endpoint");
 assert(implementation.modes.includes("code"));
 assert(!implementation.modes.includes("technical-writing"));
 assert(!implementation.codexSkills.includes("codex-technical-writing"));
+assert.deepEqual(implementation.codeIntelligence.tools, ["codebase-memory", "ripgrep"]);
+
+const symbolRefactor = routeKeywords("Rename the authentication symbol and update references");
+assert.equal(symbolRefactor.codeIntelligence.id, "symbol-refactor");
+assert.deepEqual(symbolRefactor.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);
+
+const securityRelease = routeKeywords("Run a security release audit for leaked secrets");
+assert.equal(securityRelease.codeIntelligence.id, "security-and-release");
+assert.deepEqual(securityRelease.codeIntelligence.tools, ["codebase-memory", "semgrep", "gitleaks", "ripgrep"]);
 
 const russianTechnical = routeKeywords("Write this API integration guide in Russian");
 assert.equal(russianTechnical.targetLanguage, "ru");
@@ -129,5 +139,6 @@ assert(restoredOutput.includes("TARGET_LANGUAGE: ru"));
 assert(restoredOutput.includes("WRITING_LANGUAGE_PROFILES: russian-infostyle-core"));
 assert(restoredOutput.includes("WRITING_EXTERNAL_TOOLS: glavred-api:not-configured:not-run:paid"));
 assert(restoredOutput.includes("external-tool-evidence-required"));
+assert(restoredOutput.includes("CODE_INTELLIGENCE:"));
 
-console.log("Context router writing parity passed");
+console.log("Context router writing and code-intelligence parity passed");

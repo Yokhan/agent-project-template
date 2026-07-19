@@ -54,9 +54,9 @@
       "trust": "primary",
       "title": "OpenAI Codex subagents",
       "url": "https://developers.openai.com/codex/subagents",
-      "last_checked": "2026-07-18",
+      "last_checked": "2026-07-19",
       "requires_fresh_check": true,
-      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Applicable AGENTS.md or skill instructions can authorize delegation; keep max_depth at 1, prefer independent read-only lanes, and verify real child activity instead of parent markers."
+      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Current local Codex can delegate after a direct request or when applicable AGENTS.md or skill instructions request it, so project-authorized proactive delegation does not require a separate user request. Explicit opt-out wins; keep max_depth at 1, prefer independent read-only lanes, and verify real child activity instead of parent markers."
     },
     {
       "id": "openai-gpt-5-6-release",
@@ -94,7 +94,7 @@
       "trust": "primary",
       "title": "Claude Code extension overview",
       "url": "https://code.claude.com/docs/en/features-overview",
-      "last_checked": "2026-06-11",
+      "last_checked": "2026-07-19",
       "requires_fresh_check": true,
       "local_conclusion": "Claude separates persistent context, skills, subagents, hooks, MCP, and plugins. Match the tool to the kind of context or enforcement needed."
     },
@@ -195,7 +195,7 @@
       "trust": "primary",
       "title": "Anthropic - Effective context engineering for AI agents",
       "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
-      "last_checked": "2026-05-26",
+      "last_checked": "2026-07-19",
       "requires_fresh_check": true,
       "local_conclusion": "Treat context as finite infrastructure: curate, isolate, compact, and give agents structured notes instead of dumping everything into one prompt."
     },

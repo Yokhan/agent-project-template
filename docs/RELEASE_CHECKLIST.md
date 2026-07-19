@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-18 for published template `4.8.0`. Validation run `29647669075` passed Ubuntu/Windows validation and Linux/Windows bootstrap smoke; release run `29647842430` revalidated the exact tag commit before publishing. The live Codex subagent probe is reported separately because it consumes quota; static markers never count as runtime proof.
+Last reviewed: 2026-07-19 for release candidate `4.9.0`. GitHub `releases/latest` currently resolves to `v4.6.2`; local notes about later tags are not publication evidence. `4.9.0` is not published until its exact tag passes the current workflows and the authoritative release page resolves to it. The live Codex subagent probe is reported separately because it consumes quota; static markers never count as runtime proof.
 
 ## Validation Gate
 
@@ -30,6 +30,9 @@ Last reviewed: 2026-07-18 for published template `4.8.0`. Validation run `296476
 - [ ] `cmd /c "(echo <smoke-project>) | setup.bat"` creates the same shipped surface on Windows
 - [ ] Generated projects pass `bash scripts/test-hooks.sh`
 - [ ] Generated projects pass `bash scripts/bootstrap-mcp.sh --dry-run`
+- [ ] Linux and Windows runners pass `bash scripts/bootstrap-mcp.sh --install --tool-profile=full` and the matching `--check`
+- [ ] Codex `0.125.0` loads `context-router`, `engram`, and `codebase-memory-mcp` from trusted project `.codex/config.toml`
+- [ ] `node scripts/test-codex-routing.js` proves AgentOS remains the task-graph owner when `.agent-os` is present
 - [ ] Generated projects pass `bash scripts/sync-template.sh <template-root> --dry-run`
 - [ ] Generated projects can preview a pinned release sync with `bash scripts/sync-template.sh --from-git --ref <tag> --dry-run` when a `template` remote is configured
 

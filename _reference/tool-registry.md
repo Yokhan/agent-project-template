@@ -14,6 +14,9 @@
 | session-metrics | scripts/session-metrics.sh | Session stats collector (daily log) |
 | sync-template | scripts/sync-template.sh | Template sync with hash verification |
 | bootstrap-mcp | scripts/bootstrap-mcp.sh | MCP server auto-setup |
+| code-intelligence-tools | scripts/code-intelligence-tools.js | Route each task to a minimal tool sequence; validate, install, and health-check the pinned ten-tool stack |
+| configure-codex-mcp | scripts/configure-codex-mcp.js | Merge the managed MCP block into project `.codex/config.toml` without overwriting project-owned Codex settings |
+| test-codex-mcp-config | scripts/test-codex-mcp-config.js | Regression tests for safe Codex MCP add, update, idempotency, and conflict handling |
 | audit-reuse | scripts/audit-reuse.sh | Duplicate detector, extraction candidates |
 | downstream-census | scripts/downstream-census.sh | Migration matrix across downstream template repos |
 | generate-project-spec | scripts/generate-project-spec.sh | Build PROJECT_SPEC.md from repo state |
@@ -39,12 +42,12 @@
 
 | Tool | Path | Purpose | Used by |
 |------|------|---------|---------|
-| blast-radius | scripts/blast-radius.sh | blast-radius.sh — BFS through import graph to find all affected files | agent/manual |
+| blast-radius | scripts/blast-radius.sh | Basename/grep blast-radius fallback; not a semantic graph | agent/manual |
 | codex-agent-policy | scripts/codex-agent-policy.js | Role/model/effort and adaptive fan-out policy used by router and validators | agent/runtime |
 | codex-route-task | scripts/codex-route-task.js | Codex route contract generator for AGENTS.md route-first workflow | agent/manual |
 | codex-hook-adapter | scripts/codex-hook-adapter.sh | codex-hook-adapter.sh — Translates Codex hook env vars to Claude hook | agent/manual |
 | context-restore | scripts/context-restore.sh | context-restore.sh — Restore context after compaction or session start | agent/manual |
-| import-graph | scripts/import-graph.sh | import-graph.sh — Find most-imported files (hot files) in a project | agent/manual |
+| import-graph | scripts/import-graph.sh | Relative-import grep fallback; prefer parser-backed graph for structural claims | agent/manual |
 | measure-context | scripts/measure-context.sh | measure-context.sh — Measure auto-loaded context size + budget check | agent/manual |
 | module-status | scripts/module-status.sh | Module Status Scanner — analyze project module health | agent/manual |
 | plan-scaffold | scripts/plan-scaffold.sh | plan-scaffold.sh — Generate plan skeleton in tasks/current.md | agent/manual |

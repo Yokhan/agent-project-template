@@ -56,7 +56,7 @@ powershell -NoProfile -Command ^
   "$projectRoot = (Resolve-Path $env:RAW_PROJECT_DIR).Path;" ^
   "$payloadPrefixes = @('.agents/','.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
   "$payloadFiles = @('.editorconfig','.env.example','.gitattributes','.gitignore','.mcp.json','AGENTS.md','CLAUDE.md','CONTRIBUTING.md','ecosystem.md','Makefile','PROJECT_SPEC.md','README.md','SECURITY.md','SETUP_GUIDE.md','upgrade-project.sh');" ^
-  "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
+  "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','tasks/toolchain-discovery.json','tasks/toolchain-change-strategy.json','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
   "$starterOverrides = @('tasks/current.md','tasks/goal.md','tasks/.research-cache.md','tasks/lessons.md');" ^
   "$candidateMap = @{};" ^
   "foreach ($rel in (& git -C $templateRoot ls-files)) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^
@@ -169,6 +169,7 @@ powershell -NoProfile -Command ^
   "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
   "  'docs/CODEX_SKILLS_AUDIT.md'," ^
   "  'docs/CODEX_SUBAGENTS_AUDIT.md'," ^
+  "  'docs/CODE_INTELLIGENCE_TOOLCHAIN.md'," ^
   "  'docs/MIGRATION_MATRIX.md'," ^
   "  'docs/OPENAI_MODEL_GUIDANCE.md'," ^
   "  'docs/WRITING_REFERENCE_PROVENANCE.md'," ^
@@ -181,6 +182,8 @@ powershell -NoProfile -Command ^
   "  'docs/SUPPORTED_ENVIRONMENTS.md'," ^
   "  'docs/*.md.template'," ^
   "  '_reference/*.md'," ^
+  "  '_reference/*.json'," ^
+  "  '_reference/*.toml'," ^
   "  '.github/workflows/validate-template.yml'" ^
   ");" ^
   "$projectPatterns = @(" ^
@@ -198,6 +201,7 @@ powershell -NoProfile -Command ^
   "    'tasks/*' { 'project'; break }" ^
   "    'brain/*' { 'project'; break }" ^
   "    '.gitignore' { 'hybrid'; break }" ^
+  "    '.codex/config.toml' { 'hybrid'; break }" ^
   "    '.mcp.json' { 'hybrid'; break }" ^
   "    '.vscode/extensions.json' { 'hybrid'; break }" ^
   "    default { 'template' }" ^
@@ -295,13 +299,15 @@ echo    Project "%PROJECT_DIR%" created successfully!
 echo.
 echo    Next steps:
 echo    1. cd "%PROJECT_DIR%"
-echo    2. Open in Claude Code, Codex, or Zed and run the project setup workflow
-echo    3. Configure optional MCP integrations only if the project needs them
+echo    2. Open and trust the project in Codex, then run the project setup workflow
+echo    3. Run: node scripts\code-intelligence-tools.js install --profile full
+echo    4. From Git Bash run: bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+echo    5. Restart Codex and verify: codex mcp list
 echo.
 echo    Included:
 echo    - Shared agent rules, hooks, and sync tooling
 echo    - MCP bootstrap scripts and context-router sources
-echo    - Dual-agent docs ^(Claude Code + Codex^)
+echo    - Codex-first docs with Claude Code compatibility
 echo    - Brain/tasks scaffolding and troubleshooting docs
 echo  ========================================================
 echo.

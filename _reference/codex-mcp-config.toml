@@ -1,14 +1,3 @@
-# Codex CLI configuration for agent-project-template
-# Docs: https://developers.openai.com/codex/config-basic
-# Model, effort, approval, and sandbox defaults come from Zed UI / ~/.codex/config.toml.
-
-[features]
-codex_hooks = true
-
-[agents]
-max_threads = 6
-max_depth = 1
-
 # BEGIN agent-project-template managed MCP
 [mcp_servers.context-router]
 command = "node"

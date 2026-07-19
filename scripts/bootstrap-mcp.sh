@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # bootstrap-mcp.sh — Auto-detect, install, and configure MCP servers
-# Usage: bash scripts/bootstrap-mcp.sh [--dry-run] [--install] [--check] [--zed]
+# Usage: bash scripts/bootstrap-mcp.sh [--dry-run] [--install] [--check] [--zed] [--with-n8n] [--tool-profile=full]
 #
 # Modes:
 #   (default)    Detect installed servers, merge into .mcp.json
-#   --install    Also install missing REQUIRED servers (Engram)
-#   --check      Health check: verify configured servers actually respond
+#   --install    Install missing required MCP servers and the selected pinned tool profile
+#   --check      Health check configured servers and the selected pinned tool profile
 #   --zed        Also generate Zed context_servers config
+#   --with-n8n   Explicitly install/start optional n8n workflow automation
+#   --tool-profile=core|auto|full  Select the pinned code-intelligence arsenal
 #   --dry-run    Show what would be done without writing files
 #
 # Environment detection:
@@ -40,6 +42,8 @@ DRY_RUN=false
 DO_INSTALL=false
 DO_CHECK=false
 DO_ZED=false
+DO_N8N=false
+TOOL_PROFILE=full
 
 for arg in "$@"; do
   case "$arg" in
@@ -47,17 +51,26 @@ for arg in "$@"; do
     --install) DO_INSTALL=true ;;
     --check) DO_CHECK=true ;;
     --zed) DO_ZED=true ;;
+    --with-n8n) DO_N8N=true ;;
+    --tool-profile=*) TOOL_PROFILE="${arg#*=}" ;;
     --help|-h)
-      echo "Usage: $0 [--dry-run] [--install] [--check] [--zed]"
+      echo "Usage: $0 [--dry-run] [--install] [--check] [--zed] [--with-n8n] [--tool-profile=core|auto|full]"
       echo ""
-      echo "  --install   Install missing required servers (Engram)"
-      echo "  --check     Verify configured servers respond"
+      echo "  --install   Install missing required MCP servers and the selected tool profile"
+      echo "  --check     Verify configured servers and the selected tool profile"
       echo "  --zed       Also configure Zed AI chat panel"
+      echo "  --with-n8n  Explicitly install/start optional n8n"
+      echo "  --tool-profile  Select core, stack-aware auto, or all ten tools (default: full)"
       echo "  --dry-run   Show what would change without writing"
       exit 0
       ;;
   esac
 done
+
+case "$TOOL_PROFILE" in
+  core|auto|full) ;;
+  *) echo "ERROR: Unknown tool profile: $TOOL_PROFILE"; exit 1 ;;
+esac
 
 # --- OS and environment detection ---
 
@@ -89,6 +102,7 @@ create_temp_json_file() {
 
 OS=$(detect_os)
 ARCH=$(detect_arch)
+ENGRAM_VERSION=$(node -e "const c=require('./_reference/code-intelligence-tools.json');console.log(c.tools.find(t=>t.id==='engram').version)" 2>/dev/null || echo "1.19.0")
 
 # --- Check for Node.js (needed for JSON merge) ---
 if ! command -v node &>/dev/null; then
@@ -125,8 +139,8 @@ install_engram() {
 
   # Method 1: Go install (if Go available)
   if command -v go &>/dev/null; then
-    echo "Go found. Installing via: go install github.com/Gentleman-Programming/engram@latest"
-    if go install github.com/Gentleman-Programming/engram@latest 2>/dev/null; then
+    echo "Go found. Installing pinned Engram v$ENGRAM_VERSION"
+    if GOBIN="$HOME/.local/bin" go install "github.com/Gentleman-Programming/engram/cmd/engram@v$ENGRAM_VERSION" 2>/dev/null; then
       echo "Engram installed via Go."
       return 0
     fi
@@ -137,36 +151,55 @@ install_engram() {
   local bin_dir="$HOME/.local/bin"
   mkdir -p "$bin_dir"
 
-  local bin_name="engram"
+  local bin_name="engram" download_os="$OS" archive_ext="tar.gz"
   [ "$OS" = "windows" ] && bin_name="engram.exe"
-
-  local download_os="$OS"
   [ "$download_os" = "macos" ] && download_os="darwin"
+  [ "$OS" = "windows" ] && archive_ext="zip"
 
-  local release_url="https://github.com/Gentleman-Programming/engram/releases/latest/download/engram-${download_os}-${ARCH}"
-  [ "$OS" = "windows" ] && release_url="${release_url}.exe"
+  local asset_name="engram_${ENGRAM_VERSION}_${download_os}_${ARCH}.${archive_ext}"
+  local release_base="https://github.com/Gentleman-Programming/engram/releases/download/v${ENGRAM_VERSION}"
+  local temp_dir archive_path checksums_path
+  temp_dir=$(_temp_dir "engram-install")
+  archive_path="$temp_dir/$asset_name"
+  checksums_path="$temp_dir/checksums.txt"
 
-  echo "Downloading from: $release_url"
+  echo "Downloading pinned asset: $release_base/$asset_name"
   if command -v curl &>/dev/null; then
-    if curl -fsSL "$release_url" -o "$bin_dir/$bin_name"; then
-      chmod +x "$bin_dir/$bin_name" 2>/dev/null || true
-      echo "Engram installed to $bin_dir/$bin_name"
-      echo ""
-      echo "NOTE: Make sure $bin_dir is in your PATH."
-      echo "  Add to ~/.bashrc or ~/.zshrc:  export PATH=\"\$HOME/.local/bin:\$PATH\""
-      return 0
-    fi
+    curl -fsSL "$release_base/$asset_name" -o "$archive_path" || return 1
+    curl -fsSL "$release_base/checksums.txt" -o "$checksums_path" || return 1
   elif command -v wget &>/dev/null; then
-    if wget -q "$release_url" -O "$bin_dir/$bin_name"; then
-      chmod +x "$bin_dir/$bin_name" 2>/dev/null || true
-      echo "Engram installed to $bin_dir/$bin_name"
-      return 0
-    fi
+    wget -q "$release_base/$asset_name" -O "$archive_path" || return 1
+    wget -q "$release_base/checksums.txt" -O "$checksums_path" || return 1
+  else
+    echo "ERROR: curl or wget is required to download Engram."
+    return 1
   fi
 
-  echo "ERROR: Could not download Engram. Install manually:"
-  echo "  https://github.com/Gentleman-Programming/engram/releases"
-  return 1
+  local expected_hash actual_hash extracted_binary
+  expected_hash=$(awk -v asset="$asset_name" '$2 == asset || $2 == "*" asset {print $1}' "$checksums_path")
+  actual_hash=$(_get_hash "$archive_path")
+  if [ -z "$expected_hash" ] || [ "$expected_hash" != "$actual_hash" ]; then
+    echo "ERROR: Engram checksum verification failed."
+    return 1
+  fi
+
+  if [ "$OS" = "windows" ]; then
+    powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '$archive_path' -DestinationPath '$temp_dir/extracted' -Force" || return 1
+  else
+    mkdir -p "$temp_dir/extracted"
+    tar -xzf "$archive_path" -C "$temp_dir/extracted" || return 1
+  fi
+
+  extracted_binary=$(find "$temp_dir/extracted" -type f -name "$bin_name" -print -quit)
+  if [ -z "$extracted_binary" ]; then
+    echo "ERROR: Engram archive did not contain $bin_name."
+    return 1
+  fi
+  cp "$extracted_binary" "$bin_dir/$bin_name"
+  chmod +x "$bin_dir/$bin_name" 2>/dev/null || true
+  echo "Engram v$ENGRAM_VERSION installed to $bin_dir/$bin_name"
+  echo "NOTE: Make sure $bin_dir is in PATH."
+  return 0
 }
 
 # --- Detection helpers ---
@@ -197,19 +230,11 @@ detect_engram_path() {
   fi
 }
 
-detect_cgc() {
-  command -v cgc.exe &>/dev/null || command -v cgc &>/dev/null || \
-  npx codegraphcontext --help &>/dev/null 2>&1
-}
-
-detect_cgc_path() {
-  if command -v cgc.exe &>/dev/null; then
-    command -v cgc.exe
-  elif command -v cgc &>/dev/null; then
-    command -v cgc
-  else
-    echo "cgc"
-  fi
+detect_engram_version() {
+  local engram_path version_output
+  engram_path=$(detect_engram_path)
+  version_output=$("$engram_path" --version 2>/dev/null || true)
+  printf '%s' "$version_output" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1
 }
 
 detect_obsidian() {
@@ -249,7 +274,8 @@ detect_figma() {
 check_engram_health() {
   local engram_path
   engram_path=$(detect_engram_path)
-  if "$engram_path" mcp --help &>/dev/null 2>&1 || "$engram_path" --version &>/dev/null 2>&1; then
+  if [ "$(detect_engram_version)" = "$ENGRAM_VERSION" ] && \
+    ("$engram_path" mcp --help &>/dev/null 2>&1 || "$engram_path" --version &>/dev/null 2>&1); then
     return 0
   fi
   return 1
@@ -276,14 +302,30 @@ run_health_check() {
 
   echo -n "  .mcp.json: "
   if [ -f ".mcp.json" ]; then
-    if node -e "JSON.parse(require('fs').readFileSync('.mcp.json','utf8'))" &>/dev/null; then
-      echo "OK (valid JSON)"
+    if node -e "const m=JSON.parse(require('fs').readFileSync('.mcp.json','utf8')).mcpServers||{};if(!m.engram||!m['codebase-memory-mcp']||!m['context-router'])process.exit(1)" &>/dev/null; then
+      echo "OK (required servers configured)"
     else
       echo "CORRUPT (invalid JSON!)"
       all_ok=false
     fi
   else
     echo "MISSING (run bootstrap-mcp.sh first)"
+    all_ok=false
+  fi
+
+  echo -n "  context-router build: "
+  if [ -f "mcp-servers/context-router/dist/index.js" ]; then
+    echo "OK"
+  else
+    echo "MISSING (run bootstrap-mcp.sh without --dry-run)"
+    all_ok=false
+  fi
+
+  echo -n "  .codex/config.toml: "
+  if [ -f "scripts/configure-codex-mcp.js" ] && node scripts/configure-codex-mcp.js --check &>/dev/null; then
+    echo "OK (managed MCP block is current)"
+  else
+    echo "MISSING OR DRIFTED (run bootstrap-mcp.sh first)"
     all_ok=false
   fi
 
@@ -306,14 +348,20 @@ run_health_check() {
   echo ""
   if $all_ok; then
     echo "All checks passed."
+    return 0
   else
     echo "Some checks FAILED. Fix issues above, then re-run with --check."
+    return 1
   fi
 }
 
 if [ "$DO_CHECK" = true ]; then
-  run_health_check
-  exit 0
+  CHECK_STATUS=0
+  run_health_check || CHECK_STATUS=1
+  if [ -f "scripts/code-intelligence-tools.js" ]; then
+    node scripts/code-intelligence-tools.js check --profile "$TOOL_PROFILE" || CHECK_STATUS=1
+  fi
+  exit "$CHECK_STATUS"
 fi
 
 # --- Main: Detection phase ---
@@ -332,7 +380,19 @@ ENGRAM_INSTALLED=false
 echo -n "  engram: "
 if detect_engram; then
   ENGRAM_PATH=$(detect_engram_path)
-  echo "ENABLED ($ENGRAM_PATH)"
+  CURRENT_ENGRAM_VERSION=$(detect_engram_version)
+  if [ "$DO_INSTALL" = true ] && [ "$CURRENT_ENGRAM_VERSION" != "$ENGRAM_VERSION" ]; then
+    if [ "$DRY_RUN" = true ]; then
+      echo "DRIFT (v${CURRENT_ENGRAM_VERSION:-unknown}; would upgrade to v$ENGRAM_VERSION)"
+    else
+      echo "DRIFT (v${CURRENT_ENGRAM_VERSION:-unknown}; upgrading to v$ENGRAM_VERSION)"
+      install_engram
+      ENGRAM_PATH=$(detect_engram_path)
+      CURRENT_ENGRAM_VERSION=$(detect_engram_version)
+    fi
+  else
+    echo "ENABLED ($ENGRAM_PATH, v${CURRENT_ENGRAM_VERSION:-unknown})"
+  fi
   ENABLED+=("engram")
   ENGRAM_INSTALLED=true
   DETECTED_SERVERS+="engram|{\"command\":\"$ENGRAM_PATH\",\"args\":[\"mcp\"]}
@@ -361,7 +421,7 @@ else
   else
     echo "NOT FOUND (required!)"
     echo ""
-    echo "  To auto-install:  bash scripts/bootstrap-mcp.sh --install"
+    echo "  To auto-install:  bash scripts/bootstrap-mcp.sh --install --tool-profile=$TOOL_PROFILE"
     echo "  Manual install:   https://github.com/Gentleman-Programming/engram/releases"
     echo ""
     ENABLED+=("engram (stub)")
@@ -370,18 +430,16 @@ else
   fi
 fi
 
-# 2. codegraphcontext
-echo -n "  codegraphcontext: "
-if detect_cgc; then
-  CGC_PATH=$(detect_cgc_path)
-  echo "ENABLED ($CGC_PATH)"
-  ENABLED+=("codegraphcontext")
-  DETECTED_SERVERS+="codegraphcontext|{\"command\":\"$CGC_PATH\",\"args\":[\"mcp\",\"start\"]}
-"
+# 2. codebase-memory-mcp (parser-backed code graph)
+echo -n "  codebase-memory-mcp: "
+if command -v codebase-memory-mcp &>/dev/null; then
+  echo "ENABLED ($(command -v codebase-memory-mcp))"
 else
-  echo "DISABLED (not installed — optional)"
-  DISABLED+=("codegraphcontext")
+  echo "CONFIGURED (installed by the selected tool profile)"
 fi
+ENABLED+=("codebase-memory-mcp")
+DETECTED_SERVERS+="codebase-memory-mcp|{\"command\":\"codebase-memory-mcp\",\"args\":[],\"env\":{\"CBM_ALLOWED_ROOT\":\".\"}}
+"
 
 # 3. obsidian-mcp (only if brain/ exists)
 echo -n "  obsidian-mcp: "
@@ -439,19 +497,30 @@ fi
 # 7. context-router (template MCP — dynamic rule loading)
 echo -n "  context-router: "
 if [ -f "mcp-servers/context-router/package.json" ]; then
-  # Install deps if needed
-  if [ ! -d "mcp-servers/context-router/node_modules" ]; then
-    echo -n "installing deps... "
-    (cd mcp-servers/context-router && npm install --silent 2>/dev/null) || true
-  fi
-  if [ -d "mcp-servers/context-router/node_modules" ]; then
-    echo "ENABLED (dynamic rule routing)"
+  if [ "$DRY_RUN" = true ]; then
+    if [ -f "mcp-servers/context-router/dist/index.js" ]; then
+      echo "ENABLED (built dynamic rule routing)"
+    else
+      echo "CONFIGURED (would install dependencies and build)"
+    fi
     ENABLED+=("context-router")
-    DETECTED_SERVERS+="context-router|{\"command\":\"npx\",\"args\":[\"tsx\",\"mcp-servers/context-router/src/index.ts\"]}
+    DETECTED_SERVERS+="context-router|{\"command\":\"node\",\"args\":[\"mcp-servers/context-router/dist/index.js\"]}
 "
   else
-    echo "FAILED (npm install failed)"
-    DISABLED+=("context-router")
+    if [ ! -d "mcp-servers/context-router/node_modules" ]; then
+      echo -n "installing deps... "
+      (cd mcp-servers/context-router && npm ci --silent 2>/dev/null) || true
+    fi
+    if [ -d "mcp-servers/context-router/node_modules" ] && \
+      (cd mcp-servers/context-router && npm run build --silent >/dev/null 2>&1); then
+      echo "ENABLED (built dynamic rule routing)"
+      ENABLED+=("context-router")
+      DETECTED_SERVERS+="context-router|{\"command\":\"node\",\"args\":[\"mcp-servers/context-router/dist/index.js\"]}
+"
+    else
+      echo "FAILED (dependency install or build failed)"
+      DISABLED+=("context-router")
+    fi
   fi
 else
   echo "DISABLED (mcp-servers/context-router/ not found)"
@@ -466,7 +535,7 @@ if curl -s --connect-timeout 2 "$N8N_URL/healthz" >/dev/null 2>&1 || \
    curl -s --connect-timeout 2 "$N8N_URL/api/v1/workflows" >/dev/null 2>&1; then
   echo "ENABLED (running at $N8N_URL)"
   ENABLED+=("n8n")
-elif [ "$DO_INSTALL" = true ]; then
+elif [ "$DO_N8N" = true ]; then
   # Method 1: npm (lightweight, no Docker overhead)
   if command -v npm &>/dev/null; then
     if command -v n8n &>/dev/null; then
@@ -509,7 +578,7 @@ elif [ "$DO_INSTALL" = true ]; then
     fi
   fi
 else
-  echo "NOT RUNNING (optional — start with: n8n start OR --install)"
+  echo "NOT RUNNING (optional — start with: n8n start OR --with-n8n)"
   DISABLED+=("n8n")
 fi
 
@@ -521,6 +590,10 @@ DISABLED+=("memcp")
 echo -n "  claude-memory: "
 echo "DEPRECATED (will be disabled if present)"
 DISABLED+=("claude-memory")
+
+echo -n "  codegraphcontext: "
+echo "DEPRECATED (package unavailable; will be disabled if present)"
+DISABLED+=("codegraphcontext")
 
 # --- Merge phase: .mcp.json (Claude Code CLI) ---
 
@@ -541,16 +614,20 @@ const fs=require('fs');
 const existing=JSON.parse(process.argv[1]);
 const servers=existing.mcpServers||{};
 const lines=process.argv[2].trim().split('\n');
-const added=[],preserved=[];
+const managed=new Set(['context-router','engram','codebase-memory-mcp']);
+const added=[],updated=[],preserved=[];
 for(const line of lines){
   if(!line.trim())continue;
   const i=line.indexOf('|');if(i<0)continue;
   const key=line.slice(0,i),val=JSON.parse(line.slice(i+1));
-  if(servers[key]){preserved.push(key);}else{servers[key]=val;added.push(key);}
+  if(servers[key]&&!managed.has(key)){preserved.push(key);continue;}
+  if(servers[key])updated.push(key);else added.push(key);
+  servers[key]=val;
 }
-const deprecated=['memcp','claude-memory'],disabled=[];
+const deprecated=['memcp','claude-memory','codegraphcontext'],disabled=[];
 for(const d of deprecated){if(servers[d]){servers[d].disabled=true;disabled.push(d);}}
 if(added.length)process.stderr.write('Added: '+added.join(',')+'\n');
+if(updated.length)process.stderr.write('Updated managed: '+updated.join(',')+'\n');
 if(preserved.length)process.stderr.write('Preserved: '+preserved.join(',')+'\n');
 if(disabled.length)process.stderr.write('Disabled (deprecated): '+disabled.join(',')+'\n');
 existing.mcpServers=servers;
@@ -587,6 +664,14 @@ else
   fi
   echo "$MCP_JSON" > .mcp.json
   echo "Generated .mcp.json"
+fi
+
+echo ""
+echo "--- Merge (.codex/config.toml for Codex) ---"
+if [ "$DRY_RUN" = true ]; then
+  node scripts/configure-codex-mcp.js --dry-run
+else
+  node scripts/configure-codex-mcp.js
 fi
 
 # --- Zed configuration ---
@@ -650,14 +735,23 @@ fi
 if [ "$ENGRAM_INSTALLED" = false ] && [ "$DO_INSTALL" = false ]; then
   echo ""
   echo "WARNING: Engram not installed. Memory features will not work."
-  echo "  Auto-install: bash scripts/bootstrap-mcp.sh --install"
+  echo "  Auto-install: bash scripts/bootstrap-mcp.sh --install --tool-profile=$TOOL_PROFILE"
   echo "  Verify after:  bash scripts/bootstrap-mcp.sh --check"
+fi
+
+if [ "$DO_INSTALL" = true ] && [ -f "scripts/code-intelligence-tools.js" ]; then
+  echo ""
+  echo "--- Installing pinned code-intelligence profile: $TOOL_PROFILE ---"
+  INSTALL_ARGS=(install --profile "$TOOL_PROFILE")
+  [ "$DRY_RUN" = true ] && INSTALL_ARGS+=(--dry-run)
+  node scripts/code-intelligence-tools.js "${INSTALL_ARGS[@]}"
 fi
 
 echo ""
 echo "Done. Next steps:"
-echo "  1. Restart Claude Code to pick up .mcp.json changes"
+echo "  1. Open/trust this project in Codex so project .codex/config.toml is loaded"
+echo "  2. Restart Codex after changing MCP configuration"
+echo "  3. Verify: bash scripts/bootstrap-mcp.sh --check --tool-profile=$TOOL_PROFILE"
 if is_zed_environment && [ "$DO_ZED" != true ]; then
-  echo "  2. For Zed AI chat: re-run with --zed flag"
+  echo "  4. For Zed AI chat: re-run with --zed flag"
 fi
-echo "  3. Verify: bash scripts/bootstrap-mcp.sh --check"

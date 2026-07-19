@@ -2,9 +2,11 @@
 
 The template ships conservative defaults so a fresh project is safe to copy, inspect, and update.
 
-## Codex And Claude Config
+## Codex Config
 
-- `.codex/config.toml` keeps only project-specific toggles. Model, effort, approval, and sandbox stay in IDE or user-level config.
+- `.codex/config.toml` owns project toggles and a marker-bounded MCP block. Model, effort, approval, and sandbox stay in IDE or user-level config.
+- `_reference/codex-mcp-config.toml` is the merge source of truth. `scripts/configure-codex-mcp.js` changes only the marker-bounded block, preserves project-owned Codex settings, and fails on conflicting unmanaged MCP tables.
+- Codex loads project `.codex/config.toml` only after the project is trusted. Restart Codex after changing the MCP block, then verify with `codex mcp list`.
 - Codex repo-scoped skills live in `.agents/skills/`; template-owned skills sync normally, while `project-*` skills are project-owned.
 - Codex subagents live in `.codex/agents/`; template-owned agents sync normally, while `project-*` agents are project-owned.
 - `scripts/codex-agent-policy.js` is the source of truth for template-owned role profiles and the `xhigh` reasoning ceiling. Parent model defaults remain user-owned.
@@ -15,10 +17,19 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 - `.claude/settings.local.json` is local-only and must not ship in the template payload.
 - Shared rules live under `.claude/library/`; project-specific additions use `project-*` files.
 
-## MCP Defaults
+## MCP And Code-Intelligence Defaults
 
-- `.mcp.json` includes only the template's local `context-router`, `engram`, and optional disabled `codesight`.
-- `bootstrap-mcp.sh` installs or merges optional MCP integrations explicitly; they are not silently bundled into fresh projects.
+- `.codex/config.toml` configures the local process `context-router`, Engram for
+  durable decisions, and the parser-backed `codebase-memory-mcp` graph for Codex.
+  `.mcp.json` mirrors them only for Claude Code compatibility. The router is
+  infrastructure and is not counted among the ten code-intelligence tools.
+- `_reference/code-intelligence-tools.json` owns ten pinned capabilities. The
+  default `full` profile installs all ten; `auto` remains a smaller opt-in. Only
+  Engram and codebase-memory are persistent code-intelligence MCP surfaces.
+- `bootstrap-mcp.sh` downloads the pinned third-party tool profile only through
+  an explicit `--install --tool-profile=core|auto|full` command. A plain run
+  builds the local router and merge-checks both MCP formats; `--dry-run` writes
+  and installs nothing.
 
 ## Bootstrap Defaults
 

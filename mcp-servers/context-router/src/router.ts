@@ -43,6 +43,9 @@ const { classifyWritingIntent } = require("../../../scripts/lib/writing-intent.j
 const { getWritingRoutePolicy } = require("../../../scripts/lib/writing-route-policy.js") as {
   getWritingRoutePolicy(intent: WritingIntent): WritingRoutePolicy | null;
 };
+const { getToolWorkflow } = require("../../../scripts/lib/code-intelligence-policy.js") as {
+  getToolWorkflow(task: string, stacks?: string[], modes?: string[]): RouteResult["codeIntelligence"];
+};
 
 const ROUTES: Record<string, Route> = {
   code: {
@@ -344,6 +347,7 @@ export function routeKeywords(keywords: string): RouteResult {
     codexSubagents: Array.from(codexSubagents),
     pipeline,
     risk,
+    codeIntelligence: getToolWorkflow(keywords, [], matchedModes),
     needsFreshDocs,
     targetLanguage: writingPolicy?.targetLanguage ?? null,
     languageResolution: writingPolicy?.languageResolution ?? null,

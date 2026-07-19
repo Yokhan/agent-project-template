@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# import-graph.sh - Find most-imported files (hot files) in a project
+# import-graph.sh - Heuristic relative-import fallback, not a semantic code graph
 # Usage: bash scripts/import-graph.sh [directory] [--top N]
 #
 # Shows which files are imported most frequently across the codebase.
 # Hot files = high blast radius = change carefully.
-# Inspired by CodeSight's import graph detector.
+# Heuristic text fallback; this is not a semantic dependency graph.
 
 set -euo pipefail
+
+echo "NOTE: heuristic grep fallback; use codebase-memory-mcp for structural or blast-radius claims." >&2
 
 normalize_drive_path() {
   local path="$1"

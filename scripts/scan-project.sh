@@ -94,9 +94,13 @@ for script_dir in scripts bin tools; do
   [ -d "$script_dir" ] || continue
   for file in "$script_dir"/*.sh "$script_dir"/*.py "$script_dir"/*.js; do
     [ -f "$file" ] || continue
-    tool_name="$(basename "$file" | sed 's/\.[^.]*$//')"
-    purpose="$(head -5 "$file" | grep -E '^#( |$)|^//|^"""' | head -1 | sed 's/^[# \/"]*//' | head -c 72 || true)"
-    purpose="$(sanitize_cell "${purpose:-project script}")"
+    tool_name="${file##*/}"
+    tool_name="${tool_name%.*}"
+    purpose="$(awk 'NR<=5 && (/^#( |$)/ || /^\/\// || /^"""/) { sub(/^[# \/"]*/, ""); print substr($0, 1, 72); exit }' "$file" 2>/dev/null || true)"
+    purpose="${purpose:-project script}"
+    purpose="${purpose//|/ }"
+    purpose="${purpose#"${purpose%%[![:space:]]*}"}"
+    purpose="${purpose%"${purpose##*[![:space:]]}"}"
     echo "  $file: $purpose"
 
     if [ -z "${TEMPLATE_PATHS[$file]:-}" ] && [ -z "${PROJECT_ROW_SEEN[$file]:-}" ]; then

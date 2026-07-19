@@ -1,0 +1,146 @@
+{
+  "schema_version": 2,
+  "trigger": {
+    "kind": "architecture-mismatch",
+    "summary": "The unfinished ten-tool layer installs capabilities but does not make the agent select and use them as one workflow.",
+    "root_cause": "Catalog membership, process orchestration, and always-active MCP routing were conflated; a disabled summarizer and the process router were counted as code-intelligence tools while no route emitted a task-specific tool sequence.",
+    "evidence_ref": "_reference/code-intelligence-tools.json tools[2,7]; .mcp.json codesight.disabled; scripts/lib/code-intelligence-policy.js exports without task workflow; scripts/codex-route-task.js route result"
+  },
+  "project": {
+    "posture": "evolving",
+    "posture_evidence": [
+      {
+        "level": "observed",
+        "summary": "The released template is consumed by heterogeneous downstream repositories and is still being actively evolved.",
+        "ref": "tasks/current.md downstream v4.8.0 preview"
+      }
+    ],
+    "protected_contracts": [
+      {
+        "id": "toolchain-bootstrap-contract",
+        "kind": "internal-behavior",
+        "owner": "agent-project-template",
+        "sot": "setup.sh, setup.bat, scripts/bootstrap-mcp.sh, and .mcp.json",
+        "impact": "preserved"
+      },
+      {
+        "id": "project-owned-mcp-contract",
+        "kind": "internal-behavior",
+        "owner": "downstream project",
+        "sot": "Existing .mcp.json entries and template sync preservation rules",
+        "impact": "preserved"
+      }
+    ]
+  },
+  "product": {
+    "user_victory": "A downstream agent retrieves structural code context with fewer irrelevant file reads while the operator can see exactly what is installed, active, healthy, and measured.",
+    "final_path": "Template rollout detects the stack, installs pinned tools, activates only useful capabilities, verifies health, and records comparable context-efficiency evidence.",
+    "falsifier": "The rollout adds tool noise or installation cost without reducing representative exploration tokens and tool calls at equivalent answer quality."
+  },
+  "change": {
+    "summary": "Replace the decorative catalog with ten complementary capabilities and one task-to-tool policy consumed by both Codex routing and the context-router MCP.",
+    "scope": "Template code-intelligence configuration, bootstrap, validation, documentation, and tests.",
+    "impacts": [],
+    "reversible": true
+  },
+  "options": [
+    {
+      "id": "repair-existing-bootstrap",
+      "destination": "repair",
+      "transition": "direct-swap",
+      "summary": "Swap CodeGraphContext for one new MCP entry and retain the current universal grep scripts and ad hoc bootstrap.",
+      "hard_constraints": {
+        "product_function": { "status": "pass", "evidence": [{ "level": "observed", "summary": "A replacement MCP can be added without removing current commands.", "ref": ".mcp.json merge behavior" }] },
+        "data_safety": { "status": "pass", "evidence": [{ "level": "observed", "summary": "The candidate tools process source locally.", "ref": "official candidate documentation" }] },
+        "security": { "status": "pass", "evidence": [{ "level": "observed", "summary": "Pinned packages can be checked without granting network access at runtime.", "ref": "candidate package metadata" }] },
+        "protected_contracts": { "status": "pass", "evidence": [{ "level": "observed", "summary": "The existing MCP merge contract remains intact.", "ref": "scripts/bootstrap-mcp.sh merge phase" }] },
+        "verification": { "status": "pass", "evidence": [{ "level": "observed", "summary": "Existing bootstrap checks can verify command presence.", "ref": "scripts/bootstrap-mcp.sh --check" }] },
+        "rollback_recovery": { "status": "pass", "evidence": [{ "level": "observed", "summary": "A bounded MCP entry change is revertible.", "ref": "git diff" }] }
+      },
+      "evidence": {
+        "product_outcome": { "direction": "better", "level": "estimated", "basis": "One real graph is better than the dead package reference, but tool selection remains opaque." },
+        "business_outcome": { "direction": "same", "level": "estimated", "basis": "No measured downstream delivery effect yet." },
+        "correctness": { "direction": "better", "level": "estimated", "basis": "Parser-backed graph queries should outperform basename grep for supported structures." },
+        "maintainability": { "direction": "same", "level": "observed", "basis": "The ad hoc bootstrap and duplicated detection logic remain.", "baseline": "Tool behavior is distributed across bootstrap code and MCP JSON.", "result": "The same distribution remains after a one-entry repair.", "ref": "scripts/bootstrap-mcp.sh", "metrics": ["tool-definition-owners"] },
+        "reliability": { "direction": "better", "level": "estimated", "basis": "The dead package call is removed, but health coverage remains partial." },
+        "performance": { "direction": "unknown", "level": "unknown", "basis": "No comparable benchmark exists yet." },
+        "security": { "direction": "same", "level": "estimated", "basis": "One dependency replaces one dependency." },
+        "transition_cost": { "direction": "better", "level": "estimated", "basis": "This is the smallest implementation change." },
+        "reversibility": { "direction": "same", "level": "observed", "basis": "The change is a bounded configuration replacement.", "baseline": "The current MCP configuration can be restored from the tracked repository state.", "result": "The repaired MCP configuration can be restored through the same repository rollback.", "ref": "git diff and tracked .mcp.json" }
+      },
+      "total_cost": {
+        "implementation": "S",
+        "transition": "S",
+        "verification": "M",
+        "maintenance": "L",
+        "operations": "M",
+        "change_amplification": "L",
+        "basis": "Every future tool update still requires coordinated edits in multiple bootstrap and documentation surfaces."
+      }
+    },
+    {
+      "id": "replace-with-capability-catalog",
+      "destination": "bounded-replace",
+      "transition": "direct-swap",
+      "summary": "Replace the unshipped catalog and routing internals directly while preserving setup, bootstrap, MCP merge, and downstream ownership contracts.",
+      "hard_constraints": {
+        "product_function": { "status": "pass", "evidence": [{ "level": "observed", "summary": "The existing context router and Engram remain available while the new graph path is introduced.", "ref": "staged activation design" }] },
+        "data_safety": { "status": "pass", "evidence": [{ "level": "observed", "summary": "Selected default tools are local-first and do not require source upload.", "ref": "official selected-tool documentation" }] },
+        "security": { "status": "pass", "evidence": [{ "level": "observed", "summary": "The catalog pins versions and records licenses; install remains explicit and auditable.", "ref": "tool catalog contract" }] },
+        "protected_contracts": { "status": "pass", "evidence": [{ "level": "observed", "summary": "Existing project-owned MCP entries are preserved and activation is additive during the staged transition.", "ref": "MCP merge contract" }] },
+        "verification": { "status": "pass", "evidence": [{ "level": "observed", "summary": "Schema, plan, health, and benchmark fixtures can be deterministic template gates.", "ref": "planned validation surface" }] },
+        "rollback_recovery": { "status": "pass", "evidence": [{ "level": "observed", "summary": "The catalog and generated entries are bounded tracked files; old scripts remain during canary rollout.", "ref": "staged-swap cleanup plan" }] }
+      },
+      "evidence": {
+        "product_outcome": { "direction": "better", "level": "estimated", "basis": "Users gain one visible install/activation/health contract instead of hidden ad hoc behavior." },
+        "business_outcome": { "direction": "better", "level": "estimated", "basis": "Fewer exploratory reads should reduce agent latency and cost if the canary benchmark passes." },
+        "correctness": { "direction": "better", "level": "estimated", "basis": "Parser and LSP-backed tools replace language-blind grep for structural questions." },
+        "maintainability": { "direction": "better", "level": "observed", "basis": "One catalog owns versions, licenses, roles, activation, install, and health metadata.", "baseline": "Definitions are spread across .mcp.json, bootstrap code, docs, and optional shell checks.", "result": "One machine-readable catalog becomes the decision owner and generated surfaces consume it.", "ref": "planned _reference/code-intelligence-tools.json", "metrics": ["tool-definition-owners", "duplicated-version-fields"] },
+        "reliability": { "direction": "better", "level": "estimated", "basis": "Pinned versions and per-tool health checks fail closed before activation." },
+        "performance": { "direction": "unknown", "level": "unknown", "basis": "Stack-aware activation is promising, but promotion requires a comparable local benchmark." },
+        "security": { "direction": "better", "level": "estimated", "basis": "License and source metadata become validated; remote-code latest installers are excluded from the default path." },
+        "transition_cost": { "direction": "worse", "level": "estimated", "basis": "The catalog, validator, cross-platform adapter, tests, and canary measurement require more initial work." },
+        "reversibility": { "direction": "better", "level": "observed", "basis": "Staged activation preserves the old path until explicit absence checks pass.", "baseline": "The current bootstrap mixes detection, installation, configuration, and optional services in one script.", "result": "The staged catalog can be disabled as one bounded layer while the existing bootstrap remains available during canary rollout.", "ref": "staged-swap cleanup plan" }
+      },
+      "total_cost": {
+        "implementation": "M",
+        "transition": "M",
+        "verification": "L",
+        "maintenance": "S",
+        "operations": "M",
+        "change_amplification": "S",
+        "basis": "Initial verification is larger, but future version and activation changes have one owner."
+      },
+      "cleanup": {
+        "owner": "Template code-intelligence bootstrap",
+        "removal_condition": "Remove CodeGraphContext detection and demote grep graph scripts only after representative Windows and Linux canaries pass correctness and context-efficiency gates.",
+        "absence_check": "Search tracked template files and generated downstream fixtures for active codegraphcontext configuration and undocumented graph-script claims."
+      }
+    }
+  ],
+  "recommendation": {
+    "option_id": "replace-with-capability-catalog",
+    "advantages": ["maintainability", "reversibility"],
+    "reason": "The catalog fixes the ownership failure, supports heterogeneous stacks, and makes token savings a measured promotion gate instead of marketing copy.",
+    "rejected_alternative": "A one-entry repair leaves the dead architecture around the new tool and cannot explain or verify why every downstream project receives the same dependencies."
+  },
+  "approval": {
+    "status": "approved",
+    "envelope": {
+      "outcome": "Deliver the requested current ten-tool code-intelligence arsenal with stack-aware activation and verifiable efficiency.",
+      "scope": "Template code-intelligence catalog, installer/checker, configuration, tests, documentation, and generated downstream contract.",
+      "protected_contract_ids": ["toolchain-bootstrap-contract", "project-owned-mcp-contract"],
+      "destination": "bounded-replace",
+      "transitions": ["direct-swap"],
+      "risk_limit": "No automatic activation of redundant MCP surfaces and no unreviewed non-commercial default dependency.",
+      "downtime_limit": "Existing Engram and context-router workflows remain usable during transition.",
+      "cost_limit": "No paid services or commercial licenses are introduced.",
+      "release_limit": "No tag, push, release, or all-project rollout is included.",
+      "environment_limit": "Implement and verify in the template plus temporary generated fixtures only; do not configure or index downstream projects.",
+      "rollback_requirement": "Revert the bounded toolchain changes if schema, health, sync, or representative benchmark gates fail.",
+      "ref": "user-request:2026-07-18-code-intelligence-arsenal",
+      "current": true,
+      "invalidation_conditions": ["license change", "source upload requirement", "protected MCP merge regression", "benchmark quality regression"]
+    }
+  }
+}

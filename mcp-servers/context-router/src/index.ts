@@ -14,7 +14,7 @@ import { buildActiveRulesOutput } from "./active-rules.js";
 
 const server = new McpServer({
   name: "context-router",
-  version: "1.6.0",
+  version: "1.7.0",
 });
 
 // --- Tool: get_context ---
@@ -50,6 +50,7 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
 
@@ -161,6 +162,7 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
 

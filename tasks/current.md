@@ -1,17 +1,119 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v4.8.0-release
-status: done
-updated: 2026-07-18
-readiness: 100
+id: code-intelligence-toolchain
+status: active
+updated: 2026-07-19
+readiness: 90
 plan: 100
 inventory: 100
-production: 100
-cleanup: 100
-tags: release,change-strategy,destination,transition,compatibility,evidence,routing
-next: preview v4.8.0 in representative downstream projects with the pinned dry-run flow
+production: 85
+cleanup: 95
+tags: tooling,context,code-graph,mcp,template,benchmark,change-strategy
+next: run the aggregate Unix setup gate in Linux CI, then benchmark the graph on representative downstream projects before rollout
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - Code Intelligence Toolchain
+
+### User Wants
+- Put exactly ten complementary tools into `agent-project-template`, not into
+  the downstream projects during this task.
+- Make them work as one process instead of merely installing unused binaries.
+- Use codebase-memory as the graph and clarify whether Engram remains.
+
+### Success Means
+- The ten-tool catalog excludes the process router and disabled Codesight.
+- Engram remains the decision/session memory; codebase-memory is the sole
+  persistent code graph; all other tools are on-demand CLI or short-lived LSP.
+- Codex routing and context-router both emit the same task-specific workflow,
+  so installation is tied to actual use.
+- Setup/bootstrap can install and health-check pinned versions without starting
+  ten permanent MCP servers or configuring any downstream project in this task.
+- Token, memory, and latency benefits remain hypotheses until a separate
+  representative benchmark passes the quality gate.
+
+### Verification
+- Catalog schema and selection unit tests.
+- Native Windows plan and health-report smoke.
+- Context-router build plus template, SOT, text, and generated-project checks.
+- Representative TS/JS, Python, Go, Rust, and C# benchmark remains a promotion
+  gate; no unmeasured savings are reported as achieved.
+
+### Change Strategy
+- Discovery: `tasks/toolchain-discovery.json`.
+- Decision: `tasks/toolchain-change-strategy.json`.
+- Destination: `bounded-replace`; transition: `direct-swap` inside the unshipped
+  template diff.
+- Protected: Engram memory, project-owned MCP entries, cross-platform bootstrap,
+  pinned installs, and explicit rollback.
+- Rejected: preserving the existing list and adding more documentation. That
+  leaves the tools unused because neither router emits a workflow.
+
+### Current Evidence
+- 53 top-level Git roots were inspected; 35 have Engram configuration, 30 have
+  context-router/Codesight configuration, 6 still name CodeGraphContext, and 40
+  ship the same grep-based import graph.
+- The current dirty catalog counts context-router as tool #3 and disabled
+  Codesight as tool #8; policy tests only selection and installation, not use.
+- Primary-source and registry checks confirm codebase-memory `0.9.0`, Probe
+  `0.6.0-rc325`, ast-grep `0.44.1`, Repomix `1.16.1`, dependency-cruiser
+  `18.1.0`, and Gitleaks `8.30.0`. Probe is RC-only and must stay on-demand.
+- The project fleet includes TS/JS, Python, Go, Rust, C#/.NET/Unigine, Docker,
+  and documentation-only repositories, so one language-specific graph cannot be
+  the universal implementation.
+
+### Result
+- Implemented the exact ten-tool catalog, pinned installers and health checks,
+  shared task-to-tool policy, and matching Codex/context-router output.
+- Native Windows generated-project smoke passed: the generated catalog validates
+  with ten tools, Codesight is absent, and symbol refactoring routes through
+  `codebase-memory -> Serena -> ripgrep`.
+- A real `full` install and health check now reports all ten pinned commands OK.
+  The run exposed and fixed missing GitHub-download retries, Probe's package vs.
+  binary version mismatch, and an undersized Windows dependency-cruiser timeout.
+- Catalog, routing, context-router build/tests, production standard, SOT, text,
+  progressive-status, and template validation gates pass locally.
+- The aggregate Bash smoke still stalls in the existing Unix `setup.sh` fixture
+  on this Windows Git Bash host. Treat Linux CI as the authoritative remaining
+  setup gate; do not describe that lane as passed locally.
+- No downstream apply, project configuration, project index, release, or token
+  benchmark is part of this slice.
+
+## Active Slice - Downstream v4.8.0 Preview
+
+### Result
+- Ran the pinned `v4.8.0 --dry-run` flow against three real downstream
+  repositories without applying any update.
+- `PersonalAssistant` (`4.7.0 -> 4.8.0`): 37 updates, 11 additions,
+  0 conflicts, 4 project-owned files preserved, 2 deprecated files retained.
+- `SUNDesignSystem` (`3.6.0 -> 4.8.0`): 45 updates, 229 additions,
+  4 conflicts, 5 project-owned files preserved. Manual merge is required for
+  `mcp-servers/context-router/package-lock.json`,
+  `mcp-servers/context-router/src/index.ts`, `_reference/tool-registry.md`, and
+  `.gitignore`; do not use it as the first canary.
+- `giants_vale_project` (`4.3.4 -> 4.8.0`): 78 updates, 65 additions,
+  0 conflicts, 6 project-owned files preserved, 24 deprecated files retained.
+- A fourth preview checked the clean `YokhanAccountService` tree
+  (`4.6.2 -> 4.8.0`). It detected a manifest-level conflict in the committed
+  `README.md` and exited before producing a complete sync report, so a clean
+  Git tree alone is not sufficient canary evidence.
+
+### Safety Evidence
+- All three manifests kept their installed version after preview.
+- Git porcelain entry counts remained unchanged at 204, 104, and 178.
+- Template remotes remained pinned to the canonical repository.
+- No `*.template-new` files were created by dry-run.
+- `YokhanAccountService` also remained clean at version 4.6.2 with no
+  `*.template-new` artifacts after its failed preview.
+
+### Next Decision
+- Prefer `PersonalAssistant` as the smallest successful version jump, or
+  `giants_vale_project` as the stronger project-overlay canary, but checkpoint
+  their existing dirty work before either apply.
+- Applying either update and running its downstream checks is a separate
+  state-changing step. `SUNDesignSystem` needs a dedicated conflict-resolution
+  plan before apply. `YokhanAccountService` needs its incomplete preview and
+  committed `README.md` divergence diagnosed before canary use.
 
 ## Active Slice - Release v4.8.0
 

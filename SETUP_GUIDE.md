@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 4.8.0 | 2026-07-18
+> Версия: 4.9.0 | 2026-07-19
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -9,7 +9,7 @@
 
 ## Что нужно
 
-- **Claude Code** (CLI) — установлен и авторизован
+- **Codex Desktop или Codex CLI** — установлен и авторизован
 - **Git** — установлен
 - **Node.js 20+** — для metadata/MCP/helper-скриптов
 - **Bash** — только для Linux/macOS и Unix release/maintenance окружения
@@ -18,30 +18,30 @@
 
 ## Быстрый старт (5 минут)
 
+Ниже указан целевой release candidate `v4.9.0`. До публикации tag не является
+stable: сначала проверьте GitHub `releases/latest`.
+
 ```bash
-git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
-bash scripts/bootstrap-mcp.sh --install
-claude
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+codex
 ```
 
 Windows:
 ```powershell
-git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 setup.bat
 cd <generated-project>
-claude
+codex
 ```
 
-В чате Claude Code:
-```
-/setup-project
-```
-
-Готово. Отвечайте на вопросы — Claude настроит всё сам.
+Откройте проект в Codex и подтвердите доверие к проекту. После bootstrap
+перезапустите Codex и выполните `codex mcp list`. Должны быть видны
+`context-router`, `engram` и `codebase-memory-mcp`.
 
 ---
 
@@ -85,15 +85,20 @@ helpers.
 
 ### 2. bootstrap-mcp.sh --install
 
-Скрипт делает три вещи:
-1. **Находит** установленные MCP-серверы (Engram, CodeGraphContext, Obsidian, Godot, Figma)
-2. **Устанавливает** недостающие обязательные (Engram — Go binary, скачивает под вашу ОС)
-3. **Создаёт** `.mcp.json` — файл, который Claude Code читает при запуске
+Скрипт делает четыре вещи:
+1. **Находит** установленные MCP-серверы и определяет стек проекта.
+2. **Устанавливает** зафиксированный профиль `core`, `auto` или `full` из `_reference/code-intelligence-tools.json`.
+3. **Настраивает** process router отдельно, Engram для памяти решений и один
+   parser-backed `codebase-memory-mcp` граф; остальные восемь инструментов
+   остаются CLI/on-demand и не раздувают постоянный MCP-контекст.
+4. **Безопасно сливает** управляемый MCP-блок в `.codex/config.toml`, сохраняя
+   остальные настройки проекта. `.mcp.json` создаётся только для совместимости
+   с Claude Code.
 
 Флаги:
 ```
---install     Установить недостающие серверы (Engram)
---check       Проверить, что всё работает
+--install     Установить недостающие MCP-серверы и выбранный профиль инструментов
+--check       Проверить MCP-серверы и выбранный профиль инструментов
 --zed         Также настроить Zed AI chat panel
 --dry-run     Показать, что изменится, не трогая файлы
 ```
@@ -112,12 +117,12 @@ helpers.
 
 ## MCP-серверы
 
-MCP-серверы — плагины, которые дают Claude дополнительные возможности.
+MCP-серверы дают Codex дополнительные локальные возможности.
 
 | Сервер | Зачем | Обязателен? |
 |--------|-------|-------------|
-| **Engram** | Память между сессиями. Без неё Claude каждый раз начинает с нуля | **Да** |
-| CodeGraphContext | Граф зависимостей кода. Полезен для проектов > 50 файлов | Нет |
+| **Engram** | Память решений и handoff между сессиями | **Да** |
+| codebase-memory-mcp | Parser-backed граф, call paths, routes и blast radius | Auto для кодовых проектов |
 | Obsidian MCP | Прямой доступ к Obsidian-хранилищу (brain/) | Нет |
 | Godot | Управление Godot-проектами | Нет |
 | Figma | Работа с Figma | Нет |
@@ -128,13 +133,13 @@ Engram хранит контекст между сессиями. Все фун�
 
 **Автоустановка** (рекомендуется):
 ```bash
-bash scripts/bootstrap-mcp.sh --install
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full
 ```
 
 **Ручная установка:**
 1. Скачайте бинарник: https://github.com/Gentleman-Programming/engram/releases
 2. Положите в PATH (`~/.local/bin/`)
-3. Добавьте: `claude mcp add engram -- engram mcp`
+3. Запустите `bash scripts/bootstrap-mcp.sh`, чтобы обновить управляемый блок Codex.
 
 **Что если Engram не установлен?**
 Шаблон работает, но с ограничениями:
@@ -144,22 +149,23 @@ bash scripts/bootstrap-mcp.sh --install
 
 ---
 
-## Claude Code vs Zed AI Chat
+## Codex, Claude Code и Zed AI Chat
 
-Это **два разных** способа работы с Claude. Конфиги у них разные.
+Это разные клиенты. Конфиги MCP у них разные.
 
-| | Claude Code (CLI/терминал) | Zed AI Chat (панель) |
+| Клиент | Конфиг MCP | Настройка |
 |---|---|---|
-| Конфиг MCP | `.mcp.json` в корне проекта | `settings.json` в папке Zed |
-| Формат | `mcpServers: {}` | `context_servers: {}` |
-| Настройка | `bootstrap-mcp.sh` | `bootstrap-mcp.sh --zed` |
+| Codex Desktop/CLI/IDE | `.codex/config.toml` | `bootstrap-mcp.sh`; проект должен быть trusted |
+| Claude Code | `.mcp.json` | compatibility payload из `bootstrap-mcp.sh` |
+| Zed AI Chat | `settings.json` в папке Zed | `bootstrap-mcp.sh --zed` |
 
-Если используете **Claude Code в терминале Zed** — это Claude Code, конфиг `.mcp.json`.
-Если используете **встроенный чат Zed** — это Zed AI, конфиг `context_servers`.
+Codex не читает `.mcp.json`. Его источник — `.codex/config.toml`. Скрипт
+`configure-codex-mcp.js` изменяет только управляемый блок и останавливается,
+если находит конфликтующие неуправляемые таблицы MCP.
 
 Можно использовать оба одновременно:
 ```bash
-bash scripts/bootstrap-mcp.sh --install --zed
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full --zed
 ```
 
 ---
@@ -221,7 +227,7 @@ bash scripts/check-drift.sh
 
 1. Определите тип рабочего каталога: исходный репозиторий шаблона, downstream-проект или старый проект без manifest. Шаблон нельзя синхронизировать в самого себя.
 2. Прочитайте установленную версию из `.template-manifest.json`.
-3. Явно указанная пользователем версия имеет приоритет. Иначе проверьте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest. Текущий стабильный tag: `v4.8.0`.
+3. Явно указанная пользователем версия имеет приоритет. Иначе проверьте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest. Целевой release candidate: `v4.9.0`; до публикации он не считается stable.
 4. Проверьте `git remote get-url template` и не заменяйте конфликтующий remote без решения пользователя.
 5. Запустите `--from-git --ref <tag> --dry-run`, затем примените тот же tag. Bare `--from-git` разрешён только для явно согласованного canary.
 6. Если локальный sync-скрипт устарел или сломан, используйте скрипт из checkout целевого release tag с `--project-dir`.
@@ -238,8 +244,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.8.0
+bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.0
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.
@@ -290,12 +296,12 @@ my-project/
 
 | Проблема | Решение |
 |----------|---------|
-| Claude не видит MCP | `bash scripts/bootstrap-mcp.sh --check` |
-| Engram не найден | `bash scripts/bootstrap-mcp.sh --install` |
-| Zed не видит серверы | `bash scripts/bootstrap-mcp.sh --install --zed` |
+| Codex не видит MCP | Доверьте проект, перезапустите Codex, затем `codex mcp list` и `bash scripts/bootstrap-mcp.sh --check` |
+| Engram не найден | `bash scripts/bootstrap-mcp.sh --install --tool-profile=full` |
+| Zed не видит серверы | `bash scripts/bootstrap-mcp.sh --install --tool-profile=full --zed` |
 | Хуки не работают | `bash scripts/test-hooks.sh` |
 | Форматирование не работает | Установите: `npm i -g prettier` / `pip install black` |
 | «Template outdated» | `/update-template` |
 | Файл > 375 строк | Разбейте. 375 — лимит рабочей памяти Claude |
 | lessons.md > 50 записей | `/retrospective` — правила промоутятся |
-| `.mcp.json` битый | Удалите, запустите `bootstrap-mcp.sh` заново |
+| Codex MCP-блок устарел | `node scripts/configure-codex-mcp.js --check`, затем `bash scripts/bootstrap-mcp.sh` |

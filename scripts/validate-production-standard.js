@@ -56,6 +56,15 @@ const REQUIRED_FILES = [
   "scripts/validate-change-strategy.js",
   "scripts/lib/change-strategy-policy.js",
   "scripts/test-change-strategy.js",
+  "scripts/code-intelligence-tools.js",
+  "scripts/lib/code-intelligence-policy.js",
+  "scripts/test-code-intelligence-tools.js",
+  "_reference/code-intelligence-tools.json",
+  ".codex/config.toml",
+  "_reference/codex-mcp-config.toml",
+  "scripts/configure-codex-mcp.js",
+  "scripts/test-codex-mcp-config.js",
+  "docs/CODE_INTELLIGENCE_TOOLCHAIN.md",
   "tests/fixtures/change-strategy/discovery-architecture-mismatch.json",
   "scripts/validate-subagent-trace.js",
 ];
@@ -98,6 +107,14 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/process/client-executor-contract.md", text: "Anti-Sycophancy Rules" },
   { file: ".claude/library/process/client-executor-contract.md", text: "evidence before claiming work is done" },
   { file: ".claude/library/process/client-executor-contract.md", text: "Progressive JPEG Delivery" },
+  { file: "scripts/lib/codex-route-summary.js", text: "CODE_INTELLIGENCE:" },
+  { file: "mcp-servers/context-router/src/index.ts", text: "CODE_INTELLIGENCE:" },
+  { file: ".codex/config.toml", text: "[mcp_servers.context-router]" },
+  { file: ".codex/config.toml", text: "[mcp_servers.engram]" },
+  { file: ".codex/config.toml", text: "[mcp_servers.codebase-memory-mcp]" },
+  { file: "scripts/sync-template.sh", text: "CODEX_MCP_MERGER" },
+  { file: "scripts/sync-template.sh", text: "ls-files --error-unmatch" },
+  { file: "docs/CODE_INTELLIGENCE_TOOLCHAIN.md", text: "Engram не надо удалять" },
   { file: ".claude/library/process/client-executor-contract.md", text: "Progressive JPEG Implementation Meaning" },
   { file: ".claude/library/process/client-executor-contract.md", text: "whole planned object at low detail" },
   { file: ".claude/library/process/client-executor-contract.md", text: "retire the old layer" },
@@ -486,6 +503,10 @@ function assertRoute(routeCase) {
   if (!route.qualityGates?.includes("user-business-outcome-link")) {
     addError(`${routeCase.task}: qualityGates must include user-business-outcome-link`);
   }
+  if (!route.codeIntelligence?.id || !Array.isArray(route.codeIntelligence?.tools) ||
+      (route.codeIntelligence.tools.length === 0 && route.codeIntelligence.id !== "no-code-intelligence")) {
+    addError(`${routeCase.task}: code-intelligence workflow is missing`);
+  }
   for (const skill of routeCase.skills) {
     assertIncludes(route.skills, skill, `${routeCase.task} skills`);
   }
@@ -498,6 +519,48 @@ function assertRoute(routeCase) {
   }
   if (typeof routeCase.needsFreshDocs === "boolean" && route.needsFreshDocs !== routeCase.needsFreshDocs) {
     addError(`${routeCase.task}: needsFreshDocs must be ${routeCase.needsFreshDocs}`);
+  }
+}
+
+function assertCodeIntelligenceContract() {
+  const catalog = JSON.parse(readText(path.join(process.cwd(), "_reference/code-intelligence-tools.json")));
+  const ids = catalog.tools.map((tool) => tool.id);
+  const expected = ["ripgrep", "engram", "codebase-memory", "probe", "serena", "ast-grep", "repomix", "dependency-cruiser", "semgrep", "gitleaks"];
+  state.checks += 7;
+  if (catalog.policy.default_profile !== "full") addError("code-intelligence default profile must install all ten tools");
+  if (JSON.stringify(ids) !== JSON.stringify(expected)) addError(`code-intelligence ids drifted: ${ids.join(", ")}`);
+  if (ids.includes("context-router")) addError("context-router is process infrastructure and must not count toward the ten tools");
+  if (ids.includes("codesight")) addError("disabled Codesight must not remain in the active catalog");
+  const mcp = JSON.parse(readText(path.join(process.cwd(), ".mcp.json"))).mcpServers || {};
+  if (!mcp.engram || !mcp["codebase-memory-mcp"] || mcp.codesight) addError("MCP defaults must contain Engram and codebase-memory without Codesight");
+  const { findBlock } = require("./configure-codex-mcp.js");
+  const codexConfig = findBlock(readText(path.join(process.cwd(), ".codex/config.toml")), ".codex/config.toml");
+  const codexReference = findBlock(readText(path.join(process.cwd(), "_reference/codex-mcp-config.toml")), "reference");
+  if (!codexConfig || !codexReference) addError("Codex MCP managed block must exist in config and reference");
+  else if (codexConfig.text.replace(/\r\n/g, "\n") !== codexReference.text.replace(/\r\n/g, "\n")) addError("Codex MCP managed block drifted from its reference");
+}
+
+function assertProactiveDelegationContract() {
+  const files = [
+    "AGENTS.md",
+    ".agents/skills/codex-agent-router/SKILL.md",
+    ".agents/skills/codex-subagent-orchestration/SKILL.md",
+    "docs/AGENT_CONTEXT_SOT.md",
+  ];
+  const combined = files.map((file) => readText(path.join(process.cwd(), file))).join("\n");
+  state.checks += 4;
+  if (!combined.includes("without waiting for the user to request subagents")) {
+    addError("agent policy must authorize useful proactive delegation without a separate user request");
+  }
+  if (!/a\s+separate user request is not required/iu.test(combined)) {
+    addError("agent SOT must distinguish project authorization from direct user prompting");
+  }
+  if (/only (?:after|with|on) (?:an? )?explicit user request/iu.test(combined) ||
+      /только[^\n]{0,80}явн\w*[^\n]{0,40}просьб/iu.test(combined)) {
+    addError("agent policy must not restrict delegation to explicit user requests only");
+  }
+  if (!combined.includes("Explicit user opt-out")) {
+    addError("proactive delegation must preserve explicit user opt-out");
   }
 }
 
@@ -534,6 +597,8 @@ function main() {
     assertRoute(routeCase);
   }
   assertContextRouterVersion();
+  assertCodeIntelligenceContract();
+  assertProactiveDelegationContract();
 
   console.log(`Production standard checks: ${state.checks}`);
   for (const error of state.errors) {

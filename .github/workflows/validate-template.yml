@@ -130,3 +130,39 @@ jobs:
           node scripts/validate-text-policy.js
           npm.cmd --prefix mcp-servers/context-router test
           npm.cmd --prefix mcp-servers/context-router run build
+
+  code-intelligence-full-smoke:
+    name: Full Toolchain And Codex MCP (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install and health-check all ten tools
+        run: |
+          bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+          bash scripts/bootstrap-mcp.sh --check --tool-profile=full
+
+      - name: Verify Codex loads the managed project MCPs
+        run: |
+          npm install --global @openai/codex@0.125.0
+          project_key="$(node -p 'process.cwd().toLowerCase()')"
+          codex -c "projects.\"$project_key\".trust_level=\"trusted\"" mcp list > codex-mcp-list.txt
+          grep -q 'context-router' codex-mcp-list.txt
+          grep -q 'engram' codex-mcp-list.txt
+          grep -q 'codebase-memory-mcp' codex-mcp-list.txt
+
+      - name: Verify AgentOS ownership routing
+        run: node scripts/test-codex-routing.js

@@ -29,13 +29,14 @@ skip() { echo "  SKIP: $1"; CHECKS=$((CHECKS+1)); }
 check() {
   local description="$1"
   local output
+  local started=$SECONDS
   shift
   if output="$("$@" 2>&1)"; then
-    pass "$description"
+    pass "$description ($((SECONDS - started))s)"
     return
   fi
   [ -n "$output" ] && printf '%s\n' "$output"
-  fail "$description"
+  fail "$description ($((SECONDS - started))s)"
 }
 is_template_source_repo() { grep -Eq '^- Name: agent-project-template$' PROJECT_SPEC.md 2>/dev/null; }
 source_only_check() {
@@ -185,19 +186,19 @@ if (!badgeMatch) {
 const tag = `v${badgeMatch[1]}`;
 const required = [
   ["README latest release link", readme, "https://github.com/Yokhan/agent-project-template/releases/latest"],
-  ["README stable tag", readme, `Current stable tag: \`${tag}\``],
+  ["README candidate tag", readme, `Release candidate tag: \`${tag}\``],
   ["README pinned clone", readme, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
   ["README pinned sync dry-run", readme, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["README pinned sync apply", readme, `bash scripts/sync-template.sh --from-git --ref ${tag}`],
   ["README main warning", readme, "`main` is for template development and explicit canary rollout only"],
   ["README explicit canary", readme, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
   ["SETUP_GUIDE latest release link", setupGuide, "https://github.com/Yokhan/agent-project-template/releases/latest"],
-  ["SETUP_GUIDE stable tag", setupGuide, `Текущий стабильный tag: \`${tag}\``],
+  ["SETUP_GUIDE candidate tag", setupGuide, `Целевой release candidate: \`${tag}\``],
   ["SETUP_GUIDE pinned clone", setupGuide, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
   ["SETUP_GUIDE pinned sync dry-run", setupGuide, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["SETUP_GUIDE main warning", setupGuide, "`main` используйте только для разработки шаблона или явного canary-роллаута"],
   ["TEMPLATE_RELEASES latest release link", releases, "https://github.com/Yokhan/agent-project-template/releases/latest"],
-  ["TEMPLATE_RELEASES stable tag", releases, `Current stable tag: \`${tag}\``],
+  ["TEMPLATE_RELEASES candidate tag", releases, `Release candidate tag: \`${tag}\``],
   ["TEMPLATE_RELEASES pinned sync dry-run", releases, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
   ["TEMPLATE_RELEASES main warning", releases, "Use `main` only for template development, explicit canary rollout"],
   ["TEMPLATE_RELEASES explicit canary", releases, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
@@ -332,7 +333,16 @@ check "docs/AGENT_CONTEXT_SOT.md" test -f docs/AGENT_CONTEXT_SOT.md
 check "docs/CODEX_FANOUT_PATTERNS.md" test -f docs/CODEX_FANOUT_PATTERNS.md
 check "docs/CODEX_SKILLS_AUDIT.md" test -f docs/CODEX_SKILLS_AUDIT.md
 check "docs/CODEX_SUBAGENTS_AUDIT.md" test -f docs/CODEX_SUBAGENTS_AUDIT.md
+check "docs/CODE_INTELLIGENCE_TOOLCHAIN.md" test -f docs/CODE_INTELLIGENCE_TOOLCHAIN.md
 check "docs/OPENAI_MODEL_GUIDANCE.md" test -f docs/OPENAI_MODEL_GUIDANCE.md
+check "_reference/code-intelligence-tools.json" test -f _reference/code-intelligence-tools.json
+check "code-intelligence catalog" node scripts/code-intelligence-tools.js validate
+check "code-intelligence selection tests" node scripts/test-code-intelligence-tools.js
+check "_reference/codex-mcp-config.toml" test -f _reference/codex-mcp-config.toml
+check "Codex MCP config merge tests" node scripts/test-codex-mcp-config.js
+check "Codex MCP config current" node scripts/configure-codex-mcp.js --check
+check "sync merges Codex MCP block" grep -q 'CODEX_MCP_MERGER' scripts/sync-template.sh
+check "sync excludes untracked template payload" grep -q 'ls-files --error-unmatch' scripts/sync-template.sh
 check "integrations/spec-kit/README.md" test -f integrations/spec-kit/README.md
 source_only_check "setup.sh" test -f setup.sh
 source_only_check "setup.bat" test -f setup.bat
@@ -529,6 +539,7 @@ if is_template_source_repo; then
   cleanup_smoke() {
     rm -f "$SMOKE_SENTINEL"
     [ -n "$SMOKE_INDEX" ] && rm -f "$SMOKE_INDEX"
+    rm -f "$SMOKE_PROJECT.setup.log"
     rm -rf "$SMOKE_PROJECT" 2>/dev/null || powershell.exe -NoProfile -Command "if (Test-Path '$SMOKE_PROJECT') { Remove-Item -Recurse -Force '$SMOKE_PROJECT' }" >/dev/null 2>&1 || true
   }
   run_setup_payload_smoke() {
@@ -539,8 +550,11 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md _reference/tool-registry.md .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy
-    GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >/dev/null 2>&1
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat integrations/codesight.md docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy
+    if ! GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh "$project" >"$project.setup.log" 2>&1; then
+      cat "$project.setup.log"
+      return 1
+    fi
 
     [ ! -f "$project/$sentinel" ] &&
       [ -f "$project/.agents/skills/codex-design-workflow/SKILL.md" ] &&
@@ -573,6 +587,23 @@ if is_template_source_repo; then
       [ -f "$project/.claude/library/technical/writing-reference-registry.json" ] &&
       [ -f "$project/docs/WRITING_WORKFLOW.md" ] &&
       [ -f "$project/docs/WRITING_REFERENCE_PROVENANCE.md" ] &&
+      [ -f "$project/docs/CODE_INTELLIGENCE_TOOLCHAIN.md" ] &&
+      [ -f "$project/_reference/code-intelligence-tools.json" ] &&
+      [ -f "$project/_reference/codex-mcp-config.toml" ] &&
+      [ -f "$project/scripts/code-intelligence-tools.js" ] &&
+      [ -f "$project/scripts/lib/code-intelligence-policy.js" ] &&
+      [ -f "$project/scripts/test-code-intelligence-tools.js" ] &&
+      [ -f "$project/scripts/configure-codex-mcp.js" ] &&
+      [ -f "$project/scripts/test-codex-mcp-config.js" ] &&
+      [ ! -f "$project/tasks/toolchain-discovery.json" ] &&
+      [ ! -f "$project/tasks/toolchain-change-strategy.json" ] &&
+      (cd "$project" && node scripts/code-intelligence-tools.js validate >/dev/null) &&
+      (cd "$project" && node scripts/test-code-intelligence-tools.js >/dev/null) &&
+      (cd "$project" && node scripts/test-codex-mcp-config.js >/dev/null) &&
+      (cd "$project" && node scripts/configure-codex-mcp.js --check >/dev/null) &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['.codex/config.toml']?.category!=='hybrid') process.exit(1)" "$project" &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.mcp.json','utf8')); if(!m.mcpServers?.['codebase-memory-mcp']) process.exit(1)" "$project" &&
+      node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); const paths=['docs/CODE_INTELLIGENCE_TOOLCHAIN.md','_reference/code-intelligence-tools.json','_reference/codex-mcp-config.toml','scripts/code-intelligence-tools.js','scripts/lib/code-intelligence-policy.js','scripts/test-code-intelligence-tools.js','scripts/configure-codex-mcp.js','scripts/test-codex-mcp-config.js']; if(paths.some((p)=>m.files?.[p]?.category!=='template')) process.exit(1)" "$project" &&
       [ -f "$project/tests/fixtures/writing-tools/external-tool-adapter.fixture.js" ] &&
       [ -f "$project/brain/03-knowledge/writing/reference-registry.json" ] &&
       [ -f "$project/DESIGN.md" ] &&
@@ -652,14 +683,20 @@ if is_template_source_repo; then
   SYNC_GIT_DRY_RUN_PROJECT="$TEMPLATE_DIR/template-git-dry-run-smoke-$RANDOM-$$"
   SYNC_GIT_DRY_RUN_OUTPUT="$SYNC_GIT_DRY_RUN_PROJECT.out"
   cleanup_sync_smoke() {
-    rm -rf \
+    local path
+    for path in \
       "$SYNC_TEMPLATE_FIXTURE" \
       "$SYNC_EMPTY_MANIFEST_PROJECT" "$SYNC_EMPTY_MANIFEST_OUTPUT" "$SYNC_EMPTY_MANIFEST_OUTPUT.apply" \
       "$SYNC_SOURCE_ONLY_PROJECT" "$SYNC_SOURCE_ONLY_OUTPUT" "$SYNC_SOURCE_ONLY_OUTPUT.apply" \
       "$SYNC_BOOTSTRAP_DRY_RUN_PROJECT" "$SYNC_BOOTSTRAP_DRY_RUN_OUTPUT" \
       "$SYNC_GIT_TEMPLATE_FIXTURE" "$SYNC_GIT_DRY_RUN_PROJECT" \
       "$SYNC_GIT_DRY_RUN_OUTPUT" "$SYNC_GIT_DRY_RUN_OUTPUT.apply" "$SYNC_GIT_DRY_RUN_OUTPUT.canary" \
-      "$SYNC_GIT_DRY_RUN_OUTPUT.branch" "$SYNC_GIT_DRY_RUN_OUTPUT.conflict" "$SYNC_GIT_DRY_RUN_OUTPUT.missing"
+      "$SYNC_GIT_DRY_RUN_OUTPUT.branch" "$SYNC_GIT_DRY_RUN_OUTPUT.conflict" "$SYNC_GIT_DRY_RUN_OUTPUT.missing"; do
+      rm -rf "$path" 2>/dev/null || {
+        sleep 1
+        rm -rf "$path" 2>/dev/null || echo "  WARN: deferred cleanup required: $path"
+      }
+    done
   }
   create_sync_template_fixture() {
     local template="$1"
@@ -713,6 +750,7 @@ if is_template_source_repo; then
     cp scripts/lib/writing-path-policy.js "$template/scripts/lib/writing-path-policy.js"
     cp scripts/lib/progressive-plan.js "$template/scripts/lib/progressive-plan.js"
     cp scripts/lib/change-strategy-policy.js "$template/scripts/lib/change-strategy-policy.js"
+    cp scripts/lib/code-intelligence-policy.js "$template/scripts/lib/code-intelligence-policy.js"
     cp scripts/lib/subagent-trace.js "$template/scripts/lib/subagent-trace.js"
     cp .claude/library/process/change-strategy-gate.md "$template/.claude/library/process/change-strategy-gate.md"
     cp .claude/library/technical/writing-reference-registry.json "$template/.claude/library/technical/writing-reference-registry.json"

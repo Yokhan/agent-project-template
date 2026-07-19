@@ -37,7 +37,7 @@ is_payload_path() {
 
 is_excluded_payload_path() {
   case "$1" in
-    .claude/settings.local.json|.github/workflows/release-template.yml|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
+    .claude/settings.local.json|.github/workflows/release-template.yml|brain/.obsidian/*|brain/01-daily/*|brain/03-knowledge/research/*|brain/03-knowledge/audits/*|tasks/.current.md.bak|tasks/audit/*|tasks/debug-recovery-log.md|tasks/template-production-ready-plan.md|tasks/toolchain-discovery.json|tasks/toolchain-change-strategy.json|mcp-servers/context-router/node_modules/*|mcp-servers/context-router/dist/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -66,6 +66,7 @@ copy_template_payload() {
 
   local rel_path=""
   declare -A payload_files=()
+  local copy_files=()
 
   # Ship only tracked files so maintainer-local artifacts cannot leak into child projects.
   while IFS= read -r rel_path; do
@@ -77,9 +78,40 @@ copy_template_payload() {
     if is_payload_path "$rel_path" &&
       ! is_excluded_payload_path "$rel_path" &&
       ! is_starter_override_path "$rel_path"; then
-      copy_entry "$rel_path"
+      copy_files+=("$rel_path")
     fi
   done
+
+  # Copy the tracked payload in one process when Node.js is available. The
+  # per-file mkdir/cp path is prohibitively slow under Windows/Git Bash.
+  if command -v node >/dev/null 2>&1; then
+    local node_source_root="$SCRIPT_DIR"
+    local node_target_root
+    node_target_root="$(cd "$PROJECT_DIR" && pwd)"
+    if command -v cygpath >/dev/null 2>&1; then
+      node_source_root="$(cygpath -w "$node_source_root")"
+      node_target_root="$(cygpath -w "$node_target_root")"
+    fi
+    node -e '
+      const fs = require("node:fs");
+      const path = require("node:path");
+      const [sourceRoot, targetRoot, ...files] = process.argv.slice(1);
+      for (const file of files) {
+        const source = path.join(sourceRoot, file);
+        const target = path.join(targetRoot, file);
+        if (!fs.existsSync(source)) {
+          process.stderr.write(`WARNING: Missing template entry: ${file}\n`);
+          continue;
+        }
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.copyFileSync(source, target);
+      }
+    ' -- "$node_source_root" "$node_target_root" "${copy_files[@]}"
+  else
+    for rel_path in "${copy_files[@]}"; do
+      copy_entry "$rel_path"
+    done
+  fi
 
   copy_starter_overrides
 }
@@ -130,6 +162,11 @@ TEMPLATE_REMOTE=$(cd "$SCRIPT_DIR" && git remote get-url origin 2>/dev/null || e
 # Copy the project-facing payload explicitly so local fixtures and maintainer-only files never leak.
 copy_template_payload
 
+# A maintainer smoke test may provide a temporary source index so uncommitted
+# candidate files are included. Never carry that source index into the new
+# project's `git init` or manifest/commit operations.
+unset GIT_INDEX_FILE
+
 cd "$PROJECT_DIR"
 
 # Create project-local settings (never touched by template sync)
@@ -157,13 +194,10 @@ generate_manifest() {
     return
   fi
 
-  get_hash() {
-    $hash_cmd "$1" | awk '{print $1}'
-  }
-
   get_category() {
     local fpath="$1"
     case "$fpath" in
+      .codex/config.toml) echo "hybrid" ;;
       .codex/*) echo "template" ;;
       .agents/skills/*/SKILL.md) echo "template" ;;
       .agents/skills/*/agents/openai.yaml) echo "template" ;;
@@ -198,8 +232,8 @@ generate_manifest() {
       tests/fixtures/design-policy/fail/*.css) echo "template" ;;
       tests/fixtures/writing-tools/*.js) echo "template" ;;
       tests/fixtures/change-strategy/*.json) echo "template" ;;
-      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
-      _reference/*.md) echo "template" ;;
+      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/CODE_INTELLIGENCE_TOOLCHAIN.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
+      _reference/*.md|_reference/*.json|_reference/*.toml) echo "template" ;;
       .github/*) echo "template" ;;
       .github/workflows/validate-template.yml) echo "template" ;;
       .editorconfig) echo "template" ;;
@@ -267,6 +301,7 @@ generate_manifest() {
     "docs/CODEX_FANOUT_PATTERNS.md"
     "docs/CODEX_SKILLS_AUDIT.md"
     "docs/CODEX_SUBAGENTS_AUDIT.md"
+    "docs/CODE_INTELLIGENCE_TOOLCHAIN.md"
     "docs/MIGRATION_MATRIX.md"
     "docs/OPENAI_MODEL_GUIDANCE.md"
     "docs/WRITING_REFERENCE_PROVENANCE.md"
@@ -279,6 +314,8 @@ generate_manifest() {
     "docs/SUPPORTED_ENVIRONMENTS.md"
     "docs/"*.md.template
     "_reference/"*.md
+    "_reference/"*.json
+    "_reference/"*.toml
     ".github/"*.template
     ".github/workflows/validate-template.yml"
     ".editorconfig"
@@ -320,6 +357,27 @@ generate_manifest() {
     done < <(find brain -type f -print0 2>/dev/null)
   fi
 
+  # Hash the manifest payload in one process when Node.js is available. Spawning
+  # sha256sum + awk once per file makes project creation take several minutes on
+  # Windows/Git Bash. Keep the portable shell path as a compatibility fallback.
+  declare -A file_hashes=()
+  if command -v node >/dev/null 2>&1; then
+    while IFS= read -r -d '' hash_path && IFS= read -r -d '' hash_value; do
+      file_hashes["$hash_path"]="$hash_value"
+    done < <(node -e '
+      const crypto = require("node:crypto");
+      const fs = require("node:fs");
+      for (const file of process.argv.slice(1)) {
+        const hash = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+        process.stdout.write(`${file}\0${hash}\0`);
+      }
+    ' -- "${files[@]}")
+  else
+    for f in "${files[@]}"; do
+      file_hashes["$f"]=$($hash_cmd "$f" | awk '{print $1}')
+    done
+  fi
+
   # Build JSON
   {
     printf '{\n'
@@ -334,8 +392,7 @@ generate_manifest() {
       local cat
       cat=$(get_category "$f")
       [ -z "$cat" ] && continue
-      local hash
-      hash=$(get_hash "$f")
+      local hash="${file_hashes[$f]}"
       if [ "$first" = true ]; then
         first=false
       else
@@ -380,7 +437,7 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
     echo "For pinned releases, run 'bash scripts/sync-template.sh --from-git --ref vX.Y.Z'."
   fi
 
-# If orchestrator — replace CLAUDE.md with orchestrator template
+# If orchestrator — preserve the legacy Claude compatibility overlay too
 if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Setting up as ORCHESTRATOR project..."
   ORCH_TEMPLATE="$SCRIPT_DIR/templates/orchestrator/CLAUDE.md"
@@ -398,13 +455,15 @@ echo ""
 if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Next steps:"
   echo "  1. cd $PROJECT_DIR"
-  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install"
-  echo "  3. Open the project in Claude Code or Zed and use it as the orchestrator workspace"
+  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install --tool-profile=full"
+  echo "  3. Open and trust the project in Codex; use it as the orchestrator workspace"
+  echo "  4. Restart Codex, then verify the project MCPs with: codex mcp list"
 else
   echo "Next steps:"
   echo "  1. cd $PROJECT_DIR"
-  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install"
-  echo "  3. Open in Claude Code or Zed and run /setup-project"
+  echo "  2. Run: bash scripts/bootstrap-mcp.sh --install --tool-profile=full"
+  echo "  3. Open and trust the project in Codex, then run the project setup workflow"
+  echo "  4. Restart Codex, then verify the project MCPs with: codex mcp list"
 fi
 echo ""
 echo "Included: shared agent rules, hooks, MCP bootstrap, sync tooling, task memory, and docs scaffolding"

@@ -12,6 +12,7 @@ export function buildActiveRulesOutput(
     `TASK: ${state.taskDescription}`,
     `ROUTED AT: ${state.lastRouteTime}`,
     engramStatus,
+    `CODE_INTELLIGENCE: ${restoredRoute.codeIntelligence.id} | ${restoredRoute.codeIntelligence.tools.join(" -> ")}`,
     `RULES (${state.activeRules.length} files):`,
     ...state.activeRules.map((file) => `  .claude/library/${file}`),
   ];

@@ -24,10 +24,12 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-The evidence-backed Change Strategy Gate, pre-repair discovery activation, and
-decision-to-resume lifecycle are published in verified release `v4.8.0`. The
-next state-changing step is a pinned downstream dry-run that reviews local
-overlays and conflicts before any project applies the release.
+Replace the unfinished decorative ten-tool catalog with a coherent agent
+workflow. Keep Engram for decisions, use codebase-memory as the only persistent
+code graph, keep the process router outside the ten-tool count, and make both
+Codex routing and the context-router return the task-specific tool sequence.
+Verify only in the template and generated fixtures; downstream configuration,
+indexing, benchmark claims, rollout, and release remain separate steps.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
@@ -40,6 +42,16 @@ overlays and conflicts before any project applies the release.
 - Router expansion could become too broad if gates are not kept backwards-compatible.
 - More rules can increase startup noise if entrypoints are not concise.
 - Downstream projects still need release-tag sync after the template is ready.
+- Ten installed tools must not become ten always-active MCP surfaces; tool-schema
+  noise, startup latency, index duplication, and supply-chain exposure require
+  stack-aware activation and an explicit full profile.
+- Published token-reduction figures are mostly project/vendor results; local
+  representative measurements are required before claiming realized savings.
+- Representative downstream trees are heavily dirty; rollout must preserve
+  their existing work and use one reviewed project at a time.
+- A clean Git tree can still diverge from its template manifest: the
+  `YokhanAccountService` preview found a committed template-owned README
+  conflict and did not reach a complete sync report.
 - Codex CLI surfaces can expose different multi-agent runtimes; automatic fan-out must not assume a custom model profile was applied without runtime evidence.
 - Glavred recreation is a separate product task; this release must keep the provider explicitly not configured and not run.
 

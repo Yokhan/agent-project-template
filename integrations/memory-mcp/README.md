@@ -9,7 +9,7 @@ Zero-dependency Go binary. Single file, SQLite + FTS5. All template features dep
 ### Auto-Install (recommended)
 
 ```bash
-bash scripts/bootstrap-mcp.sh --install
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full
 ```
 
 This detects your OS/architecture, downloads the binary, and configures `.mcp.json`.
@@ -28,7 +28,7 @@ This detects your OS/architecture, downloads the binary, and configures `.mcp.js
 Zed uses `context_servers` in its own settings.json, NOT `.mcp.json`.
 
 ```bash
-bash scripts/bootstrap-mcp.sh --install --zed
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full --zed
 ```
 
 Or manually add to Zed settings.json (`~/.config/zed/settings.json` on Linux/Mac, `%APPDATA%/Zed/settings.json` on Windows):

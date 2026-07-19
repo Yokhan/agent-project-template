@@ -70,7 +70,11 @@ function getTrackedFiles() {
     .toString("utf8")
     .split("\0")
     .filter(Boolean)
-    .map(normalizePath);
+    .map(normalizePath)
+    // A tracked file can be intentionally deleted in an unstaged template
+    // change. Validate the resulting payload instead of treating that deletion
+    // as malformed text; explicit --path inputs still report missing files.
+    .filter((filePath) => fs.existsSync(path.join(ROOT, filePath)));
 }
 
 function getInputFiles() {

@@ -10,12 +10,23 @@ const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-di
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
 const { getFanoutDecision } = require("./codex-agent-policy.js");
+const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 function pathExists(root, relativePath) {
   return fs.existsSync(path.join(root, relativePath));
+}
+function detectCodeStacks(root) {
+  const checks = [
+    ["typescript", ["tsconfig.json"]],
+    ["javascript", ["package.json"]],
+    ["python", ["pyproject.toml", "requirements.txt"]],
+    ["go", ["go.mod"]],
+    ["rust", ["Cargo.toml"]],
+  ];
+  return checks.filter(([, files]) => files.some((file) => pathExists(root, file))).map(([stack]) => stack);
 }
 function hasGlobMatch(root, parts) {
   const [first, second, third] = parts;
@@ -322,6 +333,7 @@ function getRoute(task, options = {}) {
     routedAt: new Date().toISOString(),
     modes: unique(selected.map((route) => route.mode)),
     pipeline: selected[0].pipeline,
+    codeIntelligence: getToolWorkflow(task, detectCodeStacks(cwd), selected.map((route) => route.mode)),
     risk,
     skills: unique([
       ...selected.flatMap((route) => route.skills || []),

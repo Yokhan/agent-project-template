@@ -24,10 +24,12 @@ tasks/.active-rules
 tasks/.active-codex-route.json
 tasks/.mode
 .engram/
+.codebase-memory/
 .memcp/
 .anima/
 ia-memory/
 tasks/.memory-fallback.md
+repomix-output.*
 
 # Beads local DB
 .beads/beads.db

@@ -273,7 +273,7 @@ if [ ! -f "$MANIFEST" ]; then
     get_category() {
       case "$1" in
         CLAUDE.md|PROJECT_SPEC.md|ecosystem.md|tasks/*|brain/*) echo "project" ;;
-        .gitignore|.mcp.json|.vscode/*) echo "hybrid" ;;
+        .gitignore|.codex/config.toml|.mcp.json|.vscode/*) echo "hybrid" ;;
         *) echo "template" ;;
       esac
     }
@@ -334,6 +334,7 @@ if [ ! -f "$MANIFEST" ]; then
       "docs/CODEX_FANOUT_PATTERNS.md" \
       "docs/CODEX_SKILLS_AUDIT.md" \
       "docs/CODEX_SUBAGENTS_AUDIT.md" \
+      "docs/CODE_INTELLIGENCE_TOOLCHAIN.md" \
       "docs/MIGRATION_MATRIX.md" \
       "docs/OPENAI_MODEL_GUIDANCE.md" \
       "docs/WRITING_REFERENCE_PROVENANCE.md" \
@@ -357,7 +358,7 @@ if [ ! -f "$MANIFEST" ]; then
       "tests/fixtures/change-strategy/*.json" \
       ".editorconfig" ".env.example" ".gitattributes" "Makefile" "SECURITY.md" "CONTRIBUTING.md" \
       ".github/ci.yml.template" ".github/workflows/validate-template.yml" \
-      "_reference/tool-registry.md" "_reference/README.md" \
+      "_reference/tool-registry.md" "_reference/README.md" "_reference/code-intelligence-tools.json" "_reference/codex-mcp-config.toml" \
       ".mcp.json" "AGENTS.md" "CLAUDE.md" "PROJECT_SPEC.md" "ecosystem.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" ".gitignore" ".vscode/extensions.json"; do
       for f in $pattern; do
         [ -f "$f" ] || continue
@@ -460,6 +461,12 @@ while IFS='|' read -r filepath old_hash category; do
       SKIPPED=$((SKIPPED + 1))
       continue
       ;;
+    .codex/config.toml)
+      # Codex config contains project-owned settings. Its managed MCP block is
+      # merged separately after template payload discovery.
+      SKIPPED=$((SKIPPED + 1))
+      continue
+      ;;
   esac
   if is_source_only_path "$filepath"; then
     SOURCE_ONLY_MANIFEST=$((SOURCE_ONLY_MANIFEST + 1))
@@ -524,13 +531,48 @@ done < <(echo "$manifest_files")
 # --- Phase B: Detect new files in template ---
 echo "--- Phase B: Checking for new template files ---"
 
+TEMPLATE_IS_GIT_ROOT=false
+TEMPLATE_GIT_ROOT=$(git -C "$TEMPLATE_PATH" rev-parse --show-toplevel 2>/dev/null || true)
+if [ -n "$TEMPLATE_GIT_ROOT" ] && [ "$(normalize_drive_path "$(cd "$TEMPLATE_GIT_ROOT" && pwd)")" = "$TEMPLATE_PATH" ]; then
+  TEMPLATE_IS_GIT_ROOT=true
+fi
+
+# Phase B can inspect hundreds of files. Load the two membership sets once;
+# invoking Node and Git for every candidate makes a Windows sync take minutes.
+declare -A MANIFEST_FILE_SET=()
+while IFS= read -r manifest_path; do
+  [ -n "$manifest_path" ] && MANIFEST_FILE_SET["$manifest_path"]=1
+done < <(_node -e '
+const fs=require("fs");
+const manifest=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+for(const file of Object.keys(manifest.files||{})) console.log(file.replaceAll("\\","/"));
+' "$MANIFEST")
+
+declare -A TEMPLATE_TRACKED_SET=()
+if [ "$TEMPLATE_IS_GIT_ROOT" = true ]; then
+  while IFS= read -r tracked_path; do
+    [ -n "$tracked_path" ] && TEMPLATE_TRACKED_SET["$tracked_path"]=1
+  done < <(git -C "$TEMPLATE_PATH" ls-files)
+fi
+
+PHASE_B_COPY_FILES=()
+PHASE_B_COPY_LABELS=()
+
 # Define template file patterns to check
-for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/technical/*.json" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/product/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "scripts/lib/*.js" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "tests/fixtures/design-policy/pass/*.css" "tests/fixtures/design-policy/fail/*.css" "tests/fixtures/writing-tools/*.js" "tests/fixtures/change-strategy/*.json" "brain/03-knowledge/communication/*.md" "docs/AGENT_CONTEXT_SOT.md" "integrations/spec-kit/*.md" "_reference/agent-sot/*.md" "_reference/agent-sot/*.json" "_reference/agent-sot/originals/*.md" "_reference/spec-kit/*.md" "_reference/spec-kit/*.json" "_reference/spec-kit/upstream/*.md" "_reference/spec-kit/upstream/LICENSE" "_reference/spec-kit/upstream/docs/*.md" "_reference/spec-kit/upstream/docs/reference/*.md" "_reference/spec-kit/upstream/integrations/*.json" "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" "_reference/spec-kit/upstream/templates/commands/*.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/WRITING_REFERENCE_PROVENANCE.md" "docs/WRITING_WORKFLOW.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" ".github/*.template" ".github/workflows/validate-template.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" ".gitignore" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "CLAUDE.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
+for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" ".agents/skills/*/SKILL.md" ".agents/skills/*/agents/openai.yaml" ".agents/skills/*/references/*.md" ".claude/settings.json" ".claude/settings.local.json.example" ".claude/docs/*.md" ".claude/docs/domain-full/*.md" ".claude/rules/*.md" ".claude/library/process/*.md" ".claude/library/technical/*.md" ".claude/library/technical/*.json" ".claude/library/meta/*.md" ".claude/library/domain/*.md" ".claude/library/product/*.md" ".claude/library/conflict/*.md" ".claude/agents/*.md" ".claude/skills/*/SKILL.md" ".claude/commands/*.md" ".claude/hooks/*.sh" ".claude/pipelines/*.md" "scripts/*.sh" "scripts/*.js" "scripts/lib/*.sh" "scripts/lib/*.js" "mcp-servers/context-router/package-lock.json" "mcp-servers/context-router/src/*.ts" "mcp-servers/context-router/package.json" "mcp-servers/context-router/tsconfig.json" "tests/rules/*.test.md" "tests/fixtures/design-policy/pass/*.css" "tests/fixtures/design-policy/fail/*.css" "tests/fixtures/writing-tools/*.js" "tests/fixtures/change-strategy/*.json" "brain/03-knowledge/communication/*.md" "docs/AGENT_CONTEXT_SOT.md" "integrations/spec-kit/*.md" "_reference/agent-sot/*.md" "_reference/agent-sot/*.json" "_reference/agent-sot/originals/*.md" "_reference/spec-kit/*.md" "_reference/spec-kit/*.json" "_reference/spec-kit/upstream/*.md" "_reference/spec-kit/upstream/LICENSE" "_reference/spec-kit/upstream/docs/*.md" "_reference/spec-kit/upstream/docs/reference/*.md" "_reference/spec-kit/upstream/integrations/*.json" "_reference/spec-kit/upstream/scripts/bash/*.sh" "_reference/spec-kit/upstream/scripts/powershell/*.ps1" "_reference/spec-kit/upstream/templates/*.md" "_reference/spec-kit/upstream/templates/*.json" "_reference/spec-kit/upstream/templates/commands/*.md" "docs/AGENT_PIPELINES.md" "docs/CODEX_FANOUT_PATTERNS.md" "docs/CODEX_SKILLS_AUDIT.md" "docs/CODEX_SUBAGENTS_AUDIT.md" "docs/CODE_INTELLIGENCE_TOOLCHAIN.md" "docs/MIGRATION_MATRIX.md" "docs/OPENAI_MODEL_GUIDANCE.md" "docs/WRITING_REFERENCE_PROVENANCE.md" "docs/WRITING_WORKFLOW.md" "docs/PRODUCT_BOUNDARY.md" "docs/RELEASE_CHECKLIST.md" "docs/TEMPLATE_RELEASES.md" "docs/SAFE_DEFAULTS.md" "docs/SHARED_CONVENTIONS.md" "docs/SUPPORTED_ENVIRONMENTS.md" "docs/*.md.template" "templates/project-starter/tasks/*" "templates/project-starter/tasks/.research-cache.md" "templates/project-starter/tasks/audit/.gitkeep" "templates/project-starter/brain/01-daily/.gitkeep" "templates/project-starter/brain/03-knowledge/research/.gitkeep" "templates/project-starter/brain/03-knowledge/audits/.gitkeep" "_reference/*.md" "_reference/*.json" "_reference/*.toml" ".github/*.template" ".github/workflows/validate-template.yml" ".mcp.json" ".editorconfig" ".env.example" ".gitattributes" ".gitignore" "Makefile" "SECURITY.md" "CONTRIBUTING.md" "AGENTS.md" "CLAUDE.md" "README.md" "SETUP_GUIDE.md" "setup.sh" "setup.bat" "upgrade-project.sh" "PROJECT_SPEC.md" "ecosystem.md"; do
   # H1: Quote the template path in glob expansion
   for template_file in "$TEMPLATE_PATH"/$pattern; do
     [ -f "$template_file" ] || continue
     # Get relative path
     rel_path="${template_file#$TEMPLATE_PATH/}"
+
+    # A real template repository ships only its Git payload. Ignored or
+    # maintainer-local files under managed-looking directories must never leak
+    # into downstream projects. Synthetic non-Git fixtures remain supported.
+    if [ "$TEMPLATE_IS_GIT_ROOT" = true ] &&
+       [ -z "${TEMPLATE_TRACKED_SET[$rel_path]+present}" ]; then
+      continue
+    fi
 
     # Skip project-local files
     case "$rel_path" in
@@ -540,14 +582,11 @@ for pattern in ".codex/config.toml" ".codex/hooks.json" ".codex/agents/*.toml" "
     esac
     is_source_only_path "$rel_path" && continue
 
-    # Check if already in manifest (C1: use env vars for Python)
-    in_manifest=$(_node -e "
-const fs=require('fs');
-const [manifestPath,relativePath]=process.argv.slice(1);
-const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
-const files=Object.fromEntries(Object.entries(m.files||{}).map(([p,info])=>[p.replaceAll('\\\\','/'),info]));
-console.log(files[relativePath]?'yes':'no');
-" "$MANIFEST" "$rel_path" 2>/dev/null)
+    if [ -n "${MANIFEST_FILE_SET[$rel_path]+present}" ]; then
+      in_manifest="yes"
+    else
+      in_manifest="no"
+    fi
 
     if [ "$EMPTY_TRACKABLE_MANIFEST" = true ]; then
       in_manifest="no"
@@ -568,18 +607,59 @@ console.log(files[relativePath]?'yes':'no');
           echo "  WOULD ADD: $rel_path (new in template)"
         fi
       else
-        mkdir -p "$(dirname "$rel_path")"
-        cp "$template_file" "$rel_path"
+        PHASE_B_COPY_FILES+=("$rel_path")
         if [ "$is_unmanaged_route_helper" = true ]; then
-          echo "  UPDATED: $rel_path (v4.5 unmanaged template helper)"
+          PHASE_B_COPY_LABELS+=("UPDATED: $rel_path (v4.5 unmanaged template helper)")
         else
-          echo "  NEW: $rel_path"
+          PHASE_B_COPY_LABELS+=("NEW: $rel_path")
         fi
       fi
       NEW_FILES=$((NEW_FILES + 1))
     fi
   done
 done
+
+if [ "$DRY_RUN" = false ] && [ "${#PHASE_B_COPY_FILES[@]}" -gt 0 ]; then
+  if command -v node >/dev/null 2>&1; then
+    node_template_root="$TEMPLATE_PATH"
+    node_project_root="$PROJECT_PATH"
+    if command -v cygpath >/dev/null 2>&1; then
+      node_template_root="$(cygpath -w "$node_template_root")"
+      node_project_root="$(cygpath -w "$node_project_root")"
+    fi
+    node -e '
+      const fs=require("node:fs");
+      const path=require("node:path");
+      const [templateRoot,projectRoot,...files]=process.argv.slice(1);
+      for(const file of files){
+        const target=path.join(projectRoot,file);
+        fs.mkdirSync(path.dirname(target),{recursive:true});
+        fs.copyFileSync(path.join(templateRoot,file),target);
+      }
+    ' -- "$node_template_root" "$node_project_root" "${PHASE_B_COPY_FILES[@]}"
+  else
+    for rel_path in "${PHASE_B_COPY_FILES[@]}"; do
+      mkdir -p "$(dirname "$rel_path")"
+      cp "$TEMPLATE_PATH/$rel_path" "$rel_path"
+    done
+  fi
+  for phase_b_label in "${PHASE_B_COPY_LABELS[@]}"; do
+    echo "  $phase_b_label"
+  done
+fi
+
+# Merge only the template-managed MCP block. The rest of `.codex/config.toml`
+# remains project-owned even when the template changes its MCP defaults.
+CODEX_MCP_MERGER="$TEMPLATE_PATH/scripts/configure-codex-mcp.js"
+CODEX_MCP_REFERENCE="$TEMPLATE_PATH/_reference/codex-mcp-config.toml"
+if [ -f "$CODEX_MCP_MERGER" ] && [ -f "$CODEX_MCP_REFERENCE" ]; then
+  echo "--- Codex MCP managed block ---"
+  if [ "$DRY_RUN" = true ]; then
+    node "$CODEX_MCP_MERGER" --root "$PROJECT_PATH" --reference "$CODEX_MCP_REFERENCE" --dry-run
+  else
+    node "$CODEX_MCP_MERGER" --root "$PROJECT_PATH" --reference "$CODEX_MCP_REFERENCE"
+  fi
+fi
 
 # Project-local Claude settings must never be tracked or carried in the manifest.
 if git ls-files --error-unmatch .claude/settings.local.json >/dev/null 2>&1; then
@@ -652,7 +732,7 @@ for(const[fp,info]of Object.entries(m.files||{})){
 
 function getCategory(fp){
   if(fp==='CLAUDE.md'||fp==='DESIGN.md'||fp==='design-policy.ignore'||fp==='PROJECT_SPEC.md'||fp==='ecosystem.md'||fp.startsWith('tasks/')||fp.startsWith('brain/'))return 'project';
-  if(fp==='.gitignore'||fp==='.mcp.json'||fp.startsWith('.vscode/'))return 'hybrid';
+  if(fp==='.gitignore'||fp==='.codex/config.toml'||fp==='.mcp.json'||fp.startsWith('.vscode/'))return 'hybrid';
   return 'template';
 }
 
@@ -697,7 +777,7 @@ for(const d of ['integrations/spec-kit','_reference/agent-sot','_reference/spec-
   addManagedTree(d);
 }
 
-const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','CLAUDE.md','DESIGN.md','design-policy.ignore','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
+const rootFiles=['.editorconfig','.env.example','.gitattributes','Makefile','SECURITY.md','CONTRIBUTING.md','AGENTS.md','CLAUDE.md','DESIGN.md','design-policy.ignore','README.md','SETUP_GUIDE.md','setup.sh','setup.bat','upgrade-project.sh','.mcp.json','.gitignore','.vscode/extensions.json','.github/ci.yml.template','PROJECT_SPEC.md','ecosystem.md','docs/AGENT_CONTEXT_SOT.md','docs/AGENT_PIPELINES.md','docs/CODEX_FANOUT_PATTERNS.md','docs/CODEX_SKILLS_AUDIT.md','docs/CODEX_SUBAGENTS_AUDIT.md','docs/CODE_INTELLIGENCE_TOOLCHAIN.md','docs/MIGRATION_MATRIX.md','docs/OPENAI_MODEL_GUIDANCE.md','docs/PRODUCT_BOUNDARY.md','docs/RELEASE_CHECKLIST.md','docs/TEMPLATE_RELEASES.md','docs/SAFE_DEFAULTS.md','docs/SHARED_CONVENTIONS.md','docs/SUPPORTED_ENVIRONMENTS.md','docs/API_CONTRACTS.md.template','docs/ARCHITECTURE.md.template','docs/DATA_DESIGN.md.template','docs/DECISIONS.md.template'];
 for(const fp of rootFiles){
   if(!fs.existsSync(fp)||m.files[fp])continue;
   const h=getHash(fp);

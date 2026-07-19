@@ -1,10 +1,10 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.8.0-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.9.0-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Self-deploying AI-agent optimized project template with **MCP-based dynamic rule routing** (-93% per-message tokens), Codex repo-scoped skills and subagents, persistent memory, autonomous work loops, self-improvement, and merge-safe sync.
+Self-deploying AI-agent optimized project template with MCP-based dynamic rule routing, a pinned stack-aware code-intelligence toolchain, Codex repo-scoped skills and subagents, persistent memory, autonomous work loops, self-improvement, and merge-safe sync. Token savings are benchmarked per project instead of assumed globally.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
 > Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md) • Template releases: [docs/TEMPLATE_RELEASES.md](docs/TEMPLATE_RELEASES.md)
@@ -15,16 +15,16 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.8.0`.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Release candidate tag: `v4.9.0`; it is not stable until that URL resolves to it.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-Create a new project from the stable tag:
+After the candidate is published, create a new project from the verified tag:
 
 ```bash
-git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -35,28 +35,37 @@ Update an existing generated project from the stable tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.8.0
+bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.0
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
+The commands below target release candidate `v4.9.0`. Do not use them for a
+stable rollout until the GitHub latest-release URL resolves to that tag.
+
 ```bash
-git clone --branch v4.8.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
-bash scripts/bootstrap-mcp.sh --install
+bash scripts/bootstrap-mcp.sh --install --tool-profile=full
 ```
 
-Open the generated project in Claude Code or Zed.
-In chat: `/setup-project` — Claude configures the project for your stack.
+Open and trust the generated project in Codex. Restart Codex after bootstrap,
+then run `codex mcp list`: `context-router`, `engram`, and
+`codebase-memory-mcp` must be listed. The remaining eight tools stay on-demand
+CLI/LSP capabilities and do not inflate the permanent MCP surface.
+
+`.codex/config.toml` is the active Codex MCP configuration. `.mcp.json` remains
+only as a compatibility payload for Claude Code; it is not how Codex discovers
+project MCP servers.
 
 **Windows**: run `setup.bat`. It detects the Windows environment and prepares the context-router with native `npm.cmd`; do not substitute Unix bootstrap commands in PowerShell.
 
-`README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
+`README.md` and `SETUP_GUIDE.md` stay template-owned after bootstrap. Put project-specific onboarding or architecture details into `AGENTS.md`, `PROJECT_SPEC.md`, `ecosystem.md`, and `docs/`.
 
 Optional Spec Kit setup is shipped but inert by default:
 
@@ -103,10 +112,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.8.0
+bash scripts/sync-template.sh --from-git --ref v4.9.0
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -134,8 +143,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.8.0 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.8.0
+bash scripts/sync-template.sh --from-git --ref v4.9.0 --dry-run
+bash scripts/sync-template.sh --from-git --ref v4.9.0
 ```
 
 **What gets updated**: Template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, AGENTS.md, onboarding docs)
@@ -229,11 +238,11 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Rules** | 32 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
-| **Codex Skills** | 46 | Pipeline, route-first orchestration, evidence-backed change strategy, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
+| **Codex Skills** | 47 | Pipeline, route-first orchestration, evidence-backed change strategy, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
 | **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 58 | validation, adaptive writing/reference routing, change-strategy validation, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 62 | validation, adaptive writing/reference routing, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -305,10 +314,13 @@ brain/
 | **Telegram** | Remote control from phone | No |
 | **Beads** | Git-native task tracker | No |
 | **Obsidian MCP** | Direct vault access via MCP | No |
-| **CodeGraphContext** | Code dependency graph | No |
+| **codebase-memory-mcp** | Parser-backed code graph, call paths, routes, and change impact | Auto for code projects |
+| **Ten-tool code-intelligence workflow** | Pinned graph, memory, search, refactor, policy, handoff, boundary, and secret tools | `full` installs all; routers select the sequence per task |
 
-Auto-setup: `bash scripts/bootstrap-mcp.sh --install`
-For Zed AI chat: `bash scripts/bootstrap-mcp.sh --install --zed`
+Default setup: `bash scripts/bootstrap-mcp.sh --install --tool-profile=full`
+Lower-disk opt-in: `bash scripts/bootstrap-mcp.sh --install --tool-profile=auto`
+For Zed AI chat: add `--zed`.
+Selection, evidence, and benchmark gates: [docs/CODE_INTELLIGENCE_TOOLCHAIN.md](docs/CODE_INTELLIGENCE_TOOLCHAIN.md).
 See `integrations/*/README.md` for details.
 
 ## Upgrading from v2.x to v3.0
@@ -331,6 +343,7 @@ bash scripts/check-drift.sh
 
 | Version | Key Changes |
 |---------|------------|
+| **4.9.0** | Minor release: makes the ten-tool code-intelligence workflow installable and health-checked as one pinned stack; adds a parser-backed graph, bounded zero-index fallback, task routing, safe Codex MCP merge, trusted-project guidance, Codex 0.125.0 config smoke, and AgentOS ownership regression coverage |
 | **4.8.0** | Minor release: adds an evidence-backed Change Strategy Gate that evaluates architecture fitness during reading, compares repair/replacement/retirement destinations and transitions, binds decisions to structured triggers, derives compatibility checks from protected contracts, blocks fake alternatives and malformed CLI input, and verifies the behavior through setup and sync payload tests |
 | **4.7.0** | Minor release: adds purpose-first literary, marketing, informational, communication, and technical-writing workflows; Russian editorial profiles and provenance; authority-isolated reference routing; and a fail-closed external-tool truth contract that keeps paid providers such as Glavred explicitly not configured and not run until real adapter evidence exists |
 | **4.6.2** | Patch release: adds Luna support roles, one-wave cost-aware fan-out, genuine child-trace validation, and a progressive JPEG planner with an explicit anti-falsification gate |
@@ -358,7 +371,7 @@ bash scripts/check-drift.sh
 | **3.7.0** | Codex-native skills, subagent fan-out, validators, OpenAI model guidance, and setup/sync delivery for the Codex execution layer |
 | **3.6.0** | Production-ready bootstrap contract, tracked-only payload, living PROJECT_SPEC/tool registry, AgentOS compatibility, and release hardening |
 | **3.5.0** | Dual-agent support for Claude Code + Codex, Codex project config, validation and recovery hardening |
-| **3.2.1** | MCP Context Router (1 tool call instead of 9), depth=brief/normal/full, rules cache, Russian keywords, -93% per-message tokens |
+| **3.2.1** | MCP Context Router, depth=brief/normal/full, rules cache, Russian keywords, and the original estimated context-reduction claim; current releases require project-local measurement |
 | 3.1.x | Dynamic task router, rules moved to .claude/library/, 7 mode commands, 6 runtime helpers |
 | **3.0.0** | Merge-safe sync (conflict detection), cross-platform lib, 25 rules, 29 skills, 10 agents, audit-reuse system, design pipeline, validate-template.sh |
 | 2.8.0 | Atomic reuse protocol, tool registry, design pipeline (domain-design.md) |

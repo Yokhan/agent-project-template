@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# blast-radius.sh — BFS through import graph to find all affected files
+# blast-radius.sh — Heuristic basename/grep fallback, not semantic impact analysis
 # Usage: bash scripts/blast-radius.sh <file_path> [--depth N]
-# Inspired by CodeSight's blast radius detector.
+# Heuristic text fallback; the parser-backed graph is the primary impact source.
 #
 # Given a file, finds all files that directly or transitively import it.
 # Shows: affected files, routes, tests, and estimated blast radius level.
 
 set -euo pipefail
+
+echo "NOTE: heuristic grep fallback; use codebase-memory-mcp detect_changes for structural impact." >&2
 
 TARGET="${1:?Usage: blast-radius.sh <file_path> [--depth N]}"
 MAX_DEPTH="${3:-5}"

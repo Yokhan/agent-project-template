@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.8.0 -->
+<!-- Template Version: 4.9.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -170,7 +170,7 @@ Hooks in `.claude/hooks/` enforce automatically:
 - **check-encoding.sh** — PostToolUse: validates UTF-8 encoding, catches BOM and broken Cyrillic
 - **session-audit.sh** — PostToolUse: logs all tool invocations to tasks/audit/session-YYYY-MM-DD.jsonl (7-day rotation)
 - Security alerts logged to `tasks/audit/security.jsonl`
-Optional: **CodeSight** codebase index — see `integrations/codesight.md`, enable in `.mcp.json`.
+Code intelligence is task-routed: use the `CODE_INTELLIGENCE` workflow returned by the context router instead of enabling redundant MCP indexes.
 
 ## Design Work — HARD RULES (Figma, CSS, UI)
 1. **NEVER hardcode visual values.** Use tokens/variables. Create tokens FIRST if missing.
@@ -233,7 +233,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.8.0 - Run `bash scripts/check-drift.sh` to verify health.
+4.9.0 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

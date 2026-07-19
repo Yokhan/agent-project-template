@@ -98,6 +98,12 @@ Use skills for reusable workflows, domain knowledge, and long references loaded
 only when relevant.
 Use subagents for parallel read-only exploration, review, security, docs
 research, design review, and isolated implementation with explicit file scope.
+Current local Codex releases may delegate after a direct request **or** when an
+applicable `AGENTS.md` or skill instruction requests it. Therefore a project
+rule may authorize proactive delegation for independent material work; a
+separate user request is not required. Explicit user opt-out still wins. If a
+higher runtime policy disables proactive delegation, report that as a runtime
+constraint instead of rewriting or misreporting the project policy.
 Use `AGENTS.md` and `CLAUDE.md` for routing and high-leverage constraints only.
 Use scripts for repeatable validation, scaffolding, release, and drift checks.
 Use Spec Kit style artifacts (`spec.md`, `plan.md`, `tasks.md`) when task intent
@@ -119,7 +125,8 @@ Run `node scripts/validate-agent-sot.js` after any agent infrastructure change.
 If a source in `_reference/agent-sot/sources.json` is stale or marked
 `requires_fresh_check`, browse the canonical URL before editing behavior.
 
-Current official-doc check: 2026-07-11 for GPT-5.6 model selection and Codex subagent behavior.
+Current official-doc check: 2026-07-19 for Codex subagent behavior; 2026-07-11
+for GPT-5.6 model selection.
 
 ## Minimum Closeout
 

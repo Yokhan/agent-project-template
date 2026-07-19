@@ -17,6 +17,12 @@ export interface RouteResult {
   codexSubagents: string[];
   pipeline: string;
   risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  codeIntelligence: {
+    id: string;
+    tools: string[];
+    reason: string;
+    guards: string[];
+  };
   needsFreshDocs: boolean;
   targetLanguage: string | null;
   languageResolution: string | null;

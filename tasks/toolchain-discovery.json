@@ -1,0 +1,16 @@
+{
+  "phase": "reading",
+  "kind": "architecture-mismatch",
+  "architecture_fit": "mismatch",
+  "summary": "The unfinished ten-tool implementation optimizes catalog size instead of the agent workflow: it counts context-router as code intelligence, retains disabled Codesight, and has no task-to-tool workflow that the Codex and MCP routers actually return.",
+  "evidence_ref": "_reference/code-intelligence-tools.json tools[2,7]; .mcp.json codesight.disabled; scripts/lib/code-intelligence-policy.js exports without task workflow; scripts/codex-route-task.js route result",
+  "owner": "Template code-intelligence bootstrap",
+  "sot": "User request for a current, verified ten-tool code-intelligence arsenal with efficient LLM context",
+  "protected_boundaries": [
+    "existing Engram persistent-memory workflow",
+    "project-owned MCP additions",
+    "Windows and Unix bootstrap parity",
+    "pinned and health-checked downstream installation",
+    "no downstream project configuration or indexing in this task"
+  ]
+}

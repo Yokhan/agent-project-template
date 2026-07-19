@@ -148,6 +148,11 @@ function main() {
     new Set(getAgentProfiles().map(({ model }) => model)),
     new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]),
   );
+  const symbolRoute = getRoute("rename the authentication symbol");
+  assert.deepStrictEqual(symbolRoute.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);
+  assert(formatSummary(symbolRoute).includes("CODE_INTELLIGENCE: symbol-refactor | codebase-memory -> serena -> ripgrep"));
+  const securityRoute = getRoute("security release audit for leaked secrets");
+  assert.deepStrictEqual(securityRoute.codeIntelligence.tools, ["codebase-memory", "semgrep", "gitleaks", "ripgrep"]);
 
   const russianWriting = getRoute("Напиши на русском руководство по интеграции API");
   assert.deepStrictEqual(russianWriting.writingPolicy.languageProfiles, ["russian-infostyle-core", "ilyakhov-russian-voice-decisions"]);

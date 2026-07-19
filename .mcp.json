@@ -1,10 +1,9 @@
 {
   "mcpServers": {
     "context-router": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "tsx",
-        "mcp-servers/context-router/src/index.ts"
+        "mcp-servers/context-router/dist/index.js"
       ],
       "env": {}
     },
@@ -14,14 +13,12 @@
         "mcp"
       ]
     },
-    "codesight": {
-      "command": "npx",
-      "args": [
-        "codesight",
-        "--mcp"
-      ],
-      "env": {},
-      "disabled": true
+    "codebase-memory-mcp": {
+      "command": "codebase-memory-mcp",
+      "args": [],
+      "env": {
+        "CBM_ALLOWED_ROOT": "."
+      }
     }
   }
 }

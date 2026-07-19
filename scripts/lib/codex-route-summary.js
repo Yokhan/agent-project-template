@@ -23,6 +23,7 @@ function formatSummary(route) {
   return [
     `ROUTE: ${route.modes.join("+")}`,
     `PIPELINE: ${route.pipeline}`,
+    `CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`,
     `RISK: ${route.risk}`,
     `MATCHES: exact=${route.exactMatches.join("+") || "none"} | semantic=${route.semanticMatches.join("+") || "none"}`,
     `CHANGE_STRATEGY: ${route.changeStrategy.required ? "required" : "not-required"} | lifecycle=${route.changeStrategy.lifecycle} | record=${route.changeStrategy.recordMode} | reasons=${route.changeStrategy.reasons.join("+") || "none"}`,

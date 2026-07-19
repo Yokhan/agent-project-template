@@ -67,9 +67,26 @@ jobs:
           node scripts/test-writing-references.js
           node scripts/validate-writing-references.js
           node scripts/test-writing-intent.js
+          node scripts/test-codex-mcp-config.js
+          node scripts/configure-codex-mcp.js --check
           npm --prefix mcp-servers/context-router ci
           npm --prefix mcp-servers/context-router test
           npm --prefix mcp-servers/context-router run build
+
+      - name: Install and health-check release toolchain
+        timeout-minutes: 25
+        run: |
+          bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+          bash scripts/bootstrap-mcp.sh --check --tool-profile=full
+
+      - name: Verify release config with Codex 0.125.0
+        run: |
+          npm install --global @openai/codex@0.125.0
+          project_key="$(node -p 'process.cwd().toLowerCase()')"
+          codex -c "projects.\"$project_key\".trust_level=\"trusted\"" mcp list > codex-mcp-list.txt
+          grep -q 'context-router' codex-mcp-list.txt
+          grep -q 'engram' codex-mcp-list.txt
+          grep -q 'codebase-memory-mcp' codex-mcp-list.txt
 
       - name: Build release archive
         env:

@@ -30,7 +30,7 @@ echo "Rules total: $RULES_COUNT files, $RULES_LINES lines"
 # Total auto-loaded
 TOTAL=$((CLAUDE_LINES + RULES_LINES))
 
-# Better token estimation (inspired by CodeSight heuristics)
+# Approximate token estimation for local comparisons.
 # Code: ~3 chars/token, prose: ~4 chars/token, blended: ~3.5 chars/token
 # Lines average ~40 chars, so ~11 tokens/line for prose, ~13 for code
 estimate_tokens() {
