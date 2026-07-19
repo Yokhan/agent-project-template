@@ -1101,8 +1101,15 @@ if is_template_source_repo; then
       tail -20 "$output"
       return 1
     fi
-    [ "$final_hash" = "$(_get_hash "$final_external")" ] || return 1
-    [ "$final_manifest" = "$(_get_hash "$final_project/.template-manifest.json")" ] || return 1
+    if [ "$final_hash" != "$(_get_hash "$final_external")" ]; then
+      echo "path-safety failure: project-owned external target changed"
+      return 1
+    fi
+    if [ "$final_manifest" != "$(_get_hash "$final_project/.template-manifest.json")" ]; then
+      echo "path-safety failure: project-owned manifest changed"
+      cat "$final_project/.template-manifest.json"
+      return 1
+    fi
     echo "path-safety stage passed: project-owned final symlink"
 
     local parent_project="$root/parent" parent_external="$root/parent-external"
