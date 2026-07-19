@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Last reviewed: 2026-07-19 for release candidate `4.9.0`. GitHub `releases/latest` currently resolves to `v4.6.2`; local notes about later tags are not publication evidence. `4.9.0` is not published until its exact tag passes the current workflows and the authoritative release page resolves to it. The live Codex subagent probe is reported separately because it consumes quota; static markers never count as runtime proof.
+Last reviewed: 2026-07-19 for published template `4.9.0`. Validation run `29672263414` passed all six Linux/Windows validation, bootstrap, full-toolchain, Codex MCP, and AgentOS jobs on commit `e00b714505ac4b1efb05c29e60e148a8ee7b2c85`. Release run `29672457240` revalidated the exact tag, built the archive, and published the non-draft, non-prerelease GitHub Release. The live Codex subagent probe is reported separately because it consumes quota; static markers never count as runtime proof.
 
 ## Validation Gate
 

@@ -24,12 +24,11 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Replace the unfinished decorative ten-tool catalog with a coherent agent
-workflow. Keep Engram for decisions, use codebase-memory as the only persistent
-code graph, keep the process router outside the ten-tool count, and make both
-Codex routing and the context-router return the task-specific tool sequence.
-Verify only in the template and generated fixtures; downstream configuration,
-indexing, benchmark claims, rollout, and release remain separate steps.
+Benchmark released `v4.9.0` on representative downstream projects before broad
+rollout. Measure answer recall first, then token use, tool calls, latency, index
+time, peak memory, and disk. Keep Engram for decisions, codebase-memory as the
+only persistent code graph, and the remaining tools task-routed and on-demand.
+Do not claim realized savings until the benchmark gate passes.
 
 ## Dependencies
 - Shared `.claude/library/` rules.

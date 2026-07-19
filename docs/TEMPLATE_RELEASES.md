@@ -54,7 +54,7 @@ If ownership is unclear, stop and ask instead of guessing.
 
 1. Explicit user tag > AgentOS-approved tag > verified latest stable release.
 2. Otherwise read the stable, non-draft, non-prerelease tag from
-   <https://github.com/Yokhan/agent-project-template/releases/latest>. Release candidate tag: `v4.9.0`; it is not stable until that URL resolves to it.
+   <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.9.0`.
 3. Installed version is comparison data, never the target. Never infer the
    target from `main`, a badge, cached memory, or a stale local sync script.
 4. If no target can be verified, ask for a tag. Do not substitute a branch.
@@ -108,9 +108,9 @@ Use the target release checkout's script with `--project-dir` for this fallback.
 5. A local tag proves only tag resolution. Say "published/live" only after
    checking the authoritative GitHub Release/workflow state.
 
-### Candidate Flow After Publication
+### Current Stable Flow
 
-Once `releases/latest` resolves to `v4.9.0`, create a new project with:
+After verifying that `releases/latest` resolves to `v4.9.0`, create a new project with:
 
 ```bash
 git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template

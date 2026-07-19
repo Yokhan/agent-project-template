@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: code-intelligence-toolchain-design
-status: active
+status: done
 updated: 2026-07-19
-readiness: 90
+readiness: 100
 plan: 100
 inventory: 100
-production: 85
-cleanup: 95
+production: 100
+cleanup: 100
 tags: tooling,context,code-graph,template
-next: pass the aggregate Unix setup gate in Linux CI; benchmark real projects separately before rollout
+next: benchmark real projects before claiming measured savings or broad rollout
 -->
 
 # Десять инструментов как один рабочий процесс

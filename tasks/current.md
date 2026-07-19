@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: code-intelligence-toolchain
-status: active
+status: done
 updated: 2026-07-19
-readiness: 90
+readiness: 100
 plan: 100
 inventory: 100
-production: 85
-cleanup: 95
+production: 100
+cleanup: 100
 tags: tooling,context,code-graph,mcp,template,benchmark,change-strategy
-next: run the aggregate Unix setup gate in Linux CI, then benchmark the graph on representative downstream projects before rollout
+next: benchmark the released graph workflow on representative downstream projects before rollout
 -->
 
 # Current Task - Template v4 Production Product Standard
@@ -73,11 +73,13 @@ next: run the aggregate Unix setup gate in Linux CI, then benchmark the graph on
   binary version mismatch, and an undersized Windows dependency-cruiser timeout.
 - Catalog, routing, context-router build/tests, production standard, SOT, text,
   progressive-status, and template validation gates pass locally.
-- The aggregate Bash smoke still stalls in the existing Unix `setup.sh` fixture
-  on this Windows Git Bash host. Treat Linux CI as the authoritative remaining
-  setup gate; do not describe that lane as passed locally.
-- No downstream apply, project configuration, project index, release, or token
-  benchmark is part of this slice.
+- The aggregate local smoke passes `196/196`; generated Linux and Windows
+  projects, full-profile installs, Codex MCP loading, and AgentOS routing pass in
+  validation run `29672263414`.
+- Tag `v4.9.0` resolves to
+  `e00b714505ac4b1efb05c29e60e148a8ee7b2c85`; release run `29672457240`
+  published the GitHub Release and archive. Downstream apply, project indexing,
+  and token benchmarks remain separate rollout work.
 
 ## Active Slice - Downstream v4.8.0 Preview
 

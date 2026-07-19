@@ -15,13 +15,13 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 
 1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
 2. Read installed version from `.template-manifest.json`.
-3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Release candidate tag: `v4.9.0`; it is not stable until that URL resolves to it.
+3. Explicit user/AgentOS tag wins; otherwise verify the exact stable tag at <https://github.com/Yokhan/agent-project-template/releases/latest>. Current stable tag: `v4.9.0`.
 4. Verify `git remote get-url template`; never silently replace a conflict.
 5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-After the candidate is published, create a new project from the verified tag:
+Create a new project from the stable tag:
 
 ```bash
 git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
@@ -43,8 +43,7 @@ bash scripts/sync-template.sh --from-git --ref v4.9.0
 
 ## Quick Start
 
-The commands below target release candidate `v4.9.0`. Do not use them for a
-stable rollout until the GitHub latest-release URL resolves to that tag.
+The commands below target stable release `v4.9.0`.
 
 ```bash
 git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template

@@ -18,8 +18,8 @@
 
 ## Быстрый старт (5 минут)
 
-Ниже указан целевой release candidate `v4.9.0`. До публикации tag не является
-stable: сначала проверьте GitHub `releases/latest`.
+Ниже указан текущий stable-релиз `v4.9.0`. Перед rollout всё равно проверьте,
+что GitHub `releases/latest` разрешается в этот tag.
 
 ```bash
 git clone --branch v4.9.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
@@ -227,7 +227,7 @@ bash scripts/check-drift.sh
 
 1. Определите тип рабочего каталога: исходный репозиторий шаблона, downstream-проект или старый проект без manifest. Шаблон нельзя синхронизировать в самого себя.
 2. Прочитайте установленную версию из `.template-manifest.json`.
-3. Явно указанная пользователем версия имеет приоритет. Иначе проверьте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest. Целевой release candidate: `v4.9.0`; до публикации он не считается stable.
+3. Явно указанная пользователем версия имеет приоритет. Иначе проверьте последний стабильный релиз: https://github.com/Yokhan/agent-project-template/releases/latest. Текущий stable tag: `v4.9.0`.
 4. Проверьте `git remote get-url template` и не заменяйте конфликтующий remote без решения пользователя.
 5. Запустите `--from-git --ref <tag> --dry-run`, затем примените тот же tag. Bare `--from-git` разрешён только для явно согласованного canary.
 6. Если локальный sync-скрипт устарел или сломан, используйте скрипт из checkout целевого release tag с `--project-dir`.
