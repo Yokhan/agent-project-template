@@ -26,13 +26,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false
@@ -82,6 +82,7 @@ jobs:
         run: |
           bash scripts/bootstrap-mcp.sh --install --tool-profile=full
           bash scripts/bootstrap-mcp.sh --check --tool-profile=full
+          gitleaks git --redact --no-banner .
 
       - name: Verify release config with Codex 0.125.0
         run: |
@@ -92,9 +93,47 @@ jobs:
           grep -q 'engram' codex-mcp-list.txt
           grep -q 'codebase-memory-mcp' codex-mcp-list.txt
 
+  validate-windows:
+    name: Validate Native Windows Release Path
+    needs: validate
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.validate.outputs.commit }}
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Exercise native updater and MCP runtime
+        shell: pwsh
+        run: |
+          if ((git rev-parse HEAD) -ne '${{ needs.validate.outputs.commit }}') { throw 'Windows checkout commit mismatch' }
+          node scripts/test-sync-template.js
+          node scripts/test-safe-config-write.js
+          node scripts/test-code-intelligence-tools.js
+          node scripts/test-codex-mcp-config.js
+          node scripts/configure-codex-mcp.js --check
+          npm.cmd --prefix mcp-servers/context-router ci
+          npm.cmd --prefix mcp-servers/context-router test
+          npm.cmd --prefix mcp-servers/context-router run build
+
+      - name: Install and health-check full Windows toolchain
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+          bash scripts/bootstrap-mcp.sh --check --tool-profile=full
+
   package:
     name: Package Verified Tag
-    needs: validate
+    needs: [validate, validate-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,7 +143,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -131,8 +170,8 @@ jobs:
             echo "Update downstream projects with:"
             echo ""
             echo '~~~bash'
-            echo "bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run"
-            echo "bash scripts/sync-template.sh --from-git --ref ${tag}"
+            echo "node scripts/sync-template.js --from-git --ref ${tag} --plan-file ../agent-template-${tag}.plan.json"
+            echo "node scripts/sync-template.js --from-git --ref ${tag} --plan-file ../agent-template-${tag}.plan.json --apply"
             echo '~~~'
             echo ""
             echo "AgentOS may orchestrate rollout order, but projects consume this template through the same pinned sync contract."

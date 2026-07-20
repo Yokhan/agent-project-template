@@ -156,6 +156,7 @@ powershell -NoProfile -Command ^
   "  '.claude/pipelines/*.md'," ^
   "  'scripts/*.sh'," ^
   "  'scripts/*.js'," ^
+  "  'scripts/*.cmd'," ^
   "  'scripts/lib/*.sh'," ^
   "  'scripts/lib/*.js'," ^
   "  'mcp-servers/context-router/package-lock.json'," ^

@@ -25,8 +25,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v4.9.5
-git push origin v4.9.5
+git tag v4.9.6
+git push origin v4.9.6
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -68,40 +68,40 @@ If ownership is unclear, stop and ask instead of guessing.
   remote is absent. Present an existing conflicting remote to the user.
 - Inspect `git status --short`, manifest ownership, and `project-*` overlays.
   Stop for dirty ownership ambiguity, downgrade/major jump, changed product
-  boundary, or unresolved `*.template-new` conflicts.
-- On Windows, do not substitute Linux commands in PowerShell. Run the Unix sync
-  flow in a declared Linux CI/maintenance environment until a native updater is
-  available; native project creation remains `setup.bat`.
+  boundary, or unresolved conflicts reported by the accepted preview plan.
+- On every OS, run the native Node updater from the exact target release. The
+  `.sh` and `.cmd` adapters are conveniences, not separate implementations.
 
 ### 4. Preview And Apply The Same Tag
 
 ```bash
 git remote get-url template
-bash scripts/sync-template.sh --from-git --ref <tag> --dry-run
-bash scripts/sync-template.sh --from-git --ref <tag>
+node scripts/sync-template.js --from-git --ref <tag> --plan-file ../agent-template-<tag>.plan.json
+node scripts/sync-template.js --from-git --ref <tag> --plan-file ../agent-template-<tag>.plan.json --apply
 ```
 
-The apply command must use the exact tag from the accepted preview. Bare
-`--from-git` is canary behavior and is forbidden for normal update requests.
+Apply recomputes the source and target plan, then compares the whole plan digest
+with the accepted external file. A changed tag commit, payload, manifest, or
+target file aborts before the first write. Bare `--from-git` remains forbidden.
 
 If the local sync script is missing or fails before a trustworthy preview,
 check out the exact release and use its script against the project:
 
 ```bash
 git clone --branch <tag> --depth 1 <template-url> <release-checkout>
-bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project> --dry-run
-bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project>
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --plan-file <outside-project-plan.json>
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --plan-file <outside-project-plan.json> --apply
 ```
 
 Do not patch a stale local sync script ad hoc and call it the release.
-Use the target release checkout's script with `--project-dir` for this fallback.
+Use the target release checkout's script against the project for this fallback.
 
 ### 5. Verify Before Claiming Success
 
 1. Confirm `.template-manifest.json.template_version` equals the target without
    the leading `v`.
 2. Confirm actual diff, preserved project-owned overlays, and explicit handling
-   of every `*.template-new` file.
+   of every reported conflict. Preview and a failed apply do not create sidecars.
 3. Run route-selected downstream checks: at minimum text policy, Codex
    agent/skill validation, routing smoke, and project tests when present.
 4. Report installed -> target, repository, tag, preview/apply evidence,
@@ -111,15 +111,15 @@ Use the target release checkout's script with `--project-dir` for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v4.9.5`. This source snapshot does not assert GitHub
-publication. Verify that the exact `v4.9.5` release exists and is non-draft and
+Release snapshot: `v4.9.6`. This source snapshot does not assert GitHub
+publication. Verify that the exact `v4.9.6` release exists and is non-draft and
 non-prerelease. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -130,8 +130,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -195,6 +195,16 @@ Version `4.8.0` is a compatible minor release that adds an evidence-backed Chang
 
 Version `4.9.0` is a compatible minor release that turns the selected ten-tool arsenal into one delivered workflow. It installs and health-checks the full pinned profile on Linux and Windows, keeps only Engram and one parser-backed code graph permanently available, routes the other tools on demand, safely merges the Codex MCP block without overwriting project settings, verifies the config with Codex `0.125.0`, and keeps AgentOS as the owner of its own task graph.
 
+Version `4.9.6` is a compatible security and reliability patch. MCP processes
+start in the project root, filesystem reads and writes reject traversal and
+symlink/junction escapes, shell execution uses argument arrays, mutating n8n
+pipelines are opt-in, and bootstrap never installs persistent n8n services or
+persists placeholder secrets. The canonical updater is one native Node engine
+on Linux and Windows: preview produces an external digest-bound plan, conflicts
+cause zero target writes, apply verifies tag commit and target preconditions,
+and any mid-transaction failure rolls back every write. Release packaging now
+depends on native Windows updater/MCP runtime tests and an actual gitleaks scan.
+
 Version `4.9.5` is a compatible patch release that makes routing smoke tests
 independent from the repository running them. Baseline cases now execute in an
 empty temporary project, while Spec Kit and AgentOS ownership are injected only
@@ -230,7 +240,7 @@ evidence and must not be rolled out. The `v4.9.4` patch supersedes it.
 
 The `v4.9.1` tag failed cross-platform validation before packaging or publication; no GitHub Release was created. It remains immutable failure evidence and must not be rolled out.
 
-Downstream projects should sync `v4.9.5` with a dry run first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
+Downstream projects should sync `v4.9.6` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying.
 
 ## Release Gate
 
@@ -264,7 +274,7 @@ bash setup.sh template-release-smoke
 cd template-release-smoke
 bash scripts/test-hooks.sh
 bash scripts/bootstrap-mcp.sh --dry-run
-bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../release-smoke.plan.json
 ```
 
 ## Downstream Update From A Release
@@ -275,19 +285,21 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 
-Use `--dry-run` first when a project has local changes. If both the project and template changed the same template-owned file, sync writes `*.template-new` instead of overwriting silently.
+Preview first. If both the project and template changed a template-owned file,
+apply refuses with zero writes. To replace those files, request a new plan with
+`--overwrite-conflicts`; rollback remains mandatory and cannot be disabled.
 
 ## Canary Update From Main
 
 Use the branch path only for early rollout or canary projects:
 
 ```bash
-bash scripts/sync-template.sh --from-git --canary --ref main --dry-run
-bash scripts/sync-template.sh --from-git --canary --ref main
+node scripts/sync-template.js --from-git --canary --ref main --plan-file ../agent-template-canary.plan.json
+node scripts/sync-template.js --from-git --canary --ref main --plan-file ../agent-template-canary.plan.json --apply
 ```
 
 Release tags are preferred for normal projects because they make rollbacks and AgentOS rollout plans explicit.
@@ -297,7 +309,7 @@ Release tags are preferred for normal projects because they make rollbacks and A
 AgentOS should not copy template internals manually. Recommended flow:
 
 1. AgentOS decides which project should update and which template tag is allowed.
-2. The project runs `scripts/sync-template.sh --from-git --ref <tag> --dry-run`.
+2. The project creates an external plan with `sync-template.js --from-git --ref <tag> --plan-file ...`.
 3. AgentOS reviews conflicts and project-owned overlays.
 4. The project applies sync and runs the release gate subset relevant to that project.
 5. AgentOS records the template tag in its own orchestration state.
@@ -313,4 +325,6 @@ git tag backup/pre-template-sync-$(date +%Y%m%d-%H%M%S)
 git revert <sync-commit>
 ```
 
-For uncommitted sync attempts, use the backup stash/tag created by `sync-template.sh` or discard only the files changed by the sync after reviewing `git diff`.
+The updater journals every destination before writing and restores the whole
+transaction on failure. After a successful apply, normal project Git history is
+the long-term rollback mechanism; no hidden stash or misleading backup tag is created.

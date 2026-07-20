@@ -236,6 +236,7 @@ generate_manifest() {
       .claude/pipelines/*.md) echo "template" ;;
       scripts/*.sh) echo "template" ;;
       scripts/*.js) echo "template" ;;
+      scripts/*.cmd) echo "template" ;;
       scripts/lib/*.sh) echo "template" ;;
       scripts/lib/*.js) echo "template" ;;
       mcp-servers/context-router/package-lock.json) echo "template" ;;
@@ -303,6 +304,7 @@ generate_manifest() {
     ".claude/pipelines/"*.md
     "scripts/"*.sh
     "scripts/"*.js
+    "scripts/"*.cmd
     "scripts/lib/"*.sh
     "scripts/lib/"*.js
     "mcp-servers/context-router/package-lock.json"
@@ -448,8 +450,8 @@ fi
 if [ -n "$TEMPLATE_REMOTE" ]; then
     git remote add template "$TEMPLATE_REMOTE" 2>/dev/null || true
     echo "Template remote added: $TEMPLATE_REMOTE"
-    echo "Run 'bash scripts/sync-template.sh --from-git' to check for updates."
-    echo "For pinned releases, run 'bash scripts/sync-template.sh --from-git --ref vX.Y.Z'."
+    echo "Run the target release's native sync-template.js with an exact tag and external --plan-file."
+    echo "Apply only by rerunning the same command with --apply after reviewing the plan."
   fi
 
 echo ""

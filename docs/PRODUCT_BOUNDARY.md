@@ -26,7 +26,7 @@ These may exist in the template workspace but must never ship to child projects:
 
 ## Template-Owned Vs Project-Owned
 
-Template-owned files are updated by `sync-template.sh` and should be treated as baseline infrastructure:
+Template-owned files are updated by the native `sync-template.js` transaction engine and should be treated as baseline infrastructure:
 
 - `.claude/`
 - `.agents/skills/`

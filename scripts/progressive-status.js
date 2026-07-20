@@ -57,7 +57,7 @@ Scans PROGRESSIVE_STATUS headers in working markdown docs.
 
 Header format:
 <!-- PROGRESSIVE_STATUS
-id: template-v4.9.5-progressive-status
+id: template-v4.9.6-progressive-status
 status: active
 updated: 2026-07-06
 readiness: 60

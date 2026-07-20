@@ -264,7 +264,7 @@ Use for release tags, release notes, downstream rollout, and AgentOS rollout coo
 3. Tag
    - Create a `vX.Y.Z` git tag only after validation is green.
 4. Downstream instructions
-   - Tell projects to use `scripts/sync-template.sh --from-git --ref <tag>`.
+   - Tell projects to preview and apply the target release's `scripts/sync-template.js` with one external plan file.
 5. AgentOS note
    - If AgentOS is present, it chooses rollout order and records the template tag; it does not replace template sync.
 

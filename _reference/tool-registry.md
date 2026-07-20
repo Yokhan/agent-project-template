@@ -12,10 +12,12 @@
 | check-drift | scripts/check-drift.sh | Template health check (9 checks) |
 | check-banlist | scripts/check-banlist.sh | Non-blocking phrase-signal scanner for contextual content review |
 | session-metrics | scripts/session-metrics.sh | Session stats collector (daily log) |
-| sync-template | scripts/sync-template.sh | Template sync with hash verification |
+| sync-template | scripts/sync-template.js | Cross-platform preview-plan-apply template sync with exact source binding, conflict preflight, path safety, and transactional rollback |
+| sync-all | scripts/sync-all.js | Multi-project preview/apply orchestration using one reviewed plan file per project |
 | bootstrap-mcp | scripts/bootstrap-mcp.sh | MCP server auto-setup |
 | code-intelligence-tools | scripts/code-intelligence-tools.js | Route each task to a minimal tool sequence; validate, install, and health-check the pinned ten-tool stack |
 | configure-codex-mcp | scripts/configure-codex-mcp.js | Merge the managed MCP block into project `.codex/config.toml` without overwriting project-owned Codex settings |
+| safe-config-write | scripts/lib/safe-config-write.js | Atomically replace JSON configuration inside a checked real-directory boundary without following symlinks or junctions |
 | test-codex-mcp-config | scripts/test-codex-mcp-config.js | Regression tests for safe Codex MCP add, update, idempotency, and conflict handling |
 | audit-reuse | scripts/audit-reuse.sh | Duplicate detector, extraction candidates |
 | downstream-census | scripts/downstream-census.sh | Migration matrix across downstream template repos |

@@ -21,38 +21,39 @@ of truth. Do not invent an update path from stale examples or memory.
   a normal update.
 - If installed equals target, report `Already up to date` and stop.
 
-### Step 2: Verify Source And Dry Run
+### Step 2: Verify Source And Preview
 
 - Run `git remote get-url template`; do not silently replace a conflicting remote.
 - Inspect `git status --short` and project-owned `project-*` overlays.
 - Preview the exact target:
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref <tag> --dry-run
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --plan-file <outside-project-plan.json>
 ```
 
 Stop for remote/SOT conflicts, downgrade or major-version jumps, dirty ownership
-ambiguity, changed product boundaries, or `*.template-new` conflicts.
+ambiguity, changed product boundaries, or plan conflicts.
 
-### Step 3: Backup
+### Step 3: Account For Local State
 
 - Ensure current work is committed or explicitly accounted for.
-- The sync script creates a backup tag and may stash dirty changes.
+- The updater never hides work in a stash or claims a committed-baseline tag is
+  a backup of dirty files. Apply journals and rolls back only its own writes.
 
 ### Step 4: Execute Sync
 
 ```bash
-bash scripts/sync-template.sh --from-git --ref <tag>
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --plan-file <outside-project-plan.json> --apply
 ```
 
-- Use the same tag as the dry-run.
+- Use the exact plan file accepted during preview.
 - If local sync is missing/broken, use the target release checkout's script with
   `--project-dir`; never patch the stale script ad hoc.
 
 ### Step 5: Validate
 
 - Verify `.template-manifest.json.template_version` equals target without `v`.
-- Check actual diff, preserved `project-*`, and unresolved `*.template-new`.
+- Check actual diff, preserved `project-*`, and every reported conflict.
 - Run text policy, Codex agent/skill validation, routing smoke, and project tests
   when present.
 
@@ -67,14 +68,13 @@ bash scripts/sync-template.sh --from-git --ref <tag>
 ## Legacy Bootstrap
 
 ```bash
-bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project> --bootstrap
-bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project> --dry-run
-bash <release-checkout>/scripts/sync-template.sh <release-checkout> --project-dir <project>
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --bootstrap --plan-file <outside-project-plan.json>
+node <release-checkout>/scripts/sync-template.js <release-checkout> <project> --bootstrap --plan-file <outside-project-plan.json> --apply
 ```
 
 ## Invariants
 
 - Project-owned files and `project-*` overlays are preserved.
 - Normal updates use a verified release tag, never an implicit branch.
-- Dry-run and apply use the same source, repository, and tag.
+- Preview and apply use the same digest-bound source, target preconditions, repository, and tag.
 - No success claim is valid without post-sync version and verification evidence.

@@ -1,17 +1,83 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v4.9.5
-status: done
-updated: 2026-07-19
-readiness: 100
-plan: 100
-inventory: 100
-production: 100
-cleanup: 100
+id: template-release-mcp-safety
+status: active
+updated: 2026-07-20
+readiness: 15
+plan: 55
+inventory: 45
+production: 0
+cleanup: 10
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: monitor downstream adoption; start a new slice only from a concrete regression or requested capability
+next: finish the MCP and cross-platform sync audit, repair the shared boundaries, then prove a new patch release on Linux, Windows, and downstream canaries
 -->
 
 # Current Task - Template v4 Production Product Standard
+
+## Active Slice - MCP Defaults and Native Sync Production Repair
+
+### User Wants
+- Audit the whole release/update path, remove the residual unsafe MCP defaults
+  inherited from `v4.9.0`, replace the unstable Windows/MSYS apply workaround
+  with a supported canonical path, and publish a production-safe patch.
+
+### Success Means
+- Context-router, Engram, and codebase-memory start in the project root, never
+  the parent workspace; the graph cannot inherit sibling-project scope.
+- MCP tool input never reaches a command shell; state-changing pipeline tools
+  require explicit operator opt-in.
+- `.mcp.json` and `.codex/config.toml` updates reject symlink/reparse targets,
+  write atomically, preserve project-owned entries, and do not leave secret
+  backups in the repository.
+- Optional n8n setup is pinned, loopback-only by default, and does not disable
+  secure cookies as a template default.
+- Windows uses a native cross-platform sync/apply engine rather than relying on
+  unstable Git-for-Windows MSYS orchestration. The Bash entrypoint remains a
+  compatibility wrapper over the same engine, not a second implementation.
+- Exact-tag dry-run/apply/repeat-dry-run passes on Linux, Windows, fresh setup,
+  and dirty/project-owned downstream fixtures before a new stable tag is public.
+
+### Failure Classification And System Map
+- Observed failure: `v4.9.5` still carries the MCP block and context-router
+  execution behavior from `v4.9.0`; Studio had to maintain downstream security
+  overlays, and Windows migrations used release helpers manually after MSYS
+  orchestration failed.
+- Immediate symptoms: `cwd = ".."`; POSIX single-quote escaping passed to
+  `child_process.exec` on Windows; always-exposed `run_pipeline`; project-local
+  executables accepted as installed tools; `.mcp.json` copied without the safe
+  config boundary; insecure optional n8n defaults.
+- Broken links: template SOT did not absorb proven downstream hardening, while
+  the canonical update contract still points Windows users at a Bash engine.
+- Root cause: release validation proved Studio overrides and helper primitives,
+  but did not test the standalone template defaults or one supported native
+  end-to-end Windows update path.
+
+### Change Strategy
+- Posture: production; protected contracts are project-owned files, secrets,
+  manifest identity, exact tags, dirty worktrees, Codex/AgentOS consumers, and
+  repeatable rollback.
+- Contradiction: provide one portable updater without weakening Bash consumers
+  or maintaining two divergent sync implementations.
+- Chosen destination x transition: `bounded-replace x staged-swap`. Move sync
+  orchestration to one Node engine; retain the Bash command as a thin adapter
+  until Linux/Windows and downstream parity is proven.
+- Rejected: patch the current 866-line Bash path again. It cannot remove the
+  Git-for-Windows fork/MSYS failure class and preserves duplicate shell/Node
+  state transitions.
+- Rejected: documentation-only preview warnings. They leave exploitable MCP
+  defaults and make each downstream operator rediscover the same repair.
+- Replan trigger: native parity would require weakening ownership, conflict,
+  rollback, or exact-release provenance; if so, stop before tag and split the
+  transition into a separate unreleased canary.
+
+### Verification Plan
+- Negative tests for Windows command metacharacters, parent cwd, project-local
+  executable poisoning, pipeline opt-in, symlink/reparse MCP configs, secret
+  backup absence, and secure n8n defaults.
+- Existing aggregate template, MCP, context-router, text, SOT, routing, hooks,
+  setup, sync, manifest, and release-provenance gates.
+- GitHub Linux/Windows validation plus exact public tag/archive checksum.
+- Pinned downstream preview/apply/repeat-preview with before/after hashes and
+  no hidden stash or loss of project-owned state.
 
 ## Active Slice - Release v4.9.5 Downstream AGENTS Ownership and Routing Test Repair
 

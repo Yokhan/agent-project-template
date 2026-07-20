@@ -7,7 +7,7 @@
 #   --install    Install missing required MCP servers and the selected pinned tool profile
 #   --check      Health check configured servers and the selected pinned tool profile
 #   --zed        Also generate Zed context_servers config
-#   --with-n8n   Explicitly install/start optional n8n workflow automation
+#   --with-n8n   Retired: the template never installs or starts persistent services
 #   --tool-profile=core|auto|full  Select the pinned code-intelligence arsenal
 #   --dry-run    Show what would be done without writing files
 #
@@ -59,7 +59,7 @@ for arg in "$@"; do
       echo "  --install   Install missing required MCP servers and the selected tool profile"
       echo "  --check     Verify configured servers and the selected tool profile"
       echo "  --zed       Also configure Zed AI chat panel"
-      echo "  --with-n8n  Explicitly install/start optional n8n"
+      echo "  --with-n8n  Retired; provision pinned n8n separately with authentication and loopback binding"
       echo "  --tool-profile  Select core, stack-aware auto, or all ten tools (default: full)"
       echo "  --dry-run   Show what would change without writing"
       exit 0
@@ -71,6 +71,12 @@ case "$TOOL_PROFILE" in
   core|auto|full) ;;
   *) echo "ERROR: Unknown tool profile: $TOOL_PROFILE"; exit 1 ;;
 esac
+
+if [ "$DO_N8N" = true ]; then
+  echo "ERROR: --with-n8n is retired. This bootstrap does not install or start persistent services."
+  echo "Provision a pinned n8n release separately, bind it to loopback, and enable authentication/TLS."
+  exit 1
+fi
 
 # --- OS and environment detection ---
 
@@ -120,15 +126,6 @@ if command -v node &>/dev/null && command -v npm &>/dev/null; then
 else
   echo "WARNING: Node.js/npm not found. Context-router MCP will not work."
   echo "  Install: https://nodejs.org/ or: winget install OpenJS.NodeJS.LTS"
-fi
-
-# --- Check for docker (needed for n8n) ---
-HAS_DOCKER=false
-if command -v docker &>/dev/null; then
-  HAS_DOCKER=true
-  echo "Docker: $(docker --version 2>/dev/null | head -c 40)"
-else
-  echo "INFO: Docker not found. n8n auto-install unavailable (optional)."
 fi
 
 # --- Install helpers ---
@@ -183,10 +180,15 @@ install_engram() {
     return 1
   fi
 
+  mkdir -p "$temp_dir/extracted"
+  node -e "require('./scripts/code-intelligence-tools.js').validateArchive(process.argv[1],process.argv[2])" "$archive_path" "$temp_dir/extracted" || {
+    echo "ERROR: Engram archive contains an unsafe path or link."
+    return 1
+  }
+
   if [ "$OS" = "windows" ]; then
     powershell.exe -NoProfile -Command "Expand-Archive -LiteralPath '$archive_path' -DestinationPath '$temp_dir/extracted' -Force" || return 1
   else
-    mkdir -p "$temp_dir/extracted"
     tar -xzf "$archive_path" -C "$temp_dir/extracted" || return 1
   fi
 
@@ -441,13 +443,11 @@ ENABLED+=("codebase-memory-mcp")
 DETECTED_SERVERS+="codebase-memory-mcp|{\"command\":\"codebase-memory-mcp\",\"args\":[],\"env\":{\"CBM_ALLOWED_ROOT\":\".\"}}
 "
 
-# 3. obsidian-mcp (only if brain/ exists)
+# 3. obsidian-mcp (never persist placeholder credentials)
 echo -n "  obsidian-mcp: "
 if detect_obsidian; then
-  echo "ENABLED (brain/ directory found)"
-  ENABLED+=("obsidian-mcp")
-  DETECTED_SERVERS+="obsidian|{\"command\":\"obsidian-mcp-server\",\"args\":[\"--vault\",\"./brain\"],\"env\":{\"OBSIDIAN_API_KEY\":\"placeholder\"}}
-"
+  echo "NOT AUTO-CONFIGURED (brain/ found; configure credentials outside tracked files)"
+  DISABLED+=("obsidian-mcp")
 else
   echo "DISABLED (no brain/ directory)"
   DISABLED+=("obsidian-mcp")
@@ -483,7 +483,7 @@ echo -n "  chrome-devtools: "
 if detect_chrome_devtools; then
   echo "ENABLED (web project detected)"
   ENABLED+=("chrome-devtools")
-  DETECTED_SERVERS+="chrome-devtools|{\"command\":\"npx\",\"args\":[\"chrome-devtools-mcp@latest\"]}
+  DETECTED_SERVERS+="chrome-devtools|{\"command\":\"chrome-devtools-mcp\",\"args\":[]}
 "
 else
   if detect_web_project; then
@@ -527,7 +527,7 @@ else
   DISABLED+=("context-router")
 fi
 
-# 8. n8n (workflow automation — optional)
+# 8. n8n (external workflow automation; detection only)
 echo -n "  n8n: "
 N8N_URL="${N8N_URL:-http://localhost:5678}"
 # Check if n8n is already running
@@ -535,50 +535,8 @@ if curl -s --connect-timeout 2 "$N8N_URL/healthz" >/dev/null 2>&1 || \
    curl -s --connect-timeout 2 "$N8N_URL/api/v1/workflows" >/dev/null 2>&1; then
   echo "ENABLED (running at $N8N_URL)"
   ENABLED+=("n8n")
-elif [ "$DO_N8N" = true ]; then
-  # Method 1: npm (lightweight, no Docker overhead)
-  if command -v npm &>/dev/null; then
-    if command -v n8n &>/dev/null; then
-      echo "INSTALLED (npm global). Start with: n8n start"
-      ENABLED+=("n8n")
-    else
-      echo -n "installing via npm... "
-      if npm install -g n8n --silent 2>/dev/null; then
-        echo "INSTALLED (npm). Start with: n8n start"
-        ENABLED+=("n8n")
-      else
-        echo "npm install failed"
-      fi
-    fi
-  fi
-  # Method 2: Docker (if npm failed or unavailable)
-  if ! echo "${ENABLED[*]}" | grep -q "n8n" 2>/dev/null; then
-    if command -v docker &>/dev/null && docker ps &>/dev/null 2>&1; then
-      echo -n "installing via docker... "
-      if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^n8n$"; then
-        docker start n8n >/dev/null 2>&1 || true
-        echo "STARTED (existing container)"
-      else
-        docker run -d --name n8n -p 5678:5678 \
-          -v n8n_data:/home/node/.n8n \
-          -e N8N_SECURE_COOKIE=false \
-          --restart unless-stopped \
-          n8nio/n8n:latest >/dev/null 2>&1 && echo "INSTALLED (docker)" || echo "FAILED"
-      fi
-      sleep 3
-      if curl -s --connect-timeout 5 "$N8N_URL/healthz" >/dev/null 2>&1; then
-        ENABLED+=("n8n")
-      else
-        DISABLED+=("n8n")
-      fi
-    else
-      echo "SKIPPED (no npm or docker available)"
-      echo "    Install: npm install -g n8n  OR  docker run n8nio/n8n"
-      DISABLED+=("n8n")
-    fi
-  fi
 else
-  echo "NOT RUNNING (optional — start with: n8n start OR --with-n8n)"
+  echo "NOT RUNNING (optional; operator-managed, pinned deployment only)"
   DISABLED+=("n8n")
 fi
 
@@ -662,11 +620,7 @@ if [ "$DRY_RUN" = true ]; then
   echo "Would update .mcp.json (server payload, args, URLs, and env values are redacted)."
   echo "(Dry run — no files modified)"
 else
-  if [ -f ".mcp.json" ]; then
-    cp ".mcp.json" ".mcp.json.bak"
-    echo "Backed up .mcp.json to .mcp.json.bak"
-  fi
-  cp "$MERGED_JSON_PATH" .mcp.json
+  node scripts/lib/safe-config-write.js --root . --target .mcp.json --source "$MERGED_JSON_PATH"
   echo "Generated .mcp.json"
 fi
 rm -f "$MERGED_JSON_PATH"
@@ -717,8 +671,10 @@ fs.writeFileSync(process.argv[2],JSON.stringify({context_servers:cs},null,2)+'\n
     echo "  Command, URL, args, and env values are redacted."
   else
     if [ -f "$ZED_SETTINGS_PATH" ]; then
-      # Merge into existing Zed settings
-      cp "$ZED_SETTINGS_PATH" "${ZED_SETTINGS_PATH}.bak"
+      # Merge into a private temporary payload, then replace the real file atomically.
+      ZED_MERGED_PATH=$(create_temp_json_file)
+      MCP_TEMP_FILES+=("$ZED_MERGED_PATH")
+      chmod 600 "$ZED_MERGED_PATH" 2>/dev/null || true
       node -e "
 const fs=require('fs');
 const settings=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));
@@ -728,10 +684,13 @@ const newCs=snippet.context_servers||{};
 const added=[];
 for(const[k,v]of Object.entries(newCs)){if(!cs[k]){cs[k]=v;added.push(k);}}
 settings.context_servers=cs;
-fs.writeFileSync(process.argv[1],JSON.stringify(settings,null,2));
+fs.writeFileSync(process.argv[3],JSON.stringify(settings,null,2)+'\n',{mode:0o600});
 console.log(added.length?'Added to Zed: '+added.join(','):'Zed settings already up to date.');
-" "$ZED_SETTINGS_PATH" "$ZED_SNIPPET_PATH"
-      echo "Updated $ZED_SETTINGS_PATH (backup: .bak)"
+" "$ZED_SETTINGS_PATH" "$ZED_SNIPPET_PATH" "$ZED_MERGED_PATH"
+      ZED_SETTINGS_DIR=$(dirname "$ZED_SETTINGS_PATH")
+      ZED_SETTINGS_NAME=$(basename "$ZED_SETTINGS_PATH")
+      node scripts/lib/safe-config-write.js --root "$ZED_SETTINGS_DIR" --target "$ZED_SETTINGS_NAME" --source "$ZED_MERGED_PATH"
+      echo "Updated $ZED_SETTINGS_PATH atomically"
     else
       echo "Zed settings not found at: $ZED_SETTINGS_PATH"
       echo ""

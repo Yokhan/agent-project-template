@@ -64,17 +64,25 @@ function compareVersions(left, right) {
   return 0;
 }
 
-function resolveCommand(command) {
+function isInsideDirectory(rootDir, candidate) {
+  const relative = path.relative(path.resolve(rootDir), path.resolve(candidate));
+  return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+}
+
+function resolveCommand(command, rootDir = process.cwd()) {
   const localName = process.platform === "win32" && !command.endsWith(".exe") ? `${command}.exe` : command;
   const localPath = path.join(process.env.CODE_INTELLIGENCE_BIN_DIR || path.join(os.homedir(), ".local", "bin"), localName);
-  if (fs.existsSync(localPath)) return localPath;
+  if (fs.existsSync(localPath) && !isInsideDirectory(rootDir, localPath)) return localPath;
   const finder = process.platform === "win32"
     ? spawnSync("where.exe", [command], { encoding: "utf8", timeout: 3000 })
     : spawnSync("sh", ["-c", 'command -v -- "$1"', "sh", command], { encoding: "utf8", timeout: 3000 });
   if (finder.status !== 0) {
     return null;
   }
-  const candidates = finder.stdout.split(/\r?\n/).filter(Boolean);
+  const candidates = finder.stdout
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .filter((candidate) => !isInsideDirectory(rootDir, candidate));
   if (process.platform === "win32") {
     return candidates.find((candidate) => /\.(?:exe|cmd|bat)$/i.test(candidate)) || candidates[0] || null;
   }
@@ -98,7 +106,7 @@ function getLocalNpmHealth(tool, rootDir) {
 }
 
 function getCommandHealth(tool, rootDir) {
-  const executable = resolveCommand(tool.command);
+  const executable = resolveCommand(tool.command, rootDir);
   if (!executable) return { status: "missing", version: "unknown", detail: "command not found" };
   const result = spawnCommand(executable, tool.health_args, {
     cwd: rootDir,
@@ -222,6 +230,43 @@ function findFile(root, name) {
   return null;
 }
 
+function assertSafeArchiveEntries(entries) {
+  for (const rawEntry of entries) {
+    const entry = String(rawEntry).replaceAll("\\", "/").replace(/^\.\//u, "");
+    const parts = entry.split("/");
+    if (!entry || entry.startsWith("/") || /^[A-Za-z]:/u.test(entry) || parts.some((part) => part === "..")) {
+      throw new Error(`unsafe archive entry: ${rawEntry}`);
+    }
+  }
+}
+
+function validateArchive(archivePath, extractDir) {
+  if (process.platform === "win32") {
+    const script = `
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive=[IO.Compression.ZipFile]::OpenRead($args[0])
+$root=[IO.Path]::GetFullPath($args[1])+[IO.Path]::DirectorySeparatorChar
+try {
+  foreach($entry in $archive.Entries){
+    $name=$entry.FullName.Replace('\\','/')
+    $parts=$name.Split('/')
+    $target=[IO.Path]::GetFullPath((Join-Path $args[1] $name))
+    $mode=($entry.ExternalAttributes -shr 16) -band 0xF000
+    if(!$name -or [IO.Path]::IsPathRooted($name) -or $parts -contains '..' -or !$target.StartsWith($root,[StringComparison]::OrdinalIgnoreCase) -or $mode -eq 0xA000){throw "unsafe archive entry: $name"}
+  }
+} finally {$archive.Dispose()}`;
+    const checked = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script, archivePath, extractDir], { encoding: "utf8" });
+    if (checked.status !== 0) throw new Error(checked.stderr || "zip safety validation failed");
+    return;
+  }
+  const names = spawnSync("tar", ["-tzf", archivePath], { encoding: "utf8" });
+  if (names.status !== 0) throw new Error(names.stderr || "archive listing failed");
+  assertSafeArchiveEntries(names.stdout.split(/\r?\n/u).filter(Boolean));
+  const verbose = spawnSync("tar", ["-tvzf", archivePath], { encoding: "utf8" });
+  if (verbose.status !== 0) throw new Error(verbose.stderr || "archive type listing failed");
+  if (verbose.stdout.split(/\r?\n/u).some((line) => /^[lh]/u.test(line))) throw new Error("archive links are not allowed");
+}
+
 async function installGithubReleaseBinary(tool, dryRun) {
   const release = getGithubReleaseAsset(tool);
   if (dryRun) return { id: tool.id, status: "planned", command: `verified download ${release.assetUrl}` };
@@ -239,6 +284,7 @@ async function installGithubReleaseBinary(tool, dryRun) {
     const actual = crypto.createHash("sha256").update(archive).digest("hex");
     if (actual !== expected) throw new Error(`checksum mismatch for ${release.asset}`);
     fs.writeFileSync(archivePath, archive);
+    validateArchive(archivePath, extractDir);
     const psQuote = (value) => `'${String(value).replaceAll("'", "''")}'`;
     const extraction = process.platform === "win32"
       ? spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `Expand-Archive -LiteralPath ${psQuote(archivePath)} -DestinationPath ${psQuote(extractDir)} -Force`], { encoding: "utf8" })
@@ -372,4 +418,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { getGithubReleaseAsset, getReport, normalizeVersion, parseArgs };
+module.exports = { assertSafeArchiveEntries, getGithubReleaseAsset, getReport, isInsideDirectory, normalizeVersion, parseArgs, validateArchive };

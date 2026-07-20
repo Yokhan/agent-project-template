@@ -1,6 +1,29 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { routeKeywords } from "./router.js";
 import { buildActiveRulesOutput } from "./active-rules.js";
+
+function assertProjectScopedConfig(relativePath: string): void {
+  const source = readFileSync(new URL(`../../../${relativePath}`, import.meta.url), "utf8");
+  assert(!/^cwd\s*=\s*"\.\."/mu.test(source), `${relativePath}: parent workspace cwd is forbidden`);
+}
+
+for (const relativePath of [".codex/config.toml", "_reference/codex-mcp-config.toml"]) {
+  assertProjectScopedConfig(relativePath);
+}
+
+for (const moduleName of ["research.ts", "engram.ts", "context.ts"]) {
+  const source = readFileSync(new URL(`./${moduleName}`, import.meta.url), "utf8");
+  assert(!source.includes("shellEscape"), `${moduleName}: shell quoting is not cross-platform safe`);
+  assert(!source.includes("exec("), `${moduleName}: shell execution is forbidden`);
+  assert(source.includes("execFile"), `${moduleName}: commands must use argument arrays`);
+}
+
+const serverSource = readFileSync(new URL("./index.ts", import.meta.url), "utf8");
+assert(
+  serverSource.includes('process.env.CONTEXT_ROUTER_ENABLE_PIPELINES === "true"'),
+  "run_pipeline must require an explicit state-changing opt-in",
+);
 
 function assertRoute(
   task: string,

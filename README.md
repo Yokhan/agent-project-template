@@ -1,6 +1,6 @@
 # Agent Project Template v4
 
-[![Template Version](https://img.shields.io/badge/template-v4.9.5-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v4.9.6-blue)](.)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -21,12 +21,12 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
 7. Verify manifest version, diff, overlays, conflicts, and checks before success.
 
-Release snapshot: `v4.9.5`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v4.9.6`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
 
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -37,18 +37,18 @@ Update an existing generated project from the verified pinned tag:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
-The commands below target release snapshot `v4.9.5`; verify its GitHub Release before use.
+The commands below target release snapshot `v4.9.6`; verify its GitHub Release before use.
 
 ```bash
-git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -64,7 +64,7 @@ CLI/LSP capabilities and do not inflate the permanent MCP surface.
 only as a compatibility payload for Claude Code; it is not how Codex discovers
 project MCP servers.
 
-**Windows**: run `setup.bat`. It detects the Windows environment and prepares the context-router with native `npm.cmd`; do not substitute Unix bootstrap commands in PowerShell.
+**Windows**: run `setup.bat`. Project updates use the same native Node updater as Linux: `node scripts/sync-template.js ...`; `scripts/sync-template.cmd` is only a thin adapter.
 
 Newly bootstrapped `AGENTS.md`, `README.md`, and `SETUP_GUIDE.md` are template-owned. If an existing manifest explicitly marks `AGENTS.md` as `project`, sync preserves that declared ownership and never overwrites the file. Put new project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `docs/`, and `project-*` overlays.
 
@@ -91,11 +91,11 @@ bash scripts/init-spec-kit.sh --integration codex --script sh --project-dir .
 When the template improves (new rules, agents, skills, hooks), update your project:
 
 ```bash
-# Preview changes (no modifications)
-bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
+# Preview changes (the plan file must be outside the target project)
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json
 
-# Apply updates
-bash scripts/sync-template.sh /path/to/agent-project-template
+# Apply exactly the accepted preview
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json --apply
 ```
 
 Or use the Claude Code command: `/update-template /path/to/template`
@@ -103,7 +103,7 @@ Or use the Claude Code command: `/update-template /path/to/template`
 If you are operating from the template repo instead of inside the child project, use:
 
 ```bash
-bash /path/to/agent-project-template/scripts/sync-template.sh /path/to/agent-project-template --project-dir /path/to/my-project --dry-run
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template /path/to/my-project --plan-file /path/to/template-sync.plan.json
 ```
 
 ### Pinned release updates (git-based)
@@ -113,10 +113,10 @@ If the template is hosted in a git repository, prefer release tags for normal pr
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
 
 # Apply the pinned release
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -124,28 +124,24 @@ Projects created from a git-hosted template automatically have a `template` remo
 Use branch-based sync only for template development, early rollout, or canary projects where untagged changes are intentional:
 
 ```bash
-bash scripts/sync-template.sh --from-git --canary --ref main --dry-run
-bash scripts/sync-template.sh --from-git --canary --ref main
+node scripts/sync-template.js --from-git --canary --ref main --plan-file ../agent-template-canary.plan.json
+node scripts/sync-template.js --from-git --canary --ref main --plan-file ../agent-template-canary.plan.json --apply
 ```
 
 AgentOS can orchestrate when and where a tag is applied, but the template release still comes from this repository. If AgentOS artifacts are present, Codex treats them as the source task graph and uses template routing only as the worker execution contract.
 
 ### Updating older projects (created before v2.2.0)
 ```bash
-# 1. Copy sync script into your project
-cp /path/to/agent-project-template/scripts/sync-template.sh my-project/scripts/
+# Preview the bootstrap with the target release updater
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template my-project --bootstrap --plan-file /path/to/bootstrap.plan.json
 
-# 2. Bootstrap — generates .template-manifest.json from current state
-cd my-project
-bash scripts/sync-template.sh /path/to/agent-project-template --bootstrap
-
-# 3. Sync — applies template updates
-bash scripts/sync-template.sh /path/to/agent-project-template
+# Apply exactly that bootstrap plan
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template my-project --bootstrap --plan-file /path/to/bootstrap.plan.json --apply
 
 # Optional: add git remote for future auto-updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -224,7 +220,7 @@ Follow the 5-level loading pattern:
 
 ### Template updates preserve your extensions
 
-When you run `/update-template` or `bash scripts/sync-template.sh`:
+When you run the target release's `scripts/sync-template.js`:
 - Template files → **updated** to the explicitly resolved target tag
 - `project-*` files → **untouched**
 - `settings.local.json` → **untouched**
@@ -243,7 +239,7 @@ When you run `/update-template` or `bash scripts/sync-template.sh`:
 | **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 62 | validation, adaptive writing/reference routing, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 67 | validation, adaptive writing/reference routing, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -328,22 +324,23 @@ See `integrations/*/README.md` for details.
 
 ```bash
 # 1. Preview changes
-bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json
 
 # 2. Apply (with conflict detection)
-bash scripts/sync-template.sh /path/to/agent-project-template
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json --apply
 
-# 3. Review any CONFLICT files (*.template-new)
+# 3. Resolve every reported conflict; preview never writes sidecar files
 # 4. Run validation
 bash scripts/check-drift.sh
 ```
 
-**New in v3.0**: sync now detects conflicts (files modified locally AND in template) instead of silently overwriting. See `*.template-new` files for template version, resolve manually.
+Sync detects files changed both locally and in the template. Preview reports those conflicts and writes nothing; resolve them or create a new explicit `--overwrite-conflicts` plan before apply.
 
 ## Changelog
 
 | Version | Key Changes |
 |---------|------------|
+| **4.9.6** | Security and reliability patch: project-root MCP cwd and filesystem containment, argument-array subprocesses, opt-in mutating pipelines, secret-safe bootstrap defaults, one native Linux/Windows sync engine with digest-bound plans and full rollback, and release-blocking Windows/runtime/secret-scan evidence |
 | **4.9.5** | Patch release: makes routing smoke tests independent from live downstream Spec Kit and AgentOS artifacts, so mature projects validate the same route contract as the source template instead of receiving false strategic-review failures |
 | **4.9.4** | Patch release: preserves every explicitly project-owned manifest entry, fixes the legacy `AGENTS.md` convergence loop, refreshes preserved project hashes without overwriting content, and makes root release ownership truthful in source and downstream projects; supersedes the failed, unpublished v4.9.3 tag |
 | **4.9.3** | Failed validation tag: the Linux path-safety fixture stopped before publication; no GitHub Release was created |

@@ -1,0 +1,17 @@
+{
+  "phase": "reading",
+  "kind": "architecture-mismatch",
+  "architecture_fit": "mismatch",
+  "summary": "The current v4.9.5 payload still ships v4.9.0 MCP defaults and a Bash-first Windows update path even though real downstream canaries require security overlays and native helpers.",
+  "evidence_ref": "_reference/codex-mcp-config.toml; mcp-servers/context-router/src/research.ts; mcp-servers/context-router/src/engram.ts; scripts/bootstrap-mcp.sh; BuffItStudio tasks/current.md:68-76",
+  "owner": "Template MCP, sync, and release subsystem",
+  "sot": "docs/SAFE_DEFAULTS.md and docs/TEMPLATE_RELEASES.md",
+  "protected_boundaries": [
+    "project-root-only MCP filesystem scope",
+    "project-owned downstream files and dirty worktrees",
+    "MCP and Zed secrets",
+    "exact immutable release identity",
+    "Codex and AgentOS compatibility",
+    "Linux and native Windows update parity"
+  ]
+}

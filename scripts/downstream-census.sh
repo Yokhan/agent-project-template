@@ -107,12 +107,12 @@ classify_project() {
     printf 'no-manifest\n'
     return
   fi
-  if [ "$sync_exit" -ne 0 ]; then
-    printf 'sync-error\n'
-    return
-  fi
   if [ "$conflicts" -gt 0 ]; then
     printf 'manual-merge\n'
+    return
+  fi
+  if [ "$sync_exit" -ne 0 ]; then
+    printf 'sync-error\n'
     return
   fi
   printf 'clean-dry-run\n'
@@ -164,13 +164,24 @@ for project in "${PROJECTS[@]}"; do
   deprecated=0
 
   if [ "$RUN_SYNC" = true ] && [ "$manifest_present" = true ]; then
-    sync_output=$(bash "$PROJECT_ROOT/scripts/sync-template.sh" "$PROJECT_ROOT" --project-dir "$project" --dry-run 2>&1) || sync_exit=$?
-    updated=$(parse_metric "UPDATED" "$sync_output")
-    new_files=$(parse_metric "NEW" "$sync_output")
-    conflicts=$(parse_metric "CONFLICTS" "$sync_output")
-    skipped=$(parse_metric "SKIPPED" "$sync_output")
-    preserved=$(parse_metric "PRESERVED" "$sync_output")
-    deprecated=$(parse_metric "DEPRECATED" "$sync_output")
+    census_plan="$(_temp_file downstream-census-plan)"
+    rm -f "$census_plan"
+    sync_output=$(node "$PROJECT_ROOT/scripts/sync-template.js" "$PROJECT_ROOT" "$project" --plan-file "$census_plan" 2>&1) || sync_exit=$?
+    if [ -f "$census_plan" ]; then
+      read -r updated new_files conflicts skipped preserved deprecated < <(node -e '
+const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+const count=(fn)=>p.actions.filter(fn).length;
+console.log([
+  count(a=>a.type==="write"&&!a.reason.startsWith("missing")),
+  count(a=>a.type==="write"&&a.reason.startsWith("missing")),
+  p.conflicts.length,
+  count(a=>a.type==="adopt"||a.type==="unchanged"),
+  count(a=>a.type==="preserve"),
+  count(a=>a.type==="deprecated")
+].join(" "));
+' "$census_plan")
+      rm -f "$census_plan"
+    fi
   fi
 
   classification="$(classify_project "$manifest_present" "$sync_exit" "$conflicts")"

@@ -1,0 +1,186 @@
+{
+  "schema_version": 2,
+  "trigger": {
+    "kind": "architecture-mismatch",
+    "summary": "The current release still ships unsafe MCP defaults and relies on a Windows/MSYS update path that real downstream canaries had to bypass.",
+    "root_cause": "Standalone template security, downstream drift promotion, and cross-platform update orchestration were validated as separate concerns, so downstream hardening never became the template SOT and helper safety never became a supported native workflow.",
+    "evidence_ref": "_reference/codex-mcp-config.toml; mcp-servers/context-router/src/research.ts; mcp-servers/context-router/src/engram.ts; scripts/bootstrap-mcp.sh; BuffItStudio tasks/current.md:68-76"
+  },
+  "project": {
+    "posture": "production",
+    "posture_evidence": [
+      {
+        "level": "observed",
+        "summary": "v4.9.5 is a public stable release consumed by PersonalAssistant and other dirty downstream repositories.",
+        "ref": "GitHub Release v4.9.5 and tasks/current.md release evidence"
+      }
+    ],
+    "protected_contracts": [
+      {
+        "id": "project-root MCP scope",
+        "kind": "security-boundary",
+        "owner": "downstream project operator",
+        "sot": "docs/SAFE_DEFAULTS.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "project-owned downstream state",
+        "kind": "user-data",
+        "owner": "downstream project team",
+        "sot": "docs/PRODUCT_BOUNDARY.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "sync CLI and manifest contract",
+        "kind": "public-cli",
+        "owner": "template sync subsystem",
+        "sot": "docs/TEMPLATE_RELEASES.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "MCP and editor secrets",
+        "kind": "security-boundary",
+        "owner": "project operator",
+        "sot": "docs/SAFE_DEFAULTS.md",
+        "impact": "preserved"
+      },
+      {
+        "id": "pinned release identity",
+        "kind": "security-boundary",
+        "owner": "template release subsystem",
+        "sot": "docs/TEMPLATE_RELEASES.md and .github/workflows/release-template.yml",
+        "impact": "preserved"
+      }
+    ]
+  },
+  "product": {
+    "user_victory": "A downstream operator can install and update the template on Windows or Linux without expanding code access, executing prompt-controlled shell text, exposing secrets, or using a manual helper workaround.",
+    "final_path": "One exact release payload, one cross-platform sync engine, project-root MCP defaults, safe atomic configuration writers, and runtime security checks before publication.",
+    "falsifier": "Any default MCP starts above the project root, shell metacharacters execute, a config symlink or secret backup is written, Windows needs manual helper calls, or a repeated sync is not a no-op."
+  },
+  "change": {
+    "summary": "Promote proven downstream MCP hardening to the template SOT and replace Bash-owned sync orchestration with one Node engine behind compatible entrypoints.",
+    "scope": "MCP defaults, context-router process and filesystem boundaries, bootstrap configuration writes and optional services, tool health resolution, sync orchestration, release provenance, documentation, and regression tests.",
+    "impacts": ["security-boundary", "public-contract", "external-dependency", "release"],
+    "reversible": true
+  },
+  "options": [
+    {
+      "id": "repair-bash-and-document-preview",
+      "destination": "repair",
+      "transition": "direct-swap",
+      "summary": "Patch the four known MCP defects, retain Bash as the Windows canonical updater, and document preview-first recovery.",
+      "hard_constraints": {
+        "product_function": {"status": "pass", "evidence": [{"level": "observed", "summary": "The existing Bash path can apply clean fixtures on Linux and some Windows runs.", "ref": "scripts/test-template.sh and prior release CI"}]},
+        "data_safety": {"status": "unknown", "reason": "Git-for-Windows MSYS failures interrupt one non-transactional orchestration path and have required manual helper recovery."},
+        "security": {"status": "pass", "evidence": [{"level": "observed", "summary": "The known MCP defects can be repaired independently.", "ref": "BuffItStudio security overlays"}]},
+        "protected_contracts": {"status": "pass", "evidence": [{"level": "observed", "summary": "Existing CLI flags can remain unchanged.", "ref": "scripts/sync-template.sh --help"}]},
+        "verification": {"status": "unknown", "reason": "A green Bash fixture does not eliminate the observed Windows fork/MSYS failure class."},
+        "rollback_recovery": {"status": "unknown", "reason": "The current backup tag path can fail silently while reporting success."}
+      },
+      "evidence": {
+        "product_outcome": {"direction": "worse", "level": "observed", "basis": "Windows operators still need a fragile shell environment and manual fallback.", "baseline": "Current v4.9.5 Bash-first update contract.", "result": "The same orchestration remains.", "ref": "BuffItStudio migration record"},
+        "business_outcome": {"direction": "same", "level": "estimated", "basis": "Support incidents remain possible."},
+        "correctness": {"direction": "better", "level": "observed", "basis": "Known MCP defaults are fixed, but orchestration parity is not.", "baseline": "Four proven unsafe defaults.", "result": "Defaults repaired.", "ref": "downstream diff"},
+        "maintainability": {"direction": "worse", "level": "observed", "basis": "State transitions remain split across Bash inline Node and helper modules.", "baseline": "Multiple owners already drifted.", "result": "Duplicate ownership remains.", "ref": "scripts/sync-template.sh and scripts/lib/sync-*"},
+        "reliability": {"direction": "worse", "level": "observed", "basis": "The reproduced MSYS class remains.", "baseline": "Manual native recovery required.", "result": "No native public workflow.", "ref": "BuffItStudio migration record"},
+        "performance": {"direction": "unknown", "level": "unknown", "basis": "No comparable benchmark."},
+        "security": {"direction": "better", "level": "observed", "basis": "Known prompt-input and root-scope defects are removed.", "baseline": "Unsafe v4.9.5 defaults.", "result": "Narrow hardening.", "ref": "security audit"},
+        "transition_cost": {"direction": "better", "level": "estimated", "basis": "Smaller implementation diff."},
+        "reversibility": {"direction": "worse", "level": "observed", "basis": "Silent backup-tag failure remains possible.", "baseline": "Current rollback output can lie.", "result": "Same path retained.", "ref": "scripts/sync-template.sh backup block"}
+      },
+      "total_cost": {"implementation": "M", "transition": "S", "verification": "L", "maintenance": "L", "operations": "L", "change_amplification": "L", "basis": "Low initial migration cost preserves the recurring Windows and duplicate-owner cost."}
+      ,
+      "compatibility": {
+        "public_api": {
+          "contract_diff": "The existing sync CLI and manifest format remain unchanged; Bash continues to own orchestration.",
+          "known_consumers": ["downstream operators", "AgentOS", "sync-all.sh"],
+          "unknown_consumers": ["external clones invoking scripts/sync-template.sh directly"],
+          "consumer_tests": "Existing Linux and Git-Bash smoke plus exact-tag downstream fixtures.",
+          "versioning": "Patch release with immutable old tags.",
+          "deprecation": "No deprecation in this option.",
+          "semantic_checks": "Help output, manifest schema, conflict behavior, and same-tag idempotence."
+        },
+        "external_dependency": {
+          "pinned_version": "Node.js 20+, Git, Git Bash on Windows, and catalog-pinned MCP/tool versions.",
+          "compatibility": "Keeps the currently documented Bash-first environment contract.",
+          "failure_behavior": "MSYS/fork failures remain fail-stop and may require manual helper recovery.",
+          "integration_evidence": "Existing CI and prior downstream migrations show both successes and real Windows orchestration failure."
+        }
+      }
+    },
+    {
+      "id": "native-engine-and-mcp-boundary",
+      "destination": "bounded-replace",
+      "transition": "staged-swap",
+      "summary": "Move the sync state machine into one Node engine, keep Bash as a thin compatibility adapter, and repair the MCP/bootstrap/release trust boundaries in the same patch line.",
+      "hard_constraints": {
+        "product_function": {"status": "pass", "evidence": [{"level": "observed", "summary": "Existing Node safe-copy and manifest helpers already implement the critical atomic primitives used by successful native downstream recovery.", "ref": "scripts/lib/sync-safe-copy.js and scripts/lib/sync-manifest-reconcile.js"}]},
+        "data_safety": {"status": "pass", "evidence": [{"level": "observed", "summary": "The engine preserves project ownership, conflict sidecars, dirty worktrees, and conflict-gated version advancement.", "ref": "current sync regression contract"}]},
+        "security": {"status": "pass", "evidence": [{"level": "observed", "summary": "Project-root validation, argv-only child processes, reparse-safe writers, and explicit mutation opt-in directly close each P1 path.", "ref": "security audit and Studio overlays"}]},
+        "protected_contracts": {"status": "pass", "evidence": [{"level": "observed", "summary": "The shell command remains available as an adapter and manifest/config formats stay unchanged.", "ref": "planned compatibility wrapper and existing formats"}]},
+        "verification": {"status": "pass", "evidence": [{"level": "observed", "summary": "Linux and native Windows can run the same engine with deterministic fixtures and exact-tag canaries.", "ref": "planned release matrix"}]},
+        "rollback_recovery": {"status": "pass", "evidence": [{"level": "observed", "summary": "Exact backup creation becomes fail-closed and the old public tags remain immutable rollback points.", "ref": "release and sync rollback contract"}]}
+      },
+      "evidence": {
+        "product_outcome": {"direction": "better", "level": "observed", "basis": "Operators no longer need a manual Windows helper workaround and receive safe defaults.", "baseline": "v4.9.5 plus downstream overlays.", "result": "One supported native workflow and one payload SOT.", "ref": "Studio migration and current source diff"},
+        "business_outcome": {"direction": "better", "level": "observed", "basis": "Promoting recurring downstream fixes removes repeated incident and support work.", "baseline": "Each canary rediscovers template defects.", "result": "The release gate checks standalone defaults.", "ref": "tasks/lessons.md"},
+        "correctness": {"direction": "better", "level": "observed", "basis": "One engine owns update decisions on both platforms.", "baseline": "Bash plus inline Node plus manual helper transition.", "result": "A single tested state machine.", "ref": "sync system map"},
+        "maintainability": {"direction": "better", "level": "observed", "basis": "Duplicate orchestration ownership is removed.", "baseline": "866-line shell state machine plus Node helpers.", "result": "Thin adapters over one engine.", "ref": "scripts/sync-template.sh and helper inventory", "metrics": ["state-machine-owners", "platform-specific-recovery-paths"]},
+        "reliability": {"direction": "better", "level": "observed", "basis": "The native path removes the observed MSYS fork dependency.", "baseline": "MSYS apply failed in real downstream work.", "result": "Node process/file APIs on both platforms.", "ref": "BuffItStudio migration record"},
+        "performance": {"direction": "unknown", "level": "unknown", "basis": "No speed claim is required; correctness and portability own the decision."},
+        "security": {"direction": "better", "level": "authoritative", "basis": "Shell-free argv and fail-closed path boundaries remove known command/path injection classes.", "baseline": "Prompt-controlled shell strings and unguarded config writes.", "result": "No shell interpretation and atomic safe writers.", "ref": "Node child_process and filesystem boundary contract"},
+        "transition_cost": {"direction": "worse", "level": "estimated", "basis": "Porting and parity verification require more one-time work."},
+        "reversibility": {"direction": "better", "level": "observed", "basis": "The compatibility adapter and immutable old tags preserve rollback while the engine is canaried.", "baseline": "Manual helpers are undocumented recovery.", "result": "Explicit staged transition.", "ref": "release plan"}
+      },
+      "total_cost": {"implementation": "L", "transition": "M", "verification": "L", "maintenance": "S", "operations": "S", "change_amplification": "S", "basis": "Higher one-time port cost removes duplicate ownership, MSYS recovery, and repeated downstream hardening."},
+      "compatibility": {
+        "public_api": {
+          "contract_diff": "Manifest v1 and current sync flags remain supported; Node becomes canonical and Bash delegates without owning behavior.",
+          "known_consumers": ["downstream operators", "AgentOS", "sync-all.sh"],
+          "unknown_consumers": ["external automation invoking scripts/sync-template.sh directly"],
+          "consumer_tests": "Native PowerShell/CMD and Linux calls plus Bash-shim plan parity and downstream exact-tag canaries.",
+          "versioning": "Patch release preserves CLI compatibility and records Node as the canonical engine.",
+          "deprecation": "The old Bash state machine is removed only after adapter parity passes; no public command is removed.",
+          "semantic_checks": "Deterministic plan digest, zero-write conflict preflight, rollback injection, manifest schema, and same-tag no-op."
+        },
+        "external_dependency": {
+          "pinned_version": "Node.js 20+ and Git remain required; MCP, n8n if retained, archive assets, and GitHub Actions use exact versions or digests.",
+          "compatibility": "Node is already a required template dependency on Linux and Windows; Bash remains optional compatibility transport.",
+          "failure_behavior": "Missing Node or Git fails before project mutation; unavailable optional tools remain disabled and do not weaken security defaults.",
+          "integration_evidence": "Existing Node safety helpers passed Windows/Linux release fixtures and real downstream recovery; the new engine must pass the complete parity matrix."
+        }
+      },
+      "cleanup": {
+        "owner": "template sync subsystem",
+        "removal_condition": "The old Bash state machine is removed in the same patch after Linux, native Windows, and downstream parity pass; only the adapter remains.",
+        "absence_check": "The Bash entrypoint contains argument forwarding only; security scans find no shell-owned copy, manifest, backup, or conflict transitions."
+      }
+    }
+  ],
+  "recommendation": {
+    "option_id": "native-engine-and-mcp-boundary",
+    "advantages": ["product_outcome", "business_outcome", "correctness", "maintainability", "reliability", "security", "reversibility"],
+    "reason": "It removes both the unsafe payload and the recurring Windows recovery class while preserving public formats and a compatible shell entrypoint.",
+    "rejected_alternative": "Repairing only the defaults leaves the already-observed MSYS and duplicate-state-machine failures as an operating requirement."
+  },
+  "approval": {
+    "status": "approved",
+    "envelope": {
+      "outcome": "Audit and bring the MCP, sync, and release path to production safety, then publish a corrected patch release.",
+      "scope": "Template source MCP defaults, context-router, bootstrap, tool health, sync engine and adapters, release trust gates, documentation, tests, and isolated downstream canaries.",
+      "protected_contract_ids": ["project-root MCP scope", "project-owned downstream state", "sync CLI and manifest contract", "MCP and editor secrets", "pinned release identity"],
+      "destination": "bounded-replace",
+      "transitions": ["staged-swap"],
+      "risk_limit": "HIGH production template risk; no weakening of path, secret, ownership, or release provenance checks.",
+      "downtime_limit": "No downstream service downtime and no fleet-wide apply.",
+      "cost_limit": "Use existing local and open-source tooling; add no paid service.",
+      "release_limit": "Publish a new immutable patch only after local and GitHub Linux/Windows gates pass; never mutate v4.9.5.",
+      "environment_limit": "Template source, temporary fixtures, isolated CI runners, and reviewed canary copies; do not rewrite unrelated downstream product work.",
+      "rollback_requirement": "Preserve public CLI/manifest compatibility, immutable old tags, fail-closed backup evidence, and repeatable same-tag no-op.",
+      "ref": "user instruction 2026-07-20: сделай вообще аудит, всё приведи в порядок",
+      "current": true,
+      "invalidation_conditions": ["manifest format break", "project-owned overwrite", "new external service exposure", "unresolved P1", "native parity failure", "release provenance mismatch"]
+    }
+  }
+}

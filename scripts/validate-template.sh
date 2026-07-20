@@ -20,7 +20,7 @@ echo "[1/11] Checking version consistency..."
 CLAUDE_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' CLAUDE.md 2>/dev/null || echo "MISSING")
 AGENTS_VER=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' AGENTS.md 2>/dev/null || echo "MISSING")
 DRIFT_VER=$(sed -n 's/.*TEMPLATE_VERSION="\([^"]*\)".*/\1/p' scripts/check-drift.sh 2>/dev/null || echo "MISSING")
-README_VER=$(sed -n 's/.*template-v\([0-9.]*\).*/\1/p' README.md 2>/dev/null || echo "MISSING")
+README_VER=$(sed -n '1,10s/.*template-v\([0-9.]*\)-blue.*/\1/p' README.md 2>/dev/null || echo "MISSING")
 
 if [ "$CLAUDE_VER" = "$AGENTS_VER" ]; then
   echo "  OK: CLAUDE.md ($CLAUDE_VER) = AGENTS.md ($AGENTS_VER)"
@@ -262,6 +262,14 @@ REQUIRED_FILES=(
   "scripts/test-code-intelligence-tools.js"
   "scripts/configure-codex-mcp.js"
   "scripts/test-codex-mcp-config.js"
+  "scripts/sync-template.js"
+  "scripts/sync-template.cmd"
+  "scripts/lib/sync-template-core.js"
+  "scripts/lib/sync-template-apply.js"
+  "scripts/lib/template-payload-policy.js"
+  "scripts/test-sync-template.js"
+  "scripts/lib/safe-config-write.js"
+  "scripts/test-safe-config-write.js"
   "scripts/validate-writing-references.js"
   "scripts/validate-agent-sot.js"
   "scripts/validate-spec-kit.js"

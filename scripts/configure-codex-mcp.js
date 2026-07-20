@@ -110,9 +110,12 @@ function writeConfigAtomically(root, text) {
   const { configPath, configStat } = assertSafeConfigPath(root, { createParent: true });
   const temporaryPath = `${configPath}.tmp-${process.pid}-${Math.random().toString(16).slice(2)}`;
   try {
-    fs.writeFileSync(temporaryPath, text, { encoding: "utf8", flag: "wx", mode: configStat?.mode ?? 0o600 });
+    fs.writeFileSync(temporaryPath, text, { encoding: "utf8", flag: "wx", mode: 0o600 });
     assertSafeConfigPath(root);
     fs.renameSync(temporaryPath, configPath);
+    try { fs.chmodSync(configPath, 0o600); } catch (error) {
+      if (process.platform !== "win32") throw error;
+    }
   } finally {
     try {
       fs.unlinkSync(temporaryPath);

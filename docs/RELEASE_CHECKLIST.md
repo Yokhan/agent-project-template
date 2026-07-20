@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v4.9.5`. This checklist records required evidence, not a
+Release target: `v4.9.6`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
@@ -38,15 +38,15 @@ consumes quota; static markers never count as runtime proof.
 - [ ] Linux and Windows runners pass `bash scripts/bootstrap-mcp.sh --install --tool-profile=full` and the matching `--check`
 - [ ] Codex `0.125.0` loads `context-router`, `engram`, and `codebase-memory-mcp` from trusted project `.codex/config.toml`
 - [ ] `node scripts/test-codex-routing.js` proves AgentOS remains the task-graph owner when `.agent-os` is present
-- [ ] Generated projects pass `bash scripts/sync-template.sh <template-root> --dry-run`
-- [ ] Generated projects can preview a pinned release sync with `bash scripts/sync-template.sh --from-git --ref <tag> --dry-run` when a `template` remote is configured
+- [ ] Generated projects pass native `sync-template.js <template-root> <project> --plan-file <outside>` preview
+- [ ] Generated projects can preview a pinned release with native `sync-template.js`, an exact tag, and an external plan file
 
 ## Migration Gate
 
 - [ ] `bash scripts/downstream-census.sh --brief <project-dir ...>` classifies representative downstream repos
 - [ ] At least 3 real downstream repos have been evaluated for the current target version
 - [ ] Clean and manual-merge paths are documented in `docs/MIGRATION_MATRIX.md`
-- [ ] Any legacy local sync-script breakage is reproducible via the template-owned `sync-template.sh --project-dir` path
+- [ ] Any legacy local sync-script breakage is bypassed by the target release's native updater against an explicit project path
 
 ## Trust Gate
 
@@ -74,7 +74,7 @@ consumes quota; static markers never count as runtime proof.
 - [ ] Design work has durable design context, command modes, hardening evidence, and deterministic design-policy checks
 - [ ] Design work has product/brand register gates, command-mode reference coverage, critique ordering, and KPI-aware routing smoke
 - [ ] Design work has a concrete screen anatomy/root-frame contract in shared rules, Codex design skills, and release smoke tests
-- [ ] `sync-template.sh --from-git --ref <tag> --dry-run` fetches the ref and shows a real sync preview without modifying the downstream project
+- [ ] `sync-template.js --from-git --ref <tag> --plan-file <outside>` fetches the ref and shows a real sync preview without modifying the downstream project
 
 ## Release Decision
 
@@ -86,7 +86,7 @@ consumes quota; static markers never count as runtime proof.
 - [ ] Published release assets are never silently replaced by workflow reruns
 - [ ] Remaining manual-merge cases are acceptable and documented
 - [ ] Release notes mention any unsupported or review-required upgrade paths
-- [ ] Git tag uses `vX.Y.Z`; downstream instructions reference `scripts/sync-template.sh --from-git --ref <tag>`
+- [ ] Git tag uses `vX.Y.Z`; downstream instructions reference the target release's `scripts/sync-template.js` and a digest-bound external plan
 - [ ] README, SETUP_GUIDE, and docs/TEMPLATE_RELEASES show the immutable release snapshot, use `/releases/latest` only when selecting an unspecified target, require exact-release verification, and warn that `main` is for canary/template development only
 - [ ] AGENTS, CLAUDE, `/update-template`, and Codex sync skill point to the canonical source/downstream update protocol
 - [ ] AgentOS rollout notes state whether AgentOS is the orchestrator or the project uses Codex parent orchestration

@@ -18,7 +18,7 @@ export async function runPipeline(
   name: string,
   params?: Record<string, string>
 ): Promise<string> {
-  const url = `${N8N_URL}/webhook/${name}`;
+  const url = `${N8N_URL}/webhook/${encodeURIComponent(name)}`;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT);
@@ -84,7 +84,7 @@ export async function listPipelines(): Promise<string> {
 }
 
 export async function pipelineStatus(executionId: string): Promise<string> {
-  const url = `${N8N_URL}/api/v1/executions/${executionId}`;
+  const url = `${N8N_URL}/api/v1/executions/${encodeURIComponent(executionId)}`;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);

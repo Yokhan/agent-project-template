@@ -1,24 +1,21 @@
-import { readFile, stat } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join } from 'path';
-import { exec as execCb } from 'child_process';
+import { lstatSync } from 'node:fs';
+import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
 import type { ProjectContext } from './types.js';
+import { getOptionalProjectPath, getProjectPath, readProjectText } from './project-files.js';
 
-const exec = promisify(execCb);
-
-const LIBRARY_PATH = join(process.cwd(), '.claude', 'library');
+const execFile = promisify(execFileCb);
 
 // --- Rules Cache (in-memory, mtime-based invalidation) ---
 const rulesCache = new Map<string, { content: string; mtime: number }>();
 
 async function loadRuleCached(file: string): Promise<string> {
-  const fullPath = join(LIBRARY_PATH, file);
+  const relativePath = `.claude/library/${file}`;
   try {
-    const fileStat = await stat(fullPath);
+    const fileStat = lstatSync(getProjectPath(relativePath));
     const cached = rulesCache.get(file);
     if (cached && cached.mtime >= fileStat.mtimeMs) return cached.content;
-    const content = await readFile(fullPath, 'utf-8');
+    const content = readProjectText(relativePath);
     rulesCache.set(file, { content, mtime: fileStat.mtimeMs });
     return content;
   } catch {
@@ -56,7 +53,7 @@ async function getGitLogCached(): Promise<string> {
   const now = Date.now();
   if (now - gitLogCache.timestamp < GIT_CACHE_TTL) return gitLogCache.text;
   try {
-    const { stdout } = await exec('git log --oneline -5', { timeout: 3000 });
+    const { stdout } = await execFile('git', ['log', '--oneline', '-5'], { timeout: 3000 });
     gitLogCache = { text: stdout.trim(), timestamp: now };
     return gitLogCache.text;
   } catch {
@@ -79,10 +76,10 @@ export async function getProjectContext(keywords: string): Promise<ProjectContex
 }
 
 async function grepFile(filePath: string, keywords: string): Promise<string> {
-  if (!existsSync(filePath) || !keywords) return '';
+  if (!keywords || !getOptionalProjectPath(filePath)) return '';
 
   try {
-    const content = await readFile(filePath, 'utf-8');
+    const content = readProjectText(filePath);
     const keywordList = keywords.toLowerCase().split(/\s+/).filter(k => k.length > 1);
     if (keywordList.length === 0) return '';
 
@@ -109,9 +106,9 @@ async function grepFile(filePath: string, keywords: string): Promise<string> {
 }
 
 async function readIfExists(filePath: string, maxLines?: number): Promise<string> {
-  if (!existsSync(filePath)) return '';
+  if (!getOptionalProjectPath(filePath)) return '';
   try {
-    const content = await readFile(filePath, 'utf-8');
+    const content = readProjectText(filePath);
     if (maxLines) return content.split('\n').slice(0, maxLines).join('\n');
     return content;
   } catch {

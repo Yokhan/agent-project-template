@@ -251,7 +251,7 @@ additive:
 - Ship new Codex docs, skills, and agents through the existing template setup/sync
   allowlist only.
 - AgentOS may choose a template release tag, but projects still consume that tag
-  through `scripts/sync-template.sh --from-git --ref <tag>`.
+  through the exact release's native `sync-template.js` preview and apply contract.
 
 ## Zed Note
 

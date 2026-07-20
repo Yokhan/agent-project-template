@@ -1,10 +1,9 @@
-import { exec as execCb } from 'child_process';
+import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { readdirSync } from 'fs';
+import { getOptionalProjectPath, readProjectText } from './project-files.js';
 
-const exec = promisify(execCb);
+const execFile = promisify(execFileCb);
 
 /**
  * Bridge to Engram memory. Checks if Engram is available and queries it.
@@ -17,12 +16,12 @@ async function checkEngram(): Promise<boolean> {
   if (engramAvailable !== null) return engramAvailable;
 
   try {
-    await exec('engram --version', { timeout: 2000 });
+    await execFile('engram', ['--version'], { timeout: 2000 });
     engramAvailable = true;
   } catch {
     try {
-      if (existsSync('.mcp.json')) {
-        const config = JSON.parse(await readFile('.mcp.json', 'utf-8'));
+      if (getOptionalProjectPath('.mcp.json')) {
+        const config = JSON.parse(readProjectText('.mcp.json'));
         engramAvailable = !!config?.mcpServers?.engram && !config.mcpServers.engram.disabled;
       } else {
         engramAvailable = false;
@@ -34,16 +33,11 @@ async function checkEngram(): Promise<boolean> {
   return engramAvailable;
 }
 
-/** Safe shell escape for engram CLI */
-function shellEscape(s: string): string {
-  return "'" + s.replace(/'/g, "'\\''") + "'";
-}
-
 /** Node.js native grep — no shell dependency */
 function nativeGrep(filePath: string, keyword: string, maxLines = 5): string {
-  if (!existsSync(filePath)) return '';
+  if (!getOptionalProjectPath(filePath)) return '';
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readProjectText(filePath);
     const kw = keyword.toLowerCase();
     return content.split('\n')
       .filter(line => line.toLowerCase().includes(kw))
@@ -56,22 +50,23 @@ function nativeGrep(filePath: string, keyword: string, maxLines = 5): string {
 
 /** Node.js native find — search directory for files matching keyword */
 function nativeFindFiles(dir: string, keyword: string, max = 3): string[] {
-  if (!existsSync(dir)) return [];
+  const directoryPath = getOptionalProjectPath(dir);
+  if (!directoryPath) return [];
   const results: string[] = [];
   const kw = keyword.toLowerCase();
   try {
     const walk = (d: string) => {
       if (results.length >= max) return;
-      for (const entry of readdirSync(d)) {
-        if (entry.startsWith('.')) continue;
-        const full = join(d, entry);
+      for (const entry of readdirSync(directoryPath, { withFileTypes: true })) {
+        if (entry.name.startsWith('.') || entry.isSymbolicLink() || !entry.isFile()) continue;
+        const relativePath = `${dir}/${entry.name}`;
         try {
-          const content = readFileSync(full, 'utf-8');
-          if (content.toLowerCase().includes(kw)) results.push(full);
+          const content = readProjectText(relativePath);
+          if (content.toLowerCase().includes(kw)) results.push(relativePath);
         } catch { /* skip binary/inaccessible */ }
       }
     };
-    walk(dir);
+    walk(directoryPath);
   } catch { /* dir inaccessible */ }
   return results;
 }
@@ -87,8 +82,9 @@ export async function searchMemory(keywords: string): Promise<string> {
 
   if (isAvailable) {
     try {
-      const { stdout } = await exec(
-        `engram search ${shellEscape(keywords)} --limit 5 --format text`,
+      const { stdout } = await execFile(
+        'engram',
+        ['search', keywords, '--limit', '5', '--format', 'text'],
         { timeout: 5000 }
       );
       if (stdout.trim()) {

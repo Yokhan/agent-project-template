@@ -22,9 +22,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false
@@ -60,9 +60,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false
@@ -84,15 +84,15 @@ jobs:
           cd ci-bootstrap-smoke
           bash scripts/test-hooks.sh
           bash scripts/bootstrap-mcp.sh --dry-run
-          bash scripts/sync-template.sh "$GITHUB_WORKSPACE" --dry-run
+          node scripts/sync-template.js "$GITHUB_WORKSPACE" . --plan-file ../ci-bootstrap-linux.plan.json
 
   bootstrap-smoke-windows:
     name: Bootstrap Smoke (Windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false
@@ -116,7 +116,7 @@ jobs:
           cd ci-bootstrap-win
           bash scripts/test-hooks.sh
           bash scripts/bootstrap-mcp.sh --dry-run
-          bash scripts/sync-template.sh "$GITHUB_WORKSPACE" --dry-run
+          node scripts/sync-template.js "$GITHUB_WORKSPACE" . --plan-file ../ci-bootstrap-windows.plan.json
 
       - name: Validate generated Windows writing contract
         shell: pwsh
@@ -143,9 +143,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           package-manager-cache: false

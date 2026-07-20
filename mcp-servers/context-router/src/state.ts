@@ -1,6 +1,10 @@
-import { writeFile, readFile } from 'fs/promises';
-import { existsSync, mkdirSync } from 'fs';
 import type { ServerState } from './types.js';
+import {
+  ensureProjectDirectory,
+  getOptionalProjectPath,
+  readProjectText,
+  writeProjectTextAtomic,
+} from './project-files.js';
 
 const STATE_FILE = 'tasks/.active-rules';
 
@@ -28,9 +32,7 @@ export function updateState(modes: string[], rules: string[], task: string): voi
 }
 
 async function persistState(): Promise<void> {
-  if (!existsSync('tasks')) {
-    mkdirSync('tasks', { recursive: true });
-  }
+  ensureProjectDirectory('tasks');
 
   const lines = [
     'STATE_VERSION=2',
@@ -42,14 +44,14 @@ async function persistState(): Promise<void> {
     ...state.activeRules
   ];
 
-  await writeFile(STATE_FILE, lines.join('\n'), 'utf-8');
+  writeProjectTextAtomic(STATE_FILE, lines.join('\n'));
 }
 
 export async function restoreState(): Promise<ServerState | null> {
-  if (!existsSync(STATE_FILE)) return null;
+  if (!getOptionalProjectPath(STATE_FILE)) return null;
 
   try {
-    const content = await readFile(STATE_FILE, 'utf-8');
+    const content = readProjectText(STATE_FILE);
     const lines = content.split('\n');
     const task = lines.find(l => l.startsWith('TASK='))?.slice(5) || '';
     const modes = (lines.find(l => l.startsWith('MODES='))?.slice(6) || '').split(' ').filter(Boolean);

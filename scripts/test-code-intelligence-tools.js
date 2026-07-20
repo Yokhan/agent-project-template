@@ -13,10 +13,12 @@ const {
   selectTools,
   validateCatalog,
 } = require("./lib/code-intelligence-policy.js");
-const { getGithubReleaseAsset, getReport, normalizeVersion, parseArgs } = require("./code-intelligence-tools.js");
+const { assertSafeArchiveEntries, getGithubReleaseAsset, getReport, isInsideDirectory, normalizeVersion, parseArgs } = require("./code-intelligence-tools.js");
 
 function main() {
   const rootDir = path.join(__dirname, "..");
+  assert.strictEqual(isInsideDirectory(rootDir, path.join(rootDir, "rg.cmd")), true);
+  assert.strictEqual(isInsideDirectory(rootDir, path.join(path.dirname(rootDir), "safe-bin", "rg.exe")), false);
   const catalog = readCatalog(rootDir);
   assert.deepStrictEqual(validateCatalog(catalog), []);
   assert.strictEqual(selectTools(catalog, "full", []).length, 10);
@@ -74,6 +76,9 @@ function main() {
     getGithubReleaseAsset(ripgrep, "linux", "x64").asset,
     "ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
   );
+  assert.doesNotThrow(() => assertSafeArchiveEntries(["package/bin/rg", "package/README.md"]));
+  assert.throws(() => assertSafeArchiveEntries(["../../outside"]), /unsafe archive entry/u);
+  assert.throws(() => assertSafeArchiveEntries(["C:\\outside"]), /unsafe archive entry/u);
   assert.strictEqual(
     normalizeVersion("cache/probe-0.6.0-rc325.lock\nprobe-code 0.6.0", "0.6.0"),
     "0.6.0",

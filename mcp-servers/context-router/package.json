@@ -1,6 +1,6 @@
 {
   "name": "context-router",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "MCP Context Router — dynamic rule loading for agent-project-template",
   "type": "module",
   "main": "src/index.ts",
@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts",
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "test": "tsx src/router.test.ts"
+    "test": "tsx src/router.test.ts && tsx src/security.test.ts && npm run build --silent && tsx src/mcp-runtime.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

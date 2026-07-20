@@ -30,6 +30,12 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
   an explicit `--install --tool-profile=core|auto|full` command. A plain run
   builds the local router and merge-checks both MCP formats; `--dry-run` writes
   and installs nothing.
+- Bootstrap never installs or starts n8n. Persistent workflow automation is an
+  operator-managed service that must be version-pinned, authenticated, and
+  bound deliberately; `--with-n8n` fails closed.
+- Optional integrations never persist placeholder credentials. Project and Zed
+  JSON updates reject symlink/junction targets and use mode-0600 atomic writes
+  without adjacent secret-bearing `.bak` files.
 
 ## Bootstrap Defaults
 
@@ -39,9 +45,9 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 
 ## Update Contract
 
-- `sync-template.sh` updates template-owned files from the manifest.
+- `sync-template.js` is the canonical cross-platform updater; the `.sh` and `.cmd` files only forward arguments to Node.
 - Sync rejects non-canonical manifest paths, symlink/reparse targets and parent
   directories, and non-regular release sources before copying. Applied files
-  are written through a temporary sibling and atomic rename.
+  are written through a temporary sibling and atomic rename. Preview writes no target files; apply requires the exact external plan file and rolls back the full transaction on failure.
 - `project-*` files, `.agents/skills/project-*`, `.codex/agents/project-*`, `CLAUDE.md`, `DESIGN.md`, `design-policy.ignore`, `PROJECT_SPEC.md`, `ecosystem.md`, `tasks/`, and `brain/` remain project-owned.
-- When both local and template versions changed, sync writes `*.template-new` instead of overwriting silently.
+- When both local and template versions changed, preview reports a conflict and apply refuses with zero target writes. Replacement requires the separate `--overwrite-conflicts` option and a new accepted plan.

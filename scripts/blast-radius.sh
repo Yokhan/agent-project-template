@@ -13,7 +13,7 @@ echo "NOTE: heuristic grep fallback; use codebase-memory-mcp detect_changes for 
 TARGET="${1:?Usage: blast-radius.sh <file_path> [--depth N]}"
 MAX_DEPTH="${3:-5}"
 
-if [ "$2" = "--depth" ] 2>/dev/null && [ -n "${3:-}" ]; then
+if [ "${2:-}" = "--depth" ] && [ -n "${3:-}" ]; then
   MAX_DEPTH="$3"
 fi
 

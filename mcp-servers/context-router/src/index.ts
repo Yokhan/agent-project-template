@@ -14,8 +14,10 @@ import { buildActiveRulesOutput } from "./active-rules.js";
 
 const server = new McpServer({
   name: "context-router",
-  version: "1.7.0",
+  version: "1.7.1",
 });
+
+const arePipelineMutationsEnabled = process.env.CONTEXT_ROUTER_ENABLE_PIPELINES === "true";
 
 // --- Tool: get_context ---
 server.tool(
@@ -279,24 +281,27 @@ server.tool(
   },
 );
 
-// --- Tool: run_pipeline (n8n) ---
-server.tool(
-  "run_pipeline",
-  "Trigger n8n workflow pipeline via webhook. Returns execution result. Requires n8n running at N8N_URL.",
-  {
-    name: z
-      .string()
-      .describe('Pipeline/webhook name, e.g. "briefing", "health", "scan"'),
-    params: z
-      .record(z.string())
-      .optional()
-      .describe("Optional key-value parameters"),
-  },
-  async ({ name, params }) => {
-    const result = await runPipeline(name, params);
-    return { content: [{ type: "text" as const, text: result }] };
-  },
-);
+// --- Tool: run_pipeline (n8n, explicit opt-in because it changes external state) ---
+if (arePipelineMutationsEnabled) {
+  server.tool(
+    "run_pipeline",
+    "Trigger n8n workflow pipeline via webhook. Returns execution result. Requires n8n running at N8N_URL.",
+    {
+      name: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]+$/u)
+        .describe('Pipeline/webhook name, e.g. "briefing", "health", "scan"'),
+      params: z
+        .record(z.string())
+        .optional()
+        .describe("Optional key-value parameters"),
+    },
+    async ({ name, params }) => {
+      const result = await runPipeline(name, params);
+      return { content: [{ type: "text" as const, text: result }] };
+    },
+  );
+}
 
 // --- Tool: list_pipelines (n8n) ---
 server.tool(

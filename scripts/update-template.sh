@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # update-template.sh — Update project from newer template version
-# Delegates to sync-template.sh for the actual sync logic.
-# Usage: ./scripts/update-template.sh /path/to/agent-project-template [--dry-run] [--force]
+# Delegates to the native transaction engine through sync-template.sh.
+# Usage: ./scripts/update-template.sh TEMPLATE PROJECT --plan-file OUTSIDE_PROJECT.json [--apply]
 
 exec "$(dirname "$0")/sync-template.sh" "$@"

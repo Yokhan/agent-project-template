@@ -3,7 +3,7 @@ name: sync-all
 description: "Sync template to all projects that have .template-manifest.json. Scans ~/Documents by default."
 ---
 
-# /sync-all [directory]
+# /sync-all [directory] --plan-dir <outside-projects-directory>
 
 Syncs the current template to all projects found in the specified directory (default: ~/Documents).
 
@@ -11,14 +11,15 @@ Syncs the current template to all projects found in the specified directory (def
 
 1. **Scan** for projects with `.template-manifest.json`:
    ```bash
-   bash scripts/sync-all.sh [directory]
+   node scripts/sync-all.js [directory] --plan-dir <review-directory>
    ```
 
 2. **For each project found**:
    - Read `.template-manifest.json` → current template version
    - Compare with this template's version
-   - If outdated: run `sync-template.sh`
-   - Report: updated / current / conflict / failed
+   - Build one digest-bound preview plan per project
+   - Never apply in the preview run
+   - Report: previewed / conflict / failed
 
 3. **Present summary table**:
    ```
@@ -32,6 +33,7 @@ Syncs the current template to all projects found in the specified directory (def
    ```
 
 ## Options
-- `--dry-run` — show what would change without modifying
+- `--apply` — apply only the exact plans already present in `--plan-dir`
+- Preview is the default and writes only to the explicit plan directory
 - Default directory: `~/Documents`
 - Skips: the template itself, archived projects

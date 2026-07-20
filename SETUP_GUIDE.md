@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 4.9.5 | 2026-07-19
+> Версия: 4.9.6 | 2026-07-20
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -18,12 +18,12 @@
 
 ## Быстрый старт (5 минут)
 
-Целевой release snapshot: `v4.9.5`. Сам файл в source checkout не доказывает,
+Целевой release snapshot: `v4.9.6`. Сам файл в source checkout не доказывает,
 что релиз опубликован: перед rollout проверьте exact tag в GitHub Releases и
 убедитесь, что он не draft и не prerelease.
 
 ```bash
-git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -33,7 +33,7 @@ codex
 
 Windows:
 ```powershell
-git clone --branch v4.9.5 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 setup.bat
 cd <generated-project>
@@ -232,12 +232,12 @@ bash scripts/check-drift.sh
 4. Проверьте `git remote get-url template` и не заменяйте конфликтующий remote без решения пользователя.
 5. Запустите `--from-git --ref <tag> --dry-run`, затем примените тот же tag. Bare `--from-git` разрешён только для явно согласованного canary.
 6. Если локальный sync-скрипт устарел или сломан, используйте скрипт из checkout целевого release tag с `--project-dir`.
-7. До отчёта об успехе проверьте версию manifest, diff, сохранность `project-*`, конфликты `*.template-new` и downstream-тесты.
+7. До отчёта об успехе проверьте версию manifest, diff, сохранность `project-*`, все конфликты из plan и downstream-тесты.
 
 ### Один проект
 ```bash
-bash scripts/sync-template.sh /path/to/agent-project-template --dry-run
-bash scripts/sync-template.sh /path/to/agent-project-template
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json --apply
 ```
 
 ### Из git-релиза шаблона
@@ -245,8 +245,8 @@ bash scripts/sync-template.sh /path/to/agent-project-template
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-bash scripts/sync-template.sh --from-git --ref v4.9.5 --dry-run
-bash scripts/sync-template.sh --from-git --ref v4.9.5
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.
@@ -262,7 +262,7 @@ bash scripts/downstream-census.sh --no-sync --json ~/Documents
 
 ### Если запускаете sync из template repo
 ```bash
-bash /path/to/agent-project-template/scripts/sync-template.sh /path/to/agent-project-template --project-dir /path/to/my-project --dry-run
+node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template /path/to/my-project --plan-file /path/to/template-sync.plan.json
 ```
 
 Обновляет: `.claude/`, `.agents/skills/`, `.codex/`, shipped `scripts/`, `README.md`, `SETUP_GUIDE.md` и именованные release-документы.

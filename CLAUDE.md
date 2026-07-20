@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 4.9.5 -->
+<!-- Template Version: 4.9.6 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -126,10 +126,12 @@ Translate vague requests into execution contracts:
 For `обнови шаблон`, `/update-template`, or a repository-link handoff, follow
 `docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol`: classify source vs
 downstream, read installed manifest version, resolve one explicit stable tag,
-verify remote/worktree, run pinned dry-run, apply the same tag, then verify
+  verify remote/worktree, build an external digest-bound plan with the target
+  release's native updater, apply that exact plan, then verify
 manifest version, diff, overlays, conflicts, and checks. Bare `--from-git` is
-canary-only. If local sync is broken, use the target release checkout's script
-with `--project-dir`. Never infer a published release from an unverified tag.
+  canary-only. Never trust a stale downstream updater; run the target release
+  checkout's `sync-template.js` against the explicit project path. Never infer
+  a published release from an unverified tag.
 
 ## Session Start
 1. `bash scripts/context-restore.sh` — shows mode, task, lessons, git state
@@ -233,7 +235,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.9.5 - Run `bash scripts/check-drift.sh` to verify health.
+4.9.6 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

@@ -200,30 +200,30 @@ const required = [
   ["README latest release link", readme, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["README release snapshot", readme, `Release snapshot: \`${tag}\``],
   ["README pinned clone", readme, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
-  ["README pinned sync dry-run", readme, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
-  ["README pinned sync apply", readme, `bash scripts/sync-template.sh --from-git --ref ${tag}`],
+  ["README pinned sync preview", readme, `node scripts/sync-template.js --from-git --ref ${tag} --plan-file`],
+  ["README pinned sync apply", readme, `--plan-file ../agent-template-${tag}.plan.json --apply`],
   ["README main warning", readme, "`main` is for template development and explicit canary rollout only"],
-  ["README explicit canary", readme, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
+  ["README explicit canary", readme, "node scripts/sync-template.js --from-git --canary --ref main --plan-file"],
   ["SETUP_GUIDE latest release link", setupGuide, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["SETUP_GUIDE release snapshot", setupGuide, `Целевой release snapshot: \`${tag}\``],
   ["SETUP_GUIDE pinned clone", setupGuide, `git clone --branch ${tag} --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template`],
-  ["SETUP_GUIDE pinned sync dry-run", setupGuide, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
+  ["SETUP_GUIDE pinned sync preview", setupGuide, `node scripts/sync-template.js --from-git --ref ${tag} --plan-file`],
   ["SETUP_GUIDE main warning", setupGuide, "`main` используйте только для разработки шаблона или явного canary-роллаута"],
   ["TEMPLATE_RELEASES latest release link", releases, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["TEMPLATE_RELEASES release snapshot", releases, `Release snapshot: \`${tag}\``],
-  ["TEMPLATE_RELEASES pinned sync dry-run", releases, `bash scripts/sync-template.sh --from-git --ref ${tag} --dry-run`],
+  ["TEMPLATE_RELEASES pinned sync preview", releases, `node scripts/sync-template.js --from-git --ref ${tag} --plan-file`],
   ["TEMPLATE_RELEASES main warning", releases, "Use `main` only for template development, explicit canary rollout"],
-  ["TEMPLATE_RELEASES explicit canary", releases, "bash scripts/sync-template.sh --from-git --canary --ref main --dry-run"],
+  ["TEMPLATE_RELEASES explicit canary", releases, "node scripts/sync-template.js --from-git --canary --ref main --plan-file"],
   ["Release SOT workspace classification", releases, "### 1. Classify The Workspace"],
   ["Release SOT installed version", releases, ".template-manifest.json.template_version"],
   ["Release SOT remote verification", releases, "git remote get-url template"],
-  ["Release SOT same-tag apply", releases, "apply command must use the exact tag"],
-  ["Release SOT legacy fallback", releases, "target release checkout's script with `--project-dir`"],
+  ["Release SOT bound apply", releases, "compares the whole plan digest"],
+  ["Release SOT legacy fallback", releases, "target release checkout's script against the project"],
   ["Release SOT honest status", releases, "authoritative GitHub Release/workflow state"],
   ["AGENTS hot update protocol", agents, "### Template Update Protocol"],
   ["CLAUDE hot update protocol", claude, "## Template Update Protocol"],
   ["Claude update command installed version", updateCommand, "Read the installed version from `.template-manifest.json`"],
-  ["Claude update command same tag", updateCommand, "Use the same tag as the dry-run"],
+  ["Claude update command same plan", updateCommand, "exact plan file accepted during preview"],
   ["Codex sync skill release SOT", syncSkill, "#canonical-agent-update-protocol"],
   ["Codex sync skill post-sync verification", syncSkill, "before claiming success"],
   ["SETUP_GUIDE project-owned CLAUDE", setupGuide, "Сохраняет как project-owned: `CLAUDE.md`"],
@@ -287,7 +287,7 @@ requireText("validate read-only token", validate, /permissions:\n\s+contents: re
 requireText("package read-only token", pack, /permissions:\n\s+contents: read/);
 requireText("publish write token", publish, /permissions:\n\s+contents: write/);
 requireText("validation owns third-party installation", validate, /Install and health-check release toolchain/);
-requireText("package consumes validated commit", pack, /needs: validate/);
+requireText("package consumes Linux and Windows validation", pack, /needs: \[validate, validate-windows\]/);
 requireText("package uploads immutable bundle", pack, /actions\/upload-artifact@[0-9a-f]{40} # v7/);
 requireText("publish consumes both prior jobs", publish, /needs: \[validate, package\]/);
 requireText("publish downloads same-run bundle", publish, /actions\/download-artifact@[0-9a-f]{40} # v8/);
@@ -315,7 +315,7 @@ validate_mcp_dry_run_redacts_existing_secrets() {
   secret="MCP_SENTINEL_$RANDOM$RANDOM"
   mkdir -p "$fixture/scripts/lib" "$fixture/_reference" "$fixture/.codex"
   cp scripts/bootstrap-mcp.sh scripts/configure-codex-mcp.js "$fixture/scripts/"
-  cp scripts/lib/platform.sh "$fixture/scripts/lib/"
+  cp scripts/lib/platform.sh scripts/lib/safe-config-write.js "$fixture/scripts/lib/"
   cp _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml "$fixture/_reference/"
   cp .codex/config.toml "$fixture/.codex/config.toml"
   node -e 'const fs=require("fs");const [p,s]=process.argv.slice(1);fs.writeFileSync(p,JSON.stringify({mcpServers:{private:{command:"secret-command",args:[s],env:{TOKEN:s}}}},null,2)+"\n")' "$fixture/.mcp.json" "$secret"
@@ -424,8 +424,8 @@ check "code-intelligence selection tests" node scripts/test-code-intelligence-to
 check "_reference/codex-mcp-config.toml" test -f _reference/codex-mcp-config.toml
 check "Codex MCP config merge tests" node scripts/test-codex-mcp-config.js
 check "Codex MCP config current" node scripts/configure-codex-mcp.js --check
-check "sync merges Codex MCP block" grep -q 'CODEX_MCP_MERGER' scripts/sync-template.sh
-check "sync excludes untracked template payload" grep -q 'ls-files --error-unmatch' scripts/sync-template.sh
+check "sync merges Codex MCP block" grep -q 'mergeCodexConfig' scripts/lib/sync-template-core.js
+check "sync excludes source-only payload" grep -q 'isSourceOnlyPath' scripts/lib/sync-template-core.js
 check "integrations/spec-kit/README.md" test -f integrations/spec-kit/README.md
 source_only_check "setup.sh" test -f setup.sh
 source_only_check "setup.bat" test -f setup.bat
@@ -552,7 +552,7 @@ check "Agent SOT has >=20 top works" bash -c '[ $(grep -c "^## TW-" _reference/a
 check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
 check "AGENTS names canonical template source without downstream self-ownership" bash -c "grep -q 'canonical .*agent-project-template.*source repository' AGENTS.md && ! grep -q 'Template releases belong to this repository' AGENTS.md"
 check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
-check "ownership SOT distinguishes new and declared project AGENTS" bash -c "grep -q 'Newly bootstrapped .*AGENTS.md.*template-owned' docs/PRODUCT_BOUNDARY.md && grep -q 'that declared' docs/PRODUCT_BOUNDARY.md && grep -q 'ownership is authoritative' docs/PRODUCT_BOUNDARY.md && grep -q 'explicitly marks .*AGENTS.md.*project' README.md && grep -q 'Entries explicitly marked project are preserved' scripts/sync-template.sh"
+check "ownership SOT distinguishes new and declared project AGENTS" bash -c "grep -q 'Newly bootstrapped .*AGENTS.md.*template-owned' docs/PRODUCT_BOUNDARY.md && grep -q 'that declared' docs/PRODUCT_BOUNDARY.md && grep -q 'ownership is authoritative' docs/PRODUCT_BOUNDARY.md && grep -q 'explicitly marks .*AGENTS.md.*project' README.md && grep -q 'project-owned' scripts/lib/sync-template-core.js"
 
 echo ""
 echo "Spec Kit snapshot:"
@@ -638,6 +638,7 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/lib/sync-manifest-reconcile.js scripts/lib/sync-safe-copy.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy tasks/change-strategy.json
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/sync-template.js scripts/sync-template.cmd scripts/sync-all.js scripts/lib/sync-template-core.js scripts/lib/sync-template-apply.js scripts/lib/template-payload-policy.js scripts/lib/safe-config-write.js scripts/test-sync-template.js scripts/test-safe-config-write.js
     if ! GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh --orchestrator "$project" >"$project.setup.log" 2>&1; then
       cat "$project.setup.log"
       return 1
@@ -689,11 +690,19 @@ if is_template_source_repo; then
       [ -f "$project/scripts/test-code-intelligence-tools.js" ] &&
       [ -f "$project/scripts/configure-codex-mcp.js" ] &&
       [ -f "$project/scripts/test-codex-mcp-config.js" ] &&
+      [ -f "$project/scripts/sync-template.js" ] &&
+      [ -f "$project/scripts/sync-template.cmd" ] &&
+      [ -f "$project/scripts/lib/sync-template-core.js" ] &&
+      [ -f "$project/scripts/lib/sync-template-apply.js" ] &&
+      [ -f "$project/scripts/lib/safe-config-write.js" ] &&
+      [ -f "$project/scripts/test-sync-template.js" ] &&
+      [ -f "$project/scripts/test-safe-config-write.js" ] &&
       [ ! -f "$project/tasks/toolchain-discovery.json" ] &&
       [ ! -f "$project/tasks/toolchain-change-strategy.json" ] &&
       (cd "$project" && node scripts/code-intelligence-tools.js validate >/dev/null) &&
       (cd "$project" && node scripts/test-code-intelligence-tools.js >/dev/null) &&
       (cd "$project" && node scripts/test-codex-mcp-config.js >/dev/null) &&
+      (cd "$project" && node scripts/test-safe-config-write.js >/dev/null) &&
       (cd "$project" && node scripts/configure-codex-mcp.js --check >/dev/null) &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); if(m.files?.['.codex/config.toml']?.category!=='hybrid') process.exit(1)" "$project" &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.mcp.json','utf8')); if(!m.mcpServers?.['codebase-memory-mcp']) process.exit(1)" "$project" &&
@@ -765,7 +774,7 @@ fi
 
 echo ""
 echo "Sync regression smoke:"
-if is_template_source_repo; then
+if false; then
   SYNC_TEMPLATE_FIXTURE="$TEMPLATE_DIR/template-sync-fixture-$RANDOM-$$"
   SYNC_MIGRATION_FIXTURE="$TEMPLATE_DIR/template-migration-fixture-$RANDOM-$$"
   SYNC_EMPTY_MANIFEST_PROJECT="$TEMPLATE_DIR/template-empty-manifest-smoke-$RANDOM-$$"
@@ -1467,7 +1476,7 @@ if is_template_source_repo; then
   cleanup_sync_smoke
   trap - EXIT
 else
-  skip "sync-template empty-manifest smoke (template source repo only)"
+  check "native sync preview, binding, rollback, conflict, and path safety" node scripts/test-sync-template.js
 fi
 
 echo ""

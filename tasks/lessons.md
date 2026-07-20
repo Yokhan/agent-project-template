@@ -43,6 +43,16 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-07-20 - Downstream hardening must be promoted before release closeout
+**Track**: PROCESS
+**Severity**: P1
+**Error**: The template release was closed as production-ready while BuffItStudio still carried project-local fixes for parent MCP cwd, Windows shell injection, state-changing pipeline exposure, and executable-path poisoning.
+**Root cause**: Release verification treated the downstream canary's passing state as payload evidence without first classifying every template drift and promoting security-relevant fixes to the template source of truth.
+**Rule**: Before closing a template release after downstream validation, inventory every downstream drift against the exact tag. A security, ownership, portability, or release-safety drift blocks closeout until it is promoted upstream or explicitly rejected with evidence and a regression test.
+**Applies to**: template release, downstream canary, security review, closeout
+**Category**: workflow
+**Status**: ACTIVE
+
 ### 2026-07-05 - Progressive JPEG must shape implementation, not only reports
 **Track**: PROCESS
 **Severity**: P1

@@ -1,24 +1,21 @@
-import { readFile, readdir, stat } from 'fs/promises';
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
-import { join, basename } from 'path';
-import { exec as execCb } from 'child_process';
+import { lstatSync, readdirSync } from 'node:fs';
+import { basename } from 'node:path';
+import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
+import {
+  getOptionalProjectPath,
+  getProjectPath,
+  normalizeProjectPath,
+  readProjectText,
+} from './project-files.js';
 
-const exec = promisify(execCb);
-
-/**
- * Safe shell escape — prevents command injection.
- * For use ONLY with exec() when native Node.js alternative isn't available.
- */
-function shellEscape(s: string): string {
-  return "'" + s.replace(/'/g, "'\\''") + "'";
-}
+const execFile = promisify(execFileCb);
 
 /** Platform-safe grep: uses Node.js readFile + includes() instead of shell grep */
 async function nativeGrep(filePath: string, keyword: string, maxLines = 5): Promise<string> {
-  if (!existsSync(filePath)) return '';
+  if (!getOptionalProjectPath(filePath)) return '';
   try {
-    const content = await readFile(filePath, 'utf-8');
+    const content = readProjectText(filePath);
     const kw = keyword.toLowerCase();
     const matches = content.split('\n')
       .filter(line => line.toLowerCase().includes(kw))
@@ -36,20 +33,19 @@ async function nativeFindImporters(keyword: string, dirs = ['src', 'lib', 'app']
   const exts = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.vue', '.svelte'];
 
   for (const dir of dirs) {
-    if (!existsSync(dir)) continue;
+    if (!getOptionalProjectPath(dir)) continue;
     try {
-      const walk = (d: string) => {
+      const walk = (relativeDir: string) => {
         if (results.length >= 10) return;
-        for (const entry of readdirSync(d)) {
-          if (entry === 'node_modules' || entry === '.git' || entry === 'dist') continue;
-          const full = join(d, entry);
+        for (const entry of readdirSync(getProjectPath(relativeDir), { withFileTypes: true })) {
+          if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.isSymbolicLink()) continue;
+          const child = `${relativeDir}/${entry.name}`;
           try {
-            const s = statSync(full);
-            if (s.isDirectory()) { walk(full); continue; }
-            if (!exts.some(e => full.endsWith(e))) continue;
-            const content = readFileSync(full, 'utf-8');
+            if (entry.isDirectory()) { walk(child); continue; }
+            if (!entry.isFile() || !exts.some(e => child.endsWith(e))) continue;
+            const content = readProjectText(child);
             if (content.toLowerCase().includes(kw)) {
-              results.push(full);
+              results.push(child);
             }
           } catch { /* skip inaccessible files */ }
         }
@@ -66,16 +62,16 @@ async function nativeFindByKeyword(word: string, dirs = ['src', 'lib', 'app']): 
   const kw = word.toLowerCase();
 
   for (const dir of dirs) {
-    if (!existsSync(dir)) continue;
+    if (!getOptionalProjectPath(dir)) continue;
     try {
-      const walk = (d: string) => {
+      const walk = (relativeDir: string) => {
         if (results.length >= 5) return;
-        for (const entry of readdirSync(d)) {
-          if (entry === 'node_modules' || entry === '.git') continue;
-          const full = join(d, entry);
+        for (const entry of readdirSync(getProjectPath(relativeDir), { withFileTypes: true })) {
+          if (entry.name === 'node_modules' || entry.name === '.git' || entry.isSymbolicLink()) continue;
+          const child = `${relativeDir}/${entry.name}`;
           try {
-            if (statSync(full).isDirectory()) { walk(full); continue; }
-            if (entry.toLowerCase().includes(kw)) results.push(full);
+            if (entry.isDirectory()) { walk(child); continue; }
+            if (entry.isFile() && entry.name.toLowerCase().includes(kw)) results.push(child);
           } catch { /* skip */ }
         }
       };
@@ -87,22 +83,24 @@ async function nativeFindByKeyword(word: string, dirs = ['src', 'lib', 'app']): 
 
 export async function runResearch(targetPath: string): Promise<string> {
   const sections: string[] = [];
-  const keywords = basename(targetPath).replace(/\.[^.]*$/, '');
+  const safeTarget = normalizeProjectPath(targetPath);
+  const keywords = basename(safeTarget).replace(/\.[^.]*$/, '');
 
   sections.push(`=== RESEARCH: ${targetPath} ===`);
   sections.push('');
 
   // 1. Target files
   sections.push('FILES:');
-  if (existsSync(targetPath)) {
+  const targetFullPath = getOptionalProjectPath(safeTarget);
+  if (targetFullPath) {
     try {
-      if (statSync(targetPath).isDirectory()) {
-        const files = findSourceFiles(targetPath, 20);
+      if (lstatSync(targetFullPath).isDirectory()) {
+        const files = findSourceFiles(safeTarget, 20);
         for (const f of files) {
           sections.push(`  ${f} (${countLines(f)} lines)`);
         }
       } else {
-        sections.push(`  ${targetPath} (${countLines(targetPath)} lines)`);
+        sections.push(`  ${safeTarget} (${countLines(safeTarget)} lines)`);
       }
     } catch (err) {
       sections.push(`  ⚠ Cannot read ${targetPath}: ${err instanceof Error ? err.message : String(err)}`);
@@ -125,11 +123,11 @@ export async function runResearch(targetPath: string): Promise<string> {
     sections.push(`  ⚠ Search failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // 3. Git log (safe — uses shellEscape)
+  // 3. Git log (argument array prevents shell interpretation)
   sections.push('');
   sections.push('RECENT GIT:');
   try {
-    const { stdout } = await exec(`git log --oneline -5 -- ${shellEscape(targetPath)}`, { timeout: 3000 });
+    const { stdout } = await execFile('git', ['log', '--oneline', '-5', '--', safeTarget], { timeout: 3000 });
     sections.push(stdout.trim() || '  (no history)');
   } catch (err) {
     sections.push(`  ⚠ git: ${err instanceof Error ? err.message : 'not a git repo'}`);
@@ -172,8 +170,8 @@ export async function runVerify(size: string): Promise<string> {
   // Modified files (git is safe — no user input)
   let modified: string[] = [];
   try {
-    const { stdout } = await exec('git diff --name-only HEAD', { timeout: 3000 });
-    const { stdout: staged } = await exec('git diff --cached --name-only', { timeout: 3000 });
+    const { stdout } = await execFile('git', ['diff', '--name-only', 'HEAD'], { timeout: 3000 });
+    const { stdout: staged } = await execFile('git', ['diff', '--cached', '--name-only'], { timeout: 3000 });
     modified = [...new Set([...stdout.trim().split('\n'), ...staged.trim().split('\n')].filter(Boolean))];
   } catch (err) {
     sections.push(`⚠ git: ${err instanceof Error ? err.message : 'not available'}`);
@@ -190,7 +188,7 @@ export async function runVerify(size: string): Promise<string> {
   // Gate 0: File sizes
   sections.push('--- File sizes ---');
   for (const f of modified) {
-    if (!existsSync(f)) continue;
+    if (!getOptionalProjectPath(f)) continue;
     const lines = countLines(f);
     if (lines > 375) {
       sections.push(`  ✗ ${f}: ${lines} lines (limit 375)`);
@@ -205,9 +203,9 @@ export async function runVerify(size: string): Promise<string> {
   sections.push('');
   sections.push('--- Syntax ---');
   for (const f of modified) {
-    if (!existsSync(f) || !f.endsWith('.sh')) continue;
+    if (!getOptionalProjectPath(f) || !f.endsWith('.sh')) continue;
     try {
-      await exec(`bash -n ${shellEscape(f)}`, { timeout: 3000 });
+      await execFile('bash', ['-n', f], { timeout: 3000 });
       sections.push(`  ✓ bash: ${f}`);
       pass++;
     } catch (err) {
@@ -285,7 +283,7 @@ export async function runPlanScaffold(task: string): Promise<string> {
   sections.push('### File Architecture');
   if (affectedFiles.length > 0) {
     for (const f of affectedFiles) {
-      const lines = existsSync(f) ? countLines(f) : 0;
+      const lines = getOptionalProjectPath(f) ? countLines(f) : 0;
       sections.push(`  ${f}  — [MODIFY] ${lines} lines`);
     }
   } else {
@@ -310,16 +308,15 @@ function findSourceFiles(dir: string, max: number): string[] {
   const results: string[] = [];
   const exts = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.vue', '.svelte'];
   try {
-    const walk = (d: string) => {
+    const walk = (relativeDir: string) => {
       if (results.length >= max) return;
-      for (const entry of readdirSync(d)) {
-        if (entry === 'node_modules' || entry === '.git' || entry === 'dist') continue;
-        const full = join(d, entry);
+      for (const entry of readdirSync(getProjectPath(relativeDir), { withFileTypes: true })) {
+        if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.isSymbolicLink()) continue;
+        const child = `${relativeDir}/${entry.name}`;
         try {
-          const s = statSync(full);
-          if (s.isDirectory()) walk(full);
-          else if (exts.some(e => full.endsWith(e)) && !full.includes('.test.') && !full.includes('.spec.')) {
-            results.push(full);
+          if (entry.isDirectory()) walk(child);
+          else if (entry.isFile() && exts.some(e => child.endsWith(e)) && !child.includes('.test.') && !child.includes('.spec.')) {
+            results.push(child);
           }
         } catch { /* skip inaccessible */ }
       }
@@ -331,7 +328,7 @@ function findSourceFiles(dir: string, max: number): string[] {
 
 function countLines(file: string): number {
   try {
-    return readFileSync(file, 'utf-8').split('\n').length;
+    return readProjectText(file).split('\n').length;
   } catch {
     return 0;
   }

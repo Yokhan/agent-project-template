@@ -24,9 +24,10 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Monitor `v4.9.5` downstream adoption and open a new bounded slice only from a
-concrete regression or requested capability. The ownership repair, deterministic
-routing smoke, public release, and PersonalAssistant convergence are complete.
+Replace the unsafe MCP defaults and Windows/MSYS update workaround exposed by
+real downstream adoption, prove one cross-platform canonical sync engine, and
+publish a patch only after standalone template defaults and downstream canaries
+pass the same security contract.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
