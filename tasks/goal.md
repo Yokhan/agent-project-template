@@ -24,10 +24,9 @@ The primary user is the downstream product team or operator using a generated pr
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Replace the unsafe MCP defaults and Windows/MSYS update workaround exposed by
-real downstream adoption, prove one cross-platform canonical sync engine, and
-publish a patch only after standalone template defaults and downstream canaries
-pass the same security contract.
+Roll out the published `v4.9.6` security patch project by project from reviewed
+external plans. Restore AgentOS template provenance before using `--from-git`,
+and resolve each downstream conflict without weakening project ownership.
 
 ## Dependencies
 - Shared `.claude/library/` rules.

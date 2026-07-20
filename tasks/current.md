@@ -1,19 +1,19 @@
 <!-- PROGRESSIVE_STATUS
 id: template-release-mcp-safety
-status: active
+status: done
 updated: 2026-07-20
-readiness: 15
-plan: 55
-inventory: 45
-production: 0
-cleanup: 10
+readiness: 100
+plan: 100
+inventory: 100
+production: 100
+cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: finish the MCP and cross-platform sync audit, repair the shared boundaries, then prove a new patch release on Linux, Windows, and downstream canaries
+next: roll out v4.9.6 project by project from accepted external plans; restore AgentOS template provenance before its first from-git apply
 -->
 
 # Current Task - Template v4 Production Product Standard
 
-## Active Slice - MCP Defaults and Native Sync Production Repair
+## Completed Slice - MCP Defaults and Native Sync Production Repair
 
 ### User Wants
 - Audit the whole release/update path, remove the residual unsafe MCP defaults
@@ -78,6 +78,31 @@ next: finish the MCP and cross-platform sync audit, repair the shared boundaries
 - GitHub Linux/Windows validation plus exact public tag/archive checksum.
 - Pinned downstream preview/apply/repeat-preview with before/after hashes and
   no hidden stash or loss of project-owned state.
+
+### Release Evidence
+- Release commit: `728f14ae365d4f6af0f6bcd0dab979dfa2d23227`; immutable tag and public
+  non-draft, non-prerelease release: `v4.9.6`.
+- Pre-release workflow `29785989987`: all six Linux/Windows validation,
+  bootstrap, full ten-tool, Codex MCP, and AgentOS jobs passed.
+- Release workflow `29786418082`: read-only candidate validation, native
+  Windows runtime and full-toolchain validation, immutable packaging, checksum
+  verification, and isolated publication all passed.
+- Release archive SHA-256:
+  `22f899ba84a26a00127c6fec0745a762d577fbff5cf18240e528081105200fb9`;
+  downloaded checksum, metadata commit, and required native/MCP files matched.
+- Local gates: aggregate template smoke `197/197`; template validation `0`
+  errors and `0` warnings; context-router real MCP handshake and filesystem
+  boundary tests; native transaction/rollback/stale-plan/conflict/junction tests;
+  safe config, archive validation, hooks, text/SOT/production validators, and
+  working-tree plus history gitleaks scans passed.
+- Exact release previews left `git status` and manifest hashes unchanged in all
+  three downstreams: PersonalAssistant (`0` conflicts), AgentOS (`2`), and
+  BuffItStudio (`11`). AgentOS lacks both template remote sources, so its preview
+  used the local checkout after proving it resolved to the release commit.
+- No real downstream apply was performed during this template-only repair.
+  Transactional apply, repeat preview, rollback, ownership, and conflict behavior
+  were proven in isolated fixtures; each downstream rollout remains a separate
+  accepted-plan operation.
 
 ## Active Slice - Release v4.9.5 Downstream AGENTS Ownership and Routing Test Repair
 
