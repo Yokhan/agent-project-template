@@ -54,6 +54,20 @@ function command(commandName, args, options = {}) {
   return execFileSync(commandName, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], ...options }).trim();
 }
 
+function assertRealDirectoryPath(directoryPath, label) {
+  const resolved = path.resolve(directoryPath);
+  const parsed = path.parse(resolved);
+  let current = parsed.root;
+  const parts = resolved.slice(parsed.root.length).split(path.sep).filter(Boolean);
+  for (const part of parts) {
+    current = path.join(current, part);
+    const info = fs.lstatSync(current);
+    if (info.isSymbolicLink()) throw new Error(`${label} may not traverse a symlink/reparse parent`);
+    if (!info.isDirectory()) throw new Error(`${label} parent must be a real directory`);
+  }
+  return resolved;
+}
+
 function readManifestRemote(projectRoot) {
   const file = path.join(path.resolve(projectRoot), ".template-manifest.json");
   if (!fs.existsSync(file)) return "";
@@ -110,11 +124,9 @@ function summarize(plan) {
 
 function readSavedPlan(planFile) {
   const resolved = path.resolve(planFile);
+  assertRealDirectoryPath(path.dirname(resolved), "Plan path");
   const info = fs.lstatSync(resolved);
   if (info.isSymbolicLink() || !info.isFile()) throw new Error("Plan must be a regular file, not a symlink/reparse point");
-  const real = fs.realpathSync.native(resolved);
-  const comparable = (value) => process.platform === "win32" ? value.toLowerCase() : value;
-  if (comparable(real) !== comparable(resolved)) throw new Error("Plan path may not traverse a symlink/reparse parent");
   const parsed = JSON.parse(fs.readFileSync(resolved, "utf8"));
   if (!parsed || parsed.schema !== 1 || typeof parsed.digest !== "string") throw new Error("Invalid sync plan file");
   return parsed;
@@ -127,9 +139,7 @@ function writePlan(planFile, projectRoot, plan) {
   if (relation === "" || (!relation.startsWith(`..${path.sep}`) && relation !== ".." && !path.isAbsolute(relation))) {
     throw new Error("Plan file must be outside the target project so preview remains read-only");
   }
-  const parent = fs.realpathSync.native(path.dirname(resolved));
-  const comparable = (value) => process.platform === "win32" ? value.toLowerCase() : value;
-  if (comparable(parent) !== comparable(path.dirname(resolved))) throw new Error("Plan parent may not be a symlink/reparse path");
+  const parent = assertRealDirectoryPath(path.dirname(resolved), "Plan path");
   const current = (() => { try { return fs.lstatSync(resolved); } catch (error) { if (error.code === "ENOENT") return null; throw error; } })();
   if (current?.isSymbolicLink() || (current && !current.isFile())) throw new Error("Plan target must be a regular file, not a symlink/reparse point");
   const temporary = path.join(parent, `.${path.basename(resolved)}.tmp-${process.pid}`);

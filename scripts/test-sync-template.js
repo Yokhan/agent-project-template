@@ -137,6 +137,17 @@ try {
   assert.match(result.stderr, /Symlink\/reparse/u);
   assert.equal(fs.readFileSync(path.join(external, "sentinel.md"), "utf8"), "outside\n");
 
+  const planLinked = fixture("plan-linked");
+  const externalPlanDirectory = path.join(planLinked.base, "external-plan");
+  const linkedPlanDirectory = path.join(planLinked.base, "linked-plan");
+  fs.mkdirSync(externalPlanDirectory);
+  fs.symlinkSync(externalPlanDirectory, linkedPlanDirectory, process.platform === "win32" ? "junction" : "dir");
+  const linkedPlan = path.join(linkedPlanDirectory, "accepted.json");
+  result = run([planLinked.template, planLinked.project, "--plan-file", linkedPlan]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /symlink\/reparse parent/u);
+  assert(!fs.existsSync(path.join(externalPlanDirectory, "accepted.json")));
+
   const pinned = fixture("pinned");
   git(pinned.template, ["init", "-q"]);
   git(pinned.template, ["add", "."]);
