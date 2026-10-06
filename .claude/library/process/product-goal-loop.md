@@ -12,19 +12,20 @@ professional pushback, and evidence before claiming work is done.
 
 ## When Required
 
-Use this loop for:
-
-- M+ tasks.
-- Any product, design, auth, data, game, docs, deployment, or template work.
-- Any task where the user says "continue", "finish", "make it good", "production", "ecosystem", "goal", "roadmap", or similar.
-- Any task after a correction where the prior output missed the user's real goal.
+Use the full loop for substantial product work, meaningful cross-boundary or
+high-risk changes, long-running tasks, and explicit goal/roadmap/production
+requests. For small edits or direct answers, preserve the relevant goal and
+verification in the work itself without creating a goal artifact or reciting a
+template.
 
 ## Language Rule
 Plans, audits, checklists, user-facing status, and final reports must use the language of the user's request. Keep code identifiers and commands in their native language.
 
 ## Goal Artifact
 
-If `tasks/goal.md` exists, read it before planning. If it does not exist and the work is M+ product work, create or propose it.
+If `tasks/goal.md` exists and informs the current decision, read it. Create or
+propose one when a substantial product effort needs durable goal continuity;
+do not create one solely because a product file changed.
 
 The artifact must stay concise and include:
 
@@ -55,15 +56,35 @@ The artifact must stay concise and include:
 
 ## Operating Loop
 
-1. Restore: read `tasks/goal.md` and `tasks/current.md`.
-2. State intent: "User wants", "Success means", "I will verify by".
-3. Route: run the project router and load only route-selected skills/rules.
-4. Plan: write the current step, product/business outcome link, dependencies, tests, rollback, and progressive JPEG checkpoint into `tasks/current.md`.
-5. Execute: implement the step without lowering the final quality bar.
-6. Verify: prove behavior through tests, browser/screenshot checks, contract checks, source links, or deployment smoke, depending on domain.
-7. Update: mark completed steps, log durable lessons, and update `tasks/goal.md` only when the product goal or quality bar actually changed.
+For work that uses this loop, restore relevant goal/handoff context, identify
+intent and acceptance, route only as useful, plan the current step and risks,
+execute without lowering the final quality bar, verify with evidence suited to
+the domain, and update durable artifacts only when the goal, status, or lesson
+actually changed. These are decision aids, not required spoken phrases or a
+fixed ceremony for every task.
 
 Before choosing a technical improvement, name the product user and the business outcome it improves or protects. Technical perfection, refactoring, tooling, and architecture cleanup are valid only when they directly support user experience, revenue, loyalty, retention, activation, risk reduction, or another app-specific KPI.
+
+For substantial staged product work, structure three levels. Agree the first
+two with the user, then derive and record the nearest-wave plan autonomously
+within the accepted scope:
+
+1. **End result:** audience, capability, acceptance, and constraints.
+2. **Approximate implementation waves:** an adjustable sequence of useful
+   outcomes and why the sequence is sensible. The count may change when
+   evidence changes the plan.
+3. **Nearest wave:** a clear implementation plan with dependencies, owners,
+   file boundaries, responsibilities, acceptance evidence, and bounded
+   subagent instructions when delegation adds value.
+
+Each agreed wave must produce a whole useful result at its declared scope or
+be a bounded uncertainty experiment with a limit and an inspectable decision as
+its output. Smaller internal tasks may enable a wave but are not themselves a
+delivered wave. Within an accepted wave, proceed autonomously on routine
+implementation choices. Seek approval for a material change to the promised
+result, constraints, or meaning/order of waves, and present the proposed delta.
+Do not reopen an existing approved plan or AgentOS graph without evidence that
+one of those changed.
 
 Do not claim `Done` unless the verification evidence exists. If evidence is
 missing, label the step `Partial`, name the exact gap, and state the next
@@ -71,8 +92,9 @@ verification action.
 
 ## Progressive JPEG Checkpoint
 
-For M+ work and all status/replan/closeout messages, the current step must give
-the client a useful low-resolution view before the final result:
+For long-running, high-risk, or explicitly staged work, give the client an
+early useful view and make evidence, rough edges, and replan triggers visible.
+For routine work, a concise progress or final note is enough:
 
 - Current view: what is already inspectable, usable, or decidable.
 - Next sharpened layer: which evidence, artifact, or behavior will become clear next.
@@ -83,8 +105,9 @@ If only internal setup happened, report it as internal setup and name the first
 client-visible result. Do not call setup, research, or drafting a delivered
 product result unless it creates an inspectable decision point.
 
-For M+, template, release, product, design, docs, game, or long-running work
-with tagged working documents, include the progressive project slice from:
+When a task changes documents governed by a project-specific progressive status
+contract, follow that contract. For larger staged work where the status tool is
+useful, include the project slice from:
 
 ```bash
 node scripts/progressive-status.js
@@ -97,42 +120,26 @@ readiness, plan, inventory, production, and cleanup. Before closeout, run:
 node scripts/progressive-status.js --check
 ```
 
-If a tagged working document changed but its `PROGRESSIVE_STATUS` header did not
-change, the work is not ready to hand off.
+If the applicable project contract requires a status header, update and check
+it when the governed document changes.
 
 ## Progressive JPEG Implementation Gate
 
-When the task changes product behavior, architecture, components, screens,
-services, or workflows, progressive JPEG also means the implementation keeps the
-final product shape visible from the first useful slice.
-
-Before coding, name known future capabilities that belong to the accepted final
-outcome. For each one, decide whether it needs a 1% callable contract now:
-
-- If the final product plan is missing, stop implementation and create or
-  propose the plan first. The plan must name the final outcome, object
-  inventory, public contracts, dependencies, states, and acceptance checks.
-- Include it now when later work would otherwise have to replace the component,
-  route, data shape, state model, or service boundary.
-- Keep it out when the capability is speculative or not part of the accepted
-  product direction.
-- If included, make it honest: no-op, explicit stub, feature flag, dev-only
-  debug signal, placeholder event, or `not implemented yet` boundary.
-- Do not expose a fake completed action to the product user.
-- Do not spend the slice proving a legacy harness unless it protects the current
-  product path or prevents a real regression.
-
-The goal is a low-resolution version of the future product, not a separate demo
-path that must be thrown away. Use `$codex-progressive-jpeg-planner` for
-iteration planning and validate `tasks/progressive-plan.json` before treating a
-step as a product slice.
+For staged product work, preserve the accepted destination and contracts while
+keeping each current step proportionate. Add future-facing interfaces or
+callable seams only when accepted architecture makes them relevant to this
+change; do not scaffold speculative capabilities. Resolve an architectural
+decision before committing to a path only when the current change depends on
+that decision. Use `$codex-progressive-jpeg-planner` when an iteration plan is
+actually needed; its machine-readable validator is not a blanket implementation
+gate.
 
 ### Anti-Falsification Gate
 
-Every implementation slice must fulfill the product's real purpose end to end
-at its current depth through the accepted final path. It needs a user victory,
-entry-to-return journey, purpose mechanism, app-specific KPI link, observed
-product evidence, falsifier, truth boundary, rough edges, and next sharpening.
+When claiming that a product increment delivers a user outcome, provide
+evidence for that outcome at the scope claimed. If the step is enabling work,
+describe the dependency or risk it addresses and the next useful result instead
+of calling it a delivered product slice.
 
 Planning, research, architecture, scaffolding, migration, status, tests, mocks,
 stubs, debug output, HTTP success, and inventory completeness are enabling
@@ -140,21 +147,14 @@ checkpoints, not product slices. Callable seams preserve architecture but do not
 prove user value. The slice outcome must not depend on a stub, and evidence must
 never be fabricated or replaced with the agent's own claim.
 
-Verification order for object readiness:
-
-1. Final plan exists.
-2. Object inventory matches the plan.
-3. A real user completes the smallest honest purpose-solving journey; its
-   outcome does not depend on a stub or debug signal.
-4. Remaining gaps are classified by detail depth, integration, tests, polish, or
-   production hardening.
-5. Superseded layers are removed, replaced, or time-boxed as migration
-   scaffolding before the next readiness level is claimed.
+For a readiness assessment, compare the accepted plan and observed result, and
+classify only the gaps relevant to the claimed level. Do not infer completeness
+from inventories or percentages.
 
 Progressive layer replacement gate:
 
-- Keep placeholders only when they still belong to the accepted final plan and
-  remain callable, honest, and tracked as the next readiness target.
+- Keep placeholders only when they protect an accepted contract or transition;
+  identify an owner and removal condition when temporary.
 - Replace or delete wrong earlier iterations, obsolete scaffolds, disabled
   branches, stale feature flags, commented-out old implementations, skipped
   tests, and release-only exclusions.
@@ -164,12 +164,8 @@ Progressive layer replacement gate:
   users, data, or compatibility, stays outside the normal product path, and has
   an explicit removal condition.
 
-For example, a game actor needs the planned skeleton plus one real playable loop;
-debug-callable methods alone are preparation. A site needs the final shell plus
-one real conversion or service journey; "coming soon" counts only when the
-accepted product purpose is announcement or lead capture. A book needs the full
-argument skeleton plus one coherent unit that already delivers the reader
-promise; structure alone is preparation.
+Use domain-specific examples as checks for a requested outcome, not as
+requirements to prebuild the whole object's future skeleton.
 
 ## Product Slice Discipline
 

@@ -9,7 +9,7 @@ The template ships conservative defaults so a fresh project is safe to copy, ins
 - Codex loads project `.codex/config.toml` only after the project is trusted. Restart Codex after changing the MCP block, then verify with `codex mcp list`.
 - Codex repo-scoped skills live in `.agents/skills/`; template-owned skills sync normally, while `project-*` skills are project-owned.
 - Codex subagents live in `.codex/agents/`; template-owned agents sync normally, while `project-*` agents are project-owned.
-- `scripts/codex-agent-policy.js` is the source of truth for template-owned role profiles and the `xhigh` reasoning ceiling. Parent model defaults remain user-owned.
+- `scripts/codex-agent-policy.js` owns role profiles: Sol 6.1 High coordinates, Luna 6 High handles bounded work, Astra 6 Medium/High returns bounded architecture decisions. Supported `max` is a capability, not a default: escalated effort requires a reason, caller-owned token/attempt budget, and host verification. Parent defaults remain user-owned.
 - Codex route selection is explicit through `scripts/codex-route-task.js`; route state is local-only under `tasks/.active-codex-route.json`.
 - Codex automatically starts `required` and genuinely useful `recommended` independent lanes, notifies the user, and honors explicit opt-out. Fan-out defaults to read-only workers; `implementer` is only for exact non-overlapping file scopes.
 - Agent infrastructure changes must check `docs/AGENT_CONTEXT_SOT.md` and `_reference/agent-sot/sources.json`, then pass `node scripts/validate-agent-sot.js`.

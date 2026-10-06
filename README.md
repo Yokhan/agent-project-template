@@ -1,58 +1,74 @@
-# Agent Project Template v4
+# Agent Project Template v5
 
-[![Template Version](https://img.shields.io/badge/template-v4.9.6-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v5.0.0-blue)](.)
+
+Release target: **5.0.0**. Verify the exact GitHub Release before deployment; this checkout is not publication evidence. See [v5 migration](docs/MIGRATION_V5.md) and [runtime evidence](docs/GPT6_MIGRATION_CANDIDATE.md) for compatibility boundaries.
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Self-deploying AI-agent optimized project template with MCP-based dynamic rule routing, a pinned stack-aware code-intelligence toolchain, Codex repo-scoped skills and subagents, persistent memory, autonomous work loops, self-improvement, and merge-safe sync. Token savings are benchmarked per project instead of assumed globally.
+AI-agent-first project infrastructure: give your agent the repository URL, the target directory and a create/update request. It verifies one exact release, prepares the project, preserves project-owned data, checks the runtime and discovers the shared writing library. The agent verifies source availability and tool readiness; token or prompt-cache savings require measurements and are not guaranteed.
 
 > **Подробная инструкция на русском:** [SETUP_GUIDE.md](SETUP_GUIDE.md) — пошаговая настройка, MCP-серверы, Zed, troubleshooting.
 > Product boundary: [docs/PRODUCT_BOUNDARY.md](docs/PRODUCT_BOUNDARY.md) • Safe defaults: [docs/SAFE_DEFAULTS.md](docs/SAFE_DEFAULTS.md) • Supported environments: [docs/SUPPORTED_ENVIRONMENTS.md](docs/SUPPORTED_ENVIRONMENTS.md) • Codex fan-out: [docs/CODEX_FANOUT_PATTERNS.md](docs/CODEX_FANOUT_PATTERNS.md) • Template releases: [docs/TEMPLATE_RELEASES.md](docs/TEMPLATE_RELEASES.md)
 
 ## If An Agent Only Has This GitHub Link
 
+The human supplies the outcome and destination, not a manual installation log.
+For example: "Create an agent-ready project in `<absolute target>` from verified
+`v5.0.0`; preserve existing work and connect the shared external writing library
+if available." An update request must also authorize the major-version move.
+The agent performs the steps below within that scope and asks only for missing
+material choices, permissions, ownership conflicts or unavailable sources.
+
 Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol):
 
-1. Classify source, generated downstream, or legacy downstream; never sync the source into itself.
+1. Classify source, new destination, generated downstream, or legacy downstream; never sync the source into itself or overwrite an existing product with a new-project setup.
 2. Read installed version from `.template-manifest.json`.
 3. Explicit user/AgentOS tag wins. Only when no tag was selected, resolve the current stable release at <https://github.com/Yokhan/agent-project-template/releases/latest>.
 4. Verify `git remote get-url template`; never silently replace a conflict.
-5. Run pinned dry-run, then apply the same tag. Bare `--from-git` is canary-only.
+5. Use the exact target release's Node updater; preview to an external digest-bound plan, resolve conflicts, then apply that same plan/tag. Bare `--from-git` is forbidden in normal rollout.
 6. Use the target release checkout's script with `--project-dir` when local sync is stale.
-7. Verify manifest version, diff, overlays, conflicts, and checks before success.
+7. For a new project, reuse a verified canonical template checkout or obtain one external exact-tag checkout and run its OS-appropriate setup. Default bootstrap installs the full pinned ten-tool profile; smaller profiles are explicit opt-ins. Preserve user-owned model, trust and security settings.
+8. Run `node scripts/writing-library.js discover`. A valid shared machine store is reused; a new machine may have no books. With user-supplied exact originals/cache and import authority, import once outside Git. Never create book symlinks/hardlinks inside a project or pretend memory is primary reading.
+9. Verify manifest version, diff, overlays, conflicts, runtime and source status before success. Report project readiness separately from `source-grounding-blocked`.
 
-Release snapshot: `v4.9.6`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v5.0.0`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
 
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v5.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
 
-Update an existing generated project from the verified pinned tag:
+Update an existing generated project using the verified exact-tag checkout
+(reuse it, or clone the tag above outside the project). Set these absolute paths:
 
 ```bash
-template_url="$(git remote get-url template 2>/dev/null || true)"
-[ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
-[ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
+RELEASE_CHECKOUT=/absolute/verified-v5.0.0-checkout
+PROJECT=/absolute/project
+PLAN=/absolute/outside-project/agent-template-v5.0.0.plan.json
+node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
+node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
 
 `main` is for template development and explicit canary rollout only. Release archives are useful for inspection or offline transfer; agent-managed projects should prefer git tag sync.
 
 ## Quick Start
 
-The commands below target release snapshot `v4.9.6`; verify its GitHub Release before use.
+The agent runs these commands after verifying release snapshot `v5.0.0` and
+confirming the destination is appropriate for a new project. On an existing
+machine, reuse the verified canonical checkout; do not clone a template or books
+per task. These are execution references, not steps the human must perform.
 
 ```bash
-git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v5.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
 bash scripts/bootstrap-mcp.sh --install --tool-profile=full
+node scripts/writing-library.js discover
 ```
 
 Open and trust the generated project in Codex. Restart Codex after bootstrap,
@@ -65,6 +81,36 @@ only as a compatibility payload for Claude Code; it is not how Codex discovers
 project MCP servers.
 
 **Windows**: run `setup.bat`. Project updates use the same native Node updater as Linux: `node scripts/sync-template.js ...`; `scripts/sync-template.cmd` is only a thin adapter.
+
+## One Shared Writing Library, Not Books In Every Project
+
+Five user-supplied books and the project-resolution guide live once per machine
+in `~/.local/share/agent-project-template/writing-library`, or an absolute
+`AGENT_WRITING_LIBRARY`/`--root` override outside Git. The release ships only
+metadata, code and instructions: **it does not ship or download the books**.
+
+The agent checks the store before substantive nonfiction, including explanatory
+chat answers. It retrieves fresh relevant primary passages and records their
+concrete effect on the text. Actual fiction/lore prose is excluded; its project
+plan, game business or technical nonfiction is not. Code-only changes and small
+acknowledgements do not require book reading.
+
+If the store is missing, obtain the user's exact originals and pinned text cache,
+then, with import authority, run once:
+
+```text
+node scripts/writing-library.js import --manifest <user-supplied-manifest.json>
+node scripts/writing-library.js status
+```
+
+Import verifies all six editions, text hashes and locators. Repeated valid import
+copies nothing. Missing/stale sources are `source-grounding-blocked`, not a
+silent memory fallback. Preserve originals and an invalid old store; recovery
+uses a verified backup or a fresh external root instead of overwriting books.
+If the exact cache is unavailable, report that limit and ask for a verified
+cache/approved extraction workflow; do not install heavy extractors or substitute
+another edition silently. See [manifest and recovery details](SETUP_GUIDE.md#общая-библиотека-источников)
+and [the grounding contract](.claude/library/technical/writing-source-grounding.md).
 
 Newly bootstrapped `AGENTS.md`, `README.md`, and `SETUP_GUIDE.md` are template-owned. If an existing manifest explicitly marks `AGENTS.md` as `project`, sync preserves that declared ownership and never overwrites the file. Put new project-specific onboarding or architecture details into `CLAUDE.md`, `PROJECT_SPEC.md`, `ecosystem.md`, `docs/`, and `project-*` overlays.
 
@@ -107,16 +153,18 @@ node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-pro
 ```
 
 ### Pinned release updates (git-based)
-If the template is hosted in a git repository, prefer release tags for normal project rollout:
+Use this short form only after verifying the local updater matches the target
+release; otherwise use the external exact-tag checkout above. Prefer immutable
+release tags for normal project rollout:
 ```bash
-# Check the latest release tag first
+# Verify the exact selected tag; latest selects only an unspecified target
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json
 
 # Apply the pinned release
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json --apply
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -138,10 +186,10 @@ node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-pro
 # Apply exactly that bootstrap plan
 node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template my-project --bootstrap --plan-file /path/to/bootstrap.plan.json --apply
 
-# Optional: add git remote for future auto-updates
+# Optional: after verifying the installed updater, add remote for future updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json --apply
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -232,14 +280,14 @@ When you run the target release's `scripts/sync-template.js`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 32 | Shared library rules, four-mode writing profiles, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
+| **Rules** | 33 | Shared library rules, four-mode writing profiles, fresh primary-source grounding, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
 | **Codex Skills** | 46 | Pipeline, route-first orchestration, evidence-backed change strategy, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
-| **Codex Subagents** | 12 | Luna bounded discovery/log/summarization, Terra research/testing/isolated implementation, and Sol judgment-heavy specialists; adaptive fan-out preserves project orchestration ownership |
+| **Codex Subagents** | 13 | Luna 6 High bounded workers, Sol 6.1 High review/integration, and Astra 6 architecture consultation; effective runtime evidence and exact scopes preserve orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 67 | validation, adaptive writing/reference routing, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 71 | validation, adaptive writing/reference routing, shared writing library import/retrieval/application checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -267,7 +315,7 @@ Tier 3 (Cold Memory)    — docs/ + brain/                                    (b
 
 ### Key Principles
 - **Sinks, not Pipes** — components complete work, no cascading side effects
-- **Working Memory Cliff** — files < 250 lines, tasks < 30 changes
+- **Context proportionality** — numerical file/task heuristics guide diagnosis, not universal limits or reasons for mechanical rewrites
 - **Self-Improvement Loop** — every mistake → lessons.md → promote to rules
 - **Autonomous Work** — /sprint with Ralph Loop + circuit breaker
 - **Change Review > Code Review** — review intent and impact, not style
@@ -340,6 +388,8 @@ Sync detects files changed both locally and in the template. Preview reports tho
 
 | Version | Key Changes |
 |---------|------------|
+| **5.0.0** | Major operating-contract update: Sol 6.1 High coordination, bounded Luna High workers, Astra consultancy, evidence-backed runtime dispatch, agreed result/waves with autonomous nearest-wave execution, proportional routing, one external shared writing library and fresh request/draft-bound primary-source application. Books, automatic prompt-cache savings and native-role enforcement are not bundled guarantees. |
+| **4.10.0 (unpublished development candidate)** | Historical GPT-6 migration candidate, incorporated into 5.0.0 rather than published as a separate release; its recorded runtime evidence and unresolved benchmark limits remain visible. |
 | **4.9.6** | Security and reliability patch: project-root MCP cwd and filesystem containment, argument-array subprocesses, opt-in mutating pipelines, secret-safe bootstrap defaults, one native Linux/Windows sync engine with digest-bound plans and full rollback, and release-blocking Windows/runtime/secret-scan evidence |
 | **4.9.5** | Patch release: makes routing smoke tests independent from live downstream Spec Kit and AgentOS artifacts, so mature projects validate the same route contract as the source template instead of receiving false strategic-review failures |
 | **4.9.4** | Patch release: preserves every explicitly project-owned manifest entry, fixes the legacy `AGENTS.md` convergence loop, refreshes preserved project hashes without overwriting content, and makes root release ownership truthful in source and downstream projects; supersedes the failed, unpublished v4.9.3 tag |

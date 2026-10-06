@@ -6,6 +6,8 @@ const templateRegistry = require("../../.claude/library/technical/writing-refere
 const projectRegistryPath = path.join(__dirname, "..", "..", "brain", "03-knowledge", "writing", "reference-registry.json");
 const { mergeWritingReferenceRegistries, validateProjectWritingRegistry, validateWritingReferenceRegistry } = require("./writing-reference-policy.js");
 const REPO_ROOT = path.join(__dirname, "..", "..");
+const { selectLibrarySources } = require("./writing-library-policy.js");
+const { libraryStatus } = require("./writing-library-store.js");
 
 function loadProjectRegistry(filePath) {
   return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, "utf8")) : null;
@@ -116,6 +118,7 @@ function getSubagents(intent) {
 
 function getFiles(intent) {
   const files = [...WRITING_FILES];
+  if (intent.primaryMode !== "literary") files.push("technical/writing-source-grounding.md");
   if (intent.outputLanguage === "ru" && canApplyLanguageProfiles(intent)) {
     files.push("technical/russian-writing-profile.md");
     if (["marketing", "informational", "communication"].includes(intent.primaryMode)) {
@@ -188,6 +191,11 @@ function getWritingRoutePolicy(intent, options = {}) {
   const technicalEditors = isTechnical ? unique([...TECHNICAL_EDITORS, ...getProfileEditors(technical.selected, registry)]) : [];
   const externalTools = getExternalTools(intent, registry);
   const hasUnavailableTools = externalTools.some(({ access }) => access !== "project-configured");
+  const librarySelection = selectLibrarySources(intent.task || "", intent);
+  const library = librarySelection.required ? libraryStatus(options.libraryOptions) : { state: "not-required" };
+  const sourceGrounding = { ...librarySelection, library, state: !librarySelection.required ? "not-required" : library.state === "ready" ? "primary-passages-required" : "blocked",
+    command: librarySelection.required ? "node scripts/writing-library.js retrieve --task <current-artifact-task> --query <relevant-source-language-keywords>" : null,
+    evidence: "fresh task-bound primary passages + read receipts + concrete principle/application notes before drafting or review" };
   return {
     mode: MODE_NAMES[intent.primaryMode],
     extraModes: unique([isTechnical ? "technical-writing" : "", intent.domains.includes("api") ? "api" : "", intent.vendors.includes("openai") ? "openai" : ""]),
@@ -212,7 +220,8 @@ function getWritingRoutePolicy(intent, options = {}) {
     technicalEditors,
     editors: unique([...languageEditors, ...processEditors, ...domainEditors, ...technicalEditors]),
     externalTools,
-    gates: unique(["writing-contract", intent.languageResolution === "explicit" ? "target-language-explicit" : "target-language-confirm-before-language-edit", "source-truth-boundary", "functional-whole", "reference-registry-valid", "reference-effects-isolated", externalTools.length ? "external-tool-evidence-required" : "", externalTools.length ? "external-tool-not-run" : "", hasUnavailableTools ? "external-tool-unavailable" : "", languageEditors.length ? "editorial-board-covered" : "language-editor-missing", intent.outputLanguage === "mixed" ? "per-section-language-resolution" : "", isTechnical ? "technical-procedure-executed" : ""]),
+    sourceGrounding,
+    gates: unique(["writing-contract", librarySelection.required ? "fresh-primary-source-packet-required" : "", librarySelection.required ? "source-principle-application-required" : "", sourceGrounding.state === "blocked" ? "source-grounding-blocked" : "", intent.languageResolution === "explicit" ? "target-language-explicit" : "target-language-confirm-before-language-edit", "source-truth-boundary", "functional-whole", "reference-registry-valid", "reference-effects-isolated", externalTools.length ? "external-tool-evidence-required" : "", externalTools.length ? "external-tool-not-run" : "", hasUnavailableTools ? "external-tool-unavailable" : "", languageEditors.length ? "editorial-board-covered" : "language-editor-missing", intent.outputLanguage === "mixed" ? "per-section-language-resolution" : "", isTechnical ? "technical-procedure-executed" : ""]),
     needsFreshDocs: intent.vendors.includes("openai"),
   };
 }
@@ -243,6 +252,8 @@ function main(argv) {
     policy.languageResolution,
     policy.processProfiles.join(","),
     policy.externalTools.map(({ id, access, execution, paid }) => `${id}:${access}:${execution}:${paid ? "paid" : "free"}`).join(","),
+    policy.sourceGrounding.state,
+    policy.sourceGrounding.sourceIds.join(","),
   ].join("\t"));
 }
 

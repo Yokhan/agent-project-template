@@ -3,6 +3,18 @@ import { readFileSync } from "node:fs";
 import { routeKeywords } from "./router.js";
 import { buildActiveRulesOutput } from "./active-rules.js";
 
+for (const task of ["What is this error and fix it", "Why is the app crashing for all users?", "Fix typo and rebuild the entire app", "Fix typo in commit hook"]) {
+  const route = routeKeywords(task);
+  assert.equal(route.workflowDepth, "routed", task);
+  assert(route.files.length > 0, task);
+}
+assert(routeKeywords("Разреши неоднозначную архитектуру").codexSubagents.includes("architecture_consultant"));
+const groundedExplanation = routeKeywords("Объясни, как работает кэш");
+assert(groundedExplanation.writingSourceGrounding?.required);
+assert.deepEqual(groundedExplanation.writingSourceGrounding?.sourceIds, ["write-short", "clear-understood"]);
+assert(groundedExplanation.files.includes("technical/writing-source-grounding.md"));
+assert.equal(routeKeywords("Напиши лорную заметку").writingSourceGrounding?.required, false);
+
 function assertProjectScopedConfig(relativePath: string): void {
   const source = readFileSync(new URL(`../../../${relativePath}`, import.meta.url), "utf8");
   assert(!/^cwd\s*=\s*"\.\."/mu.test(source), `${relativePath}: parent workspace cwd is forbidden`);

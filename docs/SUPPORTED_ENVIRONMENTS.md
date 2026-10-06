@@ -10,6 +10,23 @@ These are the environments the template is designed and tested to support.
 
 ## Optional Tools
 
+- Codex CLI 0.160.1 is the target version for GPT-6 configuration and
+  `agents.max_concurrent_threads_per_session` (spawned children, excluding the
+  parent). The legacy `max_threads` alias is accepted by the static validator,
+  not proof that an old client supports the new profiles. Check the actual
+  model catalog, config loading, and effective child metadata on each host.
+  Config loading does not prove native custom-role dispatch. The current live
+  collaboration schema lacks `agent_type`; use a verified explicit-model-contract
+  capability instead, loading role instructions into the message. Native TOML
+  role enforcement and sandbox isolation remain unavailable/unverified there.
+- The optional read-only SQLite/rollout evidence collector requires Node 22.5+
+  (`node:sqlite`), tested locally on Node 24.13.0. Node 20 remains supported for
+  normal template/MCP tooling; missing collector capability is not runtime proof.
+- AgentOS remains the task-graph owner. Its 2026-10-06 launcher accepts GPT-6
+  low/medium/high but drops xhigh/max; those optional efforts are unavailable
+  through that adapter until it is updated and tested. This migration does not
+  change AgentOS or downstream projects.
+
 - `uvx` or an installed `specify` CLI for `scripts/init-spec-kit.sh`
 - network access for `scripts/sync-spec-kit.sh --check` and `--latest-tag`
 

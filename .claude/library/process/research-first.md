@@ -1,74 +1,40 @@
 # Research-First Protocol — Read Before You Write
 
-## The Rule
-Before ANY task that modifies code or content, the agent MUST research the context.
-Writing code without reading context = inventing problems that don't exist + missing problems that do.
+Gather enough evidence to avoid editing the wrong boundary. Keep discovery
+proportionate: a focused documentation edit does not require a full repository
+survey, while a shared API or high-risk change may require broader tracing.
 
-## Mandatory Research Checklist (BEFORE any code change)
+## Before a state-changing edit
 
-### 1. Read affected files + neighbors
-- Open every file you plan to modify
-- Read files that import from / are imported by the target files
-- Read colocated tests (module.test.ts, test_module.py)
+1. Read the target files and the relevant direct callers, consumers, or tests.
+2. Check current worktree status and preserve unrelated or uncommitted changes.
+3. Inspect recent history, project handoff, lessons, registries, or downstream
+   consumers only when they can affect this decision.
+4. Use project-specific context or tools when their output can change the
+   approach; do not repeat a fresh, still-valid finding without reason.
+5. For work with material uncertainty, summarize the key evidence, risk, and
+   approach in the active task artifact or to the user. Routine edits need no
+   research report ritual.
 
-### 2. Check recent history
-```
-git log --oneline -5 -- <affected_files>
-```
-Why: someone may have just changed the same code. Avoid conflicts and redundant work.
+## When more research is justified
 
-### 3. Check project memory
-- `tasks/current.md` — is there active work that overlaps?
-- `tasks/lessons.md` — has this exact problem been solved (or failed) before?
-- `PROJECT_SPEC.md` — does the project have dependencies or constraints that affect this?
+Trace further for shared code, public contracts, auth/security, data changes,
+release/sync workflows, architecture decisions, or unexplained failures. Search
+for direct consumers and applicable project-owned rules before changing such a
+boundary. If a project task graph or `project-*` artifact owns the work, use it
+as the context source rather than creating a parallel plan.
 
-### 4. Check tool registry
-- `_reference/tool-registry.md` — does a utility/component already exist for what you're about to build?
-- If found → REUSE it. If close match → extend it. Don't write new code for solved problems.
-- See `.claude/library/technical/atomic-reuse.md` for full protocol.
+## Lightweight work
 
-### 5. Check for cross-project impact
-- If the change affects shared code, APIs, or exports: check who consumes them
-- If `ecosystem.md` exists: check for downstream dependencies
+For a small local edit, inspect the target and the nearest relevant context,
+make the bounded change, and run a focused check. Skip broad history, registry,
+ecosystem, or cache scans when they cannot affect correctness. Documentation-only
+work may still require source verification when it asserts volatile or
+version-sensitive facts.
 
-### 6. State findings BEFORE coding
-Output a brief research summary:
-```
-RESEARCH:
-- Read: [files read]
-- Recent changes: [relevant git log entries]
-- Lessons: [relevant entries from lessons.md, or "none applicable"]
-- Risks: [what could go wrong]
-- Approach: [chosen approach and why]
-```
+## Research cache
 
-## Research Cache (`tasks/.research-cache.md`)
-
-Before running fresh research, check the cache — previous findings may still be valid.
-After completing research, append findings to the cache with date, files, discoveries, status.
-
-- The cache survives compaction (pre-compact hook references it)
-- UPDATE existing entries when revisiting the same topic — don't create duplicates
-- Mark entries `stale` when the related work is done and committed
-- Delete stale entries periodically to keep the cache useful
-
-## When to Skip (XS tasks only)
-- Single-file typo fix (≤5 characters)
-- Config value change with no logic impact
-- Comment or documentation-only edit
-
-Even for XS: still read the file before editing. Never edit blind.
-
-## Why This Matters
-
-Without research:
-- 40% of "fixes" break something else (coupling they didn't see)
-- 30% of new code duplicates existing utilities
-- Past lessons get ignored, same mistakes repeat
-- Cross-project breakage goes undetected
-
-With research:
-- Agent works WITH the codebase, not against it
-- Existing solutions get reused
-- Past mistakes don't repeat
-- Changes fit the established patterns
+Use `tasks/.research-cache.md` only when the project maintains it and the
+current topic has reusable findings. Check freshness before relying on cached
+information; update it when a discovery is likely to save future work. It is not
+a required read/write artifact for every task.

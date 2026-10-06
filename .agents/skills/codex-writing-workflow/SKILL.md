@@ -15,6 +15,13 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    target language, channel, active SOTs, voice contract, and acceptance evidence.
 3. Load only relevant project context. If facts are missing or SOTs conflict in a
    way that changes meaning, stop and ask with 2-3 options.
+   For substantive nonfiction, including chat explanations, read
+   `.claude/library/technical/writing-source-grounding.md`, retrieve a fresh
+   bounded task-specific primary-source packet and apply its principles before
+   drafting/review. Record source hashes, locators, read receipts and concrete
+   application; profiles and memory are not substitutes. Missing/stale sources
+   block source-grounded drafting. Classify mixed work per artifact; real fiction
+   and lore are exempt, game business/technical books and project plans are not.
 4. Analyze references into concrete writing properties; do not copy their
    structure or imitate a named author mechanically.
 5. Plan the complete final function/section inventory.

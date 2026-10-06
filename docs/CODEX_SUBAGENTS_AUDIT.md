@@ -2,6 +2,12 @@
 
 Date: 2026-07-11
 
+Historical audit: model-pack and runtime claims below describe July, not the
+current policy or a fresh October execution. For active GPT-6 profiles and
+effective-profile verification, use `OPENAI_MODEL_GUIDANCE.md` and
+`CODEX_FANOUT_PATTERNS.md`. October release acceptance is recorded separately;
+old `xhigh` ceilings are not current capability limits.
+
 ## Result
 
 Codex subagents are worth adding to this template, but they should not replace skills.

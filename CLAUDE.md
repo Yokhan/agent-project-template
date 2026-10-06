@@ -1,15 +1,19 @@
 # Agent-Ready Project
-<!-- Template Version: 4.9.6 -->
+<!-- Template Version: 5.0.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
+
+Preserve existing dirty work: inspect affected changes before editing; never overwrite unrelated user or project-owned work.
 
 ## Philosophy — Quality Over Speed
 1. **Think before you type.** Research and planning ARE the work. Code is just output.
 2. **Doubt is a feature.** Surface uncertainty. Enumerate alternatives before choosing.
 3. **Slower is faster.** 30-min plan saves 3h rework. Test scenarios prevent production bugs.
 4. **One thing done well > three halfway.** Finish, verify, commit before starting next.
-5. **If unsure, STOP and ask.** Never produce code just to show progress.
+5. **Resolve routine uncertainty safely.** Research and choose a reversible
+   option within the accepted scope; ask only when a missing choice materially
+   changes outcome, risk, data, release, cost, or irreversible state.
 
 Slow down: shared/core, can't articulate WHY, 3+ iterations, HIGH/CRITICAL risk.
 Speed OK: XS+LOW, covered by tests, following approved plan.
@@ -22,9 +26,17 @@ Plans and improvements prioritize the real product user's experience and app-spe
 
 Treat the user as the client/product owner and the agent as the accountable executor: do not agree by default, do not claim unverified work is done, and challenge requests that would lower the outcome, safety, quality, or KPI. Full rule: `.claude/library/process/client-executor-contract.md`.
 
-For M+, HIGH-risk, template, product, release, status, and closeout work, use progressive JPEG delivery: show the first useful view, the next sharpened evidence layer, rough edges, and the replan trigger instead of going silent until a final answer. When working documents use `PROGRESSIVE_STATUS`, include a project slice from `node scripts/progressive-status.js`; before closeout, `node scripts/progressive-status.js --check` must pass.
+For long-running, high-risk, explicitly staged, or material scope-changing work,
+use progressive JPEG delivery: show a useful view, evidence, rough edges, and a
+replan trigger. Follow `PROGRESSIVE_STATUS` tooling when the project workflow
+requires it; routine edits and brief answers do not need a status ritual.
 
-Progressive JPEG also controls implementation shape. Use `$codex-progressive-jpeg-planner`: every implementation slice must fulfill the real product purpose end to end at its current depth through the final path. Planning, architecture, stubs, debug output, tests, status, and inventories are enabling checkpoints, never product evidence; the slice outcome may not depend on a stub, and evidence may not be fabricated. Build the accepted end-state skeleton with honest 1% callable seams, gate on a missing final plan, and delete or migrate superseded layers before claiming sharper readiness.
+For staged product work, use `$codex-progressive-jpeg-planner` when a plan is
+useful. Preserve the production quality bar and distinguish enabling work from
+verified user outcomes. Add future contracts or callable seams only when they
+are accepted architecture and relevant to the current change; do not prebuild
+speculative behavior. A stub, test, screenshot, or status is not by itself
+product evidence, and claims must match what was verified.
 
 Before product, design, auth, data, game, docs, deployment, template, or M+ work, load:
 
@@ -61,17 +73,20 @@ Not configured yet.
 
 **Agent infrastructure SOT:** before changing `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, routing, or template sync behavior, read `docs/AGENT_CONTEXT_SOT.md` and check `_reference/agent-sot/sources.json`. If a source is stale or behavior-sensitive, browse the canonical URL first. Run `node scripts/validate-agent-sot.js`.
 
-**SOT conflict protocol:** if two plausible sources of truth conflict, do not choose silently. Name the sources, classify authority (user instruction > project-owned `project-*` or AgentOS graph > repo SOT docs > shared template rules > historical notes > examples), then ask the user with 2-3 options when authority is ambiguous or the choice changes product behavior, safety, data, release, or architecture.
+**SOT conflict protocol:** if plausible sources conflict, identify their authority (user instruction > project-owned `project-*` or AgentOS graph > repo SOT docs > shared template rules > historical notes > examples). Continue safe research; ask with options only if the conflict remains material to product behavior, safety, data, release, scope, or architecture.
 
-**Thinking tools gate:** for M+, HIGH-risk, ambiguous, architecture, template, design, product, marketing, or repeated-failure work, use system map + TRIZ contradiction + Sun Tzu/stratagem terrain check + plan reality check before choosing the path. Phrase conflicts as "need X without causing Y", list existing resources, map terrain/competitors/center of gravity/favorable ground, name the next verifiable checkpoint, and replan explicitly when assumptions break. Do not use strategy language to justify deception, dark patterns, or user-hostile manipulation.
+**Thinking tools:** use a system map or decision framework when it can change a
+material choice. Use TRIZ when requirements genuinely conflict; use a terrain
+check for a requested competitive strategy, not routine implementation. For
+meaningful uncertainty, identify the next useful checkpoint and replan when an
+assumption breaks. Never use strategy language to justify deception, dark
+patterns, or user-hostile manipulation.
 
-**On every new task**:
-1. User gives task (any language, any jargon)
-2. YOU extract task type + domain + action + semantic intent, not only literal keywords
-3. Call `get_context(keywords="...")` → default depth=brief (~50 tokens: mode + agent + file list)
-4. For M+ tasks: `get_context(keywords="...", depth="normal")` → includes full rule text
-5. For L/XL or unfamiliar domain: `depth="full"` → rules + lessons + git + registry + ecosystem
-6. Work. Read specific files from the list only when you need them.
+**Context routing:** for work where project context or specialized rules can
+change the result, use `get_context` or `bash scripts/route-task.sh`, then load
+only relevant rules and artifacts. Expand discovery for unfamiliar,
+cross-project, or high-risk work. A simple local edit or direct answer does not
+need a full context scan.
 
 **On task switch**: `switch_context(keywords="...")`
 **After compaction**: `get_active_rules()`
@@ -81,6 +96,14 @@ Not configured yet.
 Codex route fallback uses exact patterns plus semantic intent scoring in `scripts/lib/codex-route-intents.js`. Misroutes must be fixed in the intent model with regression fixtures, not only by adding one literal keyword.
 
 Writing uses `.claude/skills/writing-workflow/SKILL.md` and the writer agent. Select literary, marketing/advertising, informational, or communication mode by the reader's job; a functional 1% text must already perform its production purpose. Resolve the target language and keep language/editorial, process, domain, and technical profiles separate. Russian output loads `russian-writing-profile.md`; English standards cannot define Russian voice or syntax. Never fabricate facts, proof, citations, deliberate human imperfections, or AI-detector claims.
+
+Substantive nonfiction and explanatory chat answers require fresh relevant
+primary passages and concrete application before drafting/review; see
+`.claude/library/technical/writing-source-grounding.md`. The six-source machine
+library stays outside projects/releases. Missing/stale sources block grounded
+writing, not permission to use memory. Actual fiction/lore prose is exempt;
+its commercial, technical or project-planning artifacts are not. Code-only work
+and small acknowledgements do not need a book ritual.
 
 External writing services are separate from sources and profiles. Without configured access and a successful response tied to the current artifact, never claim a Glavred check, score, warning list, or provider result; label public-method editing as manual.
 
@@ -134,22 +157,22 @@ manifest version, diff, overlays, conflicts, and checks. Bare `--from-git` is
   a published release from an unverified tag.
 
 ## Session Start
-1. `bash scripts/context-restore.sh` — shows mode, task, lessons, git state
-2. If Engram: `mem_session_start` + `mem_context`
-3. `get_context(keywords="<first task>")` → ready to work
+Restore current task context when continuing work. Use the context helper when
+the project, handoff, or active work may affect the next action; skip unrelated
+memory/history scans for a self-contained request.
 
 ## Session End
-Update `tasks/current.md` with handoff (status, files, next steps, blockers).
-If Engram: `mem_session_end` with summary.
+For interrupted or multi-step work, update the active handoff with status,
+changed files, what remains unverified, and the next step. Use Engram session
+helpers when the current project workflow uses them.
 
 ## Work Report Style
 Final reports about completed work must follow `.claude/library/technical/writing.md`, especially the client-facing report rules: lead with result, explain the effect in the reader's world, keep technical detail only when it changes a decision, and default to `Что было → Что стало → Что это даёт → Чего ожидать дальше`.
 
-## MCP Memory (Engram) — PROACTIVE
-- After EVERY decision/bug/discovery → `mem_save` immediately
-- Before research → `mem_search` first
-- On task switch → `mem_save` summary of paused task
-- If no Engram → tasks/lessons.md + brain/ (file fallback)
+## MCP Memory (Engram)
+Use project memory when it contains context relevant to the current task or
+when the project workflow calls for a durable decision/handoff. Do not save each
+routine observation or make a memory lookup a prerequisite to unrelated work.
 
 ## Runtime Helpers (use instead of manual tool calls)
 ```
@@ -191,9 +214,10 @@ Violation = revert and redo. Full pipeline: `.claude/library/domain/domain-desig
 /audit-tools, /mode-code, /mode-design, /mode-review, /mode-research, /mode-write, /mode-fix, /mode-plan
 
 ## Self-Improvement
-After each correction: classify type (BUG/KNOWLEDGE_GAP/STYLE/DESIGN_DISAGREEMENT/MISUNDERSTANDING).
-BUG or KNOWLEDGE_GAP → log to tasks/lessons.md with Track (BUG/KNOWLEDGE/PATTERN/PROCESS) + Severity (P0-P3).
-When >50 entries → promote via `/weekly`.
+When a correction reveals a reusable failure, classify it and record the cause
+and a useful regression guard in `tasks/lessons.md` according to the project
+workflow. Routine edits and one-off preferences do not require a lesson entry.
+Use `/weekly` when the project uses it to distill a large lessons backlog.
 
 ## Systemic Error Analysis
 When an error, failed check, regression, or correction appears, classify it while reading and before patching: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict. A bounded repair-path check covers the affected path and direct consumers without demanding a general architecture proof. If causal system evidence is already present, run the Change Strategy Gate before the first patch; reroute once only when pipeline, risk, or approval authority changes. After a second failed repair, the gate is mandatory. Record the decision in the active orchestrator artifact; optional `tasks/change-strategy.json` decisions must pass `node scripts/validate-change-strategy.js`. Ask only when the selected destination or transition changes a material client-owned tradeoff.
@@ -201,20 +225,25 @@ When an error, failed check, regression, or correction appears, classify it whil
 ## Token Economy
 - Trust skills/memory over re-reading. Don't re-read files you read this session.
 - Only read files you WILL use. Parallelize independent tool calls.
-- Route outputs >20 lines to subagents. After 2 failed corrections → /clear.
-- Task switching → HANDOFF.md (status + files + next steps), fresh session.
+- Delegate only independent work with material parallel value and exact scope.
+  After two failed approaches, re-diagnose instead of resetting context or
+  repeating local variants.
+- For a paused multi-step task, leave a concise handoff with status, files,
+  unverified work, and next steps; no new session is required for routine task
+  switching.
 
 ## DON'T
-- Code files > 375 lines — split them
 - No `any` — use `unknown` + type guards
-- No mutations — return new objects
+- Prefer immutability when it improves clarity and safety; mutation is allowed
+  when it is the clearest established pattern and its effects are understood.
 - No editing main/master directly
 - No skipping tests before commit
 - No committing secrets (.env, API keys)
 - No business logic in entry points — use functions-in-modules pattern (see docs/SHARED_CONVENTIONS.md)
-- No presenting solutions without self-verification
+- No presenting solutions without proportionate self-verification
 - No "you're right!" without logging WHY
-- No new code without checking tool-registry first
+- Check `_reference/tool-registry.md` when reuse or an existing shared utility
+  could affect the design.
 - No hardcoded visual values (use tokens)
 - No building screens without components (system→tokens→components→screens)
 - No surface-level analysis ("works"=HTTP 200 is NOT analysis)
@@ -235,7 +264,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-4.9.6 - Run `bash scripts/check-drift.sh` to verify health.
+5.0.0 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

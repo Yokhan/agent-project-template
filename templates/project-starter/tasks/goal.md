@@ -19,7 +19,11 @@ Name the primary product user, the user experience outcome, and the app-specific
 - Domain tone:
 
 ## Current Step
-Describe the bounded step currently being worked on.
+Record the approximate useful waves agreed with the user, then the bounded
+nearest wave currently being worked on: result or research decision, acceptance,
+tasks, responsibilities and parent verification. Derive its detail within
+accepted scope; seek approval only for material promise/constraint/wave changes.
+Internal enabling tasks are not themselves delivered waves.
 
 ## Dependencies
 -

@@ -16,6 +16,8 @@ function getWritingLines(policy) {
     `WRITING_EXTERNAL_TOOLS: ${policy.externalTools.map(({ id, access, execution, paid }) => `${id}:${access}:${execution}:${paid ? "paid" : "free"}`).join(", ") || "none"}`,
     `WRITING_EDITORS: ${policy.editors.join(", ") || "none"}`,
     `WRITING_GATES: ${policy.gates.join(", ") || "none"}`,
+    `WRITING_SOURCE_GROUNDING: ${policy.sourceGrounding.state} | sources=${policy.sourceGrounding.sourceIds.join(",") || "none"}`,
+    `WRITING_SOURCE_COMMAND: ${policy.sourceGrounding.command || "not required for this artifact"}`,
   ];
 }
 
@@ -23,6 +25,8 @@ function formatSummary(route) {
   return [
     `ROUTE: ${route.modes.join("+")}`,
     `PIPELINE: ${route.pipeline}`,
+    `WORKFLOW_DEPTH: ${route.workflowDepth}`,
+    `RESOURCE: ${route.resourceDecision.role}:${route.resourceDecision.recommendedModel}@${route.resourceDecision.recommendedEffort} | ${route.resourceDecision.runtimeStatus}`,
     `CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`,
     `RISK: ${route.risk}`,
     `MATCHES: exact=${route.exactMatches.join("+") || "none"} | semantic=${route.semanticMatches.join("+") || "none"}`,

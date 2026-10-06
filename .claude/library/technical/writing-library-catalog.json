@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "user-writing-library-2026-10-06",
+  "sources": [
+    {"id":"write-short","title":"Пиши, сокращай","originalFile":"write-short.pdf","originalSha256":"813b604e015b7d38c9bfa7acfdddc84939132d2a09345fc35ce168d1e3c0b8a2","textSha256":"b830dc749f15c7cd41fbf39bf321843cffc75f0bf81f3065c1d30ab9ab897a46","format":"pdf","units":401},
+    {"id":"business-correspondence","title":"Новые правила деловой переписки","originalFile":"business-correspondence.pdf","originalSha256":"f8dde493704c91effc8d48a40adae2494c1dc55a4275903ed177de54ea647cb1","textSha256":"b84dd44d1932e6c735724c65d46eb82913f484ec7d730371deab17b4118b0ee0","format":"pdf","units":257},
+    {"id":"clear-understood","title":"Ясно, понятно","originalFile":"clear-understood.epub","originalSha256":"c28cdf73e2e6207c7999fc5ec50a51499e09f0d1675a26f71afeea8ef65f4760","textSha256":"58ab3fc1e6591120c4ae9fc3c2b4725f0e92516dad38e5d50598fafb045cc693","format":"epub","units":33},
+    {"id":"social-media","title":"Большая книга о соцсетях для предпринимателей, экспертов и блогеров","originalFile":"social-media.epub","originalSha256":"019759f7b6224372e076cdb017948d4bde9d76c627133247acb48a2f427e4790","textSha256":"920ada10a006e31edf3241b71d8f0cbcd271ef63796d51960b2c8de34b927993","format":"epub","units":31},
+    {"id":"game-as-business","title":"Игра как бизнес: от мечты до релиза","originalFile":"game-as-business.pdf","originalSha256":"4b178889d41f94d2d182ab0229e6e50315ee25fa13bc32f5a17be1eee10c5694","textSha256":"38f9dbc0b16f27956acbf4221c74252d728a84860e4b8ae5df5021da4e4d1e9c","format":"pdf","units":339},
+    {"id":"project-resolution","title":"Повышение разрешения проекта","originalFile":"project_resolution_guide.md","originalSha256":"c94d8bad530e62f5b6f31826c05b4c660813968fbcf62d41cd43b10902b04973","textSha256":"6965910bdb0277e3faefe574149906e04d2d20893c2a93a89df9e590fd13e3c5","format":"markdown"}
+  ]
+}

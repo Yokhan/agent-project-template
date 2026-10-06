@@ -18,9 +18,9 @@ Every task gets a risk level BEFORE planning begins. Risk is independent of size
 | Planning depth | Brief (S-style) | Standard plan | Full plan + Plan B | Full plan + Plan B + pre-mortem |
 | Research depth | `get_context` brief | `get_context` normal | `get_context` full | full + security scan |
 | Brainstorm | Skip | Optional (M+ recommended) | Recommended | Mandatory* |
-| Verification gates | Gate 0 (lint) | Gate 1-2 | All 4 gates | All 4 + external reviewer |
-| Review intensity | Approve fast | Standard review | Deep review (Opus) | Deep review + user approval |
-| Approval required | No | No | User approval of plan | User approval of plan AND diff |
+| Verification evidence | Narrow relevant check | Affected behavior and consumers | Behavior, integration, edge cases and independent review | HIGH evidence + security/data/rollback checks and qualified reviewer |
+| Review intensity | Proportionate local review | Standard review | Deep independent review | Deep review plus applicable approval gate |
+| Approval required | Material scope changes only | Material scope changes only | Missing material decision or authority | Irreversible/external action or missing material authority |
 | Test requirements | Existing pass | Unit tests | Unit + integration + edge cases | Unit + integration + regression + security |
 
 *Exception: security patches skip brainstorm — fix the vulnerability first, explore alternatives after.
@@ -53,7 +53,7 @@ During implementation, escalate risk if you discover:
 - External service dependency not documented in PROJECT_SPEC.md
 - Any security-adjacent logic encountered unexpectedly
 
-When escalating: update risk level in tasks/current.md, apply new ceremony level immediately.
+When escalating: update risk and evidence requirements in the orchestrator-owned task artifact. An AgentOS graph remains externally owned; do not create a competing tasks/current.md plan. Increase checks and stop only for a material missing decision or authority.
 
 ## Integration Points
 

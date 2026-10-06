@@ -1,14 +1,18 @@
 ---
-description: "Review any plan, decision, or task against strategic thinking principles. Ensures agents optimize for user VICTORY, not narrow task completion. Detects tunnel vision, silo optimization, and symptom treatment."
+name: strategic-review
+description: "Review consequential plans, strategic decisions, roadmaps, or repeated system failures with relevant strategy frameworks. Ordinary scoped tasks do not need a strategic audit."
 ---
 # Strategic Review
 
 ## When to Use
-- Before starting any non-trivial task (>3 files, >1 hour estimated)
-- When multiple agents will work in parallel
-- When conditions change mid-task
-- When a plan feels wrong but you can't articulate why
-- When you've been stuck on the same problem for 3+ attempts
+- The user asks for strategic review, options, roadmap, or consequential planning.
+- A material decision spans product/system boundaries, has competing goals, or
+  has significant cost, safety, reversibility, or execution risk.
+- Evidence shows a plan's assumptions changed, repeated repair is not working,
+  or the proposed path may optimize a local result at the system's expense.
+
+File count, elapsed-time estimate, or parallel agents alone do not require this
+skill. For a routine implementation choice, use the relevant project workflow.
 
 ## The OODA Review Protocol
 
@@ -19,30 +23,46 @@ description: "Review any plan, decision, or task against strategic thinking prin
 - What does the user actually need (vs what they literally said)?
 
 ### Phase 2: Orient
-- **Commander's Intent**: What is the user's ultimate objective? Not the task — the PURPOSE.
-- **Product/Business Priority**: Which real product user, user experience outcome, and app-specific revenue, loyalty, retention, conversion, activation, or KPI does this improve?
-- **Center of Gravity**: What is the ONE thing that, if addressed, makes everything else easier?
+- **Commander's Intent**: What outcome is the user seeking, beyond the mechanical step?
+- **Product/Business Priority**: When relevant, which user experience or app-specific outcome/KPI does this improve or protect? If none applies, say so rather than invent one.
+- **Center of Gravity**: Is there a bottleneck that materially affects this decision?
 - **Bottleneck**: What is currently limiting throughput? (Theory of Constraints)
 - **Phase Detection**: Is this genesis (explore), improvement (optimize), stabilization (harden), or retirement (remove)?
-- **Landscape**: Who else is affected? What are the second-order effects?
+- **Landscape**: Which relevant owners/consumers are affected? What material second-order effects matter?
 
 ### Phase 3: Decide
 - **Highest Leverage**: Which intervention produces most result for least effort?
 - **Outcome Before Technical Neatness**: Is technical work directly unlocking, protecting, or measurably improving the user/business outcome?
 - **Reversibility**: Can this be undone? Prefer reversible actions.
 - **Positive-Sum**: Does this create value without destroying value elsewhere?
-- **Victory Conditions**: What does success look like? How will we measure it?
+- **Victory Conditions**: What evidence would establish success at the requested scope?
 - **Retreat Conditions**: At what point do we change approach?
 
 ### Phase 4: Act
-- Start small, validate fast (PDCA)
-- Flow over batch — deliver value continuously
-- Maintain shared context with other agents and user
-- Feed results back to Observe → new cycle
+- Choose the smallest useful reversible move when it fits the goal and risk.
+- Verify the claimed result with evidence appropriate to the decision.
+- Revisit the assessment when new evidence changes assumptions or constraints.
+
+The OODA questions are prompts, not a mandatory spoken checklist. Use only
+those that can change the decision or make its rationale/evidence clearer.
+
+## Evidence and pushback
+
+Challenge the proposed path when evidence indicates it would materially weaken
+the requested outcome, safety, privacy, quality, or an applicable business
+measure. Do not agree merely to be agreeable, but do not replace the user's
+accepted scope with an imagined larger goal. Distinguish observed facts,
+assumptions, and estimates; never invent a KPI, benchmark, source, or proof of
+success. Keep domain-specific acceptance standards in their owning guides.
+Preserve the production quality bar when the reviewed work targets production.
 
 ---
 
-## 30 Strategic Principles (from 15 world frameworks)
+## Strategic Principles (reference prompts)
+
+These principles are a menu for reasoning, not a set of required checks. Select
+only the ideas that fit the actual decision; do not narrate framework names or
+force analogies into routine work.
 
 ### Orientation & Awareness
 
@@ -118,9 +138,10 @@ description: "Review any plan, decision, or task against strategic thinking prin
 
 ---
 
-## Strategic Anti-Patterns Checklist
+## Strategic Anti-Patterns
 
-Before completing any significant task, verify NONE of these apply:
+For a strategic review, consider failure modes that are relevant to the case.
+Surface concrete risks rather than reciting a checklist:
 
 - [ ] **Tunnel Vision** — Am I completing the literal task while ignoring the obvious larger problem?
 - [ ] **Local Optimization** — Am I making one thing better while making the whole worse?
@@ -136,7 +157,9 @@ Before completing any significant task, verify NONE of these apply:
 
 ---
 
-## Goal Selection Quick Reference
+## Goal Selection Prompts
+
+Use relevant questions as needed; there is no required 10-step sequence:
 
 | Step | Question | Framework |
 |------|----------|-----------|

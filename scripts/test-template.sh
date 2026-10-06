@@ -143,7 +143,7 @@ const counts = new Map([
   ["Scripts", fs.readdirSync("scripts").filter((entry) => fs.statSync(`scripts/${entry}`).isFile()).length],
 ]);
 
-if (!readme.startsWith("# Agent Project Template v4")) {
+if (!readme.startsWith("# Agent Project Template v5")) {
   throw new Error("README title must use the current major version");
 }
 
@@ -195,7 +195,16 @@ if (!badgeMatch) {
   throw new Error("README template version badge not found");
 }
 
-const tag = `v${badgeMatch[1]}`;
+const snapshot = readme.match(/Release snapshot: `v([0-9]+\.[0-9]+\.[0-9]+)`/);
+if (!snapshot) throw new Error("README pinned consumption snapshot missing");
+const tag = `v${snapshot[1]}`;
+if (snapshot[1] !== badgeMatch[1]) {
+  if (!readme.includes(`Source candidate: **${badgeMatch[1]} — unreleased**`) ||
+      !readme.includes("do not consume a nonexistent candidate tag") ||
+      !fs.existsSync("docs/GPT6_MIGRATION_CANDIDATE.md")) {
+    throw new Error("Version differs from consumption snapshot without an explicit unreleased candidate boundary");
+  }
+}
 const required = [
   ["README latest release link", readme, "https://github.com/Yokhan/agent-project-template/releases/latest"],
   ["README release snapshot", readme, `Release snapshot: \`${tag}\``],
@@ -220,13 +229,18 @@ const required = [
   ["Release SOT bound apply", releases, "compares the whole plan digest"],
   ["Release SOT legacy fallback", releases, "target release checkout's script against the project"],
   ["Release SOT honest status", releases, "authoritative GitHub Release/workflow state"],
-  ["AGENTS hot update protocol", agents, "### Template Update Protocol"],
+  ["AGENTS hot update protocol", agents, "docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol"],
   ["CLAUDE hot update protocol", claude, "## Template Update Protocol"],
   ["Claude update command installed version", updateCommand, "Read the installed version from `.template-manifest.json`"],
   ["Claude update command same plan", updateCommand, "exact plan file accepted during preview"],
   ["Codex sync skill release SOT", syncSkill, "#canonical-agent-update-protocol"],
   ["Codex sync skill post-sync verification", syncSkill, "before claiming success"],
   ["SETUP_GUIDE project-owned CLAUDE", setupGuide, "Сохраняет как project-owned: `CLAUDE.md`"],
+  ["README exact checkout updater", readme, 'node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"'],
+  ["SETUP_GUIDE exact checkout updater", setupGuide, 'node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"'],
+  ["README external library", readme, "AGENT_WRITING_LIBRARY"],
+  ["SETUP_GUIDE external library", setupGuide, "AGENT_WRITING_LIBRARY"],
+  ["v5 migration guidance", read("docs/MIGRATION_V5.md"), "semantically merge the v5 active"],
 ];
 
 const missing = required.filter(([, text, expected]) => !text.includes(expected));
@@ -491,6 +505,7 @@ check "four-mode writing workflow skill" test -f .agents/skills/codex-writing-wo
 check "technical writing skill" test -f .agents/skills/codex-technical-writing/SKILL.md
 check "technical writing review skill" test -f .agents/skills/codex-technical-writing-review/SKILL.md
 check "writing intent classifier" node scripts/test-writing-intent.js
+check "shared writing library import/grounding/binding" node scripts/test-writing-library.js
 check "writing reference policy" node scripts/test-writing-references.js
 check "writing reference registry" node scripts/validate-writing-references.js
 check "core Codex design skill" test -f .agents/skills/codex-design-workflow/SKILL.md
@@ -505,6 +520,7 @@ check "test-codex-agent-policy" node scripts/test-codex-agent-policy.js
 check "test-progressive-plan" node scripts/test-progressive-plan.js
 check "test-change-strategy" node scripts/test-change-strategy.js
 check "test-subagent-trace" node scripts/test-subagent-trace.js
+check "live-subagent launcher offline regressions" bash scripts/test-codex-subagents-live-launcher.sh
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
 check "test-design-policy" node scripts/test-design-policy.js
@@ -550,7 +566,7 @@ check "_reference/agent-sot/top-works.md" test -f _reference/agent-sot/top-works
 check "local ai-agent spec original" test -f _reference/agent-sot/originals/ai-agent-spec-v3-final.md
 check "Agent SOT has >=20 top works" bash -c '[ $(grep -c "^## TW-" _reference/agent-sot/top-works.md) -ge 20 ]'
 check "AGENTS links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' AGENTS.md"
-check "AGENTS names canonical template source without downstream self-ownership" bash -c "grep -q 'canonical .*agent-project-template.*source repository' AGENTS.md && ! grep -q 'Template releases belong to this repository' AGENTS.md"
+check "AGENTS names canonical template source without downstream self-ownership" bash -c "grep -q 'agent-project-template.*canonical template source' AGENTS.md && ! grep -q 'Template releases belong to this repository' AGENTS.md"
 check "CLAUDE links Agent SOT" bash -c "grep -q 'docs/AGENT_CONTEXT_SOT.md' CLAUDE.md"
 check "ownership SOT distinguishes new and declared project AGENTS" bash -c "grep -q 'Newly bootstrapped .*AGENTS.md.*template-owned' docs/PRODUCT_BOUNDARY.md && grep -q 'that declared' docs/PRODUCT_BOUNDARY.md && grep -q 'ownership is authoritative' docs/PRODUCT_BOUNDARY.md && grep -q 'explicitly marks .*AGENTS.md.*project' README.md && grep -q 'project-owned' scripts/lib/sync-template-core.js"
 
@@ -637,6 +653,8 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-library-catalog.json .claude/library/technical/writing-source-grounding.md scripts/writing-library.js scripts/test-writing-library.js scripts/lib/writing-library-store.js scripts/lib/writing-library-policy.js scripts/lib/writing-library-retrieve.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A docs/MIGRATION_V5.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/lib/sync-manifest-reconcile.js scripts/lib/sync-safe-copy.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy tasks/change-strategy.json
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/sync-template.js scripts/sync-template.cmd scripts/sync-all.js scripts/lib/sync-template-core.js scripts/lib/sync-template-apply.js scripts/lib/template-payload-policy.js scripts/lib/safe-config-write.js scripts/test-sync-template.js scripts/test-safe-config-write.js
     if ! GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh --orchestrator "$project" >"$project.setup.log" 2>&1; then
@@ -722,12 +740,14 @@ if is_template_source_repo; then
       [ -f "$project/_reference/spec-kit/manifest.json" ] &&
       [ -f "$project/integrations/spec-kit/README.md" ] &&
       [ -f "$project/docs/TEMPLATE_RELEASES.md" ] &&
+      [ -f "$project/docs/MIGRATION_V5.md" ] &&
       [ -f "$project/scripts/lib/codex-route-intents.js" ] &&
       [ -f "$project/scripts/lib/writing-intent.js" ] &&
       [ -f "$project/scripts/lib/writing-route-policy.js" ] &&
       [ -f "$project/scripts/lib/writing-reference-policy.js" ] &&
       [ -f "$project/scripts/lib/writing-external-tool-policy.js" ] &&
       (cd "$project" && node scripts/test-writing-intent.js >/dev/null) &&
+      (cd "$project" && node scripts/test-writing-library.js >/dev/null) &&
       (cd "$project" && node scripts/test-writing-references.js >/dev/null) &&
       (cd "$project" && node scripts/validate-writing-references.js >/dev/null) &&
       node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1]+'/.template-manifest.json','utf8')); const paths=['.claude/library/technical/writing-reference-registry.json','docs/WRITING_WORKFLOW.md','docs/WRITING_REFERENCE_PROVENANCE.md','tests/fixtures/writing-tools/external-tool-adapter.fixture.js','scripts/lib/writing-external-tool-policy.js']; if(paths.some((p)=>m.files?.[p]?.category!=='template')) process.exit(1)" "$project" &&
@@ -870,6 +890,9 @@ if false; then
     cp scripts/lib/codex-discovery-reroute.js "$template/scripts/lib/codex-discovery-reroute.js"
     cp scripts/lib/writing-intent.js "$template/scripts/lib/writing-intent.js"
     cp scripts/lib/writing-route-policy.js "$template/scripts/lib/writing-route-policy.js"
+    cp scripts/lib/writing-library-store.js "$template/scripts/lib/writing-library-store.js"
+    cp scripts/lib/writing-library-policy.js "$template/scripts/lib/writing-library-policy.js"
+    cp scripts/lib/writing-library-retrieve.js "$template/scripts/lib/writing-library-retrieve.js"
     cp scripts/lib/writing-reference-policy.js "$template/scripts/lib/writing-reference-policy.js"
     cp scripts/lib/writing-external-tool-policy.js "$template/scripts/lib/writing-external-tool-policy.js"
     cp scripts/lib/writing-path-policy.js "$template/scripts/lib/writing-path-policy.js"
@@ -882,6 +905,7 @@ if false; then
     cp scripts/lib/codex-route-intents.js "$template/scripts/lib/codex-route-intents.js"
     cp .claude/library/process/change-strategy-gate.md "$template/.claude/library/process/change-strategy-gate.md"
     cp .claude/library/technical/writing-reference-registry.json "$template/.claude/library/technical/writing-reference-registry.json"
+    cp .claude/library/technical/writing-library-catalog.json "$template/.claude/library/technical/writing-library-catalog.json"
     cp docs/WRITING_REFERENCE_PROVENANCE.md "$template/docs/WRITING_REFERENCE_PROVENANCE.md"
     cp brain/03-knowledge/communication/ilyakhov-planning-principles.md "$template/brain/03-knowledge/communication/ilyakhov-planning-principles.md"
     cp .agents/skills/codex-change-strategy/SKILL.md "$template/.agents/skills/codex-change-strategy/SKILL.md"

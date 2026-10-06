@@ -148,11 +148,80 @@ function withTempProject(setup, callback) {
 }
 
 function main() {
+  const direct = getRoute("Fix typo in README");
+  assert.strictEqual(direct.workflowDepth, "direct");
+  assert.deepStrictEqual(direct.skills, []);
+  assert.deepStrictEqual(direct.sharedRules, []);
+  assert.strictEqual(direct.fanout.status, "skip");
+  assert.strictEqual(direct.resourceDecision.recommendedModel, "gpt-6.1-sol");
+  const readyWorker = { role: "implementer", scope: ["src/a.js"], acceptance: ["tests pass"],
+    hostDispatchCapabilities: ["explicit-model-contract"] };
+  for (const [task, options, reason] of [
+    ["Implement approved isolated module without subagents", { availableSlots: 0 }, "explicit-user-opt-out"],
+    ["Implement approved isolated module", { availableSlots: 0 }, "host-has-no-child-slots"],
+    ["Fix typo in README", {}, "xs-direct-task"],
+    ["Review security and tests across modules without swarm", {}, "explicit-user-opt-out"],
+    ["Проверь несколько модулей без swarm", {}, "explicit-user-opt-out"],
+    ["Review security and tests across modules. Do not spawn child agents", {}, "explicit-user-opt-out"],
+    ["Review security and tests across modules", { availableSlots: "0" }, "invalid-host-child-slots"],
+  ]) {
+    const blocked = getRoute(task, { ...options, workerContract: readyWorker });
+    assert.strictEqual(blocked.fanout.status, "skip", task);
+    assert.strictEqual(blocked.fanout.reason, reason, task);
+    assert.strictEqual(blocked.resourceDecision.dispatch.ready, false, task);
+    assert.strictEqual(blocked.resourceDecision.dispatch.callContract, null, task);
+    assert(blocked.workerContracts.every((worker) => !worker.dispatch.ready));
+  }
+  for (const task of ["Проведи независимый аудит безопасности и тестов в нескольких модулях",
+    "Проверь несколько модулей через swarm", "Review security and tests across modules",
+    "Review correctness in subagent trace child identity completion isolation and task router opt-out slot XS dispatch gates. Two independent bounded read-only review lanes."]) {
+    const parallel = getRoute(task);
+    assert.strictEqual(parallel.fanout.status, "recommended", task);
+    assert(parallel.skills.includes("codex-subagent-orchestration"), task);
+    assert(parallel.subagents.length <= 3);
+  }
+  const sensitive = getRoute("Fix typo in auth permissions");
+  assert.strictEqual(sensitive.workflowDepth, "routed");
+  assert.strictEqual(sensitive.risk, "HIGH");
+  for (const task of ["What is this error and fix it", "Why is the app crashing for all users?", "Fix typo and rebuild the entire app", "Fix typo in commit hook"]) {
+    const routed = getRoute(task);
+    assert.strictEqual(routed.workflowDepth, "routed", task);
+    assert(routed.sharedRules.length > 0, task);
+  }
+  for (const task of ["Разреши неоднозначную архитектуру", "Разбери конфликтующие требования", "Разбери системный тупик"]) {
+    assert.strictEqual(getRoute(task).resourceDecision.recommendedModel, "gpt-6-astra", task);
+  }
+  const assigned = getRoute("Comprehensive template audit across modules", {
+    workerContract: { evidenceRefs: ["parent-report"], assignments: {
+      scout: { scope: ["src/module.js"], acceptance: ["report findings"], evidenceRefs: ["ADR42"] },
+    } },
+  });
+  assert.deepStrictEqual(assigned.workerContracts.find((worker) => worker.role === "scout").evidenceRefs, ["parent-report", "ADR42"]);
+  const bounded = getRoute("Implement isolated module according to approved contract", {
+    workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit contract passes"] },
+  });
+  assert.strictEqual(bounded.resourceDecision.recommendedModel, "gpt-6-luna");
+  assert.strictEqual(bounded.resourceDecision.dispatch.customRole, null);
+  assert.strictEqual(bounded.resourceDecision.dispatch.strategy, "explicit-model-contract");
+  assert.strictEqual(bounded.resourceDecision.dispatch.ready, false);
+  assert.strictEqual(bounded.resourceDecision.runtimeStatus, "recommendation-only");
+  const maxContract = getRoute("Implement the approved isolated module", {
+    workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit tests"],
+      requestedEffort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 },
+      hostCapabilities: { "gpt-6-luna": ["high", "max"] }, hostDispatchCapabilities: ["explicit-model-contract"] },
+  });
+  assert.strictEqual(maxContract.resourceDecision.recommendedEffort, "max");
+  assert.strictEqual(maxContract.resourceDecision.dispatch.customRole, null);
+  assert.strictEqual(maxContract.resourceDecision.dispatch.ready, true);
+  const ambiguous = getRoute("Resolve ambiguous architecture with conflicting requirements");
+  assert.strictEqual(ambiguous.resourceDecision.recommendedModel, "gpt-6-astra");
+  assert.strictEqual(ambiguous.resourceDecision.recommendedEffort, "medium");
+  assert(ambiguous.subagents.includes("architecture_consultant"));
   assert.strictEqual(AGENT_POLICY.parent.modelSource, "user-or-ide");
-  assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "xhigh");
+  assert.strictEqual(AGENT_POLICY.parent.baselineEffort, "high");
   assert.deepStrictEqual(
     new Set(getAgentProfiles().map(({ model }) => model)),
-    new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]),
+    new Set(["gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"]),
   );
   const symbolRoute = getRoute("rename the authentication symbol");
   assert.deepStrictEqual(symbolRoute.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);
@@ -391,6 +460,9 @@ function main() {
         orchestrator: "agentos",
         options: { cwd: root },
       });
+      const assigned = getRoute("implement feature from AgentOS plan", { cwd: root });
+      assert.strictEqual(assigned.planContract.writeTo, null);
+      assert.strictEqual(assigned.planContract.owner, "agentos");
     },
   );
 

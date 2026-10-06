@@ -3,7 +3,7 @@
 > These conventions apply to ALL agents (Claude Code, Codex, future agents).
 > Referenced by both `CLAUDE.md` and `AGENTS.md`.
 
-Last reviewed: 2026-07-20 for template `4.9.6`; product/business outcome priority, client/executor accountability, truthful progressive JPEG planning and replacement, evidence-bound change strategy, `PROGRESSIVE_STATUS` project-slice reporting, semantic intent routing, one-wave GPT-5.6 fan-out with genuine child evidence, digest-bound pinned-tag updates, writing-mode and external-tool truth contracts, project-root MCP boundaries, text/platform policy, CI hygiene, production design QA, register-aware design checks, screen anatomy, transactional sync, and agent-safe GitHub release entrypoints are enforced by validators.
+Last reviewed: 2026-10-06 for the GPT-6 migration candidate. Preserve product outcomes, client/executor accountability, truthful end-to-end slices, change strategy, project-slice reporting, semantic intent routing, bounded role-aware fan-out with effective child evidence, digest-bound pinned-tag updates, writing truth contracts, project-root MCP boundaries, text/platform policy, production design QA, transactional sync, and safe release entrypoints. Model-quality and cost improvements require separate measured evals.
 
 ## Product And Business Outcome Priority
 
@@ -42,7 +42,7 @@ All business logic lives in importable modules. Entry points only import and cal
    - Side effects isolated at module boundaries
    - Each module is independently testable via import
 
-3. **Threshold**: If an entry point exceeds **30 lines** of non-import code → extract logic to a module.
+3. **Threshold**: Extract entry-point logic when it has a separately testable responsibility, not just because it crosses a line count. Project linters may enforce explicit local limits.
 
 ### Why
 

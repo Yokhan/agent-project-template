@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 4.9.6 | 2026-07-20
+> Версия: 5.0.0 | 2026-10-06
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -12,18 +12,37 @@
 - **Codex Desktop или Codex CLI** — установлен и авторизован
 - **Git** — установлен
 - **Node.js 20+** — для metadata/MCP/helper-скриптов
-- **Bash** — только для Linux/macOS и Unix release/maintenance окружения
+- **Bash** — для полного bootstrap и проверок; на Windows — Git Bash
 
 ---
 
-## Быстрый старт (5 минут)
+## Сначала поручите развёртывание агенту
 
-Целевой release snapshot: `v4.9.6`. Сам файл в source checkout не доказывает,
+Дайте Codex ссылку на репозиторий, путь проекта и задачу:
+
+> Разверни или обнови этот проект из https://github.com/Yokhan/agent-project-template
+> до v5.0.0. Проверь exact release, сохрани проектные изменения и мои настройки.
+> Сам создай недостающую инфраструктуру в рамках проекта, проверь MCP и обнаружь
+> внешнюю общую библиотеку. Отдельно сообщи, готов ли проект и доступны ли первоисточники.
+
+Агент определяет, нужен ли новый проект или обновление существующего, проверяет
+точный опубликованный tag и использует его checkout. Уже проверенный canonical
+checkout можно переиспользовать: новый clone для каждой задачи не нужен. При
+неясном владении, конфликтующем remote или major upgrade без разрешения агент
+останавливается для решения пользователя. Пользовательские model/effort defaults
+и настройки вне проекта не заменяются.
+
+Ниже — команды для исполнения агентом и ручного восстановления, а не требование
+к пользователю самостоятельно пройти каждый шаг.
+
+## Развёртывание нового проекта
+
+Целевой release snapshot: `v5.0.0`. Сам файл в source checkout не доказывает,
 что релиз опубликован: перед rollout проверьте exact tag в GitHub Releases и
 убедитесь, что он не draft и не prerelease.
 
 ```bash
-git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v5.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -31,25 +50,79 @@ bash scripts/bootstrap-mcp.sh --install --tool-profile=full
 codex
 ```
 
+По умолчанию используется `full`: весь pinned ten-tool profile. `core` или
+`auto` — явные opt-in варианты, а не молчаливое сокращение default deployment.
+
 Windows:
 ```powershell
-git clone --branch v4.9.6 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v5.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
-setup.bat
+.\setup.bat
 cd <generated-project>
 codex
 ```
 
+Полный MCP bootstrap на Windows выполняется из Git Bash в созданном проекте.
 Откройте проект в Codex и подтвердите доверие к проекту. После bootstrap
 перезапустите Codex и выполните `codex mcp list`. Должны быть видны
 `context-router`, `engram` и `codebase-memory-mcp`.
+
+Наличие записей в конфигурации не доказывает запуск серверов: агент проверяет
+`codex mcp list` и результат `bootstrap-mcp.sh --check`, затем описывает ограничения.
+Проектный config загружается только для trusted project; см.
+[официальную документацию Codex](https://learn.chatgpt.com/docs/config-file/config-basic).
+
+## Общая библиотека источников
+
+Шесть первоисточников и их pinned text cache **не входят в релиз**. На новой
+машине их наличие не обещается. Setup и sync только обнаруживают store; они не
+скачивают книги и не создают их копии, symlink или hardlink внутри проекта.
+
+По умолчанию все проекты используют один каталог:
+`<home>/.local/share/agent-project-template/writing-library`. Для другого внешнего
+каталога задайте абсолютный `AGENT_WRITING_LIBRARY` или явный `--root`.
+
+```bash
+node scripts/writing-library.js discover
+node scripts/writing-library.js status
+```
+
+Если библиотека отсутствует, агент просит предоставленные пользователем originals
+и соответствующий extracted-text cache с import manifest. Этот manifest содержит
+пути к локальным файлам и provenance; SHA-256 и edition должны совпадать с
+`.claude/library/technical/writing-library-catalog.json`. Импорт выполняется один
+раз на машину, из canonical checkout или любого проекта с актуальным CLI:
+
+```bash
+node scripts/writing-library.js import --manifest /absolute/path/to/manifest.json
+node scripts/writing-library.js status
+```
+
+Повторный валидный импорт ничего не перезаписывает. Оригиналы пользователя и
+прошлые копии остаются нетронутыми. При восстановлении сначала проверьте backup
+store; повреждённый store не заменяйте молча. При необходимости импортируйте в
+новый внешний каталог и явно выберите его. Если точного cache нет, сообщите о
+блокировке и согласуйте отдельное извлечение; нельзя подменить edition или
+автоматически устанавливать тяжёлые зависимости.
+
+Для каждого содержательного информационного, делового, технического или
+продающего текста агент проверяет применимость всех шести источников и читает
+свежие релевантные первичные фрагменты, а не все книги целиком. Packet связан с
+текущей задачей, request ID и draft. Конспект, cache поиска и память модели не
+заменяют чтение. При missing/stale store source-grounding блокируется явно;
+готовность к code-only работе от этого не исчезает. Художественный текст и lore
+исключены из редакторского nonfiction workflow, но не деловые документы игры
+или планы производства. Подробности и формат import manifest:
+`.claude/library/technical/writing-source-grounding.md`.
 
 ---
 
 ## Optional: Spec Kit
 
-The template ships a managed GitHub Spec Kit snapshot under `_reference/spec-kit/`.
+The template ships a managed GitHub Spec Kit snapshot `v0.8.13` under `_reference/spec-kit/`.
 It is not applied automatically during setup.
+The 2026-10-06 freshness check found upstream `v1.1.1`: the check is stale,
+not passed. Updating that optional snapshot is separate from the v5 release.
 
 Validate the local snapshot:
 
@@ -106,7 +179,7 @@ helpers.
 
 ### 3. /setup-project
 
-11 фаз автоматической настройки:
+Основные действия настройки:
 1. Спрашивает стек, название, тип проекта
 2. Создаёт структуру папок
 3. Настраивает линтер, форматтер, тесты
@@ -177,10 +250,9 @@ bash scripts/bootstrap-mcp.sh --install --tool-profile=full --zed
 bash scripts/bootstrap-mcp.sh --check
 ```
 
-Проверяет:
-- Engram установлен и отвечает
-- `.mcp.json` валидный
-- Zed настроен (если в Zed)
+Агент сверяет результат проверки выбранного tool profile, управляемую MCP
+конфигурацию и фактическую доступность клиентов/серверов. Проверка конфигурации
+сама по себе не является runtime-доказательством.
 
 Расширенная проверка шаблона:
 ```bash
@@ -235,18 +307,26 @@ bash scripts/check-drift.sh
 7. До отчёта об успехе проверьте версию manifest, diff, сохранность `project-*`, все конфликты из plan и downstream-тесты.
 
 ### Один проект
+Основной путь: агент использует checkout проверенного exact tag вне проекта,
+а не предполагает, что старый локальный updater уже умеет новый контракт.
+
 ```bash
-node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json
-node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-project-template . --plan-file ../template-sync.plan.json --apply
+RELEASE_CHECKOUT=/absolute/verified-v5.0.0-checkout
+PROJECT=/absolute/project
+PLAN=/absolute/outside-project/agent-template-v5.0.0.plan.json
+node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
+node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
 
 ### Из git-релиза шаблона
+Следующий сокращённый путь разрешён только когда локальный updater уже проверен
+как updater целевого релиза; иначе используйте внешний checkout выше.
 ```bash
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json
-node scripts/sync-template.js --from-git --ref v4.9.6 --plan-file ../agent-template-v4.9.6.plan.json --apply
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json --apply
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.
@@ -303,6 +383,6 @@ my-project/
 | Хуки не работают | `bash scripts/test-hooks.sh` |
 | Форматирование не работает | Установите: `npm i -g prettier` / `pip install black` |
 | «Template outdated» | `/update-template` |
-| Файл > 375 строк | Разбейте. 375 — лимит рабочей памяти Claude |
+| Файл трудно читать или сопровождать | Разделите по ответственности; размер файла — эвристика, не универсальный лимит памяти модели |
 | lessons.md > 50 записей | `/retrospective` — правила промоутятся |
 | Codex MCP-блок устарел | `node scripts/configure-codex-mcp.js --check`, затем `bash scripts/bootstrap-mcp.sh` |

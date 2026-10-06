@@ -1,3 +1,14 @@
+export interface WritingSourceGrounding {
+  state: "not-required" | "primary-passages-required" | "blocked";
+  required: boolean;
+  kind: string;
+  sourceIds: string[];
+  applicability: Array<{ id: string; relevant: boolean; reason: string }>;
+  command: string | null;
+  evidence: string;
+  library: { state: string; root?: string; issues?: string[] };
+}
+
 export interface Route {
   keywords: RegExp;
   files: string[];
@@ -10,6 +21,30 @@ export interface Route {
 }
 
 export interface RouteResult {
+  workflowDepth: "direct" | "routed";
+  resourceDecision: {
+    role: string;
+    recommendedModel: string;
+    recommendedEffort: string;
+    reason: string;
+    scope: string[];
+    acceptance: string[];
+    evidenceRefs: string[];
+    escalationCondition: string;
+    orchestrator: string;
+    runtimeStatus: "recommendation-only";
+    effectiveModel: null;
+    effectiveEffort: null;
+    childThreadId: null;
+    completionEvidence: string[];
+    resourceRequest: { isValid: boolean; reason: string; hostStatus?: string; budgetEnforcement?: string };
+    dispatch: {
+      owner: string; customRole: string | null; strategy: string; ready: boolean;
+      capabilityStatus: string; instructionsSource: string | null;
+      requestedSandbox: string | null; sandboxStatus: string;
+      callContract: null | { tool: string; model: string; reasoning_effort: string; fork_turns: string; task_name: string; message: string };
+    };
+  };
   modes: string[];
   agent: string;
   files: string[];
@@ -33,6 +68,7 @@ export interface RouteResult {
   writingTechnicalProfiles: string[];
   writingEditors: string[];
   writingGates: string[];
+  writingSourceGrounding: WritingSourceGrounding | null;
   writingExternalTools: Array<{
     id: string;
     access: string;

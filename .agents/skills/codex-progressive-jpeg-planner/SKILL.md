@@ -1,87 +1,75 @@
 ---
 name: codex-progressive-jpeg-planner
-description: "Plan progressive JPEG iterations for software, games, sites, books, internal tools, modules, and other products so every implementation slice fulfills the product purpose end to end at its declared detail level. Use for iteration plans, readiness layers, whole-product slices, or anti-falsification review."
+description: "Plan evidence-led progressive iterations when a user asks for a roadmap, staged delivery, readiness review, or product-slice design. Keep production quality and anti-falsification boundaries without forcing speculative future scaffolding into every step."
 ---
 
 # Codex Progressive JPEG Planner
 
-This skill owns the progressive iteration-planning workflow. Shared product
-rules remain the policy SOT; this skill turns them into a plan.
+Use this skill when staged delivery or a progressive plan is relevant to the
+user's task. Keep the final production purpose and quality bar visible, but
+scale planning and artifacts to the task. Do not turn ordinary bounded work
+into a roadmap exercise.
 
-Read:
+Read the project goal/current handoff and the relevant product rules when they
+exist. Read `references/domain-examples.md` only for a matching product type.
 
-- `tasks/goal.md` and `tasks/current.md`
-- `.claude/library/product/production-product-standard.md`
-- `.claude/library/process/product-goal-loop.md`
-- `references/domain-examples.md` for the relevant product type
+## Plan the useful increment
 
-## Hard Rule
+1. For substantial staged work, agree with the user on the end result
+   (audience, capability, acceptance, constraints) and approximate implementation
+   waves (useful outcome and rationale, with a count that may change). Derive
+   and record the detailed nearest-wave plan within that accepted scope;
+   routine implementation detail does not need separate user approval.
+   Preserve an existing approved plan or AgentOS/project-owned graph. For a
+   small fix, skip this planning structure and work directly.
+2. For the nearest wave, identify the intended user, product purpose, accepted
+   scope, final path when known, quality guardrails, dependencies, ownership,
+   acceptance evidence, and bounded responsibilities/instructions for any
+   subagents. Keep later waves approximate until evidence sharpens them.
+3. Separate a user-valuable wave result from enabling work such as
+   research, architecture, migration, scaffolding, tests, and instrumentation.
+   Enabling work is legitimate when it resolves a real dependency or risk; label
+   it honestly and state the decision or next useful result.
+4. An agreed wave must deliver a whole useful result at its declared scope, or
+   be an explicitly bounded uncertainty experiment with a limit and an
+   inspectable decision as its output. Smaller internal tasks may enable the
+   wave but are not a substitute for its acceptance result. A wave need not
+   demonstrate the whole eventual product journey.
+5. For a product result, specify its user-visible outcome, path through the
+   relevant behavior, acceptance evidence, known rough edges, and what would
+   falsify the claim. Match scope to the accepted wave and constraints.
+6. Include future contracts, handlers, routes, states, stubs, or callable seams
+   only when they are already accepted architecture and matter to the current
+   change. Do not invent a full end-state inventory or prebuild hypothetical
+   capabilities merely to appear ready. If final architecture is materially
+   unresolved, keep the current work enabling until that decision is made.
+7. Proceed autonomously on routine choices inside the accepted wave. Ask the
+   product owner before a material change to the promised result, constraints,
+   or meaning/order of waves; explain the proposed delta. Do not ask approval
+   for minor implementation choices already within scope.
+8. Remove or migrate superseded implementation when the current task replaces
+   it and the affected ownership/compatibility contracts permit it. Temporary
+   migration scaffolding needs a concrete purpose and removal condition.
+9. Use `tasks/progressive-plan.json` and its validator when the project workflow
+   or task actually calls for that machine-readable plan; it is not a universal
+   prerequisite for all implementation.
 
-Every implementation slice must let the real product user achieve the purpose
-for which the product exists through an honest end-to-end path at the slice's
-declared detail level.
+## Anti-falsification
 
-Architecture, classes, contracts, stubs, debug output, mocks, tests, status
-headers, screenshots, HTTP 200, and readiness percentages are enablers or
-evidence. None of them is the product outcome by itself. Never relabel an
-enabling checkpoint as a product slice.
-
-## Workflow
-
-1. Define product purpose, target user, actual context, current alternative,
-   accepted final path, app-specific KPI, and safety/quality guardrails.
-2. Inventory the final production object and its accepted contracts. If this is
-   unknown, create an `enabling checkpoint`; do not claim a product slice yet.
-3. Plan the first whole-product path at low detail. Narrow or use manual
-   fulfillment when honest, but preserve entry -> action -> feedback -> useful
-   outcome -> return and do not route through a disposable demo.
-4. Plan later slices as sharpening passes over the same product path. Each pass
-   must add user-visible capability, depth, reliability, trust, reach, or KPI
-   performance while still fulfilling the purpose.
-5. For every slice specify user victory, journey, purpose mechanism, positioning,
-   KPI signal/guardrail, final path, acceptance evidence, strongest falsifier,
-   truth boundary, replacement work, rough edges, and next sharpening.
-6. Put planning/research/migration/instrumentation work in
-   `enabling_checkpoints`; it may protect the outcome but does not count toward
-   product-slice delivery.
-7. Write the machine-readable contract to `tasks/progressive-plan.json` and run:
-
-```bash
-node scripts/validate-progressive-plan.js tasks/progressive-plan.json
-```
-
-8. Before accepting a completed slice, inspect real evidence. Expected evidence
-   in the plan is not proof that it occurred. Update `PROGRESSIVE_STATUS`, run
-   `node scripts/progressive-status.js --check`, and retire superseded paths.
-9. When an earlier layer may represent the wrong architecture rather than low
-   detail, use `$codex-change-strategy`. Progressive JPEG sharpens the selected
-   final path; it does not justify retaining a failed implementation.
-
-## Anti-Falsification Gate
-
-Reject or reclassify the slice when any condition holds:
-
-- The named user cannot complete a meaningful job after the slice.
-- The path ends at a stub, debug marker, mock, manual assertion, or dead end.
-- Evidence proves only artifact existence, compilation, a test double, HTTP
-  success, status text, or self-reported readiness.
-- The KPI relationship is decorative rather than behavior -> signal -> outcome.
-- The strongest realistic falsifier is omitted or evaded.
-- User-visible unavailable behavior is presented as complete.
-- A wrong prior layer survives without a migration owner and removal condition.
-- The agent would not choose this slice if the internal work had not already
-  been done.
-
-Do not fabricate a journey, KPI, evidence reference, user result, or readiness
-level to satisfy the schema. Structural validation is a guard, not proof.
+- Do not present internal activity, code existence, a stub, mock, test double,
+  screenshot, HTTP status, or readiness percentage as proof of a user outcome.
+- Do not claim completion beyond observed evidence. State the exact verified
+  part, remaining gaps, and next check.
+- Do not fabricate a user journey, KPI relationship, evidence reference, or
+  acceptance result. If the product path or KPI is unknown, say so rather than
+  filling the plan with guesses.
+- Preserve the production quality, safety, privacy, and reliability bar for the
+  requested scope. A bounded step is not permission to label unfinished
+  behavior as production-ready.
 
 ## Output
 
-Return:
-
-1. Product purpose and final-path contract.
-2. Enabling checkpoints, clearly excluded from product-slice progress.
-3. Ordered purpose-solving slices with readiness levels.
-4. Acceptance and falsification evidence for each slice.
-5. Replacement/cleanup work and replan triggers.
-6. The validator result and the remaining product-owner decisions.
+For a progressive plan, return the outcome and scope, ordered useful increments
+and any enabling checkpoints, acceptance/falsification evidence, real
+dependencies, rough edges, and replan triggers. Include the validator result
+only when that plan was required and the validator was run.

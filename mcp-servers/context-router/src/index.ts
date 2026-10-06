@@ -14,7 +14,7 @@ import { buildActiveRulesOutput } from "./active-rules.js";
 
 const server = new McpServer({
   name: "context-router",
-  version: "1.7.1",
+  version: "1.8.0",
 });
 
 const arePipelineMutationsEnabled = process.env.CONTEXT_ROUTER_ENABLE_PIPELINES === "true";
@@ -22,7 +22,7 @@ const arePipelineMutationsEnabled = process.env.CONTEXT_ROUTER_ENABLE_PIPELINES 
 // --- Tool: get_context ---
 server.tool(
   "get_context",
-  "Route task to relevant rules and return context. Call on EVERY new task. Default depth=brief (cheap). Use depth=full for L/XL tasks.",
+  "Route tasks when relevant project context or specialized rules can change the result. Default depth=brief. Use depth=full for broad or high-risk work.",
   {
     keywords: z
       .string()
@@ -52,6 +52,8 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    sections.push(`WORKFLOW_DEPTH: ${route.workflowDepth}`);
+    sections.push(`RESOURCE_DECISION: ${JSON.stringify(route.resourceDecision)}`);
     sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
@@ -164,6 +166,8 @@ server.tool(
     );
     sections.push(`PIPELINE: ${route.pipeline}`);
     sections.push(`RISK: ${route.risk}`);
+    sections.push(`WORKFLOW_DEPTH: ${route.workflowDepth}`);
+    sections.push(`RESOURCE_DECISION: ${JSON.stringify(route.resourceDecision)}`);
     sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");

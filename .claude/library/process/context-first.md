@@ -1,29 +1,31 @@
 # Context-First Protocol — Know Before You Act
 
 ## The Rule
-At session start and before any non-trivial task, the agent MUST understand the project it's working in.
-Blind action without context = wasted work + broken code.
+Understand enough project context to make the current decision safely. The
+scope of reading should track task impact; a focused change does not require a
+full-project refresh.
 
-## Session Start Scan (MANDATORY)
+## Session Start Scan
 
-On every session start, before doing ANY work:
+At session start, restore active task context when available. For work that
+depends on project structure or prior decisions, inspect the relevant sources:
 
-1. **Read PROJECT_SPEC.md** — what is this project, what stack, what it provides/depends on
-2. **Read tasks/current.md** — what was the last session doing, any handoff context
-3. **Read tasks/lessons.md** — avoid repeating past mistakes
-4. **Scan recent git log** — `git log --oneline -5` to see what changed recently
-5. **Check PROJECT_SPEC.md freshness** — if `last_scan` is older than 7 days, regenerate it
+1. `PROJECT_SPEC.md` — only if stack, dependencies, or structure affect the task.
+2. `tasks/current.md` — when active work or a handoff may overlap.
+3. Relevant entries in `tasks/lessons.md` and recent history — when they bear on
+   the affected path or a known failure.
+4. Current git status and affected files/consumers before editing.
 
-If PROJECT_SPEC.md does NOT exist → generate it immediately (see template in project root).
+Do not generate or refresh context documents just because they are absent or
+stale. Create/update them when the task needs the missing context or the user
+requested project setup/audit.
 
 ## PROJECT_SPEC.md Maintenance
 
 ### When to update:
-- At first session in a new project (auto-generate)
-- When stack or dependencies change significantly
-- When file structure changes (new modules, renamed dirs)
-- When project state changes (MVP → production, monolith → modular)
-- At minimum: every 7 days (session-start.sh warns if stale)
+- When stack/dependencies or structure change in a way that makes the document
+  inaccurate
+- When project setup, status, or audit explicitly calls for refresh
 
 ### What it contains:
 - What this project IS (1-2 sentences)
@@ -41,9 +43,11 @@ If PROJECT_SPEC.md does NOT exist → generate it immediately (see template in p
 4. Check git log for recent activity patterns
 5. Write PROJECT_SPEC.md with findings
 
-## Session End Handoff (MANDATORY)
+## Session End Handoff
 
-Before ending a session or when work is interrupted, update `tasks/current.md`:
+For interrupted, multi-step, or explicitly continued work, update
+`tasks/current.md` with the useful state and next step. Do not create a handoff
+for a completed one-step change unless the project workflow requires it:
 
 ```markdown
 ## Handoff — [DATE]
@@ -56,19 +60,15 @@ Before ending a session or when work is interrupted, update `tasks/current.md`:
 ### Key decisions: [anything the next session needs to know]
 ```
 
-This is not optional. Without handoff context, the next session (or a different agent) wastes time re-discovering what was already known.
+Keep the handoff factual and concise; include what is done, unverified, and
+owned next.
 
-## Documentation Freshness SLA
+## Documentation Freshness
 
-| Document | Max staleness | Check method |
-|----------|--------------|-------------|
-| PROJECT_SPEC.md | 7 days | session-start.sh warns |
-| docs/ARCHITECTURE.md | 30 days | check-drift.sh warns |
-| docs/API_CONTRACTS.md | On every API change | manual/PR review |
-| _reference/tool-registry.md | 14 days | audit-reuse.sh --quick |
-| ecosystem.md | 30 days | manual check |
-
-If a document exceeds its SLA → regenerate or update before proceeding with work that depends on it.
+Project-specific freshness rules may indicate when a source is due for review;
+staleness alone does not make an unrelated task responsible for refreshing it.
+Before relying on volatile documentation, check the canonical source or
+validate the relevant claim.
 
 ## Why This Matters
 

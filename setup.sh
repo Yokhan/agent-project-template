@@ -456,6 +456,8 @@ if [ -n "$TEMPLATE_REMOTE" ]; then
 
 echo ""
 echo "Project '$PROJECT_DIR' created successfully."
+echo "Shared writing library discovery (read-only; no books copied):"
+node scripts/writing-library.js discover || echo "Writing source grounding is blocked until the shared machine library is available."
 echo ""
 if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Next steps:"

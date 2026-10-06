@@ -63,6 +63,8 @@ commands plus its context-loading and common-error rules.
 | Required editorial lenses | `.claude/library/technical/writing-editorial-board.md` |
 | Writing intent classification | `scripts/lib/writing-intent.js` |
 | Cross-platform writing consequences | `scripts/lib/writing-route-policy.js` |
+| Exact six-source editions and text-cache hashes (metadata only) | `.claude/library/technical/writing-library-catalog.json` |
+| Shared machine-store import/discovery/retrieval/application contract | `.claude/library/technical/writing-source-grounding.md` and `scripts/writing-library.js` |
 | Codex procedure | `.agents/skills/codex-writing-workflow/SKILL.md` |
 | Claude procedure | `.claude/skills/writing-workflow/SKILL.md` |
 | Claude runtime model/tools | `.claude/agents/writer.md` |
@@ -97,3 +99,28 @@ merged: sources need language, usage class, and allowed effects; profiles need
 output languages, declared effects, and `propertiesByEffect`.
 External tool replacement uses `supersedes.toolIds` and a `project-configured`
 tool record with configuration evidence.
+
+## Shared Primary Sources
+
+The user supplied five books and a project-resolution guide. One external
+machine store preserves those exact originals plus the already extracted text;
+new projects discover it by home-relative default/environment override. No
+book, text cache or hardlinked source enters setup, sync or release payloads.
+The repository ships a metadata-only catalog, the standard-library Node CLI,
+and instructions that require current primary reading before substantive
+nonfiction drafting/review. Existing editorial profiles remain navigation and
+method aids, never substitutes for the primary passages.
+
+Import/reuse checks original and text hashes, exact editions and page/section
+locators. Retrieval produces a bounded request/task-bound packet with read
+receipts. Application records bind principles and observable effects to the
+current draft hash; verification rejects request/draft/source mismatch. This
+checks records and provenance, not semantic application or comprehension.
+Independent review remains necessary for those claims. Source fidelity from
+the supplied extraction is not independently re-extracted, and server-side
+prompt caching/token savings are not guaranteed.
+
+Actual narrative fiction/lore prose is exempt from informational book editing;
+commercial-game planning, technical/nonfiction books and project decisions are
+not. Mixed tasks resolve this boundary per artifact. Missing/stale sources
+are explicitly blocked rather than silently replaced by model memory.

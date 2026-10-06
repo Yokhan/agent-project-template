@@ -2,15 +2,22 @@
 
 const path = require("path");
 
-const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh"]);
+// Capabilities are not defaults or permission to spend an unbounded budget.
+const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh", "max"]);
+const MODEL_CAPABILITIES = Object.freeze({
+  "gpt-6.1-sol": Object.freeze({ efforts: EFFORT_LEVELS }),
+  "gpt-6-luna": Object.freeze({ efforts: Object.freeze(["none", ...EFFORT_LEVELS]) }),
+  "gpt-6-astra": Object.freeze({ efforts: EFFORT_LEVELS }),
+});
 
 const AGENT_POLICY = Object.freeze({
-  version: "4.9.6",
+  version: "5.0.0",
   parent: Object.freeze({
     modelSource: "user-or-ide",
-    recommendedModel: "gpt-5.6-sol",
-    baselineEffort: "medium",
-    effortCeiling: "xhigh",
+    recommendedModel: "gpt-6.1-sol",
+    baselineEffort: "high",
+    effortCeiling: "max",
+    recommendedEffortCeiling: "high",
   }),
   fanout: Object.freeze({
     maxChildren: 3,
@@ -24,93 +31,95 @@ const AGENT_POLICY = Object.freeze({
   profiles: Object.freeze({
     scout: Object.freeze({
       file: "scout.toml",
-      model: "gpt-5.6-luna",
-      effort: "low",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     log_analyst: Object.freeze({
       file: "log-analyst.toml",
-      model: "gpt-5.6-luna",
-      effort: "low",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     summarizer: Object.freeze({
       file: "summarizer.toml",
-      model: "gpt-5.6-luna",
-      effort: "low",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     pr_explorer: Object.freeze({
       file: "pr-explorer.toml",
-      model: "gpt-5.6-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     docs_researcher: Object.freeze({
       file: "docs-researcher.toml",
-      model: "gpt-5.6-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     tester: Object.freeze({
       file: "tester.toml",
-      model: "gpt-5.6-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     implementer: Object.freeze({
       file: "implementer.toml",
-      model: "gpt-5.6-terra",
+      model: "gpt-6-luna",
       effort: "high",
       sandboxMode: "workspace-write",
     }),
     reviewer: Object.freeze({
       file: "reviewer.toml",
-      model: "gpt-5.6-sol",
+      model: "gpt-6.1-sol",
       effort: "high",
       sandboxMode: "read-only",
     }),
     design_reviewer: Object.freeze({
       file: "design-reviewer.toml",
-      model: "gpt-5.6-sol",
+      model: "gpt-6.1-sol",
       effort: "high",
       sandboxMode: "read-only",
     }),
     product_reviewer: Object.freeze({
       file: "product-reviewer.toml",
-      model: "gpt-5.6-sol",
+      model: "gpt-6.1-sol",
       effort: "high",
       sandboxMode: "read-only",
     }),
     security_reviewer: Object.freeze({
       file: "security-reviewer.toml",
-      model: "gpt-5.6-sol",
-      effort: "xhigh",
+      model: "gpt-6.1-sol",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     systems_reviewer: Object.freeze({
       file: "systems-reviewer.toml",
-      model: "gpt-5.6-sol",
-      effort: "xhigh",
+      model: "gpt-6.1-sol",
+      effort: "high",
+      sandboxMode: "read-only",
+    }),
+    architecture_consultant: Object.freeze({
+      file: "architecture-consultant.toml",
+      model: "gpt-6-astra",
+      effort: "medium",
       sandboxMode: "read-only",
     }),
   }),
 });
 
 const OPT_OUT_PATTERN =
-  /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент|сабагент|делегац|фан-?аут)|не\s+делегируй)/iu;
+  /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент|сабагент|делегац|фан-?аут|swarm|ро[йяе]|рой)|не\s+делегируй)/iu;
 const MUTATION_PATTERN =
   /\b(?:build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши/iu;
 const READ_ONLY_PATTERN =
   /\b(?:read[ -]?only|inspect|review|audit|analy[sz]e|evaluate|explain|report|research|look up)\b|без\s+изменений|только\s+чтение|проверь|аудит|разбери|оцени|посмотри|изучи|объясни|отч[её]т/iu;
 const NEGATED_MUTATION_PATTERN =
   /\b(?:do not|don't|dont|never)\s+(?:edit|modify|change|patch|write)(?:\s+(?:files?|code))?\b|не\s+(?:редактир|изменя|патч|прав|трогай)|без\s+(?:правок|изменений)/iu;
-const XS_TASK_PATTERN =
-  /\b(?:fix|check|inspect|update|change|rename|format)\b.{0,24}\b(?:a\s+)?(?:typo|one\s+line|single\s+line|one\s+comment|single\s+comment|spelling|label)\b|(?:исправ|проверь|обнов|измени|переименуй|формат).{0,24}(?:опечат|одну\s+строк|один\s+коммент|подпис)/iu;
 const PARALLEL_VALUE_PATTERN =
-  /\b(?:parallel|independent lanes?|compare|cross-check|deep audit|comprehensive audit|across (?:modules|systems|sources|projects)|multiple (?:modules|sources|projects)|release announcement.{0,40}diagrams?)\b|параллел|независим\w*\s+(?:поток|провер)|сравни|глубок\w*\s+аудит|комплексн\w*\s+аудит|нескольк\w*\s+(?:модул|источник|проект)|сайт\w*\s+релиз.{0,40}диаграм/iu;
-const SIMPLE_QUESTION_PATTERN =
-  /^(?:what|when|where|who|why|how|is|are|can|does|do|что|когда|где|кто|почему|как|можно|есть|выпущен)(?:\s|$)/iu;
+  /\b(?:parallel|independent lanes?|compare|cross-check|deep audit|comprehensive audit|across (?:modules|systems|sources|projects)|multiple (?:modules|sources|projects)|swarm|release announcement.{0,40}diagrams?)\b|параллел|независим[\p{L}]*\s+(?:поток|провер|аудит)|сравни|глубок[\p{L}]*\s+аудит|комплексн[\p{L}]*\s+аудит|нескольк[\p{L}]*\s+(?:модул|источник|проект)|(?:через|используя)\s+рой|сайт[\p{L}]*\s+релиз.{0,40}диаграм/iu;
 
 function getAgentProfile(name) {
   return AGENT_POLICY.profiles[name] || null;
@@ -123,14 +132,141 @@ function getAgentProfiles() {
   }));
 }
 
+function validateResourceRequest({ model, effort, budget, reason, hostCapabilities } = {}) {
+  const capabilities = MODEL_CAPABILITIES[model];
+  if (!capabilities) return { isValid: false, reason: "unknown-model-capabilities" };
+  if (!capabilities.efforts.includes(effort)) {
+    return { isValid: false, reason: "unsupported-effort" };
+  }
+  if ((effort === "max" || effort === "xhigh") &&
+      (!reason || !budget || !Number.isFinite(budget.maxAttempts) || budget.maxAttempts < 1 ||
+       !Number.isFinite(budget.maxTokens) || budget.maxTokens < 1)) {
+    return { isValid: false, reason: "escalated-effort-requires-reason-and-bounded-budget" };
+  }
+  if (hostCapabilities && !hostCapabilities[model]?.includes(effort)) {
+    return { isValid: false, reason: "host-does-not-support-requested-profile" };
+  }
+  return { isValid: true, reason: "supported-within-budget",
+    hostStatus: hostCapabilities ? "verified" : "unverified",
+    budgetEnforcement: "caller-owned" };
+}
+
+function validateWorkerContract(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("worker contract must be an object");
+  }
+  for (const field of ["scope", "acceptance", "evidenceRefs"]) {
+    if (value[field] !== undefined && (!Array.isArray(value[field]) ||
+        value[field].some((item) => typeof item !== "string" || !item.trim()))) {
+      throw new Error(`worker contract ${field} must be an array of nonempty strings`);
+    }
+  }
+  for (const field of ["role", "requestedEffort", "reason", "orchestrator"]) {
+    if (value[field] !== undefined && typeof value[field] !== "string") {
+      throw new Error(`worker contract ${field} must be a string`);
+    }
+  }
+  for (const field of ["integration", "strategy", "deepRisk"]) {
+    if (value[field] !== undefined && typeof value[field] !== "boolean") {
+      throw new Error(`worker contract ${field} must be a boolean`);
+    }
+  }
+  if (value.assignments !== undefined) {
+    if (!value.assignments || typeof value.assignments !== "object" || Array.isArray(value.assignments)) {
+      throw new Error("worker contract assignments must be a role-to-contract object");
+    }
+    Object.values(value.assignments).forEach(validateWorkerContract);
+  }
+  if (value.hostCapabilities !== undefined) {
+    if (!value.hostCapabilities || typeof value.hostCapabilities !== "object" || Array.isArray(value.hostCapabilities) ||
+        Object.values(value.hostCapabilities).some((efforts) => !Array.isArray(efforts) || efforts.some((effort) => typeof effort !== "string"))) {
+      throw new Error("hostCapabilities must map model IDs to arrays of efforts");
+    }
+  }
+  if (value.budget !== undefined && (!value.budget || typeof value.budget !== "object" || Array.isArray(value.budget))) {
+    throw new Error("worker contract budget must be an object");
+  }
+  if (value.hostDispatchCapabilities !== undefined && (!Array.isArray(value.hostDispatchCapabilities) ||
+      value.hostDispatchCapabilities.some((mode) => !["native-custom-role", "explicit-model-contract"].includes(mode)))) {
+    throw new Error("hostDispatchCapabilities must list supported dispatch schemas");
+  }
+  if (value.scope?.some((scope) => isUnsafeWriteScope(normalizeWriteScope(scope)))) {
+    throw new Error("worker contract scope must stay within canonical relative paths");
+  }
+  return value;
+}
+
+function getResourceRecommendation(input = {}) {
+  const options = validateWorkerContract(input);
+  const role = options.role || "orchestrator";
+  const profile = getAgentProfile(role);
+  const isBounded = Boolean(options.scope?.length && options.acceptance?.length);
+  const workerRoles = new Set(["implementer", "tester", "docs_researcher", "scout", "log_analyst", "summarizer", "pr_explorer"]);
+  const requiresJudgment = role !== "architecture_consultant" &&
+    (options.integration || options.strategy || (workerRoles.has(role) && !isBounded));
+  const recommendedModel = requiresJudgment || !profile
+    ? AGENT_POLICY.parent.recommendedModel : profile.model;
+  const defaultEffort = role === "architecture_consultant" && options.deepRisk
+    ? "high" : requiresJudgment || !profile ? "high" : profile.effort;
+  const recommendedEffort = options.requestedEffort || defaultEffort;
+  const resourceRequest = validateResourceRequest({
+    model: recommendedModel, effort: recommendedEffort, reason: options.reason,
+    budget: options.budget, hostCapabilities: options.hostCapabilities,
+  });
+  const nativeRole = options.hostDispatchCapabilities?.includes("native-custom-role") &&
+    profile?.model === recommendedModel && profile?.effort === recommendedEffort;
+  const dispatchStrategy = requiresJudgment || !profile ? "parent-owned-work" :
+    nativeRole ? "native-custom-role" : "explicit-model-contract";
+  const instructionsSource = profile ? `.codex/agents/${profile.file}` : null;
+  return {
+    role, recommendedModel, recommendedEffort,
+    resourceRequest,
+    reason: requiresJudgment ? "integration-strategy-or-unbounded-work" :
+      role === "architecture_consultant" ? "bounded-architecture-decision" : "role-default",
+    scope: options.scope || [], acceptance: options.acceptance || [],
+    evidenceRefs: options.evidenceRefs || [],
+    escalationCondition: "after-two-failed-attempts-reassess-cause-and-scope; architecture-conflict-consult-astra",
+    orchestrator: options.orchestrator || "codex-parent",
+    dispatch: {
+      owner: requiresJudgment || !profile ? "orchestrator" : "worker",
+      customRole: nativeRole ? role : null,
+      strategy: dispatchStrategy,
+      capabilityStatus: options.hostDispatchCapabilities?.includes(dispatchStrategy) ? "verified" : "unverified",
+      instructionsSource,
+      requestedSandbox: profile?.sandboxMode || null,
+      sandboxStatus: "inherited-or-unverified",
+      callContract: dispatchStrategy === "explicit-model-contract" ? {
+        tool: "collaboration.spawn_agent", model: recommendedModel, reasoning_effort: recommendedEffort,
+        fork_turns: "none", task_name: role,
+        message: `Bounded role contract: ${JSON.stringify({ role, scope: options.scope || [], acceptance: options.acceptance || [], evidenceRefs: options.evidenceRefs || [], instructionsSource, requestedSandbox: profile?.sandboxMode })}. Parent must read the developer_instructions from instructionsSource and include them verbatim before dispatch. Do not write outside scope; read-only roles must not change files. Return acceptance evidence and material unknowns.`,
+      } : dispatchStrategy === "native-custom-role" ? {
+        tool: "spawn_agent", agent_type: role,
+        message: `Bounded role contract: ${JSON.stringify({ role, scope: options.scope || [], acceptance: options.acceptance || [], evidenceRefs: options.evidenceRefs || [] })}. Stay within scope and return acceptance evidence and material unknowns.`,
+      } : null,
+      ready: isBounded && !requiresJudgment && Boolean(profile) && resourceRequest.isValid &&
+        (!options.requestedEffort || resourceRequest.hostStatus === "verified") &&
+        Boolean(options.hostDispatchCapabilities?.includes(dispatchStrategy)),
+    },
+    runtimeStatus: "recommendation-only",
+    effectiveModel: null, effectiveEffort: null, childThreadId: null,
+    completionEvidence: [],
+  };
+}
+
 function isLikelySmallTask(task) {
   const trimmed = task.trim();
-  return XS_TASK_PATTERN.test(trimmed) ||
-    (trimmed.length < 120 && SIMPLE_QUESTION_PATTERN.test(trimmed));
+  // Match the whole request, not a keyword anywhere in a compound task.
+  const boundedEdit = /^(?:fix|check|inspect|update|change|format)\s+(?:a\s+)?(?:typo|spelling|one line|single line|one comment|single comment|label)(?:\s+in\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
+  const boundedRussianEdit = /^(?:исправь|проверь|обнови)\s+(?:опечатку|одну строку|один комментарий)(?:\s+в\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
+  const definition = /^(?:what is|что такое)\s+[\p{L}\p{N}_.-]{1,50}[?]?$/iu;
+  const typoQuestion = /^how do I fix a typo[?]?$/iu;
+  return boundedEdit.test(trimmed) || boundedRussianEdit.test(trimmed) ||
+    definition.test(trimmed) || typoQuestion.test(trimmed);
 }
 
 function hasParallelValue(task, candidates, modes) {
   if (PARALLEL_VALUE_PATTERN.test(task)) return true;
+  if (/\bindependent(?:\s+(?:bounded|read[ -]only|review)){0,4}\s+(?:lanes?|evidence packets?)\b/iu.test(task)) return true;
   return task.trim().length >= 220 && candidates.length >= 2 && modes.length >= 2;
 }
 
@@ -144,8 +280,14 @@ function getFanoutDecision(options) {
   const isStateChanging = options.isStateChanging ??
     (MUTATION_PATTERN.test(task) && !isExplicitReadOnly);
 
-  if (OPT_OUT_PATTERN.test(task)) {
+  const optOutTask = task.replace(/\b(?:child|multiple)\s+agents\b/giu, "subagents")
+    .replace(/(?:дочерн[\p{L}]*|нескольк[\p{L}]*)\s+агент[\p{L}]*/giu, "субагентов");
+  if (OPT_OUT_PATTERN.test(optOutTask)) {
     return createDecision("skip", "explicit-user-opt-out", []);
+  }
+  if (options.availableSlots !== undefined &&
+    (!Number.isSafeInteger(options.availableSlots) || options.availableSlots < 0)) {
+    return createDecision("skip", "invalid-host-child-slots", []);
   }
   if (candidates.length === 0) {
     return createDecision("skip", "no-specialist-candidates", []);
@@ -155,7 +297,10 @@ function getFanoutDecision(options) {
   }
 
   const ranked = rankCandidates(candidates, modes, options.priorityCandidates || []);
-  const selected = ranked.slice(0, AGENT_POLICY.fanout.maxChildren);
+  const availableSlots = options.availableSlots === undefined
+    ? AGENT_POLICY.fanout.maxChildren : options.availableSlots;
+  const selected = ranked.slice(0, Math.min(AGENT_POLICY.fanout.maxChildren, availableSlots));
+  if (selected.length === 0) return createDecision("skip", "host-has-no-child-slots", [], ranked);
   if ((risk === "HIGH" || risk === "CRITICAL") && isStateChanging) {
     return createDecision("required", "high-risk-independent-verification", selected, ranked);
   }
@@ -233,7 +378,8 @@ function doScopesOverlap(left, right) {
 }
 
 function isUnsafeWriteScope(scope) {
-  return scope === "." || scope === "/" || /^[a-z]:\/?$/iu.test(scope);
+  return scope === "." || scope === "/" || scope === ".." || scope.startsWith("../") ||
+    path.posix.isAbsolute(scope) || /^[a-z]:/iu.test(scope) || /[?*\[\]{}]/u.test(scope);
 }
 
 function validateWriteAssignments(assignments = []) {
@@ -278,9 +424,14 @@ function collectWriteConflicts(left, right, conflicts) {
 module.exports = {
   AGENT_POLICY,
   EFFORT_LEVELS,
+  MODEL_CAPABILITIES,
   formatAgentProfiles,
   getAgentProfile,
   getAgentProfiles,
   getFanoutDecision,
+  getResourceRecommendation,
+  isLikelySmallTask,
+  validateResourceRequest,
+  validateWorkerContract,
   validateWriteAssignments,
 };

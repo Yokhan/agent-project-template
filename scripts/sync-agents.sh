@@ -118,21 +118,17 @@ else
   fi
 fi
 
-# 6. Check DON'T section parity
+# 6. Check shared safety contracts, independent of heading/bullet counts.
 echo ""
-echo "--- DON'T Section Check ---"
-CLAUDE_DONTS=$(sed -n "/^## DON'T/,/^##/p" "$CLAUDE_MD" 2>/dev/null | grep "^-" | wc -l | tr -d ' ')
-AGENTS_DONTS=$(sed -n "/^## DON'T/,/^##/p" "$AGENTS_MD" 2>/dev/null | grep "^-" | wc -l | tr -d ' ')
-echo "CLAUDE.md DON'T rules: $CLAUDE_DONTS"
-echo "AGENTS.md DON'T rules: $AGENTS_DONTS"
-DIFF=$((CLAUDE_DONTS - AGENTS_DONTS))
-if (( DIFF < 0 )); then DIFF=$((-DIFF)); fi
-if (( DIFF > 2 )); then
-  echo "WARNING: DON'T sections differ by $DIFF rules — check for drift"
-  WARNINGS=$((WARNINGS + 1))
-else
-  echo "OK (within tolerance)"
-fi
+echo "--- Shared Safety Contract Check ---"
+for file in "$CLAUDE_MD" "$AGENTS_MD"; do
+  for invariant in 'project-*' 'dirty' 'unverified' 'client-executor-contract.md' 'AGENT_CONTEXT_SOT.md'; do
+    if ! grep -Fq "$invariant" "$file"; then
+      echo "ERROR: $(basename "$file") missing shared invariant: $invariant"
+      ISSUES=$((ISSUES + 1))
+    fi
+  done
+done
 
 # 7. Check Codex infrastructure
 echo ""

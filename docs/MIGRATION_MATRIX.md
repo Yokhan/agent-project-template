@@ -1,5 +1,15 @@
 # Migration Matrix
 
+## Current v5 Boundary
+
+The active target is `v5.0.0`; use `docs/MIGRATION_V5.md` and the canonical
+agent update protocol. The table below is dated historical dry-run evidence,
+not current v5 adoption or publication proof. Record each authorized canary's
+exact source tag/commit, installed version, external plan, conflicts and checks
+before extending rollout. No current v5 downstream apply is claimed here.
+
+## Historical 2026-05-23 Evidence
+
 Date: 2026-05-23
 Target template version: `3.7.0`
 Runner: `bash scripts/downstream-census.sh --brief --no-sync --search <workspace>` for read-only census; `bash scripts/downstream-census.sh --json <project>` for dry-run detail

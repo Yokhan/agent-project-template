@@ -1,6 +1,7 @@
-import type { Route, RouteResult } from "./types.js";
+import type { Route, RouteResult, WritingSourceGrounding } from "./types.js";
 import { createRequire } from "node:module";
 type WritingIntent = {
+  task: string;
   isWriting: boolean;
   action: "create" | "edit" | "plan" | "review" | null;
   primaryMode: "literary" | "marketing" | "informational" | "communication" | null;
@@ -34,9 +35,13 @@ type WritingRoutePolicy = {
   externalTools: Array<{ id: string; access: string; execution: string; paid: boolean }>;
   rejectedProfiles: Array<{ id: string; reason: string }>;
   needsFreshDocs: boolean;
+  sourceGrounding: WritingSourceGrounding;
 };
 
 const require = createRequire(import.meta.url);
+const { getRoute } = require("../../../scripts/codex-route-task.js") as {
+  getRoute(task: string): Pick<RouteResult, "workflowDepth" | "resourceDecision">;
+};
 const { classifyWritingIntent } = require("../../../scripts/lib/writing-intent.js") as {
   classifyWritingIntent(task: string): WritingIntent;
 };
@@ -263,6 +268,7 @@ const AGENT_PRIORITY: Record<string, number> = {
 };
 
 export function routeKeywords(keywords: string): RouteResult {
+  const codexRoute = getRoute(keywords);
   const writingIntent = classifyWritingIntent(keywords);
   const writingPolicy = getWritingRoutePolicy(writingIntent);
   const matchedModes: string[] = [];
@@ -339,12 +345,16 @@ export function routeKeywords(keywords: string): RouteResult {
     risk = "MEDIUM";
   }
 
+  const isDirect = codexRoute.workflowDepth === "direct" && !["HIGH", "CRITICAL"].includes(risk);
+  if (codexRoute.resourceDecision.role === "architecture_consultant") codexSubagents.add("architecture_consultant");
   return {
+    workflowDepth: isDirect ? "direct" : "routed",
+    resourceDecision: codexRoute.resourceDecision,
     modes: Array.from(new Set(matchedModes)),
     agent: bestAgent,
-    files: Array.from(matchedFiles),
-    codexSkills: Array.from(codexSkills),
-    codexSubagents: Array.from(codexSubagents),
+    files: isDirect ? [] : Array.from(matchedFiles),
+    codexSkills: isDirect ? [] : Array.from(codexSkills),
+    codexSubagents: isDirect ? [] : Array.from(codexSubagents),
     pipeline,
     risk,
     codeIntelligence: getToolWorkflow(keywords, [], matchedModes),
@@ -358,6 +368,7 @@ export function routeKeywords(keywords: string): RouteResult {
     writingTechnicalProfiles: writingPolicy?.technicalProfiles ?? [],
     writingEditors: writingPolicy?.editors ?? [],
     writingGates: writingPolicy?.gates ?? [],
+    writingSourceGrounding: writingPolicy?.sourceGrounding ?? null,
     writingExternalTools: writingPolicy?.externalTools ?? [],
     writingRejectedProfiles: writingPolicy?.rejectedProfiles ?? [],
   };

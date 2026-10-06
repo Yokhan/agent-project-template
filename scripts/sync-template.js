@@ -7,6 +7,7 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 const { buildPlan, stableJson } = require("./lib/sync-template-core.js");
 const { applyPlan } = require("./lib/sync-template-apply.js");
+const { libraryStatus } = require("./lib/writing-library-store.js");
 
 function parseArgs(argv) {
   const options = { apply: false, bootstrap: false, canary: false, fromGit: false, overwriteConflicts: false, projectRoot: process.cwd() };
@@ -166,6 +167,8 @@ function main() {
   try {
     const result = buildPlan({ ...options, ...source, planDate: saved?.date, projectRoot: options.projectRoot });
     summarize(result.plan);
+    const library = libraryStatus();
+    console.log(`SHARED_WRITING_LIBRARY: ${library.state}; external machine store; books are not part of sync payload`);
     if (options.apply) {
       if (stableJson(saved) !== stableJson(result.plan)) throw new Error("Preview plan no longer matches source or target; run preview again");
       const report = applyPlan(result);

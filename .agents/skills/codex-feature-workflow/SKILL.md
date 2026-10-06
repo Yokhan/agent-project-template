@@ -1,49 +1,47 @@
 ---
 name: codex-feature-workflow
-description: "Add or modify a feature using vertical slice architecture, research-first planning, module boundaries, tests, and verification. Trigger on add feature, new module, create component, implement, or сделай."
+description: "Implement or materially change a product feature with repository-aware scope, suitable architecture, and verified behavior. Trigger on feature implementation, not on every small edit."
 ---
 
 # Codex Feature Workflow
 
-Read:
+For a small, local feature change, inspect the relevant files and consumers,
+make the bounded edit, and run a focused check. For broader features, read the
+relevant project/goal context and these shared rules as needed:
 
 - `.claude/library/process/research-first.md`
 - `.claude/library/process/plan-first.md`
 - `.claude/library/technical/architecture.md`
 - `docs/SHARED_CONVENTIONS.md`
 
-## Process
+## Implementation
 
-1. Search existing modules, registry entries, templates, and lessons.
-2. Define success criteria and risk.
-3. Plan file architecture before edits.
-4. If the final object plan is missing, stop implementation and create/propose it first.
-5. For accepted future capabilities, design the end-state skeleton before code: callable handlers, contracts, states, routes, flags, or no-op stubs can be 1% ready, but the architecture point should exist when later slices depend on it.
-6. Before sharpening a later layer, identify superseded wrong stubs, disabled branches, old tests, stale flags, and release-only harnesses.
-   If the current architecture itself may be wrong, use `$codex-change-strategy`
-   before choosing the destination and transition.
-7. Keep business logic in importable modules.
-8. Implement in small batches.
-9. Replace or delete obsolete layers in the same slice; keep only final-plan placeholders or time-boxed migration scaffolding.
-10. Update any `PROGRESSIVE_STATUS` working-doc headers touched by the slice and check them with `node scripts/progressive-status.js --check`.
-11. Add focused tests for the intended final contract and absence of obsolete paths when useful.
-12. Run verification and update docs/registry when public behavior changes.
+1. Search for existing behavior, components, or utilities that directly affect
+   the feature; inspect the relevant tests and current worktree.
+2. Define the requested outcome and acceptance evidence at a level suited to
+   the scope and risk. Write a plan in the active project artifact when
+   coordination or durable sequencing needs one.
+3. Follow established module and API boundaries. Resolve an unresolved
+   architecture choice before implementation only if the current change
+   depends on it.
+4. Add future-facing contracts, states, routes, flags, or callable seams only
+   when accepted architecture makes them relevant now. Do not invent or build a
+   full future-object skeleton for a bounded feature step.
+5. Implement the smallest complete behavior within the accepted scope. An
+   enabling step is valid when it resolves a real dependency or risk; label it
+   honestly and state the next useful result.
+6. Verify the user-facing behavior claimed, or the narrow contract changed.
+   Tests and internal artifacts support evidence but are not themselves proof
+   of a user outcome. Never present a stub or unavailable behavior as complete.
+7. Remove superseded code when the change owns that path and doing so preserves
+   protected consumers, data, rollback, and public contracts. Keep temporary
+   migration scaffolding only with a concrete purpose and removal condition.
 
-## Progressive JPEG Implementation
+Use `$codex-progressive-jpeg-planner` when a staged product plan is requested
+or will materially improve sequencing; do not make its JSON plan or status
+headers a universal prerequisite to feature work.
 
-Do not build a temporary proof path when the product direction is already known.
-The first slice should be a low-resolution version of the future product:
-
-- known capability present as a callable contract;
-- internal behavior may be stubbed, feature-flagged, no-op, or dev-debug only;
-- the 1% object still performs the production function in the smallest honest way;
-- product users must not see fake completed behavior;
-- speculative capabilities stay out until accepted.
-- old wrong layers are not preserved as disabled legacy; delete, replace, or time-box them with an explicit removal condition.
-
-Verify object completeness against the final plan before judging detail depth.
-Then verify the old layer is gone or intentionally time-boxed before claiming the next readiness level.
-
-Do not claim that a replacement is simpler, faster, or more maintainable without
-a common baseline and explicit measured, observed, estimated, or unknown
-evidence. Preserve verified contracts rather than old implementation.
+After two failed approaches, stop local retries and revisit cause, boundary,
+and strategy. Use `$codex-change-strategy` when evidence points to an ownership,
+contract, architecture, or obsolete-path mismatch. Follow the project quality
+bar and report only what current verification supports.

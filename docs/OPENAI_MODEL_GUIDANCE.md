@@ -1,109 +1,79 @@
 # OpenAI Model Guidance
 
-Verified against official OpenAI docs on 2026-07-11.
+Snapshot checked against official OpenAI documentation on 2026-10-06. This is a
+task-routing recommendation, not a benchmark of this repository or a guarantee
+that a given host can run a requested profile. Recheck the linked sources when
+model availability or client behavior matters.
 
 Sources:
 
-- `https://openai.com/index/gpt-5-6/`
-- `https://developers.openai.com/api/docs/guides/latest-model`
-- `https://developers.openai.com/codex/subagents`
-- `https://developers.openai.com/api/docs/guides/tools-multi-agent`
+- https://developers.openai.com/api/docs/guides/latest-model
+- https://developers.openai.com/api/docs/models
+- https://learn.chatgpt.com/docs/agent-configuration/subagents
+- https://developers.openai.com/api/docs/models/gpt-6.1-sol
+- https://developers.openai.com/api/docs/models/gpt-6-luna
+- https://developers.openai.com/api/docs/models/gpt-6-astra
 
-## Current Recommendation
+## Recommended task routing
 
-Use the GPT-5.6 family for new complex reasoning, coding, tool-heavy, design,
-research, and agent workflows.
+| Work | Recommended profile | Scope |
+|---|---|---|
+| Orchestration, normal implementation, integration, product/design/correctness decisions, final verification | GPT-6.1 Sol, `high` | Default parent profile; the user/IDE owns the parent session configuration |
+| Bounded discovery, log/source extraction, test generation or execution, docs, implementation against an explicit contract | GPT-6 Luna, `high` | Exact deliverable and file/write boundary; Sol owns architecture, integration, and acceptance |
+| Architecture consultation for real uncertainty, conflicting constraints, complex migration, or a repeated systemic failure | GPT-6 Astra, `medium` | Consultant returns a decision, rationale, risks, and boundaries; Sol remains orchestrator and integrator |
+| Deep security/systems review with material threat or systemic risk | GPT-6 Astra, `high` | Exceptional, evidence-backed escalation; routine review remains Sol `high` |
 
-- GPT-5.6 Sol is the quality-first tier for ambiguous work, architecture,
-  security, design judgment, synthesis, and high-cost errors.
-- GPT-5.6 Terra is the balanced tier for exploration, documentation research,
-  test planning, isolated implementation, and parallel support work.
-- GPT-5.6 Luna is the high-volume efficiency tier for bounded discovery, log
-  extraction, and evidence condensation. It is not used for implementation,
-  product judgment, architecture, security, or final verification without
-  project-specific eval evidence.
+These are practical defaults, not claims that one model is universally best.
+Use Astra when the decision's complexity or cost of error warrants it, not just
+because a project is new. Luna may implement when the contract and scope are
+bounded. Use Luna `max` or Sol `xhigh` only when supported by the actual host
+and justified by a concrete task need; neither is the default, and higher
+reasoning effort is not automatically faster or cheaper overall.
 
-For Codex parent sessions, do not hardcode the model in project config. Model
-and reasoning effort remain user or IDE settings. The recommended parent
-baseline is GPT-5.6 Sol with `medium` effort, raised only when task evidence
-justifies it.
+## Capability and evidence boundaries
 
-## Template Reasoning Ceiling
+- Check model and effort support in the actual Codex client, account, and
+  orchestration path before depending on a profile. API model support does not
+  establish Codex or AgentOS support.
+- The current AgentOS launcher supports only `low`, `medium`, and `high`
+  reasoning efforts. Do not request `max` or `xhigh` through that path unless a
+  later capability check verifies support; a silent fallback is not evidence.
+- A requested profile is not evidence that it ran. Record requested and
+  effective model/effort separately. If runtime metadata cannot establish the
+  effective values, report them as `unverified`; never infer them from a
+  prompt, role name, successful spawn, or output quality.
+- Runtime evidence for a child should correlate the parent, spawn, child ID,
+  role/profile metadata, child activity/completion, and a wait/result for that
+  same child. Use the repository trace validator where applicable.
+- Keep parent model, effort, approval, and sandbox under user/IDE/orchestrator
+  control. Do not add project-wide model or permission defaults to
+  `.codex/config.toml`. Role-specific worker recommendations belong in the
+  policy source and supported custom-agent configuration.
+- AgentOS owns its Strategy/Tactic/Plan/Todo/Gate graph. Codex routing supplies
+  worker contracts; it must not create a competing task graph.
 
-This template uses `xhigh` as the hard ceiling for parent recommendations and
-subagent profiles. Higher settings are intentionally excluded from template
-policy because automatic fan-out already increases compute and token use.
+## Prompt and workflow guidance
 
-- `medium`: balanced default for exploration, docs, and test strategy.
-- `high`: complex implementation, product review, design review, and general
-  correctness review.
-- `xhigh`: security and systems review where missed assumptions have a high
-  cost.
+Give the worker the desired outcome, relevant context, explicit scope and
+permissions, acceptance evidence, and expected response. Load only the
+instructions and project context relevant to the task. Preserve useful
+workflow-specific constraints; remove repeated ceremony that does not change a
+decision or protect an observed failure.
 
-Do not choose effort from role prestige. Choose it from ambiguity, dependency
-depth, reversibility, evidence requirements, and the cost of a wrong answer.
+Use parallel workers only for independent work with material parallel value.
+The starting cap is three children per task, also constrained by host slots.
+Prefer exact, non-overlapping write scopes; the parent keeps integration and
+acceptance. After two failed approaches, stop repeating variants and re-diagnose
+the cause, scope, and strategy.
 
-## Codex Agent Profiles
+For API implementations, consult current official model and endpoint guidance;
+Codex custom-agent profiles and Responses API request parameters are different
+configuration surfaces. Do not transpose API settings into Codex config.
 
-The machine-readable source of truth is `scripts/codex-agent-policy.js`.
-Runtime declarations under `.codex/agents/*.toml` must match it.
+## Measurement
 
-The parent model remains user-owned. Role-specific custom agents may pin a
-model and effort because that is a specialist execution contract, not a
-project-wide session default.
-
-Template Luna roles are deliberately narrow: `scout`, `log_analyst`, and
-`summarizer`, all at `low`. Terra handles research, test strategy, and isolated
-implementation; Sol handles judgment-heavy review. Automatic fan-out is capped
-at one wave and requires task evidence of parallel value.
-
-Do not infer that a child used its pinned model from parent output. Runtime
-verification requires a correlated trace accepted by
-`node scripts/validate-subagent-trace.js`.
-
-## GPT-5.6 Workflow Guidance
-
-- Prefer the Responses API for reasoning, tool calling, multimodal, and
-  multi-turn workflows.
-- Start migrations at the current reasoning level, then evaluate the same level
-  and one level lower on representative tasks.
-- Use Programmatic Tool Calling for bounded filtering, joining, ranking,
-  deduplication, aggregation, or validation where intermediate outputs can be
-  reduced without fresh model judgment after every call.
-- Use multi-agent work only when tasks divide into independent lanes. More
-  agents are not evidence of better work.
-- Measure final task success, evidence completeness, correction count, total
-  tokens, latency, and cost. Fewer calls matter only when the user-visible
-  result still meets the quality bar.
-
-## Prompting Direction
-
-GPT-5.6 benefits from shorter, outcome-focused prompts.
-
-1. State outcome, constraints, permissions, evidence, success criteria, and
-   output shape.
-2. Remove repeated instructions and examples that no longer correct a measured
-   failure.
-3. Keep hot `AGENTS.md` guidance directional; put workflows in skills and
-   stable references in docs.
-4. Expose only task-relevant tools and keep tool descriptions precise.
-5. Benchmark representative workflows instead of treating a release benchmark
-   as a complete routing policy.
-
-## Template Policy
-
-Allowed:
-
-- Documentation about recommended OpenAI models.
-- Role-specific model and effort settings in `.codex/agents/*.toml` validated
-  against `scripts/codex-agent-policy.js`.
-- Skills and routes that automatically select useful independent subagents.
-- User-level or IDE-level parent model selection.
-
-Not allowed:
-
-- A project-wide `model` or `model_reasoning_effort` in `.codex/config.toml`.
-- Project defaults for approval policy or sandbox mode.
-- Reasoning above the template's `xhigh` ceiling.
-- Unconditional fan-out for XS tasks or overlapping write scopes.
-- Stale model recommendations in template-owned instructions.
+Treat the routing matrix as a hypothesis. Validate with representative tasks
+before making quality, latency, cost, or savings claims. Compare complete task
+outcomes, correction/review work, elapsed time, and aggregate usage where those
+measurements are available. Token-price differences do not by themselves prove
+lower cost per accepted task; subscription limits and API billing are distinct.

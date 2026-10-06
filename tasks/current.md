@@ -1,17 +1,139 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-mcp-safety
-status: done
-updated: 2026-07-20
-readiness: 100
+id: template-v5-release
+status: active
+updated: 2026-10-06
+readiness: 60
 plan: 100
 inventory: 100
-production: 100
+production: 0
 cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: roll out v4.9.6 project by project from accepted external plans; restore AgentOS template provenance before its first from-git apply
+next: final aggregate review and release CI; verify exact publication, then send Ui storybook authorized managed-fleet rollout instruction; comparative quality benchmark remains separate
 -->
 
-# Current Task - Template v4 Production Product Standard
+# Current Task - v5.0.0 Release And Authorized Fleet Handoff
+
+The user authorized review, fixes and publication of `v5.0.0`, followed by a
+Ui storybook rollout handoff for all projects under its management, executed by
+a Sol High swarm. Current release-facing docs/metadata target v5;
+the former 4.10.0 candidate is incorporated, not a separately published version.
+Final result: a verified immutable release with agent-first deployment, accepted
+useful-wave delivery, role-aware execution and one external writing library.
+Approximate waves: release verification/publication, then the authorized fleet
+rollout handoff. Ui storybook starts with a reviewed canary before updating the
+remaining projects in its managed scope; root does not change downstreams itself.
+The current wave is final integration/review/CI; root owns commit/tag/push and
+publication and the post-release message, this worker owns scoped docs/version
+changes. Ui storybook owns downstream execution. The canary and wider
+rollout are not completion claims until their actual evidence exists.
+
+Source-backed documentation used fresh primary passages from write-short PDF
+page 31, clear-understood EPUB OPS/ch1-26.xhtml and the project-resolution
+version/stage/task/verification section (request release-v5-docs-20261007,
+packet ace290ba0d75c593226f7c4e78d0cdcdc1609ea5e5b45ef5bc0e3e029464c600).
+Applied: lead with the recipient's deployment task, provide exact commands,
+preserve necessary precision, distinguish project/library readiness and evidence
+from promises. Receipts do not guarantee comprehension or semantic quality.
+
+Known boundary: optional Spec Kit v0.8.13 integrity validates but freshness check
+found upstream v1.1.1 and returned stale on 2026-10-06. No optional upstream
+migration, global trust/default change or downstream apply is part of doc edits.
+
+## Historical 2026-10-06 Candidate Evidence
+
+The no-publication/no-downstream statements below describe the earlier probe,
+not the current authorization. Final publication is verified externally through
+the exact GitHub Release/CI/tag/checksums; this task file does not assert it.
+
+The core implementation candidate is prepared on `codex/gpt6-agent-policy` without
+commit, push, release or downstream changes. Sol 6.1 High owns orchestration
+and integration, Luna High bounded work, Astra Medium/High architecture
+consultancy. Role instructions are proportional; ownership, dirty work,
+secrets, protected data and digest-bound release updates remain protected.
+
+Current functional and release evidence is recorded in
+`docs/GPT6_MIGRATION_CANDIDATE.md`. Routing fixtures are not model-quality
+benchmarks. The 12-case comparative acceptance suite, optional Max/XHigh
+profile acceptance and release CI are not completed. Native custom-role
+dispatch was unavailable in the observed CLI schema; explicit model contract
+and effective runtime metadata must be tested separately.
+
+The five reviewed runtime/routing/launcher defects and independent-review
+identity gaps are repaired with regressions. A natural read-only review created
+two actual bounded Luna High children under Sol 6.1 High; native role, sandbox
+enforcement and verbatim embedded-instruction delivery are still distinct
+unverified claims. Current evidence is in the candidate report and ignored
+`tasks/audit/gpt6-migration-20261006/natural-swarm-*` files. No release,
+downstream update or global configuration change is authorized by this probe.
+Both children and the parent completed; final correlated trace validation is
+`verified`. The negative replay rejects sibling-only completion. Final broad
+and focused regression evidence is recorded in the candidate report; a live
+activation smoke does not complete the pending quality benchmark or release.
+
+The completed July release slice below is historical, not completion proof
+for this migration or authority to update downstream projects.
+
+## Current Addendum - Shared Writing Library And Accepted Product Waves
+
+The user requested one machine-level library for the exact five supplied books
+and project-resolution guide, with fresh relevant primary reading for every
+substantive nonfiction artifact, including chat explanations. Actual fiction
+and lore prose are excluded from informational book editing; game business,
+technical/nonfiction books, creative-project planning and mixed nonfiction
+artifacts are not. Code-only changes and small acknowledgements remain direct.
+
+The implementation is an unreleased change to this canonical source only.
+The shared store resolves home-relatively to
+`~/.local/share/agent-project-template/writing-library`, or an explicit absolute
+`AGENT_WRITING_LIBRARY`/`--root` override. One explicit import verified the six
+original hashes, six pinned pre-extracted text hashes and page/section counts.
+A repeated import reported `reused`, zero copies. Downloads, earlier copies,
+downstream projects and global agent configuration were not changed. Books and
+full text caches stay outside Git/setup/sync/release payloads; only rules, code
+and metadata are shipped. There was no commit, tag or publication.
+
+`scripts/writing-library.js` provides explicit safe import, read-only
+discovery/status, applicability selection, bounded primary retrieval and
+request/task/current-draft-bound application-record verification. Source or
+provenance/hash mismatch is blocked, not a silent model-memory fallback.
+Lexical hits are navigation, not semantic relevance; exact primary locators and
+the source-language editorial-question workflow support refinement. The source
+packet contains hashes, locators, fresh read receipts and a per-request binding;
+the application record names principles and concrete artifact effects. Such
+records prove bindings/access, not comprehension or writing quality. Supplied
+extraction is not independently re-extracted; prompt caching/token savings are
+not guaranteed.
+
+The user separately clarified the staged-product contract: agree on the final
+result and approximate useful waves, then derive/record the nearest-wave plan
+with responsibilities and evidence inside that accepted scope. Routine internal
+steps are autonomous; changes to the promise, constraints or meaning/order of
+waves require approval. A wave is a whole useful result at its declared scope
+or an explicitly bounded uncertainty experiment returning an inspectable
+decision. An internal enabling task is not itself a delivered wave; each wave
+need not reproduce the whole eventual product journey. Existing approved plans
+and AgentOS graphs remain authoritative. This clarification replaces mandatory
+per-task plan/skeleton/approval ceremony, not product quality, whole-useful-wave
+acceptance, truth, ownership, data safety or final verification.
+
+Current focused evidence: library import/reuse/hash/provenance/edition/request/
+draft/routing/payload regressions, writing-intent tests, Codex routing, native
+sync transaction/security tests, MCP TypeScript build and MCP runtime/security/
+writing parity tests passed. Agent-SOT, Codex skill/agent, text and complete
+template validation passed. Full Git Bash template smoke passed 199/199,
+including clean orchestrator setup, delivered writing-library tests and native
+sync security/transactions. Drift check completed with zero errors and five
+existing documentation-freshness warnings; publication and downstream rollout
+remain unperformed.
+
+A fresh bounded Luna High behavioral smoke read the actual shared skill and
+three primary-source passages for a business meeting message, while handling a
+fictional lighthouse note separately without nonfiction source grounding. It
+did not claim absent external checks or application-verifier execution. The
+parent verified the effective Luna High profile and reviewed the result. This
+shows the workflow operating for two realistic artifacts, not a formal quality
+benchmark or a guarantee of every future text's fidelity; the parent noted one
+minor omitted meeting detail before any actual use. No message was sent.
 
 ## Completed Slice - MCP Defaults and Native Sync Production Repair
 

@@ -67,18 +67,43 @@ A bounded step is acceptable when it is honest:
 - It has a rollback or follow-up path.
 - It reports remaining gaps as gaps, not as completed product behavior.
 
+## Staged Product Waves
+
+For substantial staged work, agree with the product owner on the end result
+(audience, capability, acceptance, and constraints), an approximate sequence
+of implementation waves with the useful outcome and rationale for each. Then
+derive and record a detailed plan for the nearest wave within that accepted
+scope; routine implementation detail needs no new approval. The wave count and later contents are
+provisional and may change with evidence. Preserve existing approved plans and
+project-owned task graphs rather than replacing them without cause.
+
+An agreed wave is a product-level acceptance unit: it must deliver a whole
+useful result at its declared scope, or be an explicitly bounded uncertainty
+experiment that returns an inspectable decision. Internal research, tests,
+scaffolding, and other enabling tasks can be narrower, but must not be
+misreported as a useful wave result. This does not require every wave to
+demonstrate the whole eventual product journey. It does require each wave to
+keep the final production quality bar and the accepted promise intact.
+
+Once a wave and its constraints are accepted, the executor may make routine
+implementation choices autonomously. Seek product-owner approval before
+materially changing the promised result, constraints, or meaning/order of the
+waves; present the proposed delta and its impact. Do not turn minor choices
+inside the accepted wave into an approval ritual.
+
 ## Progressive JPEG Anti-Falsification Gate
 
 Progressive JPEG is not only a reporting format. It controls implementation
 shape and may never be satisfied by relabeling internal progress as product
 value.
 
-Every implementation slice must fulfill the product's real purpose end to end
-at its current depth. It must give the intended user a complete, honest journey
-from entry through action and feedback to a useful outcome and return path. The
-slice must use the accepted final product path and name the user victory,
-purpose mechanism, app-specific KPI link, evidence, falsifier, rough edges, and
-next sharpening step.
+For a product increment, describe the intended user outcome and the portion of
+the real path this step changes. Verify that outcome at the scope claimed. A
+bounded step may be enabling work when it resolves a real dependency or risk;
+label it as such and identify the next useful result. Require an end-to-end
+journey only when the change claims to deliver a user-facing slice or the
+acceptance contract requires one. Match evidence and planning detail to task
+scope and risk.
 
 Planning, research, architecture, scaffolding, migrations, inventories, status
 headers, tests, debug output, mocks, stubs, callable seams, HTTP success, and
@@ -87,26 +112,23 @@ cannot prove that the product purpose is fulfilled. A stub may preserve final
 architecture, but the user outcome for the slice must not depend on that stub.
 Never fabricate, infer, or self-report evidence that was not observed.
 
-For a known final product direction, the first meaningful implementation should
-use an end-state skeleton:
+When an accepted final contract makes future structure relevant to the current
+change, preserve that contract and add only the seams needed now. Do not
+prebuild speculative future behavior merely because a broad destination can be
+imagined:
 
-- If the final product plan is missing, do not create the full skeleton yet.
-  Gate the work and create or propose a plan first: final outcome, object
-  inventory, public contracts, dependencies, states, and acceptance checks. In
-  Spec Kit or Kiro-like flows, `spec -> plan -> tasks` owns this contract.
-- Components, screens, services, and workflows expose the final slots,
-  handlers, contracts, routes, flags, state names, and integration boundaries
-  that are already accepted as product direction.
-- Future behavior may be only 1% ready, but it must be callable when the
-  architecture depends on it.
-- A 1% callable capability can be a typed no-op, explicit stub, feature-flagged
-  path, dev-only debug signal, placeholder event, or honest
-  `not implemented yet` boundary.
-- At 1% readiness, the product slice must still fulfill the real product purpose
-  in the smallest honest end-to-end form. A contact or "coming soon" page counts
-  only when announcement or lead capture is the accepted purpose; actor debug,
-  a table of contents, or a safe API placeholder alone never counts as product
-  completion.
+- If a requested change depends on an unresolved final contract, resolve or
+  document that dependency before making an architecture commitment. Use the
+  project's existing spec/plan/task workflow when it owns the contract; do not
+  demand a full object inventory for a bounded change that does not depend on it.
+- Add future-facing slots, handlers, contracts, routes, flags, or state names
+  only when they are accepted architecture and required by the current change.
+- An honest stub may protect a named contract, but it is not implemented
+  behavior or evidence of user value. Keep it outside a completed user path
+  unless the contract explicitly defines that boundary as the accepted result.
+- Do not mistake an internal checkpoint for product completion. A demo, mock,
+  debug signal, table of contents, or safe API placeholder is not evidence of
+  the promised outcome unless that artifact is itself the requested product.
 - User-visible UI must not pretend the capability is complete. Debug notices
   stay developer-facing or explicitly marked as unavailable.
 - Do not build a legacy harness, proof proxy, or compatibility scaffold instead
@@ -164,10 +186,11 @@ After every sharpening pass, run a superseded-layer audit:
    commented-out old implementations, skipped tests, unreachable routes, and
    stale feature flags tied to the removed layer.
 
-Only final-plan placeholders may survive between iterations. A placeholder is
-valid only when it is part of the accepted object inventory, callable, honest to
-developers/users, and attached to the next readiness target. A wrong earlier
-iteration is not technical debt to preserve; it is product drift to remove.
+Keep a placeholder only when it protects an accepted contract or current
+transition. State its owner and removal condition when it is temporary. Remove
+superseded layers when they are within the current task's scope and no protected
+consumer or rollback contract requires them; do not force unrelated cleanup
+into a bounded task.
 
 Temporary migration scaffolding is the exception, not the default. It must
 protect a real live transition or rollback path, stay outside the normal product
@@ -176,8 +199,8 @@ obsolete code.
 
 ## Progressive Status Headers And Project Slice
 
-Working documents that drive active product, design, template, release, game,
-or long-form writing work should carry a machine-readable status header:
+When a project workflow uses machine-readable progressive status, its governed
+working documents may carry a status header such as:
 
 ```markdown
 <!-- PROGRESSIVE_STATUS
@@ -194,18 +217,16 @@ next: next visible evidence point
 -->
 ```
 
-The header is the fast tool-readable source for the current progressive JPEG
-layer. When a tagged working document changes, its header must change in the
-same work slice. A changed document with an unchanged `PROGRESSIVE_STATUS`
-header is a stale status and must fail the handoff gate.
+The header can serve as a fast tool-readable status source. If the project
+explicitly requires it, keep it current when the governed document changes and
+run its handoff check. Do not add status headers to unrelated documents.
 
-Use `node scripts/progressive-status.js` to scan headers, refresh the local
-`.session-cache/progressive-status.json`, and print a project slice. Use
-`node scripts/progressive-status.js --check` before closeout for M+, template,
-release, product, design, docs, or game work that touched tagged documents.
+When the project uses this workflow, `node scripts/progressive-status.js` scans
+headers and prints a project slice; `--check` validates the applicable status
+contract before closeout.
 
-Iteration reports should include the project slice instead of a vague progress
-claim:
+For projects that use these status dimensions, iteration reports can include a
+project slice instead of a vague progress claim:
 
 ```text
 dimension    bar                    pct
@@ -237,7 +258,7 @@ Readiness levels:
 
 | Level | Meaning | Acceptance |
 | --- | --- | --- |
-| 1% | Whole object skeleton exists from the final plan. All accepted future capabilities are callable or present as honest stubs. | A smallest honest end-to-end user journey already fulfills the product purpose; stubs do not determine its outcome. |
+| 1% | The explicitly scoped first increment or enabling checkpoint exists; do not infer a whole-object skeleton. | Evidence establishes only the stated increment. Any user-outcome claim has its own observed acceptance evidence. |
 | 10% | Critical path is wired with rough real behavior and basic integration points. | A product user completes the narrow path and observed product evidence exists. |
 | 30% | Main behavior has rough real implementation for happy path. | Product user can complete a narrow real flow with known rough edges. |
 | 60% | Important states, errors, edge cases, and integrations are implemented. | The object survives realistic use beyond the happy path. |
@@ -246,22 +267,20 @@ Readiness levels:
 
 Examples:
 
-- Unreal/game actor: the full planned class/component/interface skeleton exists,
-  and one real playable loop using that actor reaches the intended gameplay
-  outcome. Debug-only attack or interaction messages are preparation evidence.
-- Site/app: the full planned shell and contracts exist, and one real visitor
-  journey reaches the accepted conversion or service outcome. "Coming soon"
-  counts only for an announcement or lead-capture product with a working CTA.
-- Book/text: the full argument and chapter skeleton exists, and a coherent
-  reader-facing unit already delivers the promised insight or action. A table
-  of contents or synopsis alone is preparation.
-- Project/module: the full public contract exists, and one real consumer path
-  completes the module's promised job. Safe placeholders may occupy future
-  seams but cannot determine that path's result.
+- Unreal/game actor: verify the gameplay outcome claimed by this increment;
+  debug-only messages do not prove a playable result.
+- Site/app: verify the stated visitor flow and its accepted service or
+  conversion outcome; "coming soon" is complete only for an announcement or
+  lead-capture product with a working CTA.
+- Book/text: verify that the delivered reader-facing unit serves its stated
+  purpose; an outline alone is not finished prose when prose was requested.
+- Project/module: verify the consumer contract changed by this task; do not
+  infer that every future capability must be scaffolded now.
 
-Use `$codex-progressive-jpeg-planner` and validate
-`tasks/progressive-plan.json` with `node scripts/validate-progressive-plan.js`
-before claiming a progressive product slice.
+Use `$codex-progressive-jpeg-planner` when a progressive iteration plan is
+requested or materially helps sequence product work. Validate
+`tasks/progressive-plan.json` when the project workflow requires that artifact;
+neither the skill nor that file is a universal prerequisite for implementation.
 
 ## Domain Examples
 
@@ -287,10 +306,10 @@ before claiming a progressive product slice.
 
 ## Closeout Requirement
 
-Final reports must say:
+When useful to the task, final reports should make clear:
 
 - What changed for the user.
 - Which product quality improved.
 - What was verified.
 - What remains intentionally incomplete.
-- Confidence and doubt.
+- Material uncertainty or residual risk.

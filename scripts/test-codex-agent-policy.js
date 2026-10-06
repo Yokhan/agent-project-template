@@ -11,21 +11,24 @@ const {
   getAgentProfiles,
   getFanoutDecision,
   validateWriteAssignments,
+  getResourceRecommendation,
+  validateResourceRequest,
 } = require("./codex-agent-policy.js");
 
 const EXPECTED_PROFILES = {
-  scout: ["gpt-5.6-luna", "low", "read-only"],
-  log_analyst: ["gpt-5.6-luna", "low", "read-only"],
-  summarizer: ["gpt-5.6-luna", "low", "read-only"],
-  pr_explorer: ["gpt-5.6-terra", "medium", "read-only"],
-  docs_researcher: ["gpt-5.6-terra", "medium", "read-only"],
-  tester: ["gpt-5.6-terra", "medium", "read-only"],
-  implementer: ["gpt-5.6-terra", "high", "workspace-write"],
-  reviewer: ["gpt-5.6-sol", "high", "read-only"],
-  design_reviewer: ["gpt-5.6-sol", "high", "read-only"],
-  product_reviewer: ["gpt-5.6-sol", "high", "read-only"],
-  security_reviewer: ["gpt-5.6-sol", "xhigh", "read-only"],
-  systems_reviewer: ["gpt-5.6-sol", "xhigh", "read-only"],
+  scout: ["gpt-6-luna", "high", "read-only"],
+  log_analyst: ["gpt-6-luna", "high", "read-only"],
+  summarizer: ["gpt-6-luna", "high", "read-only"],
+  pr_explorer: ["gpt-6-luna", "high", "read-only"],
+  docs_researcher: ["gpt-6-luna", "high", "read-only"],
+  tester: ["gpt-6-luna", "high", "read-only"],
+  implementer: ["gpt-6-luna", "high", "workspace-write"],
+  reviewer: ["gpt-6.1-sol", "high", "read-only"],
+  design_reviewer: ["gpt-6.1-sol", "high", "read-only"],
+  product_reviewer: ["gpt-6.1-sol", "high", "read-only"],
+  security_reviewer: ["gpt-6.1-sol", "high", "read-only"],
+  systems_reviewer: ["gpt-6.1-sol", "high", "read-only"],
+  architecture_consultant: ["gpt-6-astra", "medium", "read-only"],
 };
 
 function getProfileSnapshot() {
@@ -123,6 +126,16 @@ function testFanoutOptOuts() {
     "don't spawn subagents",
     "without any subagents",
     "no fan-out",
+    "no swarm",
+    "Do not spawn child agents",
+    "don't use multiple agents",
+    "не запускай дочерних агентов",
+    "аудит без дочерних агентов",
+    "review without swarm",
+    "do not use swarm",
+    "аудит без swarm",
+    "не запускай рой",
+    "проверь без роя",
     "релиз без субагентов",
     "не запускай субагентов",
     "не делегируй",
@@ -247,20 +260,20 @@ function testValidatorRejections() {
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/scout.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model = "gpt-5.6-luna"',
-      'model = "gpt-5.6-sol"',
+      'model = "gpt-6-luna"',
+      'model = "gpt-6.1-sol"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /scout must use gpt-5\.6-luna/);
+  }, /scout must use gpt-6-luna/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/pr-explorer.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model_reasoning_effort = "medium"',
+      'model_reasoning_effort = "high"',
       'model_reasoning_effort = "max"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /must use medium effort/);
+  }, /must use high effort/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/config.toml");
@@ -274,10 +287,62 @@ function testValidatorRejections() {
   }, /contains user\/IDE-owned defaults/);
 }
 
+function testResourceSelection() {
+  const bounded = { role: "implementer", scope: ["src/isolated.js"], acceptance: ["unit tests pass"] };
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6-luna");
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedEffort, "high");
+  const integration = getResourceRecommendation({ ...bounded, integration: true });
+  assert.strictEqual(integration.recommendedModel, "gpt-6.1-sol");
+  assert.strictEqual(integration.dispatch.customRole, null);
+  assert.strictEqual(integration.dispatch.owner, "orchestrator");
+  assert.strictEqual(getResourceRecommendation({ role: "implementer" }).dispatch.ready, false);
+  const consultant = getResourceRecommendation({ ...bounded, role: "architecture_consultant", strategy: true, deepRisk: true });
+  assert.strictEqual(consultant.recommendedModel, "gpt-6-astra");
+  assert.strictEqual(consultant.recommendedEffort, "high");
+  assert.strictEqual(consultant.dispatch.customRole, null);
+  assert.strictEqual(consultant.effectiveModel, null);
+  assert.strictEqual(consultant.runtimeStatus, "recommendation-only");
+  assert.strictEqual(validateResourceRequest({ model: "gpt-6-luna", effort: "max" }).isValid, false);
+  const elevated = { model: "gpt-6-luna", effort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 } };
+  assert.strictEqual(validateResourceRequest(elevated).isValid, true);
+  assert.strictEqual(validateResourceRequest(elevated).hostStatus, "unverified");
+  assert.strictEqual(validateResourceRequest({ ...elevated, hostCapabilities: { "gpt-6-luna": ["high"] } }).isValid, false);
+  assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-sol", effort: "none" }).isValid, false);
+  const lunaMax = getResourceRecommendation({ ...bounded, requestedEffort: "max",
+    reason: "hard bounded task", budget: { maxTokens: 5000, maxAttempts: 2 },
+    hostCapabilities: { "gpt-6-luna": ["high", "max"] } });
+  assert.strictEqual(lunaMax.recommendedEffort, "max");
+  assert.strictEqual(lunaMax.dispatch.customRole, null);
+  assert.strictEqual(lunaMax.dispatch.strategy, "explicit-model-contract");
+  assert.strictEqual(lunaMax.dispatch.ready, false);
+  const explicit = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["explicit-model-contract"] });
+  assert.strictEqual(explicit.dispatch.ready, true);
+  assert.strictEqual(explicit.dispatch.callContract.model, "gpt-6-luna");
+  assert.strictEqual(explicit.dispatch.callContract.fork_turns, "none");
+  const native = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["native-custom-role"] });
+  assert.strictEqual(native.dispatch.customRole, "implementer");
+  assert.strictEqual(native.dispatch.ready, true);
+  assert.strictEqual(native.dispatch.callContract.agent_type, "implementer");
+  assert.strictEqual(native.dispatch.callContract.model, undefined);
+  assert.strictEqual(getResourceRecommendation({ ...bounded, requestedEffort: "max" }).dispatch.ready, false);
+  for (const invalid of [null, "contract", [], { scope: "src/file.js" }, { acceptance: "done" }, { hostCapabilities: { "gpt-6-luna": "max" } }, { scope: ["../outside"] }]) {
+    assert.throws(() => getResourceRecommendation(invalid), /contract|hostCapabilities/);
+  }
+  for (const scope of ["../secret", "src/../../secret", "C:/outside.js", "src/*.js", "/outside"]) {
+    assert.strictEqual(validateWriteAssignments([{ agent: "worker", files: [scope] }]).isValid, false, scope);
+  }
+}
+
 function main() {
+  for (const availableSlots of ["0", null, NaN, Infinity, -1, 0.5, {}, Number.MAX_SAFE_INTEGER + 1]) {
+    assertFanoutDecision(getFanoutDecision({ task: "Review security across modules",
+      candidates: ["tester", "scout"], availableSlots }),
+    { status: "skip", reason: "invalid-host-child-slots" });
+  }
   assert.deepStrictEqual(getProfileSnapshot(), EXPECTED_PROFILES);
   assert.strictEqual(AGENT_POLICY.parent.modelSource, "user-or-ide");
-  assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "xhigh");
+  assert.strictEqual(AGENT_POLICY.parent.effortCeiling, "max");
+  testResourceSelection();
   testFanoutDecisions();
   testXsAndReadOnlyBoundaries();
   testFanoutOptOuts();

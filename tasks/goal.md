@@ -17,16 +17,19 @@ The primary user is the downstream product team or operator using a generated pr
 - Data/API: contracts, schemas, and validation are part of product quality.
 - Docs: linked docs are treated as product surfaces and verified by route/layout/assets/404 checks.
 - Domain tone: plans, audits, and reports match the user's language and project vocabulary.
-- Progressive JPEG truth: every implementation slice completes the product's real purpose end to end at its declared detail level. Architecture, status, tests, debug markers, mocks, and callable stubs may support a slice but cannot impersonate the product outcome.
+- Staged delivery truth: agree on the final outcome and approximate useful waves, then derive the detailed nearest-wave plan. A wave returns a whole useful result at its declared scope or an inspectable bounded uncertainty decision. Internal enabling tasks, tests and stubs support it but cannot impersonate delivery. Material promise/constraint/wave changes need approval; internal steps remain autonomous.
 - Change strategy: compatibility protects verified user, data, and public
   contracts rather than old implementation. Causal architecture evidence found
   during reading triggers an evidence-backed destination and transition
   decision before the first patch; a second failed repair is the fallback gate.
 
 ## Current Step
-Roll out the published `v4.9.6` security patch project by project from reviewed
-external plans. Restore AgentOS template provenance before using `--from-git`,
-and resolve each downstream conflict without weakening project ownership.
+Verify and publish `v5.0.0`, then send Ui storybook the user-authorized instruction
+to update all projects under its management using a Sol High swarm: first a
+reviewed canary, then the remaining managed fleet. Root does not modify downstream
+projects itself. Publication requires exact commit, release
+CI, non-draft/non-prerelease GitHub Release and asset checksum evidence; source
+version markers alone are not publication proof. Preserve downstream ownership.
 
 ## Dependencies
 - Shared `.claude/library/` rules.
@@ -53,10 +56,10 @@ and resolve each downstream conflict without weakening project ownership.
 - Glavred recreation is a separate product task; this release must keep the provider explicitly not configured and not run.
 
 ## Out Of Scope For Current Step
-- Applying the new template to every downstream project.
+- Root directly applying updates to downstream projects; fleet execution belongs
+  to Ui storybook after the authorized post-release handoff.
 - Reworking each downstream product UI.
 - Changing user-level Codex or IDE model/sandbox defaults.
 - Treating planning, research, architecture-only work, or a debug harness as a delivered product slice.
 - Recreating, proxying, or bundling Glavred.
-- Publishing or tagging the Change Strategy Gate before its behavior and
-  downstream sync contract are verified.
+- Updating projects outside Ui storybook's managed scope.

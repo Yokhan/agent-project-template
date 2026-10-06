@@ -37,6 +37,17 @@ try {
   assert(names.includes("get_context"));
   assert(!names.includes("run_pipeline"), "mutating pipeline tool must be opt-in");
 
+  for (const name of ["get_context", "switch_context"]) {
+    const routed = await client.callTool({ name, arguments: { keywords: "Разреши неоднозначную архитектуру", depth: "brief" } });
+    assert.notEqual(routed.isError, true);
+    const output = JSON.stringify(routed.content);
+    assert.match(output, /WORKFLOW_DEPTH: routed/u);
+    assert.match(output, /RESOURCE_DECISION:/u);
+    assert.match(output, /gpt-6-astra/u);
+    assert.match(output, /recommendation-only/u);
+    assert.match(output, /CODEX_SUBAGENTS:.*architecture_consultant/u);
+  }
+
   const inside = await client.callTool({ name: "research", arguments: { target: "inside.txt" } });
   assert.notEqual(inside.isError, true, JSON.stringify(inside));
   assert.match(JSON.stringify(inside.content), /inside\.txt/u);

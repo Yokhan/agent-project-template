@@ -11,6 +11,13 @@ Read `.claude/library/technical/writing.md` as the single source of truth.
 
 1. Select one primary semantic mode from the reader's job.
 2. Build the writing contract and source pack, including the target language.
+   For substantive nonfiction and explanatory chat answers, use
+   `.claude/library/technical/writing-source-grounding.md`: fresh primary
+   passages, hashes/locators/read receipts, then concrete principle application
+   before drafting/review. If shell access is absent, the coordinator must
+   retrieve and supply that current packet. Missing/stale sources block grounded
+   writing; memory and summaries cannot substitute. Actual fiction/lore prose
+   is exempt, not game business, technical books or project-planning artifacts.
 3. Gate on material SOT conflicts or missing facts; offer 2-3 options.
 4. Analyze references into concrete properties without copying structure.
 5. Plan the final text inventory and produce a functional 1% whole.

@@ -6,6 +6,7 @@ const {
   EFFORT_LEVELS,
   getAgentProfile,
   getAgentProfiles,
+  MODEL_CAPABILITIES,
 } = require("./codex-agent-policy.js");
 const { ROUTES } = require("./codex-route-config.js");
 
@@ -145,11 +146,11 @@ function validateImplementerInstructions(filePath, fields) {
 
 function validatePolicy() {
   state.checks += 1;
-  if (AGENT_POLICY.parent.effortCeiling !== "xhigh") {
-    addError("agent policy effort ceiling must be xhigh");
+  if (AGENT_POLICY.parent.baselineEffort !== "high") {
+    addError("agent policy parent baseline must be high; capabilities are not defaults");
   }
-  for (const { name, effort } of getAgentProfiles()) {
-    if (!EFFORT_LEVELS.includes(effort)) {
+  for (const { name, model, effort } of getAgentProfiles()) {
+    if (!MODEL_CAPABILITIES[model]?.efforts.includes(effort)) {
       addError(`agent policy: ${name} uses unsupported effort ${effort}`);
     }
   }
@@ -248,14 +249,23 @@ function validateAgentConfig() {
       `${CODEX_CONFIG}: expected max_depth = 1 to prevent recursive fan-out`,
     );
   }
-  const maxThreads = content.match(/max_threads\s*=\s*(\d+)/);
+  const agentsSection = content.split("[agents]")[1]?.split(/\r?\n\s*\[/)[0] || "";
+  const currentLimit = agentsSection.match(/^max_concurrent_threads_per_session\s*=\s*(\d+)/m);
+  const legacyLimit = agentsSection.match(/^max_threads\s*=\s*(\d+)/m);
+  const maxThreads = currentLimit || legacyLimit;
   if (!maxThreads) {
-    addError(`${CODEX_CONFIG}: missing agents.max_threads`);
+    addError(`${CODEX_CONFIG}: missing agents concurrency limit`);
   } else {
     const count = Number(maxThreads[1]);
-    if (count < 2 || count > 8) {
-      addError(`${CODEX_CONFIG}: max_threads must stay between 2 and 8`);
+    if (count < 1 || count > AGENT_POLICY.fanout.maxChildren) {
+      addError(`${CODEX_CONFIG}: concurrency limit must stay between 1 and ${AGENT_POLICY.fanout.maxChildren}`);
     }
+  }
+  if (currentLimit && legacyLimit) {
+    addError(`${CODEX_CONFIG}: choose one concurrency key; legacy alias must not conflict`);
+  }
+  if (legacyLimit && !currentLimit) {
+    addWarning(`${CODEX_CONFIG}: legacy max_threads accepted; verify client semantics and host slots`);
   }
 
   if (

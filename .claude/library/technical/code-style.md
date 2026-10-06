@@ -19,7 +19,9 @@
 
 ## Functions
 - Single responsibility: one function does one thing.
-- Max 30 lines per function. Longer = split into helpers.
+- Keep functions cohesive and reviewable. Length is a signal to inspect
+  responsibility and readability, not a universal line limit or a reason to
+  split coherent logic mechanically.
 - Pure functions preferred: same input = same output, no side effects.
 - Error handling at boundaries, not deep inside.
 
@@ -74,10 +76,11 @@
 - Constants group by domain: `AUTH_CONSTANTS`, `RATE_LIMIT_CONSTANTS`, etc.
 
 ## Boolean Parameter Anti-Pattern
-- Never: `createUser(data, true, false, true)` — impossible to read at call site.
-- Instead: use an options object `createUser(data, { sendEmail: true, isAdmin: false, verify: true })`
-- One boolean parameter is acceptable ONLY if the function name makes it obvious: `setVisible(true)`.
-- Two or more booleans: always use options object or named arguments.
+- Multiple positional booleans can obscure call-site intent (for example,
+  `createUser(data, true, false, true)`). Prefer named options when they make
+  meaning clearer or the options are likely to grow.
+- A boolean is appropriate when the API remains clear and idiomatic in its
+  language and codebase. This is a readability heuristic, not a blanket ban.
 
 ## Dead Code Deletion
 - Delete dead code immediately. Don't comment it out "just in case."

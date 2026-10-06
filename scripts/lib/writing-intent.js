@@ -4,17 +4,20 @@ const ACTION_PATTERNS = [
   ["review", /\b(?:review|audit|critique|assess|check|score)\b|проверь|проверить|проверяй|проверим|аудитир|разбер|оцени|оценк[ауи]?|отрецензир/i],
   ["edit", /\b(?:rewrite|edit|revise|tighten|polish)\b|перепиш|отредакт|доработ[а-яё]*\s+текст|сделай[а-яё]*\s+понятн/i],
   ["plan", /\b(?:outline|plan|structure)\b|спланир|структур[а-яё]*\s+текст|план[а-яё]*\s+(?:стат|книг|письм|текст)/i],
-  ["create", /\b(?:write|draft|compose|document)\b|напиш|состав[а-яё]*\s+(?:письм|сообщен|текст|стат|объявлен)|создай[а-яё]*\s+(?:текст|стат|сцен|письм)/i],
+  ["create", /\b(?:write|draft|compose|document|explain|describe)\b|напиш|объясни|объяснить|(?<![А-Яа-яЁё])опиши|состав[а-яё]*\s+(?:письм|сообщен|текст|стат|объявлен)|создай[а-яё]*\s+(?:текст|стат|сцен|письм)/i],
 ];
 
 const ARTIFACT_PATTERN =
-  /\b(?:copy|text|article|guide|how-to|manual|docs?|documentation|readme|runbook|troubleshooting|release notes?|architecture decision|adr|story|novel|chapter|scene|dialogue|screenplay|poem|email|letter|message|notification|announcement|support reply|incident update|client report|landing page|headline|ad)\b|текст|стат|гайд|руководств|инструкц|документац|рассказ|роман|глав[а-яё]*\s+(?:книг|роман)|сцен[а-яё]*|диалог|сценари|стих|письм|сообщен|уведомлен|объявлен|ответ[а-яё]*\s+поддерж|клиентск[а-яё]*\s+отч|лендинг|заголов|реклам[а-яё]*\s+объявлен/i;
+  /\b(?:copy|text|article|guide|how-to|manual|docs?|documentation|readme|runbook|troubleshooting|release notes?|architecture decision|adr|story|novel|chapter|scene|dialogue|screenplay|poem|email|letter|message|notification|announcement|support reply|incident update|client report|landing page|headline|ad|description|explain|describe|nonfiction book|business book|technical book)\b|текст|стат|гайд|руководств|инструкц|документац|рассказ|роман|глав[а-яё]*\s+(?:книг|роман)|сцен[а-яё]*|диалог|сценари|стих|письм|сообщен|уведомлен|объявлен|ответ[а-яё]*\s+поддерж|клиентск[а-яё]*\s+отч|лендинг|заголов|реклам[а-яё]*\s+объявлен|(?<![А-Яа-яЁё])описан|(?<![А-Яа-яЁё])опиши|объясни|лорн[а-яё]*\s+заметк/i;
+
+const NONFICTION_BOOK_PATTERN = /\b(?:non-?fiction|business book|technical book|(?:book|chapter)\s+(?:about|on)\s+(?:business|game development|programming|software|technology))\b|(?:книг|глав)[а-яё]*[^.!?\n]{0,90}(?:бизнес|геймдев|разработк[а-яё]*\s+игр|программир|технолог|техническ)|(?:техническ|делов|нехудожественн)[а-яё]*\s+книг/iu;
+const NONFICTION_PLAN_PATTERN = /\b(?:business plan|production plan|project plan|release plan|plan\s+(?:commercial game|game production|game release|novel publication))\b|бизнес-план|(?:план|спланир)[а-яё]*[^.!?\n]{0,60}(?:коммерческ[а-яё]*\s+игр|производств[а-яё]*\s+игр|релиз[а-яё]*\s+игр|работ[а-яё]*\s+над\s+роман|выпуск[а-яё]*\s+роман)/iu;
 
 const MODE_PATTERNS = {
   marketing:
     /\b(?:marketing|advertising|ad copy|sales copy|landing page|offer|campaign|conversion copy|headline)\b|маркет|реклам|продающ|оффер|лендинг|кампан|конверси|заголов[а-яё]*\s+объявлен/i,
   literary:
-    /\b(?:fiction|story|novel|chapter|scene|dialogue|screenplay|narrative|poem|game lore)\b|литератур|художественн|рассказ|роман|повест|сцен[а-яё]*|диалог|стих|игров[а-яё]*\s+лор|глав[а-яё]*\s+(?:книг|роман)/i,
+    /\b(?:fiction|story|novel|chapter|scene|dialogue|screenplay|narrative|poem|game lore|character description)\b|литератур|художественн|рассказ|роман|повест|сцен[а-яё]*|диалог|стих|игров[а-яё]*\s+лор|лорн[а-яё]*\s+заметк|описан[а-яё]*\s+персонаж|опиши[а-яё]*\s+персонаж|глав[а-яё]*\s+(?:книг|роман)/i,
   informational:
     /\b(?:guide|how-to|manual|tutorial|article|docs?|documentation|readme|runbook|troubleshooting|knowledge base|explanation|report|release notes?|architecture decision|adr)\b|гайд|руководств|инструкц|стат|документац|справк|объяснен|отчет|отчёт|релизн[а-яё]*\s+замет/i,
   communication:
@@ -59,6 +62,9 @@ function findAction(task) {
 
 function findPrimaryMode(task, externalTools = []) {
   if (MODE_PATTERNS.marketing.test(task)) return "marketing";
+  if (NONFICTION_PLAN_PATTERN.test(task)) return "informational";
+  if (NONFICTION_BOOK_PATTERN.test(task)) return "informational";
+  if (MODE_PATTERNS.literary.test(task) && (MODE_PATTERNS.informational.test(task) || SPECIALIZATION_PATTERNS.technical.test(task))) return "informational";
   if (MODE_PATTERNS.literary.test(task)) return "literary";
   if (MODE_PATTERNS.communication.test(task)) return "communication";
   if (MODE_PATTERNS.informational.test(task)) return "informational";
@@ -111,12 +117,13 @@ function classifyWritingIntent(rawTask) {
   const detectedAction = findAction(task);
   const externalTools = findExternalTools(task);
   const primaryMode = findPrimaryMode(task, externalTools);
-  const hasArtifact = ARTIFACT_PATTERN.test(task);
+  const hasArtifact = ARTIFACT_PATTERN.test(task) || NONFICTION_PLAN_PATTERN.test(task);
   const action = detectedAction || (hasArtifact ? "create" : null);
   const isWriting = Boolean(primaryMode && action && (hasArtifact || externalTools.length || action !== "review"));
   const language = isWriting ? resolveOutputLanguage(task) : { outputLanguage: null, languageResolution: null };
 
   return {
+    task,
     isWriting,
     action: isWriting ? action : null,
     primaryMode: isWriting ? primaryMode : null,

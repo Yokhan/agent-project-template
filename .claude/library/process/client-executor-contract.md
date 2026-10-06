@@ -31,7 +31,8 @@ Agreement is not the default. Before agreeing, check whether the request
 conflicts with evidence, user outcome, business priority, safety, privacy,
 quality bar, platform constraints, or existing project rules.
 
-If there is a conflict, say so before acting:
+If a conflict materially affects the outcome, explain it before acting. Use
+natural language; the following is an example shape, not required wording:
 
 ```text
 I would not do that as stated because [risk].
@@ -85,10 +86,10 @@ artifact the client can inspect.
 
 ## Progressive JPEG Delivery
 
-For M+, HIGH-risk, template, release, product, design, auth, data, game, docs,
-deployment, status, replan, and closeout work, use progressive JPEG delivery:
-show a useful low-resolution version of the result early, then sharpen it with
-evidence.
+For long-running, high-risk, explicitly staged, or material scope-changing
+work, use progressive JPEG delivery: show a useful view early, then sharpen it
+with evidence. Do not require a status ritual for routine edits or brief
+answers.
 
 A progressive JPEG update must name:
 
@@ -104,27 +105,20 @@ deadline.
 
 ## Progressive JPEG Implementation Meaning
 
-For product, feature, design, game, data, API, and template implementation work,
-progressive JPEG also means the artifact is shaped like the intended final
-product from the first useful slice.
-
-The executor should not spend a slice proving an old harness when the product
-needs the future model. If the final component or workflow is already known,
-create the end-state skeleton and make known future capabilities 1% callable:
-slots, handlers, contracts, routes, state names, feature flags, no-op stubs,
-placeholder events, or dev-only debug signals.
-
-If the final plan is not known, the executor must gate implementation and
-create/propose the plan first. The plan should identify the final production
-function, object inventory, public contracts, dependencies, states, and
-acceptance checks. A 1% object is not a random fragment; it is the whole planned object at low detail.
+For staged product work, keep the accepted destination and relevant contracts
+visible while making the current step useful and honest. Include future-facing
+slots, handlers, routes, state names, stubs, or callable seams only when they
+are accepted architecture and matter to the current change. Do not prebuild
+speculative capabilities or demand a full end-state inventory for a bounded
+step. Resolve an unknown final contract first only when the current decision
+depends on it.
 
 ### Anti-Falsification Contract
 
-Every implementation slice must fulfill the real product purpose end to end at
-its current depth through the accepted final path. The executor must name the
-user victory, complete journey, purpose mechanism, KPI link, observed evidence,
-falsifier, truth boundary, rough edges, and next sharpening.
+When claiming that an implementation increment delivers a user outcome, the
+executor must provide evidence at the scope claimed. Enabling work is valid
+when it resolves a real dependency or risk; label it accurately and state its
+next useful result.
 
 Planning, research, architecture, scaffolding, migration, status, tests, mocks,
 stubs, debug output, HTTP success, and readiness percentages are enabling
@@ -136,14 +130,13 @@ The client should see what is sharp, what is rough, and which calls are stubs.
 Product users must not see a completed promise for behavior that does not exist.
 Use `$codex-progressive-jpeg-planner` for iteration plans.
 
-When reviewing the result, check object completeness against the final plan
-before judging implementation depth.
+When a final plan applies, use it to review the changed scope and acceptance;
+do not treat the absence of unrelated future scaffolding as incompleteness.
 
-When a later layer supersedes an earlier one, the executor must retire the old layer instead of preserving it as hidden legacy. Wrong iterations, obsolete
-stubs, commented-out paths, disabled branches, stale flags, skipped tests, and
-release-only exclusion harnesses should be replaced or deleted in the same
-slice. Keep only placeholders that still belong to the final plan and temporary
-migration scaffolding with an explicit removal condition.
+When the current change supersedes an earlier layer, retire or migrate it when
+scope and protected contracts permit. Do not force unrelated cleanup into a
+bounded task. Keep a placeholder only to protect an accepted contract or
+transition; temporary scaffolding needs an owner and removal condition.
 
 ## Status Shape
 
@@ -174,9 +167,9 @@ Replan trigger:
 What would change the path.
 ```
 
-When the project has tagged working documents, include the current project
-slice from `node scripts/progressive-status.js`. Use aligned ASCII bars so the
-client sees the current detail level at a glance:
+When the project workflow requires status headers on the changed documents,
+include the current project slice from `node scripts/progressive-status.js`.
+Use aligned ASCII bars when that makes the detail level easier to inspect:
 
 ```text
 dimension    bar                    pct
@@ -187,8 +180,9 @@ production   [############--------]  60%
 cleanup      [##############------]  70%
 ```
 
-Do not send a final closeout for changed tagged docs until
-`node scripts/progressive-status.js --check` passes.
+When the applicable project status contract requires a check, do not close out
+changed governed documents until `node scripts/progressive-status.js --check`
+passes.
 
 ## Replan Shape
 

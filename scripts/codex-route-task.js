@@ -9,7 +9,7 @@ const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
-const { getFanoutDecision } = require("./codex-agent-policy.js");
+const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, validateWorkerContract } = require("./codex-agent-policy.js");
 const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
@@ -124,20 +124,22 @@ function needsProductGoal(selected, risk) {
   const productModes = new Set(["product-goal", "product-ux", "design-system", "marketing", "template", "release", "strategy", "lessons"]);
   return risk !== "LOW" && selected.some((route) => productModes.has(route.mode));
 }
-function getPlanContract(selected, risk, changeStrategy) {
+function getPlanContract(selected, risk, changeStrategy, orchestrator) {
   const modes = new Set(selected.map((route) => route.mode));
   return {
     required: risk !== "LOW" || modes.has("product-goal") || modes.has("template"),
     language: "match-user-request",
-    writeTo: "tasks/current.md",
-    goalArtifact: modes.has("product-goal") || modes.has("template") || modes.has("design-system")
+    owner: orchestrator.owner,
+    writeTo: orchestrator.owner === "codex-parent" ? "tasks/current.md" : null,
+    goalArtifact: orchestrator.owner !== "codex-parent" ? "use-owner-assigned-artifact-do-not-create-competing-graph" :
+      modes.has("product-goal") || modes.has("template") || modes.has("design-system")
       ? "read-or-create tasks/goal.md for M+ product work"
       : "read tasks/goal.md when present",
     approval: changeStrategy.required
       ? "change-strategy-gate-decides-auto-internal-vs-client-tradeoff"
       : risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
     outcomePriority:
-      "name product-user experience and app-specific business KPI before technical work",
+      "name expected user outcome; business KPI only where relevant",
   };
 }
 function getProductionBar(selected) {
@@ -163,7 +165,9 @@ function getProductionBar(selected) {
   };
 }
 function getQualityGates(selected, risk, shouldUseProductGoal = false, changeStrategy = { required: false }) {
-  const base = ["success-criteria", "user-business-outcome-link", "verification-evidence", "confidence-and-doubt"];
+  const base = ["success-criteria", "verification-evidence", "report-material-uncertainty"];
+  const outcomeGates = selected.some((route) => (route.rules || []).includes("product"))
+    ? ["user-business-outcome-link"] : [];
   const riskGates = risk === "HIGH" || risk === "CRITICAL"
     ? ["rollback-or-plan-b", "route-state-written"]
     : [];
@@ -176,6 +180,7 @@ function getQualityGates(selected, risk, shouldUseProductGoal = false, changeStr
   const discoveryGates = changeStrategy.discoveryRequired ? ["discovery-evidence-before-edit"] : [];
   return unique([
     ...base,
+    ...outcomeGates,
     ...riskGates,
     ...productGoalGates,
     ...changeStrategyGates,
@@ -303,7 +308,12 @@ function getRoute(task, options = {}) {
       riskOrder[route.risk] > riskOrder[current] ? route.risk : current,
     "LOW",
   );
-  const risk = changeStrategy.required && riskOrder[routeRisk] < riskOrder.MEDIUM
+  const directEligibleModes = new Set(["bugfix", "feature", "review", "docs", "writing-informational", "technical-writing"]);
+  const smallRiskWords = /security|auth|permission|secret|credential|token|data|database|delete|migration|release|deploy|безопас|секрет|данны|удален|удал[иь]|релиз|депло|миграц/iu;
+  const isDirect = !changeStrategy.required && !options.discovery &&
+    riskOrder[routeRisk] <= riskOrder.MEDIUM && !smallRiskWords.test(task) &&
+    isLikelySmallTask(task) && selected.every((route) => directEligibleModes.has(route.mode));
+  const risk = isDirect ? "LOW" : changeStrategy.required && riskOrder[routeRisk] < riskOrder.MEDIUM
     ? "MEDIUM"
     : routeRisk;
   const shouldUseStrategicReview = needsStrategicReview(
@@ -313,12 +323,16 @@ function getRoute(task, options = {}) {
   );
   const shouldUseProductGoal = needsProductGoal(selected, risk);
   const candidateSubagents = unique([
+    /(?:ambiguous architecture|unresolved architecture|conflicting requirements|systemic deadlock|неоднозначн[\p{L}]*\s+архитектур|конфликт[\p{L}]*\s+требован|системн[\p{L}]*\s+тупик)/iu.test(task)
+      ? "architecture_consultant" : "",
     ...(changeStrategy.required ? ["systems_reviewer", "tester"] : []),
     ...selected.flatMap((route) => route.subagents || []),
   ]);
   const baseFanout = getFanoutDecision({
+    availableSlots: options.availableSlots,
     task, risk, modes: selected.map((route) => route.mode), candidates: candidateSubagents,
-    priorityCandidates: changeStrategy.required ? ["systems_reviewer", "tester"] : [],
+    priorityCandidates: candidateSubagents.includes("architecture_consultant")
+      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : [],
   });
   const fanout = changeStrategy.required && baseFanout.status === "conditional"
     ? { ...baseFanout, status: "recommended", reason: "change-strategy-independent-system-and-test-review" }
@@ -328,6 +342,16 @@ function getRoute(task, options = {}) {
     ...selected.flatMap((route) => route.rules || []),
     changeStrategy.required ? "changeStrategy" : "",
   ]);
+  const orchestrator = getOrchestrator(artifacts);
+  const contract = options.workerContract === undefined ? {} : validateWorkerContract(options.workerContract);
+  const gateDispatch = (decision) => fanout.status === "skip" ? {
+    ...decision, dispatch: { ...decision.dispatch, ready: false, callContract: null,
+      policyStatus: "blocked", policyReason: fanout.reason },
+  } : { ...decision, dispatch: { ...decision.dispatch, policyStatus: "allowed" } };
+  const resourceDecision = gateDispatch(getResourceRecommendation({
+    ...contract, role: contract.role || (candidateSubagents.includes("architecture_consultant")
+      ? "architecture_consultant" : "orchestrator"), orchestrator: orchestrator.owner,
+  }));
   return {
     task,
     routedAt: new Date().toISOString(),
@@ -335,23 +359,34 @@ function getRoute(task, options = {}) {
     pipeline: selected[0].pipeline,
     codeIntelligence: getToolWorkflow(task, detectCodeStacks(cwd), selected.map((route) => route.mode)),
     risk,
-    skills: unique([
+    workflowDepth: isDirect ? "direct" : "routed",
+    resourceDecision,
+    workerContracts: fanout.candidates.map(({ name }) => gateDispatch(getResourceRecommendation({
+      hostDispatchCapabilities: contract.hostDispatchCapabilities,
+      hostCapabilities: contract.hostCapabilities,
+      ...contract.assignments?.[name],
+      role: name, scope: contract.assignments?.[name]?.scope,
+      acceptance: contract.assignments?.[name]?.acceptance,
+      evidenceRefs: unique([...(contract.evidenceRefs || []), ...(contract.assignments?.[name]?.evidenceRefs || [])]), orchestrator: orchestrator.owner,
+    }))),
+    skills: isDirect ? [] : unique([
       ...selected.flatMap((route) => route.skills || []),
+      ["required", "recommended", "conditional"].includes(fanout.status) ? "codex-subagent-orchestration" : "",
       changeStrategy.required ? "codex-change-strategy" : "",
       shouldUseProductGoal ? "codex-product-goal" : "",
       shouldUseStrategicReview ? "codex-strategic-review" : "",
     ]),
     subagents: fanout.candidates.map(({ name }) => name),
     fanout,
-    sharedRules: unique(
+    sharedRules: isDirect ? [] : unique(
       ruleGroups.flatMap((group) => SHARED_RULES[group] || []),
     ),
-    planContract: getPlanContract(selected, risk, changeStrategy),
+    planContract: getPlanContract(selected, risk, changeStrategy, orchestrator),
     productionBar: getProductionBar(selected),
     languagePolicy: "plans-audits-status-and-final-reports-match-user-request-language",
     matchPolicy: "exact-patterns-plus-semantic-intent-scoring",
     writingIntent,
-    writingPolicy,
+    writingPolicy: isDirect ? null : writingPolicy,
     exactMatches,
     semanticMatches,
     changeStrategy,
@@ -359,7 +394,7 @@ function getRoute(task, options = {}) {
     decisionBinding,
     discovery,
     blockEdits,
-    qualityGates: getQualityGates(
+    qualityGates: isDirect ? ["intent-check", "narrow-regression-check"] : getQualityGates(
       selected,
       risk,
       shouldUseProductGoal,
@@ -367,7 +402,7 @@ function getRoute(task, options = {}) {
     ),
     needsFreshDocs: selected.some((route) => route.needsFreshDocs),
     artifacts,
-    orchestrator: getOrchestrator(artifacts),
+    orchestrator,
   };
 }
 if (require.main === module) {

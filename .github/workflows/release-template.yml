@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v4.9.4"
+        description: "Existing tag to publish, for example v5.0.0"
         required: true
         type: string
 
@@ -72,6 +72,7 @@ jobs:
           node scripts/validate-writing-references.js
           node scripts/test-writing-intent.js
           node scripts/test-codex-mcp-config.js
+          node scripts/test-ci-native-exit.js
           node scripts/configure-codex-mcp.js --check
           npm --prefix mcp-servers/context-router ci
           npm --prefix mcp-servers/context-router test
@@ -84,9 +85,9 @@ jobs:
           bash scripts/bootstrap-mcp.sh --check --tool-profile=full
           gitleaks git --redact --no-banner .
 
-      - name: Verify release config with Codex 0.125.0
+      - name: Verify release config with Codex 0.160.1
         run: |
-          npm install --global @openai/codex@0.125.0
+          npm install --global @openai/codex@0.160.1
           node -e 'const fs=require("fs"),os=require("os"),path=require("path"); const root=fs.realpathSync(process.cwd()); const key=process.platform==="win32"?root.toLowerCase():root; const home=process.env.CODEX_HOME||path.join(os.homedir(),".codex"); fs.mkdirSync(home,{recursive:true}); fs.appendFileSync(path.join(home,"config.toml"),`\n[projects.${JSON.stringify(key)}]\ntrust_level = "trusted"\n`);'
           codex mcp list | tee codex-mcp-list.txt
           grep -q 'context-router' codex-mcp-list.txt
@@ -114,7 +115,11 @@ jobs:
       - name: Exercise native updater and MCP runtime
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          if ($PSVersionTable.PSVersion -lt [version]'7.3') { throw 'Native release checks require PowerShell 7.3 or newer' }
+          $PSNativeCommandUseErrorActionPreference = $true
           if ((git rev-parse HEAD) -ne '${{ needs.validate.outputs.commit }}') { throw 'Windows checkout commit mismatch' }
+          node scripts/test-ci-native-exit.js
           node scripts/test-sync-template.js
           node scripts/test-safe-config-write.js
           node scripts/test-code-intelligence-tools.js
@@ -167,12 +172,19 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "Update downstream projects with:"
+            echo "GPT-6 model roles, task-sized planning through useful versions, and fresh primary-source reading for nonfiction drafting and review."
+            echo ""
+            echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""
             echo '~~~bash'
-            echo "node scripts/sync-template.js --from-git --ref ${tag} --plan-file ../agent-template-${tag}.plan.json"
-            echo "node scripts/sync-template.js --from-git --ref ${tag} --plan-file ../agent-template-${tag}.plan.json --apply"
+            echo "git clone --branch ${tag} --depth 1 https://github.com/${GITHUB_REPOSITORY}.git release-checkout-${tag}"
+            echo "node release-checkout-${tag}/scripts/sync-template.js release-checkout-${tag} PROJECT --plan-file EXTERNAL-PLAN.json"
+            echo "node release-checkout-${tag}/scripts/sync-template.js release-checkout-${tag} PROJECT --plan-file EXTERNAL-PLAN.json --apply"
             echo '~~~'
+            echo ""
+            echo "Inspect conflicts and project-owned instructions before apply; preserve AgentOS ownership and semantically merge applicable rules into preserved hot entrypoints. See docs/TEMPLATE_RELEASES.md for preflight, legacy fallback, verification and rollback."
+            echo ""
+            echo "Books and extracted primary-text caches are not release or sync payload. A new machine remains source-grounding-blocked until supplied exact originals and pinned caches are imported once into an external shared store."
             echo ""
             echo "AgentOS may orchestrate rollout order, but projects consume this template through the same pinned sync contract."
           } > release-notes.md

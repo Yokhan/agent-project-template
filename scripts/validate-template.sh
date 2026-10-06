@@ -158,6 +158,12 @@ if ! node scripts/test-writing-references.js >/dev/null 2>&1 || ! node scripts/v
 else
   echo "  OK: Writing references and project overlay validate"
 fi
+if ! node scripts/test-writing-library.js >/dev/null 2>&1; then
+  echo "  ERROR: Shared writing library grounding validation failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Shared writing library import/grounding/binding validate"
+fi
 if ! node scripts/validate-production-standard.js >/dev/null 2>&1; then
   echo "  ERROR: Production standard validation failed"
   ERRORS=$((ERRORS + 1))
@@ -377,6 +383,9 @@ if [ -d ".claude/library" ]; then
   for writing_file in \
     .claude/library/technical/writing.md \
     .claude/library/technical/writing-mode-profiles.md \
+    .claude/library/technical/writing-library-catalog.json \
+    .claude/library/technical/writing-source-grounding.md \
+    scripts/writing-library.js \
     .claude/library/technical/russian-writing-profile.md \
     .claude/library/technical/russian-business-correspondence.md \
     .claude/library/technical/russian-explanation-and-persuasion.md \

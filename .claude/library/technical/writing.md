@@ -57,6 +57,39 @@ claims, explanation, structure, and genre behavior; technical profiles control
 product-specific accuracy and technical conventions. Split a mixed profile
 instead of relying on first-match routing.
 
+## Shared Primary-Source Library
+
+For every substantive informational, explanatory, business, technical, sales,
+marketing or communication artifact, including a substantive answer in chat,
+read fresh relevant primary passages and apply their principles before drafting
+or review. This is not limited to requests containing "write an article".
+Use `writing-source-grounding.md` for source selection, bounded retrieval,
+read receipts and the principle-to-artifact application record. The six-source
+catalog is `writing-library-catalog.json`; sources are one shared machine store
+outside Git, not copied into each project, release or website.
+
+Actual fiction, literary scenes and lore prose do not use the informational
+book-editing workflow. A nonfiction book about game business, a technical chapter,
+a game pitch, project plan or production decision is not fiction. Mixed tasks
+are classified per artifact: the scene can be exempt while its sales description
+or project plan remains grounded. The fiction exclusion does not exempt a
+creative project from planning, production or acceptance checks.
+
+Small acknowledgements, one-line status and code-only edits do not require a
+book ritual. Once those tasks also produce substantive explanatory or business
+text, ground that artifact. Do not use this proportionality exception to skip
+an ordinary substantive explanation.
+
+A missing, modified, edition-mixed or unverified cache is
+`source-grounding-blocked`, never permission to substitute model memory or a
+method summary. Continue safe non-writing work, report the source limitation,
+and request a valid library or an explicit change to the grounding requirement.
+Profiles, indexes and cached summaries help navigate but do not replace reading
+primary passages for this task. The verified text cache preserves supplied
+page/EPUB-section locators; inspect original files for layout, illustrations or
+extraction ambiguity. Books are method sources, not present-day market,
+technology, law, health or platform evidence.
+
 ## Writing Contract Gate
 
 Before drafting, determine:

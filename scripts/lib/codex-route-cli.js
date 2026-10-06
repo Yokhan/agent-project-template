@@ -18,6 +18,10 @@ function parseArgs(argv) {
       values.decisionPath = getFlagValue(argv, index, arg);
       index += 1;
     }
+    else if (arg === "--contract-file") {
+      values.contractPath = getFlagValue(argv, index, arg);
+      index += 1;
+    }
     else if (arg.startsWith("--")) throw new Error(`Unknown option: ${arg}`);
     else if (!arg.startsWith("--")) values.taskParts.push(arg);
   }
@@ -45,11 +49,12 @@ function writeState(route, statePath = STATE_PATH) {
 function runRouteCli(argv, dependencies) {
   const args = parseArgs(argv);
   if (!args.task) {
-    throw new Error('Usage: node scripts/codex-route-task.js "<task>" [--discovery-file <json>] [--decision-file <json>] [--summary] [--write-state]');
+    throw new Error('Usage: node scripts/codex-route-task.js "<task>" [--discovery-file <json>] [--decision-file <json>] [--contract-file <json>] [--summary] [--write-state]');
   }
   const discovery = readJson(args.discoveryPath);
   const changeStrategyDecision = readJson(args.decisionPath);
-  const route = dependencies.getRoute(args.task, { discovery, changeStrategyDecision });
+  const workerContract = readJson(args.contractPath);
+  const route = dependencies.getRoute(args.task, { discovery, changeStrategyDecision, workerContract });
   if (args.shouldWriteState) writeState(route);
   return args.isSummary ? dependencies.formatSummary(route) : JSON.stringify(route, null, 2);
 }
