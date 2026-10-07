@@ -2,12 +2,12 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release snapshot: **5.0.0**. This file is not proof of publication: verify the
+Release snapshot: **5.0.1**. This file is not proof of publication: verify the
 exact GitHub Release, tag commit, CI and asset checksums before consumption.
 See `docs/MIGRATION_V5.md` for the major-version migration and limits.
 `docs/GPT6_MIGRATION_CANDIDATE.md` preserves dated development evidence.
 Historical version summaries below describe their original rules; active
-5.0.0 guidance supersedes their universal plan/skeleton/effort rituals.
+5.0.1 guidance supersedes their universal plan/skeleton/effort rituals.
 
 ## Ownership Model
 
@@ -32,8 +32,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v5.0.0
-git push origin v5.0.0
+git tag v5.0.1
+git push origin v5.0.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -122,15 +122,15 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v5.0.0`. This source snapshot does not assert GitHub
-publication. Verify that the exact `v5.0.0` release exists and is non-draft and
+Release snapshot: `v5.0.1`. This source snapshot does not assert GitHub
+publication. Verify that the exact `v5.0.1` release exists and is non-draft and
 non-prerelease. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v5.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v5.0.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -141,8 +141,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json --apply
+node scripts/sync-template.js --from-git --ref v5.0.1 --plan-file ../agent-template-v5.0.1.plan.json
+node scripts/sync-template.js --from-git --ref v5.0.1 --plan-file ../agent-template-v5.0.1.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -152,10 +152,13 @@ Use `main` only for template development, explicit canary rollout, or when the p
 Agents deploy and verify the project; users supply intent, destination and
 necessary permissions/materials rather than manually reproducing setup steps.
 For staged product work, agree on the final result and approximate useful waves,
-then derive the detailed nearest-wave plan inside accepted scope. A wave returns
-a whole useful result at its declared scope or a bounded uncertainty decision.
-Internal enabling work is not falsely labelled a product delivery. Material
-promise, constraint or wave changes require approval; ordinary internal steps do not.
+then derive the detailed nearest-wave plan inside accepted scope. Waves are
+successive usable versions of the same product toward that final result, not
+bundles of tasks or internal routes. Research, migrations and refactors are
+enabling checkpoints. When constraints change, reassess the final target and
+remaining waves together; material changes need approval. Ordinary internal
+steps remain autonomous. The source of truth is
+`.claude/library/process/plan-first.md#product-wave-semantics--source-of-truth`.
 
 Role-aware routing uses Sol 6.1 High integration, Luna 6 High bounded work and
 conditional Astra 6 Medium/High consultancy, without overriding user defaults.
@@ -269,7 +272,7 @@ evidence and must not be rolled out. The `v4.9.4` patch supersedes it.
 
 The `v4.9.1` tag failed cross-platform validation before packaging or publication; no GitHub Release was created. It remains immutable failure evidence and must not be rolled out.
 
-Downstream projects should sync `v5.0.0` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require consent; current migration guidance is in `docs/MIGRATION_V5.md`.
+Downstream projects should sync `v5.0.1` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require consent; current migration guidance is in `docs/MIGRATION_V5.md`.
 
 ## Release Gate
 
@@ -314,8 +317,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.0 --plan-file ../agent-template-v5.0.0.plan.json --apply
+node scripts/sync-template.js --from-git --ref v5.0.1 --plan-file ../agent-template-v5.0.1.plan.json
+node scripts/sync-template.js --from-git --ref v5.0.1 --plan-file ../agent-template-v5.0.1.plan.json --apply
 ```
 
 Preview first. If both the project and template changed a template-owned file,

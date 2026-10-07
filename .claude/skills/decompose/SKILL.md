@@ -1,103 +1,37 @@
 ---
 name: decompose
-description: "Breaks XL tasks (>15 files or architecture changes) into 3-5 M-sized sub-tasks with dependency graph. Called by /implement when task is too large."
+description: "Break down work when dependencies, ownership, risk, or verification make one execution pass difficult to coordinate."
 ---
 
-# XL Task Decomposition
+# Decompose Work
 
-## When to Use
-- Task classified as XL (>15 files, architecture change, migration)
-- `/implement` Phase 1 detects XL scope
-- `/sprint` encounters a task too large for single loop iteration
+Decompose only when it reduces dependency, ownership, or verification risk more
+than it adds coordination. File count and line count can inform the estimate,
+but are not decomposition thresholds.
 
 ## Process
 
-### 1. Analyze Scope
-- List ALL files that would need to change
-- Identify independent components (types, backend, frontend, tests, docs)
-- Map module boundaries that would be crossed
+1. Identify the requested outcome, protected scope, task-graph owner, and
+   acceptance evidence. Inspect only the affected files, consumers, and risky
+   boundaries.
+2. Preserve the active project plan or AgentOS graph. Do not create a parallel
+   plan. For substantial staged product work, use
+   `.claude/library/process/plan-first.md` to distinguish the final outcome,
+   successive usable versions of the same product, and implementation tasks.
+   A fix, experiment, route, or work batch is not automatically a product wave.
+   Small tasks need no roadmap.
+3. Group work by real dependencies, ownership, and acceptance. Define a worker’s
+   exact scope and focused checks when delegation is useful; keep tightly
+   coupled work together. Do not impose a fixed number of tasks, files, or lines.
+4. Record the plan in the active artifact only when it needs to coordinate work
+   or survive multiple steps. Otherwise keep it concise in the working context.
+5. Proceed autonomously on routine choices within the accepted scope. Ask for
+   direction only when a missing decision or proposed change materially affects
+   the promised result, scope, data, security, release, cost, or reversibility.
+6. Verify each result at its claimed scope. Workers return focused evidence;
+   the parent/integrator owns broad acceptance and repeats it only for a concrete
+   invalidation or required gate.
 
-### 2. Identify Dependencies
-- Which changes depend on other changes?
-- A→B means B needs A completed first
-- Independent changes can run in parallel
-
-### 3. Group into M-Sized Tasks
-Each sub-task should be:
-- 3-7 files
-- ≤150 lines changed
-- Self-contained (can be committed independently)
-- Testable independently
-
-### 4. Write Decomposition Plan
-
-Write to `tasks/current.md`:
-
-```markdown
-## Decomposed: [original task] (XL → Nx M)
-
-### Task A: [name] [NO DEPS]
-- Files: [list]
-- Estimate: S/M
-- Tests: [what to test]
-- Commit: [suggested commit message]
-
-### Task B: [name] [DEPENDS: A]
-- Files: [list]
-- Estimate: S/M
-- Tests: [what to test]
-- Commit: [suggested commit message]
-
-### Task C: [name] [DEPENDS: A, parallel with B]
-- Files: [list]
-- Estimate: S/M
-- Tests: [what to test]
-- Commit: [suggested commit message]
-
-### Dependency Graph
-A → B, C (parallel) → D → E
-```
-
-### 5. Present to User
-Show the decomposition plan. Wait for approval before executing.
-
-### 6. Execute
-- Tasks with no deps → execute first
-- Independent tasks → parallel if possible (see implement.md parallel execution)
-- Each task follows its own ceremony level (M = OODA + 2 gates)
-- Commit after each task (not at the end)
-
-## Common Decomposition Patterns
-
-### New Feature (frontend + backend)
-```
-A: Shared types/interfaces [NO DEPS]
-B: Backend service + adapter [DEPENDS: A]
-C: Frontend component + store [DEPENDS: A]
-D: Integration wiring (routes, exports) [DEPENDS: B, C]
-E: Tests + docs [DEPENDS: D]
-```
-
-### Migration
-```
-A: New schema/types alongside old [NO DEPS]
-B: New implementation behind feature flag [DEPENDS: A]
-C: Migration script (data) [DEPENDS: A]
-D: Switch traffic to new + remove old [DEPENDS: B, C]
-E: Cleanup old code + flag [DEPENDS: D]
-```
-
-### Refactoring
-```
-A: Characterization tests for current behavior [NO DEPS]
-B: Extract shared module [DEPENDS: A]
-C: Migrate consumers one-by-one [DEPENDS: B]
-D: Remove old code [DEPENDS: C]
-E: Update docs [DEPENDS: D]
-```
-
-## Anti-Patterns
-- Don't decompose into tasks smaller than S — overhead exceeds benefit
-- Don't create circular dependencies between tasks
-- Don't defer ALL tests to the last task — test each task independently
-- Don't decompose what's actually M-sized — decomposition itself costs time
+Use `.claude/library/process/plan-first.md` for planning and product-wave
+semantics, and `.claude/library/process/self-verification.md` for verification
+cadence. Do not require separate commits for decomposed tasks.

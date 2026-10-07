@@ -11,7 +11,7 @@ const MODEL_CAPABILITIES = Object.freeze({
 });
 
 const AGENT_POLICY = Object.freeze({
-  version: "5.0.0",
+  version: "5.0.1",
   parent: Object.freeze({
     modelSource: "user-or-ide",
     recommendedModel: "gpt-6.1-sol",

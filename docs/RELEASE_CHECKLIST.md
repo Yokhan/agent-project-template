@@ -2,7 +2,7 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v5.0.0`. This checklist records required evidence, not a
+Release target: `v5.0.1`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
@@ -11,27 +11,30 @@ consumes quota; static markers never count as runtime proof.
 
 ## Validation Gate
 
+Run this gate once on the integrated candidate. The aggregates include their
+leaf validators: do not run those again just to check another box. The release
+workflow remains authoritative for fresh Linux/Windows and pinned-tool gates.
+
 - [ ] `bash scripts/validate-template.sh`
 - [ ] `bash scripts/check-drift.sh`
 - [ ] `bash scripts/test-hooks.sh`
 - [ ] `bash scripts/test-template.sh`
 - [ ] `bash scripts/sync-agents.sh`
-- [ ] `node scripts/test-codex-routing.js`
-- [ ] `node scripts/test-codex-agent-policy.js`
-- [ ] `node scripts/test-writing-library.js`
-- [ ] `node scripts/test-writing-intent.js`
-- [ ] `node scripts/test-sync-template-native.js`
 - [ ] `node scripts/test-ci-native-exit.js`
-- [ ] `node scripts/validate-codex-skills.js`
-- [ ] `node scripts/validate-codex-agents.js`
-- [ ] `node scripts/validate-production-standard.js`
-- [ ] `node scripts/validate-design-policy.js`
-- [ ] `node scripts/test-design-policy.js`
-- [ ] `node scripts/validate-agent-sot.js`
-- [ ] `node scripts/validate-spec-kit.js`
-- [ ] `node scripts/validate-text-policy.js`
-- [ ] `bash scripts/generate-project-spec.sh --write`
-- [ ] `bash scripts/scan-project.sh --report`
+- [ ] Inspect the candidate diff and current project/tool-registry facts; regenerate only stale generated data, preserving maintained current-state sections
+
+`test-template.sh` covers routing, agent policy, writing library/intent,
+native sync, skill-link fixtures, agent/skill validation, production/design
+policy, agent SOT, Spec Kit, text policy, and generated-project setup/sync smoke.
+`validate-template.sh` adds release-version consistency, shell portability and
+structural checks. Their required release-bound overlap is not permission to
+repeat either aggregate after every local patch. Hook behavior, drift,
+entrypoint parity and native PowerShell failure propagation have separate checks.
+
+For changed skills, also inspect discovery with Codex `skills/list` for the
+actual project cwd and perform bounded independent decision evaluation when
+the workflow changes materially. Distinguish catalog discovery, instruction
+quality and observed execution; none alone proves universal model compliance.
 
 ## Bootstrap Gate
 
@@ -71,7 +74,7 @@ consumes quota; static markers never count as runtime proof.
 - [ ] Design policy findings include rule id, file, evidence, impact, next action, and ignore/baseline tuning guidance
 - [ ] Product/business outcome priority is present in shared rules, agent entrypoints, skills, routing, and validators
 - [ ] Client-executor accountability, anti-sycophancy, and no-fake-completion evidence gates are present in shared rules, agent entrypoints, skills, routing, and validators
-- [ ] Staged work preserves the accepted final result and approximate waves; each wave has a whole useful outcome at its declared scope or bounded uncertainty decision. Nearest-wave plan/acceptance/responsibilities and parent verification are explicit. Internal tasks are autonomous and not falsely called delivery; material deltas need approval. Plan/status/skeleton artifacts are proportional, not universal 1% ceremony
+- [ ] Staged work preserves the accepted final result and approximate waves: successive usable versions of the same product, not task bundles or internal routes. Research and technical work are enabling checkpoints. Reassess the target and remaining waves together when constraints change. Nearest-wave plan/acceptance/responsibilities and parent verification are explicit; material deltas need approval. Plan/status artifacts are proportional, not universal ceremony
 - [ ] Fresh relevant primary passages ground substantive nonfiction artifacts; all six sources are checked for applicability, actual fiction/lore prose is exempt, and missing/stale library blocks source-grounding rather than silently falling back to model memory
 - [ ] One external store is discovered across projects; books and full text caches are absent from Git/setup/sync/release, no book symlinks/hardlinks are created, exact import is idempotent and preserves user originals
 - [ ] Router output includes `planContract`, `productionBar`, `languagePolicy`, `qualityGates`, and `fanout`

@@ -1,6 +1,74 @@
 "use strict";
 
 function runRouteCasesB(testRoute) {
+  for (const task of [
+    "Спланируй разработку игры волнами: каждая волна должна быть новой полезной версией той же игры",
+    "Согласуй конечный результат продукта и приближенное число полезных волн, затем подготовь план ближайшей волны",
+    "Plan successive usable versions of the same product toward the final outcome",
+    "Plan staged delivery of the website in useful waves",
+    "Спланируй версии сайта кофейни: сначала объявление об открытии, потом адрес и меню, позже заказ; цель — отношения с посетителями",
+    "Plan versions of the cafe website: first an opening notice, then menu and location, later ordering",
+  ]) {
+    testRoute(task, {
+      modes: ["progressive-planning"],
+      notModes: ["release"],
+      skills: ["codex-progressive-jpeg-planner", "codex-product-goal", "codex-decompose"],
+      sharedRules: [".claude/library/process/plan-first.md", ".claude/library/process/self-verification.md"],
+      planRequired: true,
+    });
+  }
+
+  testRoute("Исправь опечатку в README", {
+    notSkills: ["codex-progressive-jpeg-planner", "codex-subagent-orchestration"],
+    risk: "LOW",
+    fanoutStatus: "skip",
+  });
+
+  testRoute("Мигрируй внутреннюю систему инвентаря игры без новых возможностей игрока", {
+    modes: ["migration"],
+    notModes: ["progressive-planning", "release"],
+    skills: ["codex-migrate"],
+    notSkills: ["codex-progressive-jpeg-planner"],
+    risk: "HIGH",
+  });
+
+  testRoute("Спланируй внутреннюю миграцию инвентаря игры по этапам", {
+    modes: ["migration"],
+    notModes: ["progressive-planning"],
+    notSkills: ["codex-progressive-jpeg-planner"],
+  });
+
+  testRoute("Раздели независимый аудит между субагентами", {
+    modes: ["review"],
+    notModes: ["bugfix"],
+    notSkills: ["codex-debug"],
+    skills: ["codex-subagent-orchestration"],
+    fanoutStatus: "recommended",
+  });
+
+  testRoute("Исправь баг инвентаря", {
+    modes: ["bugfix"],
+    skills: ["codex-debug"],
+  });
+
+  for (const task of [
+    "Изучи версию React 19.2 и сравни изменения",
+    "Сравни релизы чужого продукта, не изменяй наш проект",
+    "Review the current version of React",
+  ]) {
+    testRoute(task, {
+      notModes: ["release"],
+      notSkills: ["codex-health-check", "codex-template-sync"],
+    });
+  }
+
+  testRoute("Подготовь релиз", {
+    modes: ["release"],
+    skills: ["codex-health-check", "codex-test-rules"],
+    sharedRules: [".claude/library/process/self-verification.md"],
+    risk: "HIGH",
+  });
+
   testRoute("мы опять латаем тот же модуль: чинить или заменить архитектуру", {
     modes: ["strategy"],
     skills: ["codex-change-strategy", "codex-strategic-review"],

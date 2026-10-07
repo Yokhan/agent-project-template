@@ -1,74 +1,42 @@
 ---
 name: pipeline
-description: "Execute multi-agent pipelines: chain agents in sequence with structured handoffs. Reads pipeline definitions from .claude/pipelines/."
+description: "Run a relevant shared agent pipeline for multi-phase work, with project-owned handoffs and evidence-based gates."
 ---
 
 # Pipeline Runner
 
-Executes predefined multi-agent workflows. Each pipeline is a sequence of agent steps with gates between them.
+Use `docs/AGENT_PIPELINES.md` as the shared pipeline contract. Run a pipeline
+only when its phases materially help the requested work; a small task can stay
+direct.
 
-## When to Use
-- Task naturally involves multiple agent roles (research → implement → review)
-- User requests a full lifecycle operation
-- Agent router (#1) detects compound signals
+## Execution
 
-## Pipeline Format (.claude/pipelines/*.md)
+1. Read the relevant pipeline section and route-specific rules, not every
+   pipeline by default.
+2. Identify the current task-graph owner. Preserve AgentOS, Spec Kit, or other
+   project-owned artifacts; do not create a competing graph. Use
+   `tasks/current.md` only when it is the active project handoff or Codex owns
+   the task and durable state is useful.
+3. Treat phases as useful checkpoints, not a requirement to launch a different
+   agent for every step. Delegate only independent work with material value and
+   a bounded contract; the parent keeps sequencing and acceptance.
+4. Apply each gate from the shared pipeline and applicable project rules.
+   Request user approval only where those rules require it or a decision would
+   materially change the accepted result, scope, risk, or constraints.
+5. Verify changed behavior with focused evidence. The parent/integrator owns
+   any broad acceptance check; do not repeat it without a concrete invalidation
+   or required gate.
 
-```markdown
-# Pipeline: [name]
-## Steps
-1. AGENT: [agent_name] | GATE: [condition]
-   - Input: [what this step receives]
-   - Output: [what this step produces]
-2. AGENT: [agent_name] | GATE: [condition]
-   ...
-```
+For substantial staged product work, follow
+`.claude/library/process/plan-first.md`: distinguish final outcome, successive
+usable product versions, and implementation tasks. Do not label experiments,
+internal routes, or pipeline phases as product waves. Small changes need no
+artificial roadmap.
 
-## Execution Protocol
+Record a concise handoff in the active owner artifact only when state must
+survive this step or coordinate work. Include what changed, evidence, and the
+next dependency if one exists. Do not require confidence scores, routine
+commits, or per-step metrics.
 
-1. **Load pipeline** — read `.claude/pipelines/{name}.md`
-2. **For each step**:
-   a. Launch agent (as subagent or in current context)
-   b. Provide input from previous step's output
-   c. Agent writes output to `tasks/current.md` under `## Pipeline: {name} | Step {N}`
-   d. Check gate condition
-   e. If gate fails → present to user, wait for guidance
-   f. If gate passes → proceed to next step
-3. **On completion** — save pipeline metrics to Engram
-
-## Gate Types
-
-| Gate | Condition | On Fail |
-|------|-----------|---------|
-| `user_approval` | User explicitly approves | Wait for user |
-| `typecheck` | `tsc --noEmit` / `mypy` / `cargo check` passes | Fix before proceeding |
-| `tests_pass` | All relevant tests pass | Fix before proceeding |
-| `verdict:PASS` | Reviewer agent returns PASS | Address feedback, re-review |
-| `none` | No gate — proceed automatically | — |
-
-## Handoff Between Steps
-
-Each step writes to `tasks/current.md`:
-```markdown
-## Pipeline: {name} | Step {N}/{total}
-- **Agent**: {agent_name}
-- **Status**: DONE
-- **Output**: {summary of what was produced}
-- **Files**: {list of created/modified files}
-- **Confidence**: HIGH/MEDIUM/LOW
-- **Next**: Step {N+1} — {next_agent}
-```
-
-The next agent reads this block as input context.
-
-## Available Pipelines
-
-See `.claude/pipelines/` for definitions:
-- `feature.md` — Full feature lifecycle
-- `bugfix.md` — Bug investigation and fix
-- `security-patch.md` — Security vulnerability fix
-
-## Creating Project-Specific Pipelines
-
-Projects can create `project-{name}-pipeline.md` in `.claude/pipelines/`.
-These are preserved during template sync (project-* prefix).
+Project-specific pipeline definitions may extend the shared contract when they
+preserve the project’s task ownership and authorization boundaries.

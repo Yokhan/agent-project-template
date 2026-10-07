@@ -1,61 +1,43 @@
-# Pipeline: Feature
+# Feature Workflow
 
-Full lifecycle for adding a new feature.
+This file is a lightweight route into the shared feature process in
+`docs/AGENT_PIPELINES.md`. That document and the shared process rules define
+the gates; this wrapper does not add a competing plan or approval protocol.
 
-## Steps
+## Orient
 
-### 1. RESEARCH (researcher, Opus) | GATE: none
-- **Input**: feature description, linked issue
-- **Actions**:
-  - Read all affected files + their imports and tests
-  - `git log --oneline -5 -- <affected_files>` for recent changes
-  - Check `tasks/lessons.md` for related past mistakes
-  - Check `PROJECT_SPEC.md` for project constraints and dependencies
-  - Search for existing utilities (Grep/Glob) before planning new ones
-- **Output**: research summary — existing patterns, affected files, risks, reusable code, approach options
-- **Also**: classify risk level per `risk-classification.md` (LOW/MEDIUM/HIGH/CRITICAL)
-- **Budget**: ~20 tool calls
+- Identify the requested behavior, relevant project constraints, and owner of
+  the active plan or task graph. Preserve AgentOS or other project-owned
+  artifacts.
+- Inspect affected code, direct consumers, tests, recent changes, and relevant
+  lessons as appropriate to the scope. Use the project router when it changes
+  which workflow or specialist rules apply.
+- For a small feature, proceed as a task with focused acceptance evidence; do
+  not invent a product roadmap.
+- For substantial staged product work, agree on the final outcome and
+  approximate useful versions of the same product, then plan the nearest
+  version. Keep implementation tasks, internal routes, and experiments distinct
+  from product waves. Use
+  `.claude/library/process/plan-first.md#product-wave-semantics--source-of-truth`.
 
-### 1.5. BRAINSTORM (researcher, Opus) | GATE: risk_threshold
-- **Input**: research findings + feature description + risk classification
-- **Trigger**: MEDIUM risk M+ (optional), HIGH (recommended), CRITICAL (mandatory)
-- **Actions**:
-  - Enumerate 3+ approaches with trade-off analysis (effort/risk/reversibility/extensibility)
-  - Select recommended approach with justification
-  - Document rejected approaches with reasons
-- **Output**: brainstorm summary in `tasks/current.md` under `## Brainstorm`
-- **Budget**: ~10 tool calls
-- **Skip**: LOW risk, or size XS/S with MEDIUM risk
+## Execute
 
-### 2. PLAN (implementer, Sonnet) | GATE: user_approval
-- **Input**: research findings + feature description + brainstorm (if applicable)
-- **Output**: written plan in `tasks/current.md` including:
-  - Goal (1 sentence)
-  - Complexity estimate (size, file count, line estimate)
-  - File architecture (directory tree with purpose per file)
-  - Implementation order with dependencies
-  - File size check (nothing >375 lines)
-  - Risks and mitigations
-  - Test scenarios (happy path, edge cases, errors) per `plan-first.md` templates
-- **Quality gate**: plan must pass Planning Quality Gate checklist (see `plan-first.md`)
-- **Action**: present plan to user, wait for approval/annotations
+Choose only the research, planning, implementation, review, or handoff steps
+that materially help this feature. Keep each step inside the accepted scope.
+Delegate only independent work with a bounded contract and useful parallel
+value; the parent owns integration and acceptance. Routine in-scope choices do
+not need another approval. Stop for a required project gate or a decision that
+would materially change the accepted result, constraints, risk, or ownership.
 
-### 3. IMPLEMENT (implementer, Sonnet) | GATE: typecheck
-- **Input**: approved plan
-- **Output**: code changes (batch write protocol: 3-4 files → typecheck)
-- **Mid-build checkpoint**: after step 4 of implementation order
+Add or update focused checks for the changed behavior. Follow
+`.claude/library/process/self-verification.md` for cadence and ownership; do not
+run a broad suite after every batch or duplicate an aggregate’s included checks.
+At the appropriate integration or release boundary, run any required broad
+acceptance gate and record its exact scope and result.
 
-### 4. TEST (test-engineer, Sonnet) | GATE: tests_pass
-- **Input**: changed files list
-- **Output**: test files + coverage report
-- **Minimum**: unit tests for new code, integration test for wiring
+## Closeout
 
-### 5. REVIEW (reviewer, Sonnet) | GATE: verdict:PASS
-- **Input**: full diff (all changes from steps 3-4)
-- **Output**: review verdict — PASS / NEEDS_REVIEW / BLOCKED
-- **On NEEDS_REVIEW**: address feedback, re-submit for review
-
-### 6. COMMIT (implementer, Sonnet) | GATE: none
-- **Input**: reviewed, tested changes
-- **Output**: conventional commit(s)
-- **Format**: `feat(scope): description`
+Inspect the diff and report the user-visible result, checks and evidence,
+remaining gaps, and next dependency if one exists. Label enabling work as such.
+Do not claim an unverified product outcome, require a confidence score, or
+commit unless the user or active project workflow authorizes it.

@@ -1,36 +1,45 @@
 <!-- PROGRESSIVE_STATUS
-id: template-v5-release
+id: template-v5-0-1-candidate
 status: active
-updated: 2026-10-06
-readiness: 60
+updated: 2026-10-07
+readiness: 90
 plan: 100
 inventory: 100
 production: 0
 cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: final aggregate review and release CI; verify exact publication, then send Ui storybook authorized managed-fleet rollout instruction; comparative quality benchmark remains separate
+next: prepare local v5.0.1 commit and archive; publication and exact-commit Linux/Windows release gates remain separate
 -->
 
-# Current Task - v5.0.0 Release And Authorized Fleet Handoff
+# Current Task - Prepare v5.0.1 After Skills Audit
 
-The user authorized review, fixes and publication of `v5.0.0`, followed by a
-Ui storybook rollout handoff for all projects under its management, executed by
-a Sol High swarm. Current release-facing docs/metadata target v5;
-the former 4.10.0 candidate is incorporated, not a separately published version.
-Final result: a verified immutable release with agent-first deployment, accepted
-useful-wave delivery, role-aware execution and one external writing library.
-Approximate waves: release verification/publication, then the authorized fleet
-rollout handoff. Ui storybook starts with a reviewed canary before updating the
-remaining projects in its managed scope; root does not change downstreams itself.
-The current wave is final integration/review/CI; root owns commit/tag/push and
-publication and the post-release message, this worker owns scoped docs/version
-changes. Ui storybook owns downstream execution. The canary and wider
-rollout are not completion claims until their actual evidence exists.
+Current request: check that skills follow the active logic, repair demonstrated
+conflicts, then prepare a release. This task does not publish or roll out projects.
+Parent owns integration and candidate packaging; workers performed bounded
+instruction, routing and link-guard work plus independent decision evaluation.
+
+The candidate aligns skill decisions with the existing v5 product contract.
+Release validation and packaging are technical checkpoints, not product waves.
+The previous v5.0.0 publication/fleet handoff is historical context, not authority
+for another rollout. See `docs/RELEASE_V5_0_1.md` for changes and evidence.
+
+Local evidence: template smoke 199/200; only the README script count failed,
+then passed its focused check after correction. Two additional plural-version
+routing cases passed the focused router suite. Structural validation with
+EXPECTED_RELEASE_TAG=v5.0.1: 0 errors/warnings. All 12 hook checks, entrypoint
+parity and native PowerShell failure propagation passed. Drift: 0 errors and
+three dated-document warnings. Codex CLI 0.125.0 discovered 46 enabled template
+skills without errors. Eight independent decision scenarios were acceptable;
+this is not universal runtime enforcement. No repeated full smoke was claimed.
+
+A stale ignored `.agents/skills/coverage` duplicate was moved to a recoverable
+external backup, outside discovery. Current tracked skills and books were not
+deleted. Remaining publication work: authorize push/tag, run exact-commit
+Linux/Windows release gates, verify immutable assets and publication status.
 
 Source-backed documentation used fresh primary passages from write-short PDF
-page 31, clear-understood EPUB OPS/ch1-26.xhtml and the project-resolution
-version/stage/task/verification section (request release-v5-docs-20261007,
-packet ace290ba0d75c593226f7c4e78d0cdcdc1609ea5e5b45ef5bc0e3e029464c600).
+page 31, clear-understood EPUB OPS/ch1-26.xhtml and project-resolution's
+opening barber-shop example (request release-501-20261007).
 Applied: lead with the recipient's deployment task, provide exact commands,
 preserve necessary precision, distinguish project/library readiness and evidence
 from promises. Receipts do not guarantee comprehension or semantic quality.
@@ -41,8 +50,8 @@ migration, global trust/default change or downstream apply is part of doc edits.
 
 ## Historical 2026-10-06 Candidate Evidence
 
-The no-publication/no-downstream statements below describe the earlier probe,
-not the current authorization. Final publication is verified externally through
+The statements below describe earlier work, not current authorization.
+Final publication is verified externally through
 the exact GitHub Release/CI/tag/checksums; this task file does not assert it.
 
 The core implementation candidate is prepared on `codex/gpt6-agent-policy` without

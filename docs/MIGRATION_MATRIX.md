@@ -2,7 +2,7 @@
 
 ## Current v5 Boundary
 
-The active target is `v5.0.0`; use `docs/MIGRATION_V5.md` and the canonical
+The active target is `v5.0.1`; use `docs/MIGRATION_V5.md` and the canonical
 agent update protocol. The table below is dated historical dry-run evidence,
 not current v5 adoption or publication proof. Record each authorized canary's
 exact source tag/commit, installed version, external plan, conflicts and checks

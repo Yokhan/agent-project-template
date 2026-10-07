@@ -1,17 +1,17 @@
 ---
 name: codex-coverage
-description: "Analyze test coverage, identify untested code paths, design focused tests, and avoid coverage theater. Trigger on coverage, untested, test gaps, missing tests, or quality gate failures."
+description: "Analyze measured test coverage, identify consequential untested behavior, and recommend focused checks without silently editing tests."
 ---
 
 # Codex Coverage
 
-Read `.claude/skills/coverage/SKILL.md` and `.claude/library/technical/testing.md`.
+Read `.claude/skills/coverage/SKILL.md` and
+`.claude/library/technical/testing.md`. Coverage analysis is read-only unless
+the user or accepted task explicitly includes test implementation. Use only
+project-configured coverage commands whose required tools are already
+available; do not install dependencies or run commands that may fetch them.
 
-## Process
-
-1. Identify the behavior at risk, not just the percentage.
-2. Map uncovered public paths and important edge cases.
-3. Prioritize tests by blast radius and failure impact.
-4. Add focused unit, integration, or E2E tests as appropriate.
-5. Run relevant coverage commands.
-6. Report remaining test gaps honestly.
+Report the measured scope and metric, command/result, important gaps, focused
+test recommendations, and what remains unverified. Follow
+`.claude/library/process/self-verification.md` for check selection and
+integration ownership.

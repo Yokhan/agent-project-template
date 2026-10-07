@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v5.0.0"
+        description: "Existing tag to publish, for example v5.0.1"
         required: true
         type: string
 
@@ -172,7 +172,7 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "GPT-6 model roles, task-sized planning through useful versions, and fresh primary-source reading for nonfiction drafting and review."
+            echo "Product-wave continuity, proportional verification, and skills aligned with the shared operating contract. See docs/RELEASE_V5_0_1.md for patch changes and evidence boundaries."
             echo ""
             echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""

@@ -8,6 +8,7 @@ const SHARED_RULES = {
   designSystem: [".claude/library/domain/domain-design-system.md", ".claude/library/domain/domain-design-pipeline.md", ".claude/library/technical/atomic-reuse.md"],
   product: [".claude/library/product/production-product-standard.md", ".claude/library/process/product-goal-loop.md", ".claude/library/process/client-executor-contract.md"],
   testing: [".claude/library/technical/testing.md"],
+  planning: [".claude/library/process/plan-first.md"],
   writing: [".claude/library/technical/writing.md"],
   git: [".claude/library/technical/git-workflow.md"],
   safety: [".claude/library/domain/domain-guards.md"],
@@ -27,7 +28,7 @@ const ROUTES = [
   {
     mode: "bugfix",
     pattern:
-      /fix|bug|broken|fail|failing|crash|regression|error|repair|почини|исправ|сломал|не работает|падает|ошибка|баг/i,
+      /fix|bug|broken|fail|failing|crash|regression|error|repair|почини|исправ|сломал|не работает|падает|ошибка|(?:^|[^\p{L}])баг[\p{L}]*/iu,
     skills: ["codex-debug", "codex-pipeline-workflow"],
     pipeline: "bugfix",
     subagents: ["scout", "tester", "reviewer", "log_analyst"],
@@ -84,7 +85,7 @@ const ROUTES = [
     skills: ["codex-progressive-jpeg-planner", "codex-product-goal", "codex-decompose"],
     pipeline: "progressive product planning",
     subagents: ["product_reviewer", "scout"],
-    rules: ["product", "review"],
+    rules: ["product", "review", "planning"],
     gates: [
       "product-purpose",
       "end-to-end-user-victory",
@@ -197,7 +198,7 @@ const ROUTES = [
   {
     mode: "release",
     pattern:
-      /\b(?:release|tag|version|changelog|publish|deploy)\b|github release|релиз|(?:^|[^А-Яа-яЁё])верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/i,
+      /\b(?:release|tag|changelog|publish|deploy)\b|github release|\b(?:bump|increment)\s+(?:the\s+)?version\b|релиз|(?:подним[\p{L}]*|повыс[\p{L}]*|выпуст[\p{L}]*|выпусти|выкат[\p{L}]*)\s+верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/iu,
     skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
     pipeline: "release",
     subagents: ["tester", "reviewer", "security_reviewer"],
@@ -257,7 +258,7 @@ const ROUTES = [
   },
   {
     mode: "migration",
-    pattern: /migrate|migration|schema|database|data move|миграц|схем|база/i,
+    pattern: /migrate|migration|schema|database|data move|миграц|мигрир|схем|база/i,
     skills: ["codex-migrate", "codex-pipeline-workflow"],
     pipeline: "migration",
     subagents: ["systems_reviewer", "security_reviewer", "tester"],

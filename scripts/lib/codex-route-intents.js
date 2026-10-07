@@ -75,6 +75,11 @@ const INTENT_GROUPS = {
     [/database|table|column|storage|migration/i, /баз\w*\s+данн|таблиц|колонк|хранилищ|миграц/i],
     [/compatibility|downtime|backup|restore/i, /совместим|простой|бэкап|восстанов/i],
   ],
+  "progressive-planning": [
+    [/plan|roadmap|staged delivery|successive|sequence/i, /план|согласу|разбей|развит|последовательн/i],
+    [/waves?|stages?|\bversions\b|successive\s+(?:usable|useful)\s+versions?|staged delivery/i, /волн[\p{L}]*|этап[\p{L}]*|полезн[\p{L}]*\s+верси|(?:^|[^\p{L}])верси(?:и|й)(?:$|[^\p{L}])/iu],
+    [/product|application|app\b|game|website|final outcome/i, /продукт|приложени|игр[\p{L}]*|сайт|конечн[\p{L}]*\s+результат/iu],
+  ],
   openai: [
     [/model|responses api|reasoning effort|structured outputs|tool calling/i, /модел|responses api|reasoning|структурн\w*\s+вывод|tool/i],
     [/openai|codex|gpt|responses api/i, /openai|codex|gpt|опенаи|responses api/i],
@@ -140,7 +145,8 @@ function getIntentMatch(mode, task) {
   const groups = INTENT_GROUPS[mode] || [];
   const normalizedTask = normalizeTask(task);
   const matchedGroups = groups.filter((group) => doesGroupMatch(group, normalizedTask));
-  const threshold = Math.min(INTENT_THRESHOLD, groups.length || INTENT_THRESHOLD);
+  const threshold = mode === "progressive-planning" ? 3
+    : Math.min(INTENT_THRESHOLD, groups.length || INTENT_THRESHOLD);
   const hasVendorAnchor = mode !== "openai" || /\b(?:openai|codex|gpt(?:-?\d(?:\.\d)?)?|responses api)\b|опенаи/i.test(normalizedTask);
   return {
     isMatch: hasVendorAnchor && matchedGroups.length >= threshold,
@@ -170,6 +176,11 @@ const OPERATION_ACTION_PATTERN =
   /\b(?:build|create|deploy|draw|fix|publish|repair|tag|update)\b|выпусти|исправ|нарис|обнов|опубликуй|почин|релизь|созда|тегир|выкат/iu;
 
 function shouldSuppressRoute(mode, task) {
+  if (mode === "progressive-planning") {
+    const internalMigration = /internal.*migrat|migrat.*internal|внутрен[\p{L}]*.*миграц|миграц.*внутрен/iu.test(task);
+    const usefulVersion = /(?:usable|useful)\s+versions?|полезн[\p{L}]*\s+верси|пользовательск[\p{L}]*\s+результат/iu.test(task);
+    return internalMigration && !usefulVersion;
+  }
   if (!new Set(["bugfix", "mermaid", "release"]).has(mode)) return false;
   const isReferenceResearch =
     REFERENCE_RESEARCH_PATTERN.test(task) && EXTERNAL_REFERENCE_PATTERN.test(task);

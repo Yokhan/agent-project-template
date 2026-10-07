@@ -1,84 +1,32 @@
 ---
 name: add-feature
-description: "Create a new feature module using vertical slice architecture. 9-step workflow: explore → scaffold → implement → test → review → validate. Trigger on 'add feature', 'new module', 'create component'."
+description: "Implement a feature using the repository’s existing architecture, scope, and verification conventions."
 ---
 
-# Add Feature Skill
+# Add a Feature
 
-9-step workflow based on christianestay/claude-code-base-project.
+Use the project router when it materially selects a workflow or specialist
+rules. For a small feature, inspect the relevant implementation and consumers,
+make the bounded change, and run the smallest useful check.
 
-## Step 0: Naming Conflict Check
-Before anything else, verify the feature name is available:
-- Check `src/features/` for existing modules with the same name
-- Check `src/shared/` and `src/core/` for name conflicts
-- If conflict found: suggest an alternative name and stop until user confirms
+For broader work, restore the project’s active goal and task-graph owner. Search
+for existing patterns, interfaces, tests, and direct consumers before adding
+structure. Follow the repository’s architecture; examples in another project
+are not mandatory scaffolding.
 
-## Step 1: Explore Existing Patterns
-1. Read `_reference/README.md` — find canonical implementation
-2. Read the referenced feature to understand conventions. For each pattern found, note WHY it's structured this way, not just HOW
-3. Check `templates/` for applicable scaffolding
-4. Read `tasks/lessons.md` — avoid known pitfalls for this type
+For substantial staged product work, first distinguish the agreed final outcome,
+the next usable version of that product, and the implementation tasks that
+support it. A feature, internal route, or test batch is not automatically a
+product wave. For an experiment, state its question, limit, and decision it will
+inform. Keep ordinary feature work a task rather than inventing a roadmap.
 
-## Step 2: Understand the Feature
-Ask the user:
-- What does this feature do?
-- What data does it work with?
-- External dependencies? (DB, API, third-party)
+Define acceptance evidence proportionate to the changed behavior and risk.
+Add or update focused tests where they establish the relevant contract; choose
+broader checks only when integration risk or a required project gate justifies
+them. Follow `.claude/library/process/self-verification.md`; the parent owns
+broad acceptance when work is integrated.
 
-## Step 3: Regenerate Types (if needed)
-- If using generated types (e.g., Supabase, Prisma, OpenAPI) → regenerate first
-- Ensure types are fresh before scaffolding
-
-## Step 4: Scaffold
-Create vertical slice in `src/features/[name]/`:
-```
-src/features/[name]/
-├── index.*           # Public entry point (ONLY importable file)
-├── [name].types.*    # Types and contracts FIRST
-├── [name].data.*     # Config, tables, lookup maps
-├── [name].service.*  # Pure business logic (no IO)
-├── [name].test.*     # Tests colocated
-└── [name].adapter.*  # IO layer if needed (DB, API calls)
-```
-
-Use template from `templates/` if available. Extract principles from reference implementation. Apply those principles adapted to this feature's specific context and needs.
-
-## Step 5: Implement in Batches
-**CRITICAL: Write 3-4 files max per batch, then typecheck.**
-1. Batch 1: types + data → typecheck
-2. Batch 2: service (pure logic) → typecheck
-3. Batch 3: adapter + index (wiring) → typecheck
-4. Batch 4: tests → run tests
-
-Never accumulate large amounts of unverified code.
-
-## Step 6: Test
-- Minimum: 1 happy path + 1 error path per public function
-- Test through the entry point (public API), not internals
-- Use factory functions for test data
-- Edge cases: empty input, null, boundaries
-
-## Step 7: Self-Review
-Before presenting to user, check:
-- [ ] Module boundary: only index exports public API
-- [ ] No deep imports from other modules
-- [ ] core/ code has no IO calls
-- [ ] All files < 375 lines
-- [ ] Data separated from behavior
-- [ ] Types explicit, no `any`
-
-## Step 8: Validate
-Run full verification:
-```bash
-typecheck   # Types correct
-lint        # Style clean
-test        # Tests pass
-```
-ALL must pass. Fix issues before proceeding.
-
-## Step 9: Finalize
-1. Update `docs/ARCHITECTURE.md` if new module added
-2. Log architectural decisions to `brain/04-decisions/`
-3. Conventional commit: `feat([name]): add [description]`
-4. Update `tasks/current.md`
-5. If user corrected anything → add to `tasks/lessons.md`
+Preserve user and project ownership. Routine decisions within the accepted
+scope do not need another approval. Do not commit, update unrelated plans, or
+create persistent logs unless requested or required by the active project
+workflow. Report verified behavior and any material unverified gap.

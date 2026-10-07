@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 5.0.0 -->
+<!-- Template Version: 5.0.1 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -145,4 +145,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 5.0.0.
+the shared rules. Template version: 5.0.1.

@@ -1,62 +1,29 @@
 ---
 name: test-rules
-description: "Run regression tests against rule definitions. Verify that domain rules (health, science, software) correctly prevent anti-patterns. Trigger: /test-rules or as part of /benchmark."
+description: "Validate agent rules with available executable fixtures or a clearly labeled desk review; do not overstate behavioral evidence."
 ---
 
-# Rule Regression Tests
+# Rule Validation
 
-Verify that rules actually work by presenting test scenarios and checking agent behavior.
+Use after a rule change or when the user asks whether a rule works. First find
+the rule’s active source of truth and any maintained fixtures, validators, or
+evaluation harness. Do not treat a checklist or imagined answer as a runtime
+test.
 
-## When to Use
-- After updating domain rules
-- As part of `/benchmark`
-- During `/weekly` or `/retrospective` to verify rule health
+## Evaluation
 
-## Process
+- Prefer an existing executable/static validator for structural properties and
+  a realistic behavioral evaluation when the host supports one.
+- For independent forward evaluation, give the evaluated agent the scenario and
+  applicable rules, but withhold the expected answer. Score the result in a
+  separate evaluator against the held-out expectation.
+- Do not label a same-context mental rehearsal or the author’s own prediction a
+  PASS. If no independent or executable evaluation is available, report a
+  desk review as such and mark runtime behavior `not verified`.
+- Keep scenarios relevant to the changed contract. Update fixtures only when
+  their expectation is genuinely obsolete; do not add cases solely to prove a
+  rule is present.
 
-1. **Load test cases** from `tests/rules/*.test.md`
-2. **For each test**:
-   a. Read the input scenario
-   b. Evaluate: what would the agent recommend given this input?
-   c. Compare against expected behavior
-   d. Score: PASS (matches expected) / FAIL (violates rule)
-3. **Report**: X/Y tests passed, list failures
-
-## Test Case Format
-
-```markdown
-## Test: [name]
-Input: "[what user asks or scenario description]"
-Expected: [what the agent should do/not do]
-Rule tested: [which NEVER/ALWAYS item from which rule file]
-```
-
-## Running Tests
-
-For each test case:
-1. Read the input as if a user asked it
-2. Mentally evaluate: given all loaded rules, what would I recommend?
-3. Check: does my response match the Expected behavior?
-4. If FAIL: the rule may need strengthening or the agent needs better enforcement
-
-## Report Format
-
-```
-Rule Test Results — [date]
-┌──────────────────────┬───────┬────────┬────────┐
-│ Rule File            │ Tests │ Passed │ Failed │
-├──────────────────────┼───────┼────────┼────────┤
-│ domain-health        │ 5     │ 5      │ 0      │
-│ domain-software      │ 4     │ 3      │ 1      │
-│ domain-science       │ 3     │ 3      │ 0      │
-└──────────────────────┴───────┴────────┴────────┘
-Total: 12/12 passed (100%)
-
-Failed tests:
-- domain-software/Test: God Object — agent did not flag 500-line class
-```
-
-## Creating Project-Specific Tests
-
-Projects create `tests/rules/project-*.test.md` for their project-specific rules.
-These are preserved during template sync.
+Report the method, scenarios covered, evidence, result, and what remains
+unverified. Use `pass`, `fail`, `not run`, or `unverified` only when the chosen
+method supports that label; do not turn a mental review into an X/Y test score.

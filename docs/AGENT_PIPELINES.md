@@ -4,12 +4,18 @@ Shared, agent-neutral workflow definitions for Claude Code, Codex, and future ag
 
 Agent-specific wrappers may live under `.claude/pipelines/` or `.agents/skills/`, but these definitions are the contract.
 
+Pipeline phases are execution steps, not product waves. Apply the shared
+`plan-first.md` product-wave semantics and `self-verification.md` cadence in
+`.claude/library/process/`: agree final outcome and versions of the same product,
+then derive tasks and checks. Preserve the existing project/AgentOS plan.
+Check lists describe necessary coverage, not duplicate commands per phase.
+
 ## Gates
 
 | Gate | Pass condition | On fail |
 | --- | --- | --- |
 | `research_done` | Affected files, history, lessons, registry, and risks are summarized | Continue research |
-| `product_goal_preserved` | Final outcome, quality bar, current step, dependencies, and out-of-scope items are explicit | Restore or create `tasks/goal.md` |
+| `product_goal_preserved` | Final outcome, product version, quality bar, current task and boundaries are understood | Restore the existing goal/AgentOS context; create an artifact only when continuity needs one |
 | `plan_approved` | User approval when risk or size requires it | Wait for user |
 | `typecheck_pass` | Relevant typecheck or syntax check passes | Fix before next phase |
 | `tests_pass` | Relevant tests pass | Fix or document blocker |
@@ -65,12 +71,13 @@ Use for any real product, design, auth, data, game, docs, deployment, or M+ work
 
 1. Restore goal
    - Read `tasks/goal.md` when present.
-   - If absent for M+ product work, create or propose it.
+   - Use the existing project/AgentOS goal; create an artifact only when substantial work needs durable continuity.
 2. Preserve final outcome
    - State the final user outcome, quality bar, current step, dependencies, risks, and out-of-scope items.
    - Do not use MVP/prototype reasoning unless the user explicitly asks for a disposable experiment.
 3. Route and plan
-   - Route the task and save the current step to `tasks/current.md`.
+   - Route when useful and preserve the active project artifact; write route state only when hooks or continuity require it.
+   - Derive tasks from the accepted product version, not a product story from a technical task bundle. Reassess target and remaining versions together when constraints change.
    - Plans, audits, and reports use the language of the user's request.
 4. Execute bounded step
    - Keep the step small and reversible.
@@ -106,7 +113,7 @@ Use for new capabilities, modules, screens, commands, or workflows.
 6. Review
    - Look for behavioral regressions, missing tests, and broken boundaries.
 7. Closeout
-   - Summarize outcome, verification, confidence, and remaining doubt.
+   - Summarize outcome, observed verification and material gaps; confidence/doubt labels are not a ritual.
 
 ## Bugfix
 
@@ -116,7 +123,7 @@ Use for incorrect behavior, failed tests, crashes, or regressions.
    - Read the failing code path, callers, tests, recent history, and lessons.
 2. Reproduce
    - Create or identify a minimal failing case.
-   - Do not fix until the failure is observable.
+   - Reproduce when feasible; if unavailable, state the limitation and use direct evidence without inventing a successful reproduction.
 3. Diagnose
    - Explain root cause and blast radius.
 4. Fix
@@ -124,7 +131,7 @@ Use for incorrect behavior, failed tests, crashes, or regressions.
 5. Regression test
    - Add a test or smoke check that fails without the fix.
 6. Verify and closeout
-   - Run checks and record lesson if the bug pattern is reusable.
+   - Run focused checks after a coherent repair batch; the parent owns broader integration when its scope/risk requires it. Record a lesson if the bug pattern is reusable.
 
 ## Security Patch
 
@@ -238,7 +245,7 @@ incidents, release notes, and migration notices.
 Use for `AGENTS.md`, `CLAUDE.md`, skills, subagents, hooks, MCP router, setup/sync payloads, and validation scripts.
 
 1. Route
-   - Run `node scripts/codex-route-task.js "<task>" --summary --write-state`.
+   - Use `node scripts/codex-route-task.js "<task>" --summary` when routing changes execution; persist only when the project/hooks need route state.
    - Confirm whether AgentOS or project artifacts own the task graph.
 2. Boundary check
    - Read `docs/PRODUCT_BOUNDARY.md`, `docs/SAFE_DEFAULTS.md`, and `docs/SUPPORTED_ENVIRONMENTS.md`.
@@ -261,8 +268,9 @@ Use for release tags, release notes, downstream rollout, and AgentOS rollout coo
    - Identify the version and whether the release is patch, minor, or major.
 2. Validate
    - Run the release gate from `docs/TEMPLATE_RELEASES.md`.
-3. Tag
-   - Create a `vX.Y.Z` git tag only after validation is green.
+3. Prepare or publish
+   - Preparation produces a versioned candidate, notes and verification evidence without publishing, pushing a release tag or rolling out projects.
+   - Only with publication authority and green required gates create/push the `vX.Y.Z` tag. Never present a local candidate as a published release.
 4. Downstream instructions
    - Tell projects to preview and apply the target release's `scripts/sync-template.js` with one external plan file.
 5. AgentOS note

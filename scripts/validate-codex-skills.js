@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
+const { validateSkillLinks } = require("./lib/skill-links.js");
 
 const SKILLS_ROOT = ".agents/skills";
 const MAX_DESCRIPTION_CHARS = 420;
@@ -153,6 +154,7 @@ function main() {
   for (const skillDir of skillDirs) {
     validateSkill(skillDir);
   }
+  state.errors.push(...validateSkillLinks(SKILLS_ROOT));
   validateRequiredSkills(skillDirs);
 
   console.log(`Codex skills checked: ${state.checks}`);
@@ -168,4 +170,8 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = { validateSkillLinks };

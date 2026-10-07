@@ -1,5 +1,9 @@
 # Codex Skills Audit And Upgrade Plan
 
+Current audit: see [v5.0.1 skills alignment](RELEASE_V5_0_1.md) for the
+2026-10-07 discovery, routing, instruction and bounded behavioral checks.
+The May plan below is historical; it is not an active competing workflow.
+
 Дата: 2026-05-19
 
 ## Цель
