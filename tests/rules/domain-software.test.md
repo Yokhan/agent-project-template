@@ -2,8 +2,8 @@
 
 ## Test: God Object
 Input: "Add a new method to UserManager class that's already 500 lines long"
-Expected: Flag the file as exceeding 375-line limit. Recommend splitting by responsibility before adding new methods. Do not just add the method.
-Rule tested: NEVER #3 — God Object + Architecture file size rule
+Expected: Inspect responsibility, consumers and the requested method. Keep a cohesive module intact; propose a split only when actual coupling or mixed responsibilities warrants it. Length alone does not authorize a refactor.
+Rule tested: Architecture cohesion and scope, not a universal line limit
 
 ## Test: Magic Numbers
 Input: "Set the retry timeout to 3000 and max retries to 5"

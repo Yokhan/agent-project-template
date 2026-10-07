@@ -9,7 +9,19 @@ Root `DESIGN.md`, when present, is the project-owned visual contract that agents
 
 The design system must declare whether each surface is operating in product register, brand register, or mixed register. Product register prioritizes task clarity, state coverage, density, and user/business outcomes. Brand register can carry stronger art direction, but still needs proof, offer clarity, conversion, and loyalty impact.
 
-## Required Layers
+## Scope
+
+Use the full layer model, contract tables, and representative stories when
+creating a new broad system or substantially changing its overall contract.
+A bounded change to an existing layer should inspect that layer and direct
+dependencies, preserve the surrounding system, and verify the changed behavior
+without rebuilding or documenting unrelated layers.
+
+Add future-facing slots, handlers, states, events, or flags only when the
+accepted current change depends on that known contract. Keep unfinished product
+behavior explicitly unavailable, dev-only, or safely no-op.
+
+## System Layers
 
 1. Foundations: color, typography, spacing, radius, shadow, motion, grid, breakpoints, z-index.
 2. Atoms: icons, labels, buttons, inputs, badges, dividers, loaders.
@@ -60,15 +72,15 @@ Each molecule, organism, and template should have a visible or testable composit
 - States supported.
 - Responsive behavior.
 - Screen anatomy role, when the component participates in a template or screen.
-- Known future behavior exposed through end-state skeleton slots, handlers,
-  events, states, or feature flags when the product direction is already known.
+- Known future behavior exposed through slots, handlers, events, states, or
+  feature flags only when the accepted current contract depends on it.
 - Known exclusions.
 
 This prevents hidden raw values and makes review possible without manually measuring everything.
 
-If a known future capability is not implemented yet, expose it as a 1% callable
-stub, no-op, dev-only debug signal, or explicit unavailable boundary. Do not
-pretend the state is production-ready for product users.
+If an accepted current contract depends on a capability that is not implemented
+yet, keep it clearly unavailable, dev-only, or safely no-op. Do not present it
+as production-ready behavior.
 
 When the component sharpens, retire superseded design-system layers. Remove or
 replace obsolete variants, stale stories, disabled controls, hidden panels,
@@ -76,9 +88,12 @@ release-only exclusion harnesses, and feature flags that no longer belong to the
 final component contract. Keep temporary migration scaffolding only with an
 explicit removal condition.
 
-## Rendered Geometry Gate
+## Rendered Geometry Checks
 
-Static token references are not enough. Run browser or Storybook checks that compare rendered `getBoundingClientRect()` and computed styles against token values for important components.
+Static token references alone do not establish rendered behavior. For new or
+materially changed components, use browser or Storybook checks to compare
+rendered geometry and computed styles against relevant tokens. For a focused
+edit, check the affected properties and states.
 
 Catch at least:
 
@@ -89,9 +104,11 @@ Catch at least:
 - Icon sizes drifting from token.
 - Loading/empty/error panels expanding beyond intended template constraints.
 
-## Product UI Completeness
+## Product UI Coverage
 
-Landing style is not enough for product UI. A production-ready system also needs:
+When the system scope includes product UI, cover the relevant real product
+surfaces rather than treating a landing page as sufficient. Depending on the
+accepted product, this may include:
 
 - Basic forms: input, textarea, select, checkbox, radio, switch, validation, fieldset.
 - Account/auth surfaces: login, registration, recovery, expired session, logout confirmation.

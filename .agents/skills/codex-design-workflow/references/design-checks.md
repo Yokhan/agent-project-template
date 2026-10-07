@@ -6,11 +6,16 @@ Source references:
 - `.claude/skills/domain-design-review/SKILL.md`
 - `.claude/docs/domain-full/domain-design.md`
 
-Minimum validation:
+Choose checks that cover the changed surface and likely failure modes. Depending
+on scope, useful checks include:
 
-- Screenshot or browser walkthrough.
-- Desktop and mobile viewport checks.
-- Text overflow and overlap scan.
-- Contrast review for normal text.
-- Keyboard/focus path for interactive UI.
-- Reduced-motion alternative when animation matters.
+- Rendered browser, design-tool, or Storybook inspection.
+- Relevant desktop/mobile or target-device viewport checks.
+- Text overflow, overlap, and long-content checks.
+- Contrast, keyboard/focus, and assistive-technology checks for affected UI.
+- Relevant interaction states and reduced-motion behavior when animation is
+  present.
+
+A focused edit may need only one or two targeted checks. Broader or
+risk-bearing work needs correspondingly broader evidence; state limitations when
+rendered checks are unavailable.

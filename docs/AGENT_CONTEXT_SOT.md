@@ -75,6 +75,21 @@ Reusable procedures and domain knowledge live in skills and agents:
 Use progressive disclosure: a `SKILL.md` should route to supporting references
 instead of forcing all material into every turn.
 
+Skill contracts describe the outcome, applicability, non-obvious constraints,
+relevant sources and acceptance evidence. Let the model choose routine execution
+details. Fixed sequences belong to fragile operations such as data migrations
+or releases, not every task touching that domain. Keep specialist knowledge
+available on demand; reducing context must not erase it.
+
+When maintaining skills, remove obsolete/conflicting instructions at their
+source rather than adding overrides to every caller. Do not infer that a
+stronger model makes permissions, user-owned product waves, source grounding
+or quality gates unnecessary. Astra-specific prompting observations are not
+proof of Sol/Luna behavior. Validate realistic positive and negative scenarios
+on the worker models actually used, and separate static checks from observed
+decisions and end-to-end execution. Do not promise token savings without a
+controlled workload comparison.
+
 ### Cold Memory
 
 Stable references, architecture records, source registries, and long-form
@@ -129,6 +144,11 @@ Current official-doc check: 2026-10-06 for GPT-6 model selection and Codex
 subagent behavior. Historical GPT-5.6 source cards remain historical evidence,
 not the active policy. Requested model/effort must be distinguished from child
 runtime metadata; custom role TOML may override explicit spawn settings.
+
+Skill maintenance guidance refreshed 2026-10-07: [Rethinking skills and prompts
+for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra)
+and [Build skills](https://learn.chatgpt.com/docs/build-skills). Applied locally
+as narrower triggers and scope-based workflows, not as relaxed safety gates.
 
 ## Minimum Closeout
 

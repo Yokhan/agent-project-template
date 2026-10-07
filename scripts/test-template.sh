@@ -352,14 +352,15 @@ const fs = require("fs");
 
 const required = new Map([
   [".claude/library/domain/domain-design-pipeline.md", [
-    "### Screen Anatomy First",
-    "Root frame:",
-    "Base background:",
-    "Background composition:",
-    "Content frame:",
-    "Overlay layer:",
-    "Visible bounded surfaces",
-    "Edge-to-edge"
+    "### Full-screen structure",
+    "For a new or materially reworked full screen",
+    "frame and base surface",
+    "background composition",
+    "content frame",
+    "overlays only when needed",
+    "Bounded cards/panels",
+    "edge-to-edge",
+    "A focused edit to an existing screen need only revisit the layers it"
   ]],
   [".claude/library/domain/domain-design-system.md", [
     "## Screen Anatomy Contract",
@@ -372,7 +373,7 @@ const required = new Map([
   ]],
   [".agents/skills/codex-design-workflow/SKILL.md", [
     "## Screen Anatomy Gate",
-    "Every full screen starts from screen anatomy",
+    "For a new or materially reworked full screen",
     "root frame",
     "background composition",
     "content frame",
@@ -388,7 +389,7 @@ const required = new Map([
     "overlay layer"
   ]],
   [".agents/skills/codex-design-workflow/references/design-command-modes.md", [
-    "name screen anatomy layers",
+    "For full screens, name the root frame",
     "root frame",
     "base background",
     "background composition",
@@ -524,6 +525,7 @@ check "test-subagent-trace" node scripts/test-subagent-trace.js
 check "live-subagent launcher offline regressions" bash scripts/test-codex-subagents-live-launcher.sh
 check "test-codex-routing" node scripts/test-codex-routing.js
 check "validate-production-standard" node scripts/validate-production-standard.js
+check "focused verification regression" node scripts/test-verify-check.js
 check "test-design-policy" node scripts/test-design-policy.js
 check "screen anatomy contract is enforced in design rules and skills" validate_screen_anatomy_contract
 check "validate-agent-sot" node scripts/validate-agent-sot.js
@@ -656,6 +658,7 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-library-catalog.json .claude/library/technical/writing-source-grounding.md scripts/writing-library.js scripts/test-writing-library.js scripts/lib/writing-library-store.js scripts/lib/writing-library-policy.js scripts/lib/writing-library-retrieve.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A docs/MIGRATION_V5.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/test-verify-check.js scripts/verify-check.sh scripts/check-drift.sh scripts/test-template.sh .claude/hooks/post-edit.sh .claude/agents/writer.md .claude/docs/domain-full/domain-design.md .claude/library/technical/atomic-reuse.md .claude/skills/audit .claude/skills/security-audit .claude/skills/domain-design-review tests/rules/skill-proportionality.test.md tests/rules/domain-software.test.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/lib/sync-manifest-reconcile.js scripts/lib/sync-safe-copy.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy tasks/change-strategy.json
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/sync-template.js scripts/sync-template.cmd scripts/sync-all.js scripts/lib/sync-template-core.js scripts/lib/sync-template-apply.js scripts/lib/template-payload-policy.js scripts/lib/safe-config-write.js scripts/test-sync-template.js scripts/test-safe-config-write.js scripts/lib/skill-links.js scripts/test-skill-links.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/skills .claude/pipelines scripts/check-drift.sh docs/MIGRATION_V5.md docs/MIGRATION_MATRIX.md docs/RELEASE_CHECKLIST.md docs/RELEASE_V5_0_1.md

@@ -16,9 +16,11 @@ profiles separate from technical standards; Russian output loads
 `russian-writing-profile.md`, while vendor sources cannot define Russian prose.
 Load the routed Russian explanation or correspondence child profile as needed.
 Inspect the actual product,
-produce a complete purpose-solving path, execute procedures in the declared
-environment, and replace obsolete instructions. Use the technical-writing-review
-skill for independent acceptance.
+produce a complete purpose-solving path, verify changed procedures in the declared
+environment with authorized safe checks, and replace obsolete instructions.
+Do not execute deployments, destructive examples or external writes merely to
+check documentation. Use the technical-writing-review skill when the shared
+writing review policy requires independent acceptance; otherwise self-check.
 
 Never claim an external writing-service result without configured access and a
 successful response tied to the current artifact.

@@ -58,9 +58,10 @@ theater.
 
 ## Acceptance
 
-State the mode and unresolved truth boundaries when they matter. For public,
-commercial, sensitive, or M+ work, request or run an independent review rather
-than presenting self-review as independent evidence.
+State the mode and unresolved truth boundaries when they matter. Use the review
+decision in `writing.md`: independent review for an explicit request, required
+acceptance gate or material risk, not merely public placement or a size label.
+Never present self-review as independent evidence.
 
 See `.claude/agents/PROTOCOL.md` for the shared agent protocol.
 

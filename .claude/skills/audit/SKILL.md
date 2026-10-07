@@ -5,7 +5,10 @@ description: "Strict architectural and code audit with multi-lens synthesis. Tri
 
 # Multi-Lens Audit Skill
 
-Deep audit that analyzes code/architecture through 5 independent lenses, then synthesizes findings into a unified verdict. Replaces manual "сделай строгий арх и код аудит через синтез линз".
+Review code/architecture through the lenses relevant to the request, then
+synthesize findings. Lenses are perspectives, not mandatory worker processes.
+An audit is read-only unless the request separately authorizes changes or a
+saved report; do not create task/lesson files as an audit side effect.
 
 ## When to use
 - After completing a feature or significant change
@@ -19,7 +22,8 @@ The user specifies ONE of:
 2. **Files** — audit specific files or a PR diff
 3. **Last work** — audit what was done in current/last task (reads `tasks/current.md` for changed files)
 
-If no target specified, ask: "Что аудитим? Весь проект, конкретные файлы, или последнюю работу?"
+Infer the target from the request and active context. Ask only when ambiguity
+would materially change audit scope.
 
 ## Process
 
@@ -30,7 +34,9 @@ If no target specified, ask: "Что аудитим? Весь проект, ко
 4. Count total lines/files to estimate audit depth
 
 ### Phase 2: Multi-Lens Analysis
-Launch **up to 3 parallel Explore agents** (model: opus), each covering 1-2 lenses.
+Delegate only materially useful independent lanes within the host/project
+fan-out policy and user authority. A focused audit may use no child agents;
+compatible lenses can be reviewed together.
 
 #### Lens 1: Architecture
 - Module boundaries and dependency direction (no circular deps)
@@ -42,7 +48,7 @@ Launch **up to 3 parallel Explore agents** (model: opus), each covering 1-2 lens
 #### Lens 2: Code Quality
 - Anti-patterns from `domain-software-review` checklist (god objects, deep nesting, primitive obsession, etc.)
 - Naming clarity and consistency
-- Function size (<20 lines), file size (<375 lines)
+- Cohesion, responsibility and review cost; no universal function/file length limits
 - Error handling: fail-fast, no swallowed exceptions
 - Dead code, commented-out code, TODOs without tickets
 - DRY violations vs premature abstraction
@@ -111,9 +117,10 @@ Rate each lens: PASS / WARN / FAIL
 1. ...
 ```
 
-Save report to `brain/03-knowledge/audits/audit-YYYY-MM-DD.md`.
-If Critical findings — also add to `tasks/current.md` as next action items.
-If new anti-patterns discovered — add to `tasks/lessons.md`.
+Return findings in the response. Save an audit report only when requested.
+Suggest follow-up fixes without silently editing code or task/lesson records.
+The format above is an example for a broad audit, not required ceremony for
+each focused review. Do not invent root causes from a diff alone.
 
 ## Notes
 - NEVER report "looks good" without evidence. Every PASS needs at least one specific observation.

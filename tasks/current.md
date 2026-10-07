@@ -8,10 +8,71 @@ inventory: 100
 production: 0
 cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: verify public-copy follow-up and refresh local v5.0.1 candidate; publication and exact-commit Linux/Windows release gates remain separate
+next: push reviewed release commit, await Linux/Windows gates, publish v5.0.1 and verify downloaded assets
 -->
 
-# Current Task - Prepare v5.0.1 After Skills Audit
+# Current Task - Publish v5.0.1 After Skills Audit
+
+## Authorized publication
+
+On 2026-10-07 the owner explicitly authorized checks, commit/push and stable
+release publication. Parent owns the release aggregates and publication;
+independent read-only review checks payload/gate integrity. Reuse the completed
+skill decision evidence; run fresh mandatory release gates on this integrated
+state, then Linux/Windows CI and exact-tag packaging. Verify the published tag,
+release flags, metadata and downloaded archive checksum. Downstream project
+updates and host tool installations are not part of this release request.
+
+Local release gates passed on 2026-10-07: template smoke 201/201, structural
+validation 0 errors/warnings, hooks 12/12, entrypoint parity 0 issues/warnings,
+native PowerShell failure propagation passed. Drift has 0 errors and 2 document
+age warnings. Fresh Codex CLI 0.125.0 discovery found 46 enabled template skills
+and no errors. Independent payload/publication review found no new blockers;
+the three new reference/test files are explicitly part of the commit.
+
+## Completed implementation follow-up: scope-based skills
+
+The owner authorized fixing the remaining audit findings and removing obsolete
+micromanagement for the GPT-6 workflow. Preserve final-result agreement,
+same-product waves, nearest-wave responsibilities, book grounding, project
+ownership and mandatory security/release gates. This is an instruction-maintenance
+task, not a new product wave or publication request.
+
+Implementation responsibilities: bounded design and audit/orchestration workers;
+parent integrates writing, architecture, source guidance, tests and handoff.
+Acceptance: read-only audits/searches stay read-only; authorized fixes proceed;
+small UI/code/copy changes avoid broad rituals; material design, security and
+release work retains its real checks. Detailed domain knowledge remains in
+on-demand references. No model/effort or downstream tool installation changes.
+
+Verification plan: focused skill/link and production-contract checks during
+integration, fresh Luna/Sol decision scenarios without expected answers, then
+one structural aggregate. These establish wiring and sampled decisions, not
+live downstream execution or comparative token/cost savings. Existing candidate
+archives predate this delta and must not be used as the updated release payload.
+
+Implemented scope-based design/audit/writing skills and on-demand design
+references; removed forced module splits and the verifier's 375-line failure.
+The verifier now returns failure for invalid JSON. Its focused disposable
+regression passed 3/3, including inherited Git-state isolation. Independent
+source review closed the fixture-isolation and portable-Bash findings.
+Thirteen fresh decision scenarios exposed two shared-rule conflicts and five
+route mismatches. Shared-rule rechecks passed. Focused routing, writing-intent
+and agent-policy suites passed after positive/negative regressions were added.
+The final structural aggregate (`EXPECTED_RELEASE_TAG=v5.0.1` and
+`scripts/validate-template.sh`) passed with 0 errors and 0 warnings. Screen-anatomy
+marker checks and README script count (73) passed separately. CTA edits retain
+MEDIUM/routed classification and rely on scoped design guidance rather than a
+blanket low-risk override. No full setup/sync smoke or platform release workflow
+was repeated for this delta; earlier archives remain stale. No commit,
+push, tag, release, downstream apply or host configuration change in this turn.
+
+Post-aggregate delta: restored writing-source grounding on progressive product
+plans without removing planner precedence. Added gate assertions; routing and
+writing-intent suites passed. The broad integration baseline was not repeated
+after this focused correction.
+
+## Earlier candidate baseline
 
 Current request: check that skills follow the active logic, repair demonstrated
 conflicts, then prepare a release. This task does not publish or roll out projects.

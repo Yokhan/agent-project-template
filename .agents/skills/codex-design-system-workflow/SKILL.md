@@ -1,6 +1,6 @@
 ---
 name: codex-design-system-workflow
-description: "Build, audit, or extend production design systems with foundations, atoms, molecules, organisms, templates, Storybook, token tables, composition traces, and rendered geometry checks. Use for design-system, tokens, Storybook, component library, or UI contract work."
+description: "Create or substantially rework a broad design system, or make a focused change to an existing system layer. Use for tokens, component libraries, Storybook, and UI contracts; small layer edits need only relevant checks."
 ---
 
 # Codex Design System Workflow
@@ -12,7 +12,19 @@ Read:
 - `.agents/skills/codex-design-workflow/references/design-command-modes.md` when the system change affects register, mode selection, hardening, polish, or critique.
 - `_reference/tool-registry.md`
 
-## Required Flow
+## Choose the scope
+
+Use the complete system flow for a new broad design system or a substantial
+change to its overall contract. For a bounded edit to an existing layer, inspect
+that layer and its direct dependencies, preserve established conventions, and
+verify the changed contract; do not rebuild every layer or produce unrelated
+system documentation.
+
+Future-facing slots, states, handlers, events, or flags belong only when the
+accepted current change depends on that known contract. Keep incomplete
+behavior clearly unavailable, dev-only, or safely no-op.
+
+## Broad system flow
 
 1. Foundations: confirm root `DESIGN.md` when present, choose product or brand register, then tokens for color, typography, spacing, radius, motion, layout, and control sizes.
 2. Atoms: confirm primitive controls and states.
@@ -20,17 +32,22 @@ Read:
 4. Organisms: compose from lower layers and expose a dependency trace.
 5. Templates: define responsive layout and density rules.
 6. Screen anatomy: every full screen starts with root frame, base background, independent background composition, content frame, and optional overlay layer before product components are placed.
-7. Plan gate: broad component skeleton work requires the final component contract or a plan step first.
-8. End-state skeleton: accepted future behavior is exposed through 1% callable slots, states, handlers, events, or feature flags when it belongs to the final component contract.
-9. Replacement gate: remove or replace superseded variants, obsolete stories, stale feature flags, disabled controls, and release-only harnesses; keep only final-plan placeholders or time-boxed migration scaffolding.
-10. Screens/stories: use real product data and navigation states.
-11. Verification: Storybook/browser screenshots plus computed-style and bounding-box checks.
+7. Resolve any material open contract before implementing beyond accepted scope.
+8. Replace superseded variants and stories where this change makes them
+   obsolete; time-box migration scaffolding that must remain temporarily.
+9. Add screens/stories that make the system's in-scope behavior inspectable,
+   using representative product data and navigation states.
+10. Verify rendered behavior and token/geometry alignment for important
+    components; use the checks proportionate to the affected contract.
 
 ## No Raw Values
 
 If a needed value has no token, stop and add/request the token. Do not invent local values inside larger components.
 
-Root `DESIGN.md` is a project-owned visual context file. Update it when visual direction, token meaning, component behavior, or guardrails change; do not use template sync to overwrite an existing project `DESIGN.md`.
+Root `DESIGN.md` is a project-owned visual context file. Update it when the
+accepted change materially changes visual direction, token meaning, component
+behavior, or guardrails; do not use template sync to overwrite an existing
+project `DESIGN.md`.
 
 ## Required Stories
 
@@ -41,8 +58,11 @@ Root `DESIGN.md` is a project-owned visual context file. Update it when visual d
 - Organism and template responsive examples.
 - Screen anatomy tables for full-page templates and screens.
 - Product forms, account/auth, empty/loading/error, service gateway, docs/help surfaces when relevant.
-- End-state skeleton stories or notes for accepted future capabilities that are stubbed, feature-flagged, no-op, or dev-debug only.
-- Superseded layer cleanup notes for removed variants/stories/flags and any temporary migration scaffold with its removal condition.
+- Stories or notes for future capabilities only when the accepted current
+  contract depends on them and they are stubbed, feature-flagged, no-op, or
+  dev-debug only.
+- Cleanup notes for superseded variants/stories/flags affected by the change,
+  and removal conditions for any temporary migration scaffold.
 
 ## Screen Anatomy Contract
 

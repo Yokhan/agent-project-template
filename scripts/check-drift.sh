@@ -93,7 +93,7 @@ if [ -d src ]; then
   find src -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.js" -o -name "*.jsx" \) | while read -r file; do
     lines=$(wc -l < "$file")
     if [ "$lines" -gt 375 ]; then
-      echo "  ⚠️  $file: $lines lines (limit 375)"
+      echo "  ⚠️  $file: $lines lines (review hint, not a split requirement)"
     fi
   done
 fi

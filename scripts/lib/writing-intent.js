@@ -1,5 +1,7 @@
 "use strict";
 
+const { getIntentMatch, shouldSuppressRoute } = require("./codex-route-intents.js");
+
 const ACTION_PATTERNS = [
   ["review", /\b(?:review|audit|critique|assess|check|score)\b|проверь|проверить|проверяй|проверим|аудитир|разбер|оцени|оценк[ауи]?|отрецензир/i],
   ["edit", /\b(?:rewrite|edit|revise|tighten|polish)\b|перепиш|отредакт|доработ[а-яё]*\s+текст|сделай[а-яё]*\s+понятн/i],
@@ -32,6 +34,11 @@ const SPECIALIZATION_PATTERNS = {
   technical:
     /\b(?:api|sdk|cli|endpoint|openapi|orm|data model|database|schema|developer docs?|technical documentation|how-to|readme|runbook|troubleshooting|deployment guide|configuration guide|integration guide|migration guide|release notes?|architecture decision|adr)\b|техническ[а-яё]*\s+документац|(?:^|[^А-Яа-яЁё])апи(?:$|[^А-Яа-яЁё])|эндпоинт|ранбук|ридми|устранен[а-яё]*\s+неисправност/i,
 };
+
+const RUSSIAN_INFRASTRUCTURE_PATTERN =
+  /(?:^|[^\p{L}])(?:баз(?:а|у|е|ы|ой|ами|ах)|данн(?:ые|ых|ым|ыми)|сервер(?:а|у|е|ы|ом|ами|ах)?|хранилищ(?:е|а|у|ем|ами|ах)?)(?=$|[^\p{L}])/iu;
+const RUSSIAN_OPERATIONAL_PATTERN =
+  /(?:^|[^\p{L}])(?:восстанов\p{L}*|резервн\p{L}*\s+коп\p{L}*|авари\p{L}*|сбо\p{L}*|отказ\p{L}*)(?=$|[^\p{L}])/iu;
 
 const VENDOR_PATTERNS = {
   openai: /\b(?:openai|codex|gpt(?:-?\d(?:\.\d)?)?|responses api)\b|опенаи/i,
@@ -81,9 +88,15 @@ function findOverlays(task) {
 }
 
 function findSpecializations(task) {
-  return Object.entries(SPECIALIZATION_PATTERNS)
+  const specializations = Object.entries(SPECIALIZATION_PATTERNS)
     .filter(([, pattern]) => pattern.test(task))
     .map(([name]) => name);
+  if (!specializations.includes("technical") &&
+      RUSSIAN_INFRASTRUCTURE_PATTERN.test(task) &&
+      RUSSIAN_OPERATIONAL_PATTERN.test(task)) {
+    specializations.push("technical");
+  }
+  return specializations;
 }
 
 function findVendors(task) {
@@ -116,10 +129,18 @@ function classifyWritingIntent(rawTask) {
   const task = normalizeTask(rawTask);
   const detectedAction = findAction(task);
   const externalTools = findExternalTools(task);
-  const primaryMode = findPrimaryMode(task, externalTools);
+  let primaryMode = findPrimaryMode(task, externalTools);
   const hasArtifact = ARTIFACT_PATTERN.test(task) || NONFICTION_PLAN_PATTERN.test(task);
   const action = detectedAction || (hasArtifact ? "create" : null);
-  const isWriting = Boolean(primaryMode && action && (hasArtifact || externalTools.length || action !== "review"));
+  const isProgressiveProductPlan = action === "plan" &&
+    getIntentMatch("progressive-planning", task).isMatch &&
+    !shouldSuppressRoute("progressive-planning", task) &&
+    !/\b(?:write|draft|document|compose|author)\b|напиш|составь|подготовь\s+(?:план|документ)|оформи\s+(?:план|документ)/iu.test(task);
+  // A product plan is informational text even when planning owns execution.
+  // Do not lose its mandatory primary-source grounding to route precedence.
+  if (isProgressiveProductPlan) primaryMode = "informational";
+  const isWriting = Boolean(primaryMode && action &&
+    (hasArtifact || externalTools.length || action !== "review"));
   const language = isWriting ? resolveOutputLanguage(task) : { outputLanguage: null, languageResolution: null };
 
   return {

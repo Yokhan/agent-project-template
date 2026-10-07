@@ -24,5 +24,7 @@ against the current artifact; never invent a Glavred score or check.
 
 At functional 1%, the documented user can complete or correctly understand the
 primary production job. Execute procedures in the stated environment and expose
-unsupported claims or unverified steps. Ask an independent technical reviewer to
-accept M+, public, operational, or version-sensitive work.
+unsupported claims or unverified steps. Execute only authorized safe checks;
+do not run a documented deployment or destructive command merely to validate prose.
+Use the shared writing review policy for independent technical acceptance based
+on actual operational/claim risk or a required gate, not a size label alone.

@@ -270,6 +270,18 @@ function runRouteCasesA(testRoute) {
     notSkills: ["codex-openai-model-guidance"],
   });
 
+  testRoute("Подготовь инструкцию восстановления базы после аварии.", {
+    exactModes: ["technical-writing", "writing-informational"],
+    skills: ["codex-technical-writing"],
+    notModes: ["writing-communication"],
+  });
+
+  testRoute("Подготовь инструкцию о восстановлении базового ухода после тренировки.", {
+    modes: ["writing-informational"],
+    notModes: ["technical-writing"],
+    notSkills: ["codex-technical-writing"],
+  });
+
   testRoute("Write an API outage incident update", {
     exactModes: ["api", "technical-writing", "writing-communication"],
     skills: ["codex-technical-writing", "codex-api-contract"],
@@ -315,6 +327,17 @@ function runRouteCasesA(testRoute) {
     skills: ["codex-api-contract"],
     semanticMatches: ["api"],
     risk: "MEDIUM",
+  });
+
+  testRoute("В кнопке на сайте замени Начать бесплатно на Посмотреть тарифы.", {
+    modes: ["design"],
+    notModes: ["review", "template", "product-goal"],
+    notSkills: ["codex-product-goal"],
+    risk: "MEDIUM",
+  });
+
+  testRoute("Поменяй абзац статьи на сайте, сохрани смысл.", {
+    notModes: ["design"],
   });
 
 }

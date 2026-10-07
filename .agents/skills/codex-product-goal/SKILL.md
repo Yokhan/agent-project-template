@@ -1,6 +1,6 @@
 ---
 name: codex-product-goal
-description: "Maintain a goal-like product contract for Codex tasks: final outcome, quality bar, current step, dependencies, risks, language matching, and verification. Use for M+ work, continue/finish requests, product strategy, or corrections after missed intent."
+description: "Maintain the product outcome and quality contract for substantial or staged product work, product strategy, or continue/finish requests where prior product intent matters. Skip bounded technical or research tasks unless a product decision is in scope."
 ---
 
 # Codex Product Goal
@@ -21,11 +21,10 @@ Read:
 4. Define the current bounded step without pretending it completes the whole product.
 5. Treat the user as the client/product owner and the agent as the accountable executor.
 6. List dependencies, risks, acceptance evidence, and honest out-of-scope items.
-7. Use progressive JPEG delivery: first useful view, next sharpened evidence layer, rough edges, and replan trigger.
-   For iteration planning, delegate the detailed slice contract to `$codex-progressive-jpeg-planner`.
+7. For staged product delivery, preserve the agreed end result, approximate useful product waves, and detailed nearest-wave plan. Use progressive JPEG to communicate each version's useful result, evidence, rough edges, and replan trigger; use `$codex-progressive-jpeg-planner` for iteration planning. Do not impose product waves or progressive staging on bounded technical/research work; treat such work as a task or enabling checkpoint.
 8. Resolve material missing scope, acceptance, or architecture decisions before the affected implementation; an absent speculative final plan is not a universal gate.
 9. Future contracts or stubs belong only to accepted architecture and the current step; do not prebuild an end-state skeleton or 1% callable inventory by default.
-10. After each sharpening pass, run a superseded-layer audit and delete, replace, or time-box obsolete layers.
+10. After product sharpening passes, review superseded layers and delete, replace, or time-box obsolete layers.
     If repair has repeated or the architecture no longer matches the accepted
     final product, use `$codex-change-strategy` before changing the path.
 11. When working docs carry `PROGRESSIVE_STATUS`, report the project slice with `node scripts/progressive-status.js` and run `node scripts/progressive-status.js --check` before closeout.
@@ -51,7 +50,7 @@ Read:
   objective evidence before claiming replacement is better.
 - Plans, audits, and final reports use the language of the user's request.
 - Partial work must be reported as partial with the next dependency.
-- Status and closeout messages must show what is sharp now, what is still rough, what evidence comes next, and what fact would force a replan.
+- For staged product status/closeout, show what is useful now, what remains rough, what evidence comes next, and what fact would force a replan.
 
 ## Object Readiness Check
 

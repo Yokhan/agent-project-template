@@ -8,6 +8,16 @@
   },
   "sources": [
     {
+      "id": "openai-gpt-6-lean-skills",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Rethinking skills and prompts for GPT-6 Astra",
+      "url": "https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra",
+      "last_checked": "2026-10-07",
+      "requires_fresh_check": true,
+      "local_conclusion": "Use precise triggers, progressive disclosure and outcome-level contracts instead of universal recipes. Preserve specialist knowledge, permissions and user requirements. Astra observations require workload validation before transfer to Sol or Luna; no measured savings are claimed."
+    },
+    {
       "id": "openai-gpt-6-sol",
       "kind": "official-docs",
       "trust": "primary",
@@ -63,8 +73,8 @@
       "kind": "official-docs",
       "trust": "primary",
       "title": "OpenAI Codex skills",
-      "url": "https://developers.openai.com/codex/skills",
-      "last_checked": "2026-07-18",
+      "url": "https://learn.chatgpt.com/docs/build-skills",
+      "last_checked": "2026-10-07",
       "requires_fresh_check": true,
       "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
     },

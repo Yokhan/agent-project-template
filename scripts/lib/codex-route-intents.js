@@ -25,6 +25,8 @@ const INTENT_GROUPS = {
     [/looks|visual|trust|polish|premium|cheap|clutter|hierarchy/i, /выгляд|довер|полиров|дешев|кустар|перегруж|иерарх/i],
     [/screen|page|surface|layout|state|empty|loading|error/i, /страниц|поверхност|состояни|пуст|загруз|ошибк/i],
     [/mobile|desktop|responsive|touch|viewport|overflow/i, /мобил|десктоп|адаптив|тап|вьюпорт|переполн/i],
+    [/replace.{0,100}(?:with|to)|change.{0,100}(?:to|from)|update.{0,100}(?:to|with)/i, /замени.{1,100}\s+на|(?:измени|поменя|обнови).{1,100}\s+на/i],
+    [/button|cta|button label|button text|ui control/i, /кнопк|элемент\s+интерфейс|надпис[а-яё]*\s+кнопк/i],
   ],
   "design-system": [
     [/system|tokens|component|primitive|variant|storybook/i, /систем|токен|компонент|примитив|вариант|сторибук/i],
@@ -77,7 +79,7 @@ const INTENT_GROUPS = {
   ],
   "progressive-planning": [
     [/plan|roadmap|staged delivery|successive|sequence/i, /план|согласу|разбей|развит|последовательн/i],
-    [/waves?|stages?|\bversions\b|successive\s+(?:usable|useful)\s+versions?|staged delivery/i, /волн[\p{L}]*|этап[\p{L}]*|полезн[\p{L}]*\s+верси|(?:^|[^\p{L}])верси(?:и|й)(?:$|[^\p{L}])/iu],
+    [/waves?|stages?|\bversions\b|successive\s+(?:usable|useful)\s+versions?|staged delivery|from\s+.{1,60}\s+to\s+.{1,60}/i, /волн[\p{L}]*|этап[\p{L}]*|полезн[\p{L}]*\s+верси|(?:^|[^\p{L}])верси(?:и|й)(?:$|[^\p{L}])|от\s+.{1,60}\s+до\s+.{1,60}/iu],
     [/product|application|app\b|game|website|final outcome/i, /продукт|приложени|игр[\p{L}]*|сайт|конечн[\p{L}]*\s+результат/iu],
   ],
   openai: [
@@ -145,12 +147,15 @@ function getIntentMatch(mode, task) {
   const groups = INTENT_GROUPS[mode] || [];
   const normalizedTask = normalizeTask(task);
   const matchedGroups = groups.filter((group) => doesGroupMatch(group, normalizedTask));
-  const threshold = mode === "progressive-planning" ? 3
+  const internalFieldMove = mode === "migration" &&
+    /\b(?:move|transfer|reassign)\b|перенес|перемест|передач/iu.test(normalizedTask) &&
+    /(?=.*(?:\binternal\b|\bprivate\b|внутрен[\p{L}]*))(?=.*(?:\b(?:field|state|property)\b|поле|состояни|свойств))(?=.*(?:\bsingle\b.{0,20}\bowner\b|\bsole\s+owner\b|\bonly\s+owner\b|единственн[\p{L}]*\s+владельц|один\s+владелец))(?=.*(?:preserve[\p{L}]*\s+behavior|same\s+behavior|сохрани[\p{L}]*\s+поведен|поведен[\p{L}]*\s+сохрани))/iu.test(normalizedTask);
+  const threshold = mode === "progressive-planning" || internalFieldMove ? 3
     : Math.min(INTENT_THRESHOLD, groups.length || INTENT_THRESHOLD);
   const hasVendorAnchor = mode !== "openai" || /\b(?:openai|codex|gpt(?:-?\d(?:\.\d)?)?|responses api)\b|опенаи/i.test(normalizedTask);
   return {
-    isMatch: hasVendorAnchor && matchedGroups.length >= threshold,
-    score: matchedGroups.length,
+    isMatch: hasVendorAnchor && (matchedGroups.length >= threshold || internalFieldMove),
+    score: internalFieldMove ? Math.max(matchedGroups.length, threshold) : matchedGroups.length,
     threshold,
   };
 }
@@ -178,8 +183,9 @@ const OPERATION_ACTION_PATTERN =
 function shouldSuppressRoute(mode, task) {
   if (mode === "progressive-planning") {
     const internalMigration = /internal.*migrat|migrat.*internal|внутрен[\p{L}]*.*миграц|миграц.*внутрен/iu.test(task);
-    const usefulVersion = /(?:usable|useful)\s+versions?|полезн[\p{L}]*\s+верси|пользовательск[\p{L}]*\s+результат/iu.test(task);
-    return internalMigration && !usefulVersion;
+    const productWaveIntent = /(?:usable|useful|user-facing|customer-facing)\s+(?:versions?|stages?|waves?)|(?:product|user-facing|customer-facing)\s+(?:waves?|versions?|stages?)|полезн[\p{L}]*\s+(?:этап[\p{L}]*|верси[\p{L}]*|волн[\p{L}]*)(?:.{0,40}(?:сайт|продукт|приложени|игр)[\p{L}]*)?|пользовательск[\p{L}]*\s+(?:этап[\p{L}]*|верси[\p{L}]*|результат[\p{L}]*)/iu.test(task);
+    const implementationMigration = /\b(?:migration|migrate|migrating|framework|database|stack)\b|миграц|мигрир|переезд|фреймворк|баз[\p{L}]*\s+данн/iu.test(task);
+    return (internalMigration || implementationMigration) && !productWaveIntent;
   }
   if (!new Set(["bugfix", "mermaid", "release"]).has(mode)) return false;
   const isReferenceResearch =

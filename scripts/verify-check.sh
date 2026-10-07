@@ -39,16 +39,12 @@ else
   echo ""
 fi
 
-# Gate 0: File sizes
-echo "--- Gate 0: File sizes ---"
+# File sizes are observations, not a template-wide failure threshold.
+echo "--- Context: File sizes (no universal limit) ---"
 for f in $ALL_CHANGED; do
   [ -f "$f" ] || continue
   lines=$(wc -l < "$f" | tr -d ' ')
-  if [ "$lines" -gt 375 ]; then
-    check "$f: $lines lines (limit 375)" "FAIL"
-  else
-    check "$f: $lines/375 lines" "PASS"
-  fi
+  echo "  [INFO] $f: $lines lines; evaluate cohesion only when relevant"
 done
 
 # Gate 0: Syntax
@@ -68,7 +64,7 @@ if [ "$SIZE" != "XS" ]; then
   echo "--- Gate 1: Intent ---"
   check "Does this match the user's actual request?" "MANUAL"
   if [ -f tasks/current.md ]; then
-    check "Plan in tasks/current.md updated?" "MANUAL"
+    check "If scope/acceptance changed, is the existing task plan current?" "MANUAL"
   fi
 fi
 
@@ -93,8 +89,7 @@ if [ "$SIZE" = "M" ] || [ "$SIZE" = "L" ] || [ "$SIZE" = "XL" ]; then
     check "New shared utils registered in tool-registry?" "MANUAL"
   fi
 
-  check "What is the WEAKEST part of this solution?" "MANUAL"
-  check "What alternative did you consider and reject?" "MANUAL"
+  check "Material uncertainty or regression risk left unverified, if any?" "MANUAL"
 fi
 
 # Gate 3-4: Full (L/XL)
@@ -112,6 +107,7 @@ echo "Auto checks: $PASS passed, $FAIL failed"
 echo "Manual checks: $MANUAL remaining"
 if [ "$FAIL" -gt 0 ]; then
   echo "STATUS: FIX $FAIL auto-check failure(s) before proceeding."
+  exit 1
 else
-  echo "STATUS: Auto checks PASS. Complete $MANUAL manual check(s)."
+  echo "STATUS: Auto checks PASS. Resolve applicable manual checks; size labels do not create extra acceptance gates."
 fi

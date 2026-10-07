@@ -287,7 +287,7 @@ When you run the target release's `scripts/sync-template.js`:
 | **Codex Subagents** | 13 | Luna 6 High bounded workers, Sol 6.1 High review/integration, and Astra 6 architecture consultation; effective runtime evidence and exact scopes preserve orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 72 | validation, skill-link guard fixtures, adaptive writing/reference routing, shared writing library import/retrieval/application checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 73 | validation, skill-link and focused-verification fixtures, adaptive writing/reference routing, shared writing library import/retrieval/application checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |

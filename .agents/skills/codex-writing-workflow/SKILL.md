@@ -1,6 +1,6 @@
 ---
 name: codex-writing-workflow
-description: "Plan, write, edit, and evolve literary, marketing/advertising, informational, and communication text through one purpose-first workflow with truthful progressive JPEG delivery."
+description: "Write or edit literary, marketing, informational and communication text using the shared writing and source-grounding rules."
 ---
 
 # Codex Writing Workflow
@@ -24,8 +24,10 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    and lore are exempt, game business/technical books and project plans are not.
 4. Analyze references into concrete writing properties; do not copy their
    structure or imitate a named author mechanically.
-5. Plan the complete final function/section inventory.
-6. Produce a truthful functional 1% whole, then sharpen it in place. Planning,
+5. For substantial staged writing, plan the final function/section inventory;
+   handle a short answer or bounded edit directly within its existing purpose.
+6. When staged delivery is useful, produce a truthful functional 1% whole,
+   then sharpen it in place. Planning,
    TODOs, evidence slots, and fragments are preparation, not product evidence.
 7. Apply the selected mode profile from
    `.claude/library/technical/writing-mode-profiles.md`.
@@ -38,7 +40,9 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    `russian-business-correspondence.md` and
    `russian-explanation-and-persuasion.md` child profiles. Never let an English
    domain standard determine Russian voice, syntax, idiom, or line editing.
-8. Run an independent review for public, commercial, sensitive, or M+ text.
+8. Apply the review policy in `writing.md`: use an independent reviewer when
+   requested, required by acceptance, or justified by material risk/uncertainty.
+   Public placement or a size label alone does not require a child agent.
    Independence requires a separate read-only reviewer and genuine child trace;
    otherwise label the pass `self-check`, not `independent review`.
 9. Apply the shared **Public Copy Gate** in `writing.md`: review the assembled

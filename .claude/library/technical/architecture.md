@@ -1,10 +1,14 @@
 # Architecture Rules
 
+Use the repository's accepted architecture. The layouts below are options for
+projects that use these boundaries, not a mandate to migrate another stack or
+create missing layers during an unrelated task.
+
 ## Module Boundaries
-- Every module has a single public entry point (index.ts / __init__.py / mod.rs / main.go)
-- Import ONLY through the entry point. No deep imports into internal files.
-- If you need something from a module, it must be exported from its entry point.
-- Extract to `shared/` ONLY when used by ≥3 modules. Until then, duplication is acceptable. Premature abstraction is worse than duplication.
+- Respect declared public module boundaries; do not depend on private internals.
+- Use the language's and repository's established entry-point conventions.
+- Extract shared code when it represents a stable shared responsibility with a
+  clear owner. Consumer count alone neither requires nor prohibits extraction.
 
 ## Dependency Direction
 - `shared/` depends on nothing
@@ -22,7 +26,8 @@
   applicable.
 
 ## Module Structure (Vertical Slices)
-Each feature is a self-contained module with all layers:
+A vertical-slice layout can keep related feature code together. Create only
+the files the accepted implementation needs; this is an example, not a scaffold quota:
 ```
 features/auth/
   ├── index.ts          # Public API (only this is importable)
@@ -43,12 +48,11 @@ features/auth/
 - `types.*` — contracts and interfaces
 
 ## When to Split a Module
-Split when ANY of these heuristics fire:
-- **>3 public exports** — the module is doing too many things. Each export is a promise to consumers.
-- **>2 consumers** — multiple dependents = high change cost. Smaller modules reduce blast radius.
-- **Mixed concerns** — if a module has both "user auth" and "email sending," those are separate domains.
-- **Different change rates** — parts that change weekly shouldn't live with parts that change yearly.
-- When in doubt, keep together. Premature splitting creates coupling through shared types.
+Split when evidence shows distinct responsibilities, ownership or change rates
+and the proposed boundary reduces coupling or review cost. Inspect consumers
+and public contracts before choosing that boundary. Export count, consumer
+count and file length are signals to inspect, not thresholds that demand a
+refactor. Keep cohesive code together when splitting only adds indirection.
 
 ## Monolith vs Microservice Decision
 Default: **monolith**. Split ONLY when you have a concrete reason:
@@ -57,7 +61,6 @@ Default: **monolith**. Split ONLY when you have a concrete reason:
 - **Team boundary alignment** — Conway's Law is real. If two teams own it, two services make sense.
 - **Regulatory isolation** — PCI/HIPAA compliance scope can be reduced by isolating the sensitive module.
 - If none of these apply, a well-structured monolith outperforms microservices on complexity, latency, and debugging.
-- Reference: Startup Genome data — 74% of premature scalers fail. This applies to architecture too.
 
 ## API Boundary Design
 - **Internal APIs** (module-to-module): typed function calls, no serialization overhead. Change freely only after checking for actual consumers and project-owned contracts; repository age alone does not make internals protected.
@@ -95,14 +98,11 @@ Rules:
 
 ## Safe Refactoring Protocol
 
-Before refactoring ANY code:
-
-1. **Write characterization tests first** — tests that capture CURRENT behavior, even if wrong
-2. **Verify tests pass** — if they don't pass before refactoring, you can't trust them after
-3. **Refactor** — make structural changes WITHOUT changing behavior
-4. **Re-run tests** — all characterization tests must still pass
-5. **Then fix behavior** — if behavior changes are needed, do them in a SEPARATE commit
-
-Never refactor and change behavior in the same commit. The git history must show:
-- Commit 1: "refactor: extract auth logic to shared/middleware" (tests pass, behavior unchanged)
-- Commit 2: "fix: update auth middleware to check token expiry" (behavior change, tests updated)
+Identify protected behavior and relevant existing tests before changing structure.
+Add characterization coverage where a material contract is otherwise unknown;
+do not duplicate adequate tests or preserve a known bug as desired behavior.
+For an authorized behavior fix, add a regression that distinguishes the old and
+intended results. Separate structural and behavioral changes when this makes
+review or rollback clearer, not as a mandatory commit count. Do not create a
+commit without task authority. Run focused checks for the affected contracts;
+verification cadence belongs to `.claude/library/process/self-verification.md`.

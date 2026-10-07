@@ -99,8 +99,9 @@ explanations, descriptions and business answers may not.
    Verification rereads hashes/passages and rejects another request, task, edition
    or changed draft. Use a full-coverage packet for this check; focused packets
    are additional reading, not complete verification. The command verifies
-   records and binding, not semantic understanding or quality. An independent
-   reviewer still checks that source principles actually improve the artifact.
+   records and binding, not semantic understanding or quality. Check that source
+   principles actually improve the artifact; choose self-check or independent
+   review under the policy in `writing.md`. Hashes cannot replace that judgment.
    Chat-only artifacts can retain the same bindings/notes in task context;
    do not invent a CLI verification if none ran. A reviewer obtains fresh relevant
    reading for its current review task rather than checking yesterday's box.

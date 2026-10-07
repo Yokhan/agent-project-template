@@ -81,6 +81,9 @@ function testRoute(task, expectations) {
   if (expectations.pipeline) {
     assert.strictEqual(route.pipeline, expectations.pipeline, `${task} pipeline`);
   }
+  if (expectations.workflowDepth) {
+    assert.strictEqual(route.workflowDepth, expectations.workflowDepth, `${task} workflow depth`);
+  }
   if (expectations.orchestrator) {
     assert.strictEqual(
       route.orchestrator.owner,
@@ -228,6 +231,17 @@ function main() {
   assert(formatSummary(symbolRoute).includes("CODE_INTELLIGENCE: symbol-refactor | codebase-memory -> serena -> ripgrep"));
   const securityRoute = getRoute("security release audit for leaked secrets");
   assert.deepStrictEqual(securityRoute.codeIntelligence.tools, ["codebase-memory", "semgrep", "gitleaks", "ripgrep"]);
+
+  const productPlan = getRoute("Спланируй развитие сайта кофейни от объявления до заказов.");
+  assert(productPlan.modes.includes("progressive-planning"));
+  assert.match(productPlan.planContract.goalArtifact, /accepted product plan/);
+  assert.strictEqual(productPlan.writingIntent.isWriting, true);
+  assert(productPlan.writingPolicy);
+  assert(productPlan.skills.includes("codex-writing-workflow"));
+  assert(productPlan.qualityGates.includes("fresh-primary-source-packet-required"));
+  assert(productPlan.qualityGates.includes("source-principle-application-required"));
+  const templateMaintenance = getRoute("Update the agent template routing instructions");
+  assert.match(templateMaintenance.planContract.goalArtifact, /do not create one mechanically/);
 
   const russianWriting = getRoute("Напиши на русском руководство по интеграции API");
   assert.deepStrictEqual(russianWriting.writingPolicy.languageProfiles, ["russian-infostyle-core", "ilyakhov-russian-voice-decisions"]);

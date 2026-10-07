@@ -11,12 +11,12 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# File size check (Working Memory Cliff — 375 lines for 1M context models)
+# File length is a review hint, not a model-memory limit or split mandate.
 if [ -f "$FILE_PATH" ]; then
   lines=$(wc -l < "$FILE_PATH" 2>/dev/null || echo 0)
   lines=$(echo "$lines" | tr -d ' ')
   if [ "$lines" -gt 375 ] 2>/dev/null; then
-    echo "WARNING: $FILE_PATH has $lines lines (limit 375, Working Memory Cliff). Consider splitting."
+    echo "INFO: $FILE_PATH has $lines lines. Inspect cohesion if relevant; length alone does not require splitting."
   fi
 fi
 

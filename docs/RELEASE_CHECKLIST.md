@@ -15,13 +15,13 @@ Run this gate once on the integrated candidate. The aggregates include their
 leaf validators: do not run those again just to check another box. The release
 workflow remains authoritative for fresh Linux/Windows and pinned-tool gates.
 
-- [ ] `bash scripts/validate-template.sh`
-- [ ] `bash scripts/check-drift.sh`
-- [ ] `bash scripts/test-hooks.sh`
-- [ ] `bash scripts/test-template.sh`
-- [ ] `bash scripts/sync-agents.sh`
-- [ ] `node scripts/test-ci-native-exit.js`
-- [ ] Inspect the candidate diff and current project/tool-registry facts; regenerate only stale generated data, preserving maintained current-state sections
+- [x] `bash scripts/validate-template.sh` — 2026-10-07: 0 errors/warnings
+- [x] `bash scripts/check-drift.sh` — 2026-10-07: 0 errors, 2 dated-document warnings
+- [x] `bash scripts/test-hooks.sh` — 2026-10-07: 12/12
+- [x] `bash scripts/test-template.sh` — 2026-10-07: 201/201 including setup/sync
+- [x] `bash scripts/sync-agents.sh` — 2026-10-07: 0 issues/warnings
+- [x] `node scripts/test-ci-native-exit.js` — 2026-10-07: passed
+- [x] Inspect the candidate diff and current project/tool-registry facts; regenerate only stale generated data, preserving maintained current-state sections — reviewed; no registry refresh needed
 
 `test-template.sh` covers routing, agent policy, writing library/intent,
 native sync, skill-link fixtures, agent/skill validation, production/design
@@ -43,7 +43,7 @@ quality and observed execution; none alone proves universal model compliance.
 - [ ] Generated projects pass `bash scripts/test-hooks.sh`
 - [ ] Generated projects pass `bash scripts/bootstrap-mcp.sh --dry-run`
 - [ ] Linux and Windows runners pass `bash scripts/bootstrap-mcp.sh --install --tool-profile=full` and the matching `--check`
-- [ ] Record the exact tested Codex version (current local evidence: `0.160.1`); verify trusted project MCP configuration and distinguish config discovery from live server/profile evidence
+- [ ] Record the exact tested Codex version (local CLI `0.125.0`; CI pins `0.160.1`); verify trusted project MCP configuration and distinguish config discovery from live server/profile evidence
 - [ ] `node scripts/test-codex-routing.js` proves AgentOS remains the task-graph owner when `.agent-os` is present
 - [ ] Generated projects pass native `sync-template.js <template-root> <project> --plan-file <outside>` preview
 - [ ] Generated projects can preview a pinned release with native `sync-template.js`, an exact tag, and an external plan file

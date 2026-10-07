@@ -39,6 +39,8 @@ commands plus its context-loading and common-error rules.
 ## Rejected
 
 - Book-only phase gates for every text.
+- Fixed multi-pass planning or a separate agent solely because text is public
+  or crosses a size label. Review depth follows actual risk and acceptance.
 - Literary lenses loaded for informational or operational communication.
 - Named authors used as direct style generators.
 - Stale drafts preserved as active warnings instead of being replaced.
@@ -122,7 +124,9 @@ locators. Retrieval produces a bounded request/task-bound packet with read
 receipts. Application records bind principles and observable effects to the
 current draft hash; verification rejects request/draft/source mismatch. This
 checks records and provenance, not semantic application or comprehension.
-Independent review remains necessary for those claims. Source fidelity from
+Review must assess actual application; a self-check cannot be represented as
+independent evidence. Separate reviewers follow the risk/acceptance policy in
+the writing SOT, not a blanket public-text or size trigger. Source fidelity from
 the supplied extraction is not independently re-extracted, and server-side
 prompt caching/token savings are not guaranteed.
 

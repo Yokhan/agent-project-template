@@ -170,6 +170,12 @@ if ! node scripts/validate-production-standard.js >/dev/null 2>&1; then
 else
   echo "  OK: Production standard validates"
 fi
+if ! node scripts/test-verify-check.js >/dev/null 2>&1; then
+  echo "  ERROR: Focused verification regression failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Focused verification preserves cohesion and rejects invalid JSON"
+fi
 if ! node scripts/validate-agent-sot.js >/dev/null 2>&1; then
   echo "  ERROR: Agent SOT validation failed"
   ERRORS=$((ERRORS + 1))

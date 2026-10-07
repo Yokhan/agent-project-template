@@ -27,7 +27,7 @@ Rules:
 | `shape` | Intent, audience, KPI, or visual lane is unclear | A compact brief: job, surface, register, constraints, quality bar, open questions | User confirmation or explicit assumptions before edits |
 | `craft` | The brief is clear and implementation is requested | Working UI composed from tokens and components | Browser/screenshot, responsive, state, and geometry evidence |
 | `audit` | The user asks to check a UI or design system | Defects ordered by user/business impact and evidence | Static checks plus rendered checks where possible |
-| `critique` | The user wants design judgment, not just lint | Keep, Remove, Collapse, Move, Add-after-subtraction, with severity | Human judgment first, validator output second |
+| `critique` | The user wants design judgment, not just lint | Material findings with impact and evidence; use subtraction prompts when relevant | Human judgment first, validator output second |
 | `distill` | A screen feels bloated, noisy, or unfocused | A subtraction plan before any additions | One current user job and primary action remains clear |
 | `harden` | UI is close but fragile | Edge-case matrix for data, i18n, states, network, motion, and zoom | Stress fixtures or manual browser checks |
 | `polish` | Product works but lacks finish | Small visual and interaction fixes tied to hierarchy and flow | Before/after screenshots or geometry/style checks |
@@ -63,12 +63,15 @@ Rules:
 
 - Inspect the actual UI, screenshot, or flow before reading automated findings when possible.
 - Lead with the highest-impact defect.
-- Use the review shape: Keep, Remove, Collapse, Move, Add only after subtraction.
+- Consider whether to keep, remove, collapse, move, or add only when the review
+  concerns that choice. Report applicable findings; do not force a category or
+  invent a removal when the current UI serves the task.
 - Give a next command suggestion such as `distill`, `harden`, `polish`, or `craft`.
 
 ### distill
 
-- Declare the one current user job for the screen.
+- Identify the primary user job while allowing supporting tasks that belong in
+  the same surface.
 - Remove, hide, collapse, or move elements that are not actionable now.
 - Convert secondary information to badges, drawers, tooltips, details sections, or nav badges.
 - Do not add panels until the subtraction pass is complete.
@@ -91,7 +94,8 @@ Rules:
 
 - Preserve the primary action across mobile, desktop, touch, keyboard, and reduced-motion contexts.
 - Preserve screen anatomy across viewports: the content frame may change grid and padding, but background composition cannot become the layout source.
-- Keep mobile main tap targets at least 52px high unless the platform design system has a stricter standard.
+- Keep important mobile tap targets usable and consistent with the platform or
+  project standard; check target geometry when the change affects it.
 - Reset scroll on major mode changes when stale scroll would hide the new primary action.
 
 ### clarify
@@ -108,11 +112,8 @@ Rules:
 
 ## Output Contract
 
-Design plans, audits, and final reports must:
-
-- match the user's language;
-- name the product user and user/business outcome;
-- state the chosen register and mode;
-- name screen anatomy layers for full-screen work;
-- report rendered evidence or residual risk;
-- state confidence and the main doubt.
+Keep plans, audits, and reports scoped to the request. Name the outcome and
+affected surface, then include the relevant mode/register, references, and
+evidence. Explain screen anatomy for new or materially reworked full screens;
+for focused edits, describe only the affected layers. State confidence or the
+main uncertainty only when it materially helps assess the recommendation.

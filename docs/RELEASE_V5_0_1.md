@@ -1,11 +1,21 @@
 # v5.0.1 — Skills and product-wave alignment
 
-Release preparation dated 2026-10-07. This document records a candidate, not a
-publication claim. Verify the exact GitHub tag, non-draft/non-prerelease release,
-CI and asset checksum before deployment.
+Release contents for v5.0.1, dated 2026-10-07. The owner has authorized stable
+publication after validation. Publication evidence is the exact GitHub tag,
+successful release workflow, non-draft/non-prerelease release and verified
+asset checksum; check those before deployment. This document also preserves
+the historical development checks below without treating them as current CI.
 
 ## Changes
 
+- Demonstrated skill conflicts were reconciled with scope-based execution:
+  read-only security audit and memory lookup, conditional fan-out, focused
+  existing-layer UI edits, current-need future seams, cohesion-based module
+  boundaries and risk-based independent writing review. On-demand design
+  failure patterns retain domain knowledge without unsupported statistics.
+- Short tasks do not need full workflow phases, invented product waves,
+  mandatory future scaffolds or ritual confidence reports. Final-outcome/wave
+  agreement, book reading and actual security/release gates are unchanged.
 - Public copy now has an explicit acceptance gate shared by writing, feature,
   design and UX review skills: no self-justification, internal production notes,
   revision residue or accidental duplicate blocks. Finished presentation keeps
@@ -31,10 +41,30 @@ CI and asset checksum before deployment.
   spaces and excluded code/URL examples. This is a file-target guard, not an
   anchor, bare-path or semantic validator.
 
-## Verification record
+## Release-bound local verification
 
-Local candidate checks are recorded here after integration. Publication gates
-on Linux and Windows remain pending until run against the publication commit.
+On 2026-10-07, after publication authorization, the integrated v5.0.1 source
+passed the local release gates on Windows with Node 24.13.0 and Git Bash:
+
+- Template smoke: 201/201, including fresh setup and native sync regressions.
+- Structural validation: 0 errors and 0 warnings.
+- Hooks: 12/12; entrypoint parity: 0 issues/warnings; native failure propagation: passed.
+- Drift: 0 errors; two age warnings for product-boundary/reference-provenance docs.
+- Fresh Codex CLI 0.125.0 `skills/list`: 46 template skills, none disabled, no errors.
+- Independent read-only payload/gate review: no new release blockers; all three
+  newly added reference/test files must be included in the release commit.
+
+Only release evidence/authorization text changed after these local checks.
+Linux/Windows CI, including the full pinned toolchain and CI Codex 0.160.1,
+must still pass for the exact release commit. The workflow packages that commit
+and publishes only after those gates; its run and release metadata are the
+publication evidence. No downstream project was updated by these checks.
+
+## Development verification record
+
+These local candidate checks preceded release authorization. Fresh Linux and
+Windows publication gates are enforced by the release workflow against the
+exact tag commit; consult that run rather than the historical rows below.
 
 - Codex CLI 0.125.0 app-server `skills/list`, with the canonical project cwd and
   `forceReload: true`, discovered 46 template skills, none disabled, no errors.
@@ -63,9 +93,10 @@ on Linux and Windows remain pending until run against the publication commit.
 | `scripts/check-drift.sh` | 0 errors, 3 age warnings for existing audit/product-boundary/provenance documents; not a freshness or production-runtime pass. |
 
 Host: Windows, Node 24.13.0, Git Bash, Codex CLI 0.125.0. Subsequent changes
-record these results and maintain handoff/docs only; check their text/diff
-separately instead of repeating the broad suite. Fresh Linux and Windows CI,
-including `setup.bat` and pinned-tool bootstrap, have not run for this candidate.
+in that original preparation recorded results and maintained handoff/docs only.
+The public-copy and scope-based follow-ups below are later deltas, not covered
+by that original full smoke baseline. Fresh Linux and Windows CI,
+including `setup.bat` and pinned-tool bootstrap, had not run at that checkpoint.
 
 ### Public-copy follow-up
 
@@ -88,6 +119,50 @@ header was updated and the exact `progressive-status.js --check` passed.
 Other structural checks passed in that run; no second broad pass is claimed.
 
 ## Compatibility and publication
+
+### Scope-based skills follow-up
+
+The owner approved this follow-up after the broader audit. Maintained scenarios
+are in `tests/rules/skill-proportionality.test.md`; expected answers are withheld
+from independent evaluators. Structural validators no longer require obsolete
+future-skeleton or mandatory-phase wording. Presence checks are not semantic
+proof.
+
+Fresh Luna High and Sol High decision evaluators covered thirteen requests
+without author-provided expected answers. Their output exposed an old design
+entrypoint, a forced module-split rule and five routing mismatches; these were
+sent back for correction. The focused re-read of UI/module guidance found the
+conflicts resolved. Requested evaluator profiles were not confirmed by runtime
+model/effort metadata. These are decision samples, not executed product tasks.
+
+The focused verifier now treats file length as context and exits nonzero for
+failed automatic checks. Its disposable regression passed three assertions:
+large-file acceptance, invalid JSON rejection and isolation from inherited Git
+state. Independent review confirmed the Git isolation and portable Bash lookup
+fixes in source; it did not repeat the test or exercise every Bash installation.
+
+After routing integration, the focused router, writing-intent and agent-policy
+suites passed, including positive/negative cases for opt-out, technical recovery,
+staged product plans and internal ownership moves. CTA replacement now selects
+design but retains MEDIUM risk; the scoped design instructions determine the
+necessary work rather than a blanket low-risk shortcut. Goal-artifact guidance
+prefers the accepted plan over mechanically creating another goal file.
+
+One final `EXPECTED_RELEASE_TAG=v5.0.1 scripts/validate-template.sh` run passed
+with 0 errors and 0 warnings. Focused screen-anatomy markers and README script
+count (73) passed. This is the structural subset, not a repeated full setup/sync
+smoke or Linux/Windows release workflow. No publication or downstream apply was
+performed for this follow-up.
+
+Post-aggregate review caught one routing regression: selecting the product
+planner had removed writing grounding from the resulting plan. The final delta
+keeps the planner first and retains informational-writing skills, fresh primary
+sources and principle/application gates. Dedicated assertions were added;
+focused routing and writing-intent suites passed. The broad result above is
+the integration baseline, not a second full pass of this final delta.
+
+Previous local candidate archives do not include this delta and are stale for
+deployment. Rebuild from the verified final release commit before publication.
 
 This patch retains v5 ownership, sync, model recommendation and external library
 contracts. Existing project overlays and AgentOS plans remain authoritative.

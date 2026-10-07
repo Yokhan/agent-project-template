@@ -48,9 +48,12 @@ For prompt templates and the routing matrix, read `docs/CODEX_FANOUT_PATTERNS.md
 ## Safe Prompt
 
 ```text
-Use Codex subagents with existing project artifacts.
-First inspect whether this project has Spec Kit, litkit, Kiro, AgentOS, or project-local workflow docs.
-Spawn pr_explorer, reviewer, and tester for read-only grounding.
+Use Codex subagents only when the route and fan-out policy approve useful,
+materially independent lanes and dispatch is ready. Follow the project's
+existing artifacts; if no lane is approved, continue without spawning.
+Inspect whether this project has Spec Kit, litkit, Kiro, AgentOS, or project-local workflow docs.
+For approved lanes, assign bounded work and choose read-only exploration/review
+or testing only where each adds independent value.
 Read-only means no file writes and no git restore/checkout/reset/clean, stash,
 generated-artifact cleanup, or other shared-worktree state change. Report
 unexpected changes to the parent; never repair or revert them.

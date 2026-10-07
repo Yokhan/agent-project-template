@@ -9,7 +9,7 @@ const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
-const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, validateWorkerContract } = require("./codex-agent-policy.js");
+const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
 const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
@@ -132,9 +132,9 @@ function getPlanContract(selected, risk, changeStrategy, orchestrator) {
     owner: orchestrator.owner,
     writeTo: orchestrator.owner === "codex-parent" ? "tasks/current.md" : null,
     goalArtifact: orchestrator.owner !== "codex-parent" ? "use-owner-assigned-artifact-do-not-create-competing-graph" :
-      modes.has("product-goal") || modes.has("template") || modes.has("design-system")
-      ? "read-or-create tasks/goal.md for M+ product work"
-      : "read tasks/goal.md when present",
+      modes.has("progressive-planning")
+      ? "prefer the accepted product plan; create tasks/goal.md only when staged product work needs a durable goal"
+      : "read tasks/goal.md when present; do not create one mechanically",
     approval: changeStrategy.required
       ? "change-strategy-gate-decides-auto-internal-vs-client-tradeoff"
       : risk === "CRITICAL" ? "ask-user-before-state-change" : "state-strategy-before-state-change",
@@ -242,12 +242,16 @@ function applyWritingIntent(task, rawMatches) {
   const modes = [policy.mode, ...policy.extraModes];
   const writingMatches = modes.map((mode, index) =>
     createWritingMatch(mode, policy, rawMatches, index === 0));
-  return [...writingMatches, ...preserved];
+  const planners = preserved.filter((match) => match.route.mode === "progressive-planning");
+  return [...planners, ...writingMatches,
+    ...preserved.filter((match) => match.route.mode !== "progressive-planning")];
 }
 function getMatchedRoutes(task) {
   const rawMatches = ROUTES.map((route) => {
-    const exact = route.pattern.test(task);
-    const intent = getIntentMatch(route.mode, task);
+    // A fan-out opt-out describes execution preference, not a template edit.
+    const routeTask = route.mode === "template" ? stripFanoutOptOut(task) : task;
+    const exact = route.pattern.test(routeTask);
+    const intent = getIntentMatch(route.mode, routeTask);
     return { exact, intent, route };
   }).filter((match) =>
     (match.exact || match.intent.isMatch) &&

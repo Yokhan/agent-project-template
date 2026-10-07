@@ -105,9 +105,9 @@ Before drafting, determine:
 7. Voice contract: desired qualities, concrete references, and forbidden traits.
 8. Acceptance evidence: how the client can judge that the text did its job.
 
-For a short low-risk request, infer obvious fields and write. For long-form,
-commercial, public, sensitive, regulated, or ambiguous work, make the contract
-explicit. If a missing fact would change the promise, advice, recipient action,
+For a short low-risk request, infer obvious fields and write. Make material
+decisions explicit for long-form, consequential or ambiguous work; a routine
+public UI edit does not require a new contract document. If a missing fact would change the promise, advice, recipient action,
 story logic, safety, or legal meaning, stop and ask with 2-3 concrete options.
 
 ## Public Copy Gate
@@ -220,6 +220,12 @@ score from model judgment or public methodology.
 The workflow adapts LitAI's strongest mechanisms without importing its
 book-specific entities or gates.
 
+These are available activities, not ten mandatory phases for every answer.
+Choose the depth needed for the requested artifact. Preserve primary-source
+reading and truth gates; avoid separate planning, reports or workers when a
+bounded edit can be completed and checked directly. Publication and external
+writes require task authority, not merely reaching the last activity below.
+
 1. **Route** - select the semantic mode from the reader's job, not keywords alone.
 2. **Research** - locate project SOTs, facts, prior text, audience evidence,
    references, constraints, and known gaps before drafting.
@@ -236,8 +242,9 @@ book-specific entities or gates.
    already performs the production purpose end to end.
 7. **Sharpen** - deepen evidence, examples, scenes, objections, explanations,
    texture, and phrasing while preserving the accepted architecture.
-8. **Review independently** - check purpose, source fidelity, logic, omissions,
-   harm, manipulation, and mode-specific criteria before line polish.
+8. **Review** - check purpose, source fidelity, logic, omissions, harm,
+   manipulation, and applicable mode criteria. Use the independent-review
+   decision below rather than spawning a worker for every text.
 9. **Edit** - run structural, line, terminology, grammar, and channel passes in
    that order. Preserve intentional voice and project terminology.
 10. **Release and evolve** - verify final claims and links, publish in the right
@@ -246,7 +253,9 @@ book-specific entities or gates.
 
 ## Progressive JPEG For Text
 
-The progressive JPEG shape applies to writing. A low-detail text is not an
+Use progressive JPEG for substantial writing developed in successive useful
+versions, not as mandatory staged ceremony for every reply or typo fix.
+A low-detail text is not an
 outline pretending to be a deliverable. At 1% it must already perform the text's
 real production function honestly from beginning to end; later passes increase
 resolution.
@@ -353,8 +362,15 @@ word when it is the clearest accurate choice.
 8. Grammar and format: correct errors without flattening intentional voice.
 9. Channel: verify length, hierarchy, links, accessibility, rendering, and CTA.
 
-Generation and acceptance should be separate passes. A writer may self-check,
-but must not present its own unverified judgment as independent review evidence.
+Check the completed text, not just the intention behind it. Compatible review
+lenses may be covered in one pass; a role list is not a worker-count requirement.
+Use a separate reviewer when explicitly requested, required by a project gate,
+or when material claim, safety, legal, operational or source-interpretation risk
+would benefit from independent evidence. Public/commercial placement or an M+
+label alone is insufficient. Otherwise a focused self-check is appropriate.
+Do not present a self-check as independent review evidence. Follow shared
+fan-out limits and do not bypass a required acceptance gate when no reviewer is
+available: report that specific gap.
 
 ## Client-Facing Work Reports
 
@@ -369,9 +385,10 @@ Default order:
 4. `Чего ожидать дальше` - remaining dependency, next evidence, or operating note.
 
 Lead with outcome, separate done from not verified, and mention files or commands
-only when they change a decision or provide useful evidence. For M+, product,
-template, release, or long work, include what is sharp now, what remains rough,
-the next sharpened layer, and the replan trigger. Follow
+only when they change a decision or provide useful evidence. For work inside
+an accepted staged product plan, include current readiness and next version or
+replan trigger when they affect the user's decision. Bounded tasks need no
+invented roadmap or ritual four-part report. Follow
 `.claude/library/process/client-executor-contract.md`; never claim research,
 tests, review, release, or completion without fresh evidence.
 

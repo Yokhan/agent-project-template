@@ -8,8 +8,10 @@ The structured role IDs and their Codex mappings live in
 `writing-reference-registry.json`. Project-owned editors, subject-matter experts,
 legal reviewers, and brand owners override template role suggestions.
 `scripts/lib/writing-route-policy.js` is the executable selector for required
-profiles and roles. One reviewer may cover compatible lenses, but execution,
-security, legal, or API-contract evidence requires the matching specialist lane.
+profiles and roles. These roles are evidence responsibilities, not instructions
+to spawn one agent per lens. Apply the review decision in `writing.md`.
+One reviewer may cover compatible lenses; execution, security, legal, or
+API-contract claims still require competent evidence for that subject.
 
 ## Board Composition
 

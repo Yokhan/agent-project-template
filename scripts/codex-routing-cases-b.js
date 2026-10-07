@@ -24,6 +24,23 @@ function runRouteCasesB(testRoute) {
     fanoutStatus: "skip",
   });
 
+  testRoute("Исправь опечатку без субагентов.", {
+    exactModes: ["bugfix"],
+    notModes: ["template"],
+    notSkills: ["codex-template-sync", "codex-agent-router"],
+    workflowDepth: "direct",
+    risk: "LOW",
+    planRequired: false,
+    fanoutStatus: "skip",
+  });
+
+  testRoute("Исправь правило делегирования субагентам в шаблоне.", {
+    modes: ["template"],
+    skills: ["codex-template-sync"],
+    risk: "HIGH",
+    fanoutStatus: "required",
+  });
+
   testRoute("Мигрируй внутреннюю систему инвентаря игры без новых возможностей игрока", {
     modes: ["migration"],
     notModes: ["progressive-planning", "release"],
@@ -36,6 +53,33 @@ function runRouteCasesB(testRoute) {
     modes: ["migration"],
     notModes: ["progressive-planning"],
     notSkills: ["codex-progressive-jpeg-planner"],
+  });
+
+  testRoute("Спланируй развитие сайта кофейни от объявления до заказов.", {
+    modes: ["progressive-planning"],
+    skills: ["codex-progressive-jpeg-planner", "codex-product-goal"],
+    notModes: ["writing-communication"],
+    planRequired: true,
+  });
+
+  testRoute("Спланируй миграцию сайта с React на Vue.", {
+    notModes: ["progressive-planning"],
+  });
+
+  testRoute("Спланируй полезные этапы развития сайта; миграция базы — вспомогательная задача.", {
+    modes: ["progressive-planning"],
+    skills: ["codex-progressive-jpeg-planner"],
+  });
+
+  testRoute("Перенеси внутреннее поле в единственного владельца, поведение сохрани.", {
+    modes: ["migration"],
+    notModes: ["progressive-planning", "product-goal"],
+    notSkills: ["codex-progressive-jpeg-planner", "codex-change-strategy", "codex-product-goal"],
+    changeStrategyRequired: false,
+  });
+
+  testRoute("Move a UI property to another component and preserve behavior.", {
+    notModes: ["migration", "progressive-planning"],
   });
 
   testRoute("Раздели независимый аудит между субагентами", {

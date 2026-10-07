@@ -84,14 +84,18 @@ Technical acceptance requires separate evidence for:
 
 1. Technical accuracy: compare against code, schema, interfaces, versions, and
    observed behavior.
-2. Procedure execution: run the documented path in the stated environment and
-   record expected, failure, and recovery results.
+2. Procedure execution: verify changed steps in the stated environment with
+   authorized safe checks or disposable fixtures. Do not execute destructive
+   examples, deployments or external writes without task authority. Record
+   unexecuted paths and reuse relevant unaffected evidence honestly.
 3. Information architecture: verify document-kind boundaries, navigation,
    discoverability, and lifecycle ownership.
 4. Technical language: check terminology, code formatting, accessibility,
    localization, and unambiguous normative force.
 
-The writer may run a self-check, but it is not independent technical acceptance.
+These are evidence dimensions, not four mandatory workers. Apply the shared
+writing review policy. The writer may run a self-check, but it is not independent
+technical acceptance.
 
 External writing services are optional diagnostics. Without configured access
 and an artifact-specific successful response, report that the external check was

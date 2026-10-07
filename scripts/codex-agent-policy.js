@@ -111,7 +111,7 @@ const AGENT_POLICY = Object.freeze({
 });
 
 const OPT_OUT_PATTERN =
-  /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент|сабагент|делегац|фан-?аут|swarm|ро[йяе]|рой)|не\s+делегируй)/iu;
+  /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент[\p{L}]*|сабагент[\p{L}]*|делегац[\p{L}]*|фан-?аут[\p{L}]*|swarm|ро[йяе][\p{L}]*|рой[\p{L}]*)|не\s+делегируй)/iu;
 const MUTATION_PATTERN =
   /\b(?:build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши/iu;
 const READ_ONLY_PATTERN =
@@ -130,6 +130,11 @@ function getAgentProfiles() {
     name,
     ...profile,
   }));
+}
+
+function stripFanoutOptOut(task) {
+  const pattern = new RegExp(OPT_OUT_PATTERN.source, `${OPT_OUT_PATTERN.flags}g`);
+  return String(task || "").replace(pattern, " ").replace(/\s+/g, " ").replace(/\s+([.!?])/g, "$1").trim();
 }
 
 function validateResourceRequest({ model, effort, budget, reason, hostCapabilities } = {}) {
@@ -254,7 +259,7 @@ function getResourceRecommendation(input = {}) {
 }
 
 function isLikelySmallTask(task) {
-  const trimmed = task.trim();
+  const trimmed = stripFanoutOptOut(task);
   // Match the whole request, not a keyword anywhere in a compound task.
   const boundedEdit = /^(?:fix|check|inspect|update|change|format)\s+(?:a\s+)?(?:typo|spelling|one line|single line|one comment|single comment|label)(?:\s+in\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
   const boundedRussianEdit = /^(?:исправь|проверь|обнови)\s+(?:опечатку|одну строку|один комментарий)(?:\s+в\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
@@ -431,6 +436,7 @@ module.exports = {
   getFanoutDecision,
   getResourceRecommendation,
   isLikelySmallTask,
+  stripFanoutOptOut,
   validateResourceRequest,
   validateWorkerContract,
   validateWriteAssignments,

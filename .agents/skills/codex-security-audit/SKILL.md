@@ -1,22 +1,20 @@
 ---
 name: codex-security-audit
-description: "Security review and patch workflow for vulnerabilities, secrets, auth, permissions, injection, XSS, SSRF, CVEs, data exposure, or suspicious dependencies. Treat as high-risk by default."
+description: "Review security risks involving vulnerabilities, secrets, auth, permissions, injection, XSS, SSRF, CVEs, or suspicious dependencies; remediate only within the request or an approved plan."
 ---
 
 # Codex Security Audit
 
-Read:
+Follow the shared procedure in:
 
-- `.claude/library/process/risk-classification.md`
 - `.claude/skills/security-audit/SKILL.md`
-- `.claude/library/technical/error-handling.md`
+- Read `.claude/library/process/risk-classification.md` and `.claude/library/technical/error-handling.md` when relevant to the finding.
 
-## Process
-
-1. Identify assets, actors, trust boundaries, and data exposure.
-2. Classify severity and exploitability.
-3. Check official advisories or primary sources for current CVE/package data.
-4. Patch narrowly; no unrelated refactors.
-5. Add tests proving the exploit path is closed.
-6. Run security-relevant checks.
-7. State remaining exposure, rotation needs, and deployment steps.
+An audit request authorizes relevant safe, read-only local checks and passive
+lookups of public advisories. Keep an audit read-only and report in the response;
+persist a report only when requested. Do not install tools/dependencies, send
+source/secrets/private package data to external services, or actively probe
+systems without authorization covering that action and its scope. Remediate when
+the request or an existing approved plan authorizes it; patch narrowly, test the
+exploit path, and follow `AGENTS.md` for any needed task handoff or reusable
+lesson. Authorization to remediate does not itself authorize a persisted report.

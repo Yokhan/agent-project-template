@@ -35,10 +35,13 @@ Read:
 6. Produce the smallest complete document that lets the reader finish or
    understand the production job. Headings and unexecuted commands are not a
    functional progressive slice.
-7. Run commands in the declared environment, record expected results and recovery,
-   then replace superseded procedures rather than preserving active alternatives.
-8. Request `$codex-technical-writing-review` for independent acceptance on M+,
-   public, operational, security-sensitive, or versioned documentation.
+7. Verify changed procedures in the declared environment using authorized safe
+   checks or disposable fixtures. Documentation work does not authorize running
+   deployments, destructive examples or external writes. Record unexecuted
+   paths honestly; reuse unaffected evidence and replace superseded procedures.
+8. Use `$codex-technical-writing-review` when independent acceptance is requested,
+   required by a project gate or justified by material operational/claim risk.
+   Apply `writing.md` review policy, not an automatic M+/public trigger.
 
 An external writing service is optional evidence, not a substitute for these
 checks. Do not claim its result unless configured access and a successful
