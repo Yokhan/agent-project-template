@@ -21,10 +21,12 @@ execute and verify directly.
 2. Identify the requested outcome, protected scope, project owner, and
    acceptance evidence. Map only affected files, consumers, dependencies, and
    risky boundaries.
-3. Treat a wave as an acceptance unit: it must deliver a whole useful result
-   at its declared scope or be a bounded uncertainty experiment that returns
-   an inspectable decision. Break implementation into smaller internal tasks
-   only as needed; do not confuse them with wave outcomes.
+3. Follow `.claude/library/process/plan-first.md` for product-wave semantics:
+   final product outcome -> successive usable versions of the same product ->
+   technical tasks. Select the next version before grouping tasks, and state
+   its change for the intended user relative to the previous version. An
+   internal route, refactor, or bounded experiment is an enabling checkpoint,
+   not a wave. If the product link is missing, recover it rather than invent it.
 4. Group internal work into the smallest useful tasks with explicit ordering,
    owners, exact non-overlapping file scopes where parallel writing is proposed,
    responsibilities, and acceptance checks. Keep tightly coupled work
@@ -39,8 +41,9 @@ execute and verify directly.
 7. Execute safe, reversible work autonomously within the accepted wave. Ask for
    approval before materially changing its promised result, constraints, or
    meaning/order of the waves; propose the delta. Minor in-scope choices do not
-   need an approval ritual. Re-plan if evidence changes owners, dependencies,
-   scope, or risk.
+   need an approval ritual. When parameters change, reassess the final target
+   and remaining versions together, then update dependent tasks/worker contracts
+   in the existing plan; preserve completed-version history.
 8. Verify each result at the scope claimed; consolidate it in the parent and
    identify anything still unverified.
 

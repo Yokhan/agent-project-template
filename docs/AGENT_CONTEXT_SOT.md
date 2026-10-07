@@ -134,9 +134,19 @@ runtime metadata; custom role TOML may override explicit spawn settings.
 
 For agent infrastructure changes, verify:
 
-- `node scripts/validate-agent-sot.js`
-- `node scripts/test-codex-routing.js`
-- `node scripts/validate-codex-skills.js`
-- `node scripts/validate-codex-agents.js`
-- `bash scripts/validate-template.sh`
-- `bash scripts/test-template.sh`
+Follow `.claude/library/process/self-verification.md` for cadence. Before the
+implementation task, select focused checks for changed surfaces. At final integration,
+the parent chooses one relevant aggregate:
+
+- `bash scripts/validate-template.sh` for structural/instruction validation;
+- `bash scripts/test-template.sh` when behavioral/regression or delivered-payload
+  smoke coverage is required.
+
+Inspect aggregate contents rather than assuming coverage. Current aggregates
+include agent SOT, routing, Codex skill, and Codex agent checks; do not append
+those same leaf commands as mandatory duplicate runs. Add a check only for a
+relevant uncovered risk or a concrete invalidation since its covered run, and
+state the reason before another broad run. Source-only edits do not themselves
+authorize release, tag, push, or downstream sync. Mandatory CI/security/release
+gates still apply at their required boundary. Instruction validation establishes
+presence/consistency, not a universal host-enforced ban on test commands.

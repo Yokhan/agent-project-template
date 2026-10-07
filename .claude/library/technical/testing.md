@@ -30,7 +30,16 @@
   obsolete routes/flags only when that absence is a product or safety contract.
 
 ## Test Execution
-- ALWAYS run relevant tests after making changes
+- Follow `.claude/library/process/self-verification.md` for verification cadence.
+- Before a useful wave, choose focused checks and any broad acceptance check.
+  Run relevant tests after coherent change batches, not a full suite per patch.
+- The parent/integrator owns broad verification at the wave boundary; workers
+  return assigned scoped checks and evidence, not independent full-suite reruns.
+- Reuse evidence only for its tested scope/content/inputs/toolchain. State the
+  concrete invalidation before repeating a broad check; unrelated docs changes
+  do not invalidate all tests. Report baseline plus delta honestly.
+- On failure, reproduce and fix narrowly; widen coverage when causal evidence
+  requires it. Preserve required CI, security, release, and artifact-bound gates.
 - Fix failing tests before committing
 - Never commit with known test failures
 

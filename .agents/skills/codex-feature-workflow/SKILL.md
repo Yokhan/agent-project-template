@@ -11,6 +11,7 @@ relevant project/goal context and these shared rules as needed:
 
 - `.claude/library/process/research-first.md`
 - `.claude/library/process/plan-first.md`
+- `.claude/library/process/self-verification.md` (verification cadence SOT)
 - `.claude/library/technical/architecture.md`
 - `docs/SHARED_CONVENTIONS.md`
 
@@ -19,8 +20,12 @@ relevant project/goal context and these shared rules as needed:
 1. Search for existing behavior, components, or utilities that directly affect
    the feature; inspect the relevant tests and current worktree.
 2. Define the requested outcome and acceptance evidence at a level suited to
-   the scope and risk. Write a plan in the active project artifact when
+   the scope and risk, including focused checks and any broad wave-boundary
+   acceptance check/owner. Write a plan in the active project artifact when
    coordination or durable sequencing needs one.
+   For staged work, name the supported product version and final outcome before
+   deriving tasks. A feature or internal route is not automatically a wave;
+   use the product-wave semantics in `plan-first.md`.
 3. Follow established module and API boundaries. Resolve an unresolved
    architecture choice before implementation only if the current change
    depends on it.
@@ -33,6 +38,11 @@ relevant project/goal context and these shared rules as needed:
 6. Verify the user-facing behavior claimed, or the narrow contract changed.
    Tests and internal artifacts support evidence but are not themselves proof
    of a user outcome. Never present a stub or unavailable behavior as complete.
+   Use focused checks after coherent change batches; the parent/integrator owns
+   broad integration at the useful wave boundary. No full-suite cascade per
+   patch or independent duplicate worker runs. State concrete invalidation
+   before a broad repeat; report reused evidence as baseline plus checked delta,
+   not a full pass of an untested current tree. Required gates remain intact.
 7. Remove superseded code when the change owns that path and doing so preserves
    protected consumers, data, rollback, and public contracts. Keep temporary
    migration scaffolding only with a concrete purpose and removal condition.

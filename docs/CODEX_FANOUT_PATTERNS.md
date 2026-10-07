@@ -30,18 +30,26 @@ capability, acceptance, constraints), an approximate sequence of implementation
 waves with useful outcomes and rationale. Then derive and record a detailed
 plan for the nearest wave within that accepted scope; routine detail does not
 need separate user approval. Later wave count and details can change with evidence. Preserve an
-existing approved plan or AgentOS/project-owned task graph. Each wave must
-deliver a whole useful result at its declared scope or be a bounded uncertainty
-experiment that returns an inspectable decision; smaller enabling tasks are
-not themselves wave outcomes. A wave need not demonstrate the whole eventual
-product journey.
+existing approved plan or AgentOS/project-owned task graph. Follow the wave
+semantics in `.claude/library/process/plan-first.md`: successive usable versions
+of the same product toward its final outcome. A technical route or worker batch
+is not a wave; experiments return decisions, not delivered product versions.
+Each worker receives the supported version/outcome as context. Changing major
+constraints requires reassessing the target and remaining versions together.
 
 Within an accepted wave, the parent can direct routine work autonomously.
 Seek product-owner approval before materially changing the promised result,
 constraints, or meaning/order of the waves, and present the proposed delta.
 Worker tasks are bounded responsibility contracts inside that wave, with exact
-scope, ownership, acceptance, and evidence; they do not replace wave-level
+scope, ownership, focused checks, acceptance, and evidence; they do not replace wave-level
 acceptance. The parent retains integration and verification of the wave.
+
+Verification cadence SOT: `.claude/library/process/self-verification.md`. Assign
+focused worker checks before dispatch; reserve broad integration acceptance for
+the parent after the useful wave is integrated. Workers do not independently
+rerun the full suite, and duplicate broad runs must not overlap. A new patch is
+not a new wave. Keep command/result/scope/tested-content-state evidence in the
+existing task context, including relevant inputs/toolchain.
 
 Before spawning, identify the parent's next step and ask whether a child can
 produce a distinct result without editing the same files or waiting on another
@@ -50,8 +58,8 @@ boundaries. Continue useful parent work while workers run. Do not delegate a
 task merely because a candidate role exists. Project guidance authorizes
 automatic delegation for useful independent lanes; it is not a blanket swarm
 requirement for every task or a typo fix. An explicit user opt-out wins. Avoid recursive fan-out
-and repeated waves; consider another small wave only when returned evidence
-reveals new independent work.
+and repeated dispatch batches; consider another worker batch only when returned
+evidence reveals new independent work. Dispatch batches do not define product waves.
 
 Suggested routing:
 
@@ -105,8 +113,14 @@ Each worker should return:
 - whether the task stayed within its assigned scope.
 
 The parent inspects the diff, resolves conflicts, runs proportionate
-integration checks, and makes the final user-facing claim. Repeat a check only
-when code changed, a check failed, or new risk makes the evidence stale.
+integration checks at the wave boundary, and makes the final user-facing claim.
+Reuse scoped evidence only where later changes have not invalidated it; commit
+SHA alone does not identify dirty content. A local edit or failure alone does
+not authorize another full run. Reproduce/fix failures narrowly, widen when
+needed, and state concrete invalidation before repeating broad verification.
+Unrelated docs changes do not invalidate all tests; report baseline plus checked
+delta instead of calling older evidence a current-tree full pass. Required CI,
+security, release, and artifact-bound gates remain applicable.
 After two failed approaches, re-diagnose rather than merely raising effort or
 spawning another worker.
 

@@ -14,12 +14,23 @@ not in place of product planning. The parent agrees with the user on the end
 result (audience, capability, acceptance, constraints) and an approximate
 sequence of useful waves, then derives and records the detailed nearest-wave
 plan within that accepted scope before assigning workers. Routine detail does
-not need another approval. Each wave delivers
-a whole useful result at its declared scope or is a bounded uncertainty
-experiment returning an inspectable decision. Worker assignments are smaller
+not need another approval. Follow `.claude/library/process/plan-first.md`:
+each wave delivers the next usable version of the same product toward the
+agreed final outcome. Internal routes, experiments, and worker batches are not
+product waves. Worker assignments are smaller
 responsibility contracts with explicit scope, ownership, acceptance, and
 evidence; they need not independently deliver the whole wave. The parent
-retains wave acceptance and final verification.
+retains wave acceptance and final verification. Include the supported product
+version and outcome in worker context; never infer a new wave from worker output.
+
+Follow `.claude/library/process/self-verification.md` for verification cadence.
+Before dispatch, the parent assigns focused worker checks and owns any broad
+wave-boundary acceptance check. Workers return command/result/scope/tested-state
+evidence and do not run independent duplicate full suites. The parent integrates
+first, then runs the broad check once when needed; a broad repeat requires a
+stated concrete invalidation. Do not relabel each patch as another wave or run
+simultaneous duplicate broad checks. Preserve mandatory gates and distinguish
+reused baseline evidence from checks covering the final delta.
 
 1. Use `node scripts/codex-route-task.js "<user request>" --summary` when routing helps select independent work; write route state only when the project needs durable continuity.
 2. Discover existing workflow artifacts first: Spec Kit, litkit, Kiro, AgentOS, `PROJECT_SPEC.md`, `tasks/current.md`, or project-local `project-*` skills.
@@ -55,6 +66,8 @@ Wait for all results. Parent agent performs edits unless exact [P] tasks with no
 - Treat `[P]` or equivalent project task metadata as the default signal for safe parallel work.
 - Keep `agents.max_depth = 1`.
 - Remember that subagents consume additional quota and tokens.
+- Worker completion is not a reason for the parent to repeat all checks; reuse
+  evidence only where content, scope, inputs, and toolchain still match.
 - Use role-aware profiles from `scripts/codex-agent-policy.js`: Sol 6.1 High coordinates and integrates; Luna 6 High performs bounded work; Astra 6 Medium/High returns architecture decisions. Optional Max/XHigh require host support and a bounded reason/budget contract.
 - A custom TOML may override explicit spawn model/effort. For integration use parent-owned Sol work; for an effort override use an explicit model/effort launch without a conflicting pinned custom role. Verify actual child metadata, not the request or self-report.
 - Treat read-only TOML and prompt as requested permissions; effective enforcement must be verified separately. Do not claim sandbox isolation solely from a clean diff.

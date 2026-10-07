@@ -21,7 +21,13 @@ Read `.claude/skills/debug/SKILL.md` for deeper methodology when needed.
 5. Patch the root cause with the smallest reasonable change toward the accepted
    final architecture, not automatically the smallest diff.
 6. Add or update a regression test or smoke check.
-7. Run relevant checks.
+7. Follow `.claude/library/process/self-verification.md`: define focused checks
+   and any broad acceptance for the fix task; run affected checks
+   after coherent batches. The parent/integrator owns broad integration at its
+   boundary or a justified integration checkpoint; a fix task is not a product
+   wave. Workers must not duplicate full suites. State concrete invalidation
+   before a broad repeat, reproduce failures narrowly, and reuse matching
+   evidence as baseline plus delta. Mandatory security/CI/release gates remain.
 8. Log reusable bug patterns to `tasks/lessons.md`.
 
 The second failed repair is a mandatory fallback circuit breaker, not the first

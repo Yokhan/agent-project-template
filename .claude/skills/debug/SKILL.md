@@ -41,17 +41,27 @@ description: "Systematic debugging approach: reproduce, isolate, fix, verify, do
 - Prefer fixing the root cause over symptoms
 
 ### 5. Verify
+- Follow `.claude/library/process/self-verification.md` for verification cadence.
+  For the fix task, choose focused checks and any required integration check;
+  the parent/integrator owns broad verification. A fix is not a product wave.
 - Write a test that reproduces the original bug (it should fail without the fix)
 - Apply the fix -- test passes
-- Run full test suite -- no regressions
-- Run typecheck and linter
+- After a coherent fix batch, run the affected regression tests and relevant
+  typecheck/lint. Do not run the full suite unconditionally after every patch.
+- Workers return scoped command/result/tested-state evidence, not independent
+  duplicate full runs. Reuse evidence only for matching scope/content/inputs/
+  toolchain, and state concrete invalidation before repeating a broad check.
+- Preserve mandatory security, CI, release, and artifact-bound acceptance gates;
+  older full-suite evidence is a baseline, not a pass of the changed tree.
 
 ### 5b. Regression Check
-After fixing the immediate module, also run integration tests:
-- `npm test -- --testPathPattern=integration` (Node)
-- `pytest tests/integration/` (Python)
-- `go test ./tests/integration/...` (Go)
-If integration tests fail, the fix may have introduced a regression -- investigate before committing.
+Choose affected integration tests when the fix crosses a boundary or evidence
+shows integration risk. Use the repository's supported focused command; do not
+append another integration run when the selected acceptance suite already covers
+it and no relevant delta invalidates that evidence. On failure, reproduce and
+diagnose narrowly, fix the cause, then widen coverage if needed rather than
+blindly restarting the whole suite. Integration failures remain unresolved
+until explained and repaired; do not hide them before committing.
 
 ### 6. Document
 - Log the bug and fix in `brain/03-knowledge/` for future reference

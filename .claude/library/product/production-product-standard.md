@@ -5,6 +5,11 @@ Treat every real product task as work toward the final shipped product, not as a
 
 MVP/prototype thinking is banned by default for real product work.
 
+This bans disposable or falsely complete work, not early useful versions of the
+same product. Reduce the promised breadth/depth honestly; keep quality and safety
+for what is actually offered. An agreed announcement page can be a real first
+version of a future cafe site without already offering orders or lead capture.
+
 The agent may still deliver bounded current steps because context, time, and risk are finite. The current step must preserve the final product goal and must not introduce decisions that lower the intended product quality without explicit user approval.
 
 ## Product Outcome Priority
@@ -77,13 +82,15 @@ scope; routine implementation detail needs no new approval. The wave count and l
 provisional and may change with evidence. Preserve existing approved plans and
 project-owned task graphs rather than replacing them without cause.
 
-An agreed wave is a product-level acceptance unit: it must deliver a whole
-useful result at its declared scope, or be an explicitly bounded uncertainty
-experiment that returns an inspectable decision. Internal research, tests,
-scaffolding, and other enabling tasks can be narrower, but must not be
-misreported as a useful wave result. This does not require every wave to
-demonstrate the whole eventual product journey. It does require each wave to
-keep the final production quality bar and the accepted promise intact.
+The wave semantics SOT is `.claude/library/process/plan-first.md`: waves are
+successive usable versions of the same product toward the agreed final outcome.
+Each preserves that purpose while increasing resolution; it need not implement
+every eventual capability. Internal routes, refactors, research, and tests are
+tasks/checkpoints, not waves. A bounded experiment produces a decision, not a
+delivered product version. Require the explicit link from final outcome to
+version-level user benefit before decomposing tasks; do not invent that link
+after completing technical work. Reassess target and remaining versions together
+when constraints change, preserving the quality bar and owner approval.
 
 Once a wave and its constraints are accepted, the executor may make routine
 implementation choices autonomously. Seek product-owner approval before
@@ -269,9 +276,9 @@ Examples:
 
 - Unreal/game actor: verify the gameplay outcome claimed by this increment;
   debug-only messages do not prove a playable result.
-- Site/app: verify the stated visitor flow and its accepted service or
-  conversion outcome; "coming soon" is complete only for an announcement or
-  lead-capture product with a working CTA.
+- Site/app: verify the accepted version's visitor outcome on the same product
+  path. An honest "coming soon" announcement can be the cafe site's first
+  version without a CTA; it does not prove menu, visits, or ordering are ready.
 - Book/text: verify that the delivered reader-facing unit serves its stated
   purpose; an outline alone is not finished prose when prose was requested.
 - Project/module: verify the consumer contract changed by this task; do not

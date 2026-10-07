@@ -44,8 +44,10 @@ large routing rituals for every edit.
 
 For substantial staged product work, agree on the end result and approximate
 useful waves, then derive a clear nearest-wave plan with responsibilities and
-acceptance evidence. Each wave is a whole useful result or bounded uncertainty
-experiment. Preserve approved plans/AgentOS graphs, work autonomously within
+acceptance evidence. Waves are successive usable versions of the same product
+toward that end result, not technical task bundles or internal routes.
+Experiments and refactors are enabling checkpoints. Reassess the target and
+remaining waves together when constraints change. Preserve approved plans/AgentOS graphs, work autonomously within
 accepted scope, and seek approval for material changes. See
 `.claude/library/process/plan-first.md` and `$codex-progressive-jpeg-planner`.
 
@@ -128,7 +130,14 @@ planning is relevant, not as a blanket requirement for every change.
 ## Verification and handoff
 
 Choose checks that can establish the requested result, expanding for risk and
-blast radius. Inspect the resulting diff. Report what changed, what checks ran
+blast radius. Follow `.claude/library/process/self-verification.md`: define
+focused checks and broad acceptance before a useful wave; use focused checks
+after coherent change batches. The parent alone owns broad integration at the
+wave boundary. No full-suite cascade after minor patches or duplicated worker
+runs; repeat only for concrete invalidation, stating the reason first. Reuse
+scope/state-bound evidence honestly as baseline plus delta, not a current-tree
+full pass. Preserve mandatory security, CI, and release gates.
+Inspect the resulting diff. Report what changed, what checks ran
 and passed, and material unknowns or remaining gaps. Follow project conventions
 for UTF-8/no-BOM and text validation when editing tracked text.
 

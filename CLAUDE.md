@@ -32,7 +32,9 @@ replan trigger. Follow `PROGRESSIVE_STATUS` tooling when the project workflow
 requires it; routine edits and brief answers do not need a status ritual.
 
 For staged product work, use `$codex-progressive-jpeg-planner` when a plan is
-useful. Preserve the production quality bar and distinguish enabling work from
+useful. Waves are successive usable versions of the same product toward the
+agreed final outcome, not technical task bundles. Semantics and replanning:
+`.claude/library/process/plan-first.md`. Preserve the production quality bar and distinguish enabling work from
 verified user outcomes. Add future contracts or callable seams only when they
 are accepted architecture and relevant to the current change; do not prebuild
 speculative behavior. A stub, test, screenshot, or status is not by itself
@@ -223,6 +225,12 @@ Use `/weekly` when the project uses it to distill a large lessons backlog.
 When an error, failed check, regression, or correction appears, classify it while reading and before patching: local typo, broken contract, repeated error, architecture/workflow smell, or SOT conflict. A bounded repair-path check covers the affected path and direct consumers without demanding a general architecture proof. If causal system evidence is already present, run the Change Strategy Gate before the first patch; reroute once only when pipeline, risk, or approval authority changes. After a second failed repair, the gate is mandatory. Record the decision in the active orchestrator artifact; optional `tasks/change-strategy.json` decisions must pass `node scripts/validate-change-strategy.js`. Ask only when the selected destination or transition changes a material client-owned tradeoff.
 
 ## Token Economy
+- Verification cadence SOT: `.claude/library/process/self-verification.md`.
+  Choose focused checks and broad acceptance before a useful wave. Run focused
+  checks after coherent batches; the parent alone owns broad integration at the
+  wave boundary. No full-suite rerun after each minor edit or duplicate worker
+  run. State concrete invalidation before any broad repeat; reuse scoped evidence
+  as baseline plus delta, not a current-tree full pass. Mandatory gates remain.
 - Trust skills/memory over re-reading. Don't re-read files you read this session.
 - Only read files you WILL use. Parallelize independent tool calls.
 - Delegate only independent work with material parallel value and exact scope.

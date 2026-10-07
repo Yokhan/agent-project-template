@@ -315,6 +315,17 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Category**: testing
 **Status**: ACTIVE
 
+### 2026-10-07 - Product waves are versions of the same product
+**Track**: PROCESS
+**Severity**: P1
+**Error**: An internal end-to-end migration could be renamed a product wave; the verification policy even allowed a local fix to become a wave.
+**Root cause**: v5 replaced explicit same-product sharpening with "whole useful result at its declared scope", while domain examples emphasized isolated paths. The acceptance unit drifted from product version to convenient task bundle.
+**Rule**: Follow `plan-first.md#product-wave-semantics--source-of-truth`: agreed final outcome -> successive usable versions of the same product -> technical tasks. Experiments and internal migrations are checkpoints, not delivered waves. Reassess target and remaining versions together when constraints change. Do not restore mandatory future skeletons to recover product continuity.
+**Evidence**: Release commit `222819f` removed "same product path" from the planner. Independent current-instruction scenarios distinguished workshop versions, game migration, constrained replanning, a typo, accessibility improvement, and a feasibility experiment. This is behavioral sampling, not universal runtime enforcement.
+**Applies to**: product planning, decomposition, fan-out, verification cadence
+**Category**: process
+**Status**: ACTIVE
+
 ### 2026-07-05 - Progressive JPEG requires final-plan object readiness
 **Track**: PROCESS
 **Severity**: P1
@@ -323,7 +334,7 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Rule**: For product/feature/design/game/text/project work, progressive JPEG means plan first, then a whole product-shaped object at low detail. If the final plan is missing, gate implementation and create/propose it first. At 1% readiness, all accepted future classes/components/interfaces/routes/sections/functions/contracts must exist or be callable, and the object must perform its smallest honest production function with explicit placeholder/debug behavior.
 **Applies to**: production-product-standard, product-goal-loop, client-executor-contract, Codex product/feature/design/decompose/strategic skills, release validators
 **Category**: process
-**Status**: ACTIVE
+**Status**: SUPERSEDED by the 2026-10-07 product-wave rule. Preserve product continuity, not the requirement to prebuild all future objects/stubs.
 
 ### 2026-07-06 - Progressive JPEG needs machine-readable status slices
 **Track**: PROCESS

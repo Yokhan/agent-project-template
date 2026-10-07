@@ -33,7 +33,15 @@ Systematic bug investigation and fix.
 ### 4. TEST (test-engineer, Sonnet) | GATE: tests_pass
 - **Input**: fix diff + original reproduction case
 - **Output**: regression test that fails without fix, passes with fix
-- **Also**: run full test suite for affected modules
+- **Cadence**: follow `.claude/library/process/self-verification.md`. Select
+  focused checks and any required integration check for the fix task. After
+  coherent batches, run affected regression checks; use integration checks for
+  changed boundaries or concrete risk, not an unconditional full-suite cascade.
+- **Owner**: parent/integrator owns broad acceptance at the product-wave boundary
+  or a justified integration checkpoint. A fix task is not itself a product wave.
+  Workers return scoped command/result/tested-state evidence without duplicate
+  full runs. State concrete invalidation before a broad repeat; preserve all
+  mandatory security, CI, release, and artifact-bound gates.
 
 ### 5. COMMIT (implementer, Sonnet) | GATE: none
 - **Input**: tested fix

@@ -70,17 +70,19 @@ two with the user, then derive and record the nearest-wave plan autonomously
 within the accepted scope:
 
 1. **End result:** audience, capability, acceptance, and constraints.
-2. **Approximate implementation waves:** an adjustable sequence of useful
-   outcomes and why the sequence is sensible. The count may change when
+2. **Approximate product waves:** successive usable versions of the same product
+   toward the final result, and why the sequence is sensible. The count may change when
    evidence changes the plan.
 3. **Nearest wave:** a clear implementation plan with dependencies, owners,
    file boundaries, responsibilities, acceptance evidence, and bounded
    subagent instructions when delegation adds value.
 
-Each agreed wave must produce a whole useful result at its declared scope or
-be a bounded uncertainty experiment with a limit and an inspectable decision as
-its output. Smaller internal tasks may enable a wave but are not themselves a
-delivered wave. Within an accepted wave, proceed autonomously on routine
+Follow the product-wave semantics in `.claude/library/process/plan-first.md`.
+Keep final outcome -> product versions -> technical tasks distinct. A complete
+internal route is not a product version; experiments return decisions, not
+delivered waves. When constraints change, reassess the final target and remaining
+versions together and update the existing plan after material owner decisions.
+Within an accepted wave, proceed autonomously on routine
 implementation choices. Seek approval for a material change to the promised
 result, constraints, or meaning/order of waves, and present the proposed delta.
 Do not reopen an existing approved plan or AgentOS graph without evidence that
@@ -102,8 +104,9 @@ For routine work, a concise progress or final note is enough:
 - Replan trigger: which new fact changes scope, deadline, quality bar, or path.
 
 If only internal setup happened, report it as internal setup and name the first
-client-visible result. Do not call setup, research, or drafting a delivered
-product result unless it creates an inspectable decision point.
+client-visible result. Setup, research, or drafting can create an inspectable
+decision point; that is still an enabling checkpoint, not a delivered product
+version unless the decision artifact itself is the explicitly requested product.
 
 When a task changes documents governed by a project-specific progressive status
 contract, follow that contract. For larger staged work where the status tool is
