@@ -26,6 +26,14 @@ Choose the smallest useful design mode. Use `references/design-command-modes.md`
 when the user requests a named mode or the decision needs register-aware
 judgment. Use `references/design-checks.md` to select relevant checks.
 
+For useful, well-scoped nontrivial implementation, assign GPT-6 Luna `high`
+bounded component or screen work against an explicit contract, including a
+sequential handoff. Sol retains visual/product judgment, design decisions,
+integration, and acceptance. Split only where component/screen ownership and
+visual feedback are clear; do not delegate inseparable visual decisions or
+share-write a surface. Respect user opt-out and host limits, and verify the
+effective model rather than inferring it from a role label.
+
 ## Hard Gates
 
 - `tasks/goal.md` owns product/business priority; root `DESIGN.md` owns visual direction and guardrails.

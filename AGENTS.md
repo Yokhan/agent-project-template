@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 5.0.1 -->
+<!-- Template Version: 5.0.2 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -99,16 +99,27 @@ deep, consequential risk. These are recommendations, not benchmark claims.
 Luna `max` and Sol `xhigh` are optional only when the actual host supports them
 and the task justifies them. See `docs/OPENAI_MODEL_GUIDANCE.md`.
 
-Delegate only independent work with material parallel value, exact acceptance
-criteria, and non-overlapping write scopes. Start with at most three children
-per task, also constrained by available host slots; fewer or none is often
-better. Respect user opt-out. The parent owns integration and final
-verification. See `docs/CODEX_FANOUT_PATTERNS.md`.
+For well-scoped, nontrivial implementation, use GPT-6 Luna `high` as the
+default implementer when delegation is supported and useful; this may be a
+sequential handoff, not only parallel fan-out. Sol defines or confirms the
+contract and decisions, then owns integration and acceptance. Keep tiny edits
+direct. When retaining suitable nontrivial work in the parent, briefly state
+the concrete reason; do not add this explanation ritual to tiny edits.
+
+For parallel work, delegate only independent lanes with material parallel
+value, exact acceptance criteria, and non-overlapping write scopes. Start with
+at most three children per task, also constrained by available host slots;
+fewer or none is often better. Respect user opt-out, host limits, and unsafe or
+inseparable scopes. For design work, Sol retains visual/product judgment and
+acceptance; bounded implementation can be split by settled component or
+screen contracts with non-overlapping ownership. See
+`docs/CODEX_FANOUT_PATTERNS.md`.
 
 A requested model/effort does not prove the effective runtime configuration.
-Use correlated spawn/child/wait metadata where available; otherwise report the
-effective profile as `unverified`. A child role name, prompt, or successful
-spawn is not proof.
+Custom-agent role settings can override an explicit spawn model, so verify the
+effective model and effort from correlated runtime metadata; otherwise report
+them as `unverified`. A child role name (including `luna`), prompt, or
+successful spawn is not proof.
 
 ## Code and product quality
 
@@ -145,4 +156,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 5.0.1.
+the shared rules. Template version: 5.0.2.

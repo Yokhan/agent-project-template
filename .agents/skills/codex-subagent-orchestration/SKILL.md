@@ -1,11 +1,14 @@
 ---
 name: codex-subagent-orchestration
-description: "Use Codex subagents for parallel exploration, review, testing, docs research, design audit, and isolated implementation. Trigger when the task can be split across `.codex/agents` workers."
+description: "Delegate bounded implementation, research, testing and review to Codex workers, sequentially or in parallel. Use for nontrivial work with a clear worker contract, not tiny edits."
 ---
 
 # Codex Subagent Orchestration
 
-Use this skill when parallel work can reduce latency without creating edit conflicts.
+Use Luna High as the default executor of nontrivial bounded implementation.
+One sequential worker is valid: Sol defines the contract, Luna implements, Sol
+accepts. Parallelism is optional, not a prerequisite for delegation. Tiny edits
+remain direct; do not create work or extra reviews to reach an agent quota.
 
 ## Default Pattern
 
@@ -37,27 +40,27 @@ reused baseline evidence from checks covering the final delta.
 3. If AgentOS is detected, treat it as the orchestrator and use Codex subagents only inside the assigned worker route.
 4. Read the route's `fanout.status`, reason, candidates, and role profiles from `scripts/codex-agent-policy.js`.
    Turn useful candidates into bounded `assignments` with exact scope, acceptance, and evidence references; the agent prepares these contracts from the user's task, not the user by hand. Inspect the actual tool schema and declare `hostDispatchCapabilities`: `native-custom-role` only if `agent_type` is supported; otherwise `explicit-model-contract` only if explicit model/effort are supported. Rerun the route with this contract and check both fan-out policy and dispatch readiness. For explicit dispatch, read `dispatch.instructionsSource`, append its `developer_instructions` verbatim to the call-contract message, and use the exact returned model/effort and `fork_turns=none`. For native dispatch, use the returned `agent_type` and bounded message; its TOML owns the profile, so do not invent unsupported explicit fields. Do not launch `dispatch.ready=false`, a missing profile, or a conflicting pinned custom role. Native role identity and explicit contract identity are distinct; the explicit fallback inherits the host sandbox, not the TOML's enforcement.
-5. For `required`, spawn the independent required lanes. For `recommended`, spawn without asking when a non-blocking lane materially improves speed, evidence, or context isolation. For `conditional`, spawn only after the independence gate passes. For `skip`, do not spawn.
+5. For `required`, satisfy the required verification lanes. For `recommended`, delegate bounded implementation or useful independent work without asking again within approved scope. For `conditional`, prepare missing scope/acceptance or establish a useful independent lane before dispatch. For `skip`, do not spawn. A design route does not reserve all coding for Sol: settle visual decisions, then delegate component implementation to Luna.
 6. Notify the user which agents started and why. Ask for narrow outputs with file references and verification steps.
-7. Keep working on the parent critical path. Wait only when the next action needs a child result.
+7. Keep working on independent parent work, or wait when the next step needs the worker's result. Do not duplicate a sequential worker's implementation to avoid waiting.
    In collaboration runtimes, `wait_agent` may wake for an intermediate message; that is not completion. Confirm a final answer or `list_agents` completed status, and keep required children alive until completion. Do not finalize merely because a child reported progress or a wait returned.
-8. Consolidate in the parent thread. Parent performs edits unless an `implementer` task is isolated to non-overlapping files.
+8. Consolidate in the parent thread. Luna implements the assigned files; Sol owns decisions, integration and acceptance. If retaining nontrivial bounded implementation, briefly state the concrete reason (unsafe split, unavailable worker/tools, unresolved judgment, or coordination cost), not a generic preference for Sol.
 
 For prompt templates and the routing matrix, read `docs/CODEX_FANOUT_PATTERNS.md`.
 
 ## Safe Prompt
 
 ```text
-Use Codex subagents only when the route and fan-out policy approve useful,
-materially independent lanes and dispatch is ready. Follow the project's
+Use Codex subagents when the route approves bounded execution or useful
+independent lanes and dispatch is ready. Follow the project's
 existing artifacts; if no lane is approved, continue without spawning.
 Inspect whether this project has Spec Kit, litkit, Kiro, AgentOS, or project-local workflow docs.
-For approved lanes, assign bounded work and choose read-only exploration/review
-or testing only where each adds independent value.
+For approved implementation, assign a Luna High implementer, sequentially if
+necessary. Add read-only exploration/review or testing only where useful.
 Read-only means no file writes and no git restore/checkout/reset/clean, stash,
 generated-artifact cleanup, or other shared-worktree state change. Report
 unexpected changes to the parent; never repair or revert them.
-Wait for all results. Parent agent performs edits unless exact [P] tasks with non-overlapping files are assigned.
+Wait for assigned results. Parent integrates and accepts; workers own assigned edits.
 ```
 
 ## Guardrails
@@ -73,6 +76,7 @@ Wait for all results. Parent agent performs edits unless exact [P] tasks with no
   evidence only where content, scope, inputs, and toolchain still match.
 - Use role-aware profiles from `scripts/codex-agent-policy.js`: Sol 6.1 High coordinates and integrates; Luna 6 High performs bounded work; Astra 6 Medium/High returns architecture decisions. Optional Max/XHigh require host support and a bounded reason/budget contract.
 - A custom TOML may override explicit spawn model/effort. For integration use parent-owned Sol work; for an effort override use an explicit model/effort launch without a conflicting pinned custom role. Verify actual child metadata, not the request or self-report.
+- For a Luna implementation use `implementer`, not a Sol-pinned `reviewer` with a Luna override. If observed model/effort differs, report the mismatch and correct subsequent dispatch; do not count it as Luna or infer cost savings. Prefer a bounded `fork_turns=none` evidence packet over inherited full history.
 - Treat read-only TOML and prompt as requested permissions; effective enforcement must be verified separately. Do not claim sandbox isolation solely from a clean diff.
 - On context overflow, narrow the evidence packet. After two failed attempts reassess cause and scope; do not loop retries or blindly increase effort.
 - In Zed, rely on the parent summary; child-thread visibility may lag CLI/app UX.

@@ -42,9 +42,9 @@
 - Codex MCP configuration from the managed block in .codex/config.toml; .mcp.json is Claude Code compatibility only
 
 ## Current State
-- Goal: Prepare v5.0.1 with skills and task routing aligned to product waves, proportional verification and project-owned plans.
-- Status: Local release candidate; preparation is not publication or downstream rollout. v5.0.0 is the preceding release; the former 4.10.0 candidate was incorporated into it.
-- Next: Validate the candidate and record evidence in docs/RELEASE_V5_0_1.md. Publication requires authorization plus exact-commit Linux/Windows release gates. No token savings, native-role enforcement or universal skill compliance is inferred from static tests or bounded behavioral samples.
+- Goal: Prepare v5.0.2 with bounded implementation routing and aligned Codex/MCP policy behavior.
+- Status: Local release candidate; preparation is not publication or downstream rollout. v5.0.1 is the preceding release.
+- Next: Complete the fresh release gate and record evidence in docs/RELEASE_V5_0_2.md. Publication requires exact-commit Linux/Windows release gates. No runtime adoption, cost savings, native-role enforcement or universal skill compliance is inferred from static tests or bounded behavioral samples.
 
 ## Last Scan
 2026-07-19

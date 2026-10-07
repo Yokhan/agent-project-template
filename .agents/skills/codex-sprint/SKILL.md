@@ -11,9 +11,17 @@ Use only when the user asks for autonomous work.
 
 1. Pick one approved task.
 2. Research and plan.
-3. Implement the smallest valuable slice.
+3. Implement the smallest valuable slice. For well-scoped, nontrivial work,
+   prefer GPT-6 Luna `high` as implementer when delegation is useful and the
+   host allows it; this can be a sequential handoff. Sol retains the contract,
+   material decisions, integration, and acceptance. Keep tiny edits direct. If
+   suitable nontrivial work stays with the parent, briefly state why; do not
+   make this a ritual for tiny edits.
 4. Test and verify.
 5. Record status and lessons.
 6. Stop on blockers, repeated failures, unclear intent, high-risk approval gates, or user interruption.
 
 Do not start unrelated tasks just because they are nearby.
+Respect user opt-out, host limits, explicit permissions, and unsafe or
+inseparable scopes. A model label or requested profile does not prove the
+effective runtime model; verify metadata or report it as `unverified`.

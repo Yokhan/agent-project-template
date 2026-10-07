@@ -9,7 +9,7 @@ const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
-const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
+const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, isImplementationRequest, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
 const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
@@ -326,17 +326,22 @@ function getRoute(task, options = {}) {
     artifacts,
   );
   const shouldUseProductGoal = needsProductGoal(selected, risk);
+  const contract = options.workerContract === undefined ? {} : validateWorkerContract(options.workerContract);
+  const implementationRequested = !isDirect && isImplementationRequest(task);
+  const unresolvedArchitecture = /(?:ambiguous architecture|unresolved architecture|conflicting requirements|systemic deadlock|неоднозначн[\p{L}]*\s+архитектур|конфликт[\p{L}]*\s+требован|системн[\p{L}]*\s+тупик)/iu.test(task);
+  const implementationCandidate = implementationRequested && !blockEdits && !unresolvedArchitecture;
   const candidateSubagents = unique([
-    /(?:ambiguous architecture|unresolved architecture|conflicting requirements|systemic deadlock|неоднозначн[\p{L}]*\s+архитектур|конфликт[\p{L}]*\s+требован|системн[\p{L}]*\s+тупик)/iu.test(task)
-      ? "architecture_consultant" : "",
+    unresolvedArchitecture ? "architecture_consultant" : "",
     ...(changeStrategy.required ? ["systems_reviewer", "tester"] : []),
+    implementationCandidate ? "implementer" : "",
     ...selected.flatMap((route) => route.subagents || []),
   ]);
   const baseFanout = getFanoutDecision({
     availableSlots: options.availableSlots,
+    workerContract: contract,
     task, risk, modes: selected.map((route) => route.mode), candidates: candidateSubagents,
     priorityCandidates: candidateSubagents.includes("architecture_consultant")
-      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : [],
+      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : implementationCandidate ? ["implementer"] : [],
   });
   const fanout = changeStrategy.required && baseFanout.status === "conditional"
     ? { ...baseFanout, status: "recommended", reason: "change-strategy-independent-system-and-test-review" }
@@ -347,14 +352,22 @@ function getRoute(task, options = {}) {
     changeStrategy.required ? "changeStrategy" : "",
   ]);
   const orchestrator = getOrchestrator(artifacts);
-  const contract = options.workerContract === undefined ? {} : validateWorkerContract(options.workerContract);
-  const gateDispatch = (decision) => fanout.status === "skip" ? {
-    ...decision, dispatch: { ...decision.dispatch, ready: false, callContract: null,
-      policyStatus: "blocked", policyReason: fanout.reason },
-  } : { ...decision, dispatch: { ...decision.dispatch, policyStatus: "allowed" } };
+  const gateDispatch = (decision) => {
+    const writeBlocked = decision.dispatch.requestedSandbox === "workspace-write" &&
+      (!implementationRequested || blockEdits || unresolvedArchitecture);
+    const notSelected = decision.dispatch.owner === "worker" &&
+      !fanout.candidates.some(({ name }) => name === decision.role);
+    return fanout.status === "skip" || writeBlocked || notSelected ? {
+      ...decision, dispatch: { ...decision.dispatch, ready: false, callContract: null,
+        policyStatus: "blocked", policyReason: fanout.status === "skip" ? fanout.reason :
+          blockEdits ? "change-strategy-blocks-writes" :
+            writeBlocked ? unresolvedArchitecture ? "architecture-decision-required" : "no-implementation-authority" :
+              "role-not-selected-in-current-batch" },
+    } : { ...decision, dispatch: { ...decision.dispatch, policyStatus: "allowed" } };
+  };
   const resourceDecision = gateDispatch(getResourceRecommendation({
     ...contract, role: contract.role || (candidateSubagents.includes("architecture_consultant")
-      ? "architecture_consultant" : "orchestrator"), orchestrator: orchestrator.owner,
+      ? "architecture_consultant" : implementationCandidate ? "implementer" : "orchestrator"), orchestrator: orchestrator.owner,
   }));
   return {
     task,
@@ -365,14 +378,17 @@ function getRoute(task, options = {}) {
     risk,
     workflowDepth: isDirect ? "direct" : "routed",
     resourceDecision,
-    workerContracts: fanout.candidates.map(({ name }) => gateDispatch(getResourceRecommendation({
-      hostDispatchCapabilities: contract.hostDispatchCapabilities,
-      hostCapabilities: contract.hostCapabilities,
-      ...contract.assignments?.[name],
-      role: name, scope: contract.assignments?.[name]?.scope,
-      acceptance: contract.assignments?.[name]?.acceptance,
-      evidenceRefs: unique([...(contract.evidenceRefs || []), ...(contract.assignments?.[name]?.evidenceRefs || [])]), orchestrator: orchestrator.owner,
-    }))),
+    workerContracts: fanout.candidates.map(({ name }) => {
+      const assignment = contract.assignments?.[name] || (contract.role === name ? contract : {});
+      return gateDispatch(getResourceRecommendation({
+        hostDispatchCapabilities: contract.hostDispatchCapabilities,
+        hostCapabilities: contract.hostCapabilities,
+        ...assignment,
+        role: name, scope: assignment.scope,
+        acceptance: assignment.acceptance,
+        evidenceRefs: unique([...(contract.evidenceRefs || []), ...(assignment.evidenceRefs || [])]), orchestrator: orchestrator.owner,
+      }));
+    }),
     skills: isDirect ? [] : unique([
       ...selected.flatMap((route) => route.skills || []),
       ["required", "recommended", "conditional"].includes(fanout.status) ? "codex-subagent-orchestration" : "",

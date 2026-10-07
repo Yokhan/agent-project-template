@@ -9,6 +9,9 @@ for (const task of ["What is this error and fix it", "Why is the app crashing fo
   assert(route.files.length > 0, task);
 }
 assert(routeKeywords("Разреши неоднозначную архитектуру").codexSubagents.includes("architecture_consultant"));
+assert(routeKeywords("Implement approved homepage component design").codexSubagents.includes("implementer"));
+assert(!routeKeywords("Read-only review of homepage design; do not modify files").codexSubagents.includes("implementer"));
+assert.deepEqual(routeKeywords("Implement approved homepage component design without subagents").codexSubagents, []);
 const groundedExplanation = routeKeywords("Объясни, как работает кэш");
 assert(groundedExplanation.writingSourceGrounding?.required);
 assert.deepEqual(groundedExplanation.writingSourceGrounding?.sourceIds, ["write-short", "clear-understood"]);

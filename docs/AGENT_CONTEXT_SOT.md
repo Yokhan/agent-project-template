@@ -111,8 +111,10 @@ Refresh it with `scripts/sync-spec-kit.sh --latest-tag` after checking upstream.
 Use hooks for deterministic checks that must run every time.
 Use skills for reusable workflows, domain knowledge, and long references loaded
 only when relevant.
-Use subagents for parallel read-only exploration, review, security, docs
-research, design review, and isolated implementation with explicit file scope.
+Use Luna High for bounded implementation with explicit file scope, including
+sequential execution, and subagents for useful read-only exploration/review.
+Sol 6.1 High retains contract preparation, decisions, integration and acceptance.
+Parallelism needs independent ownership; it is not a prerequisite for delegation.
 Current local Codex releases may delegate after a direct request **or** when an
 applicable `AGENTS.md` or skill instruction requests it. Therefore a project
 rule may authorize proactive delegation for independent material work; a

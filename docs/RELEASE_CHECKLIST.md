@@ -2,18 +2,24 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v5.0.1`. This checklist records required evidence, not a
+Release target: `v5.0.2`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## Validation Gate
+## Historical v5.0.1 Validation Baseline (not v5.0.2 release evidence)
 
-Run this gate once on the integrated candidate. The aggregates include their
-leaf validators: do not run those again just to check another box. The release
-workflow remains authoritative for fresh Linux/Windows and pinned-tool gates.
+The checked results below are historical v5.0.1 evidence only. They are not
+fresh checks of the v5.0.2 candidate. The parent release owner records current
+candidate and exact-commit workflow evidence after running the release gate.
+
+### Checks recorded for v5.0.1 only
+
+These checks are historical results against the v5.0.1 candidate, not current
+release-gate status. The release workflow remains authoritative for fresh
+Linux/Windows and pinned-tool gates.
 
 - [x] `bash scripts/validate-template.sh` — 2026-10-07: 0 errors/warnings
 - [x] `bash scripts/check-drift.sh` — 2026-10-07: 0 errors, 2 dated-document warnings
@@ -30,6 +36,28 @@ policy, agent SOT, Spec Kit, text policy, and generated-project setup/sync smoke
 structural checks. Their required release-bound overlap is not permission to
 repeat either aggregate after every local patch. Hook behavior, drift,
 entrypoint parity and native PowerShell failure propagation have separate checks.
+
+## Validation Gate (v5.0.2; local candidate passed)
+
+Run this gate once on the integrated v5.0.2 candidate. Aggregates include their
+leaf validators; do not repeat those solely to check another box. Record fresh
+results here after the parent release owner runs them.
+
+- [x] `bash scripts/validate-template.sh` — 2026-10-07: 0 errors/warnings
+- [x] `bash scripts/check-drift.sh` — 2026-10-07: 0 errors, 2 document-age warnings
+- [x] `bash scripts/test-hooks.sh` — 2026-10-07: 12/12
+- [x] `bash scripts/test-template.sh` — 2026-10-07: 201/201, including generated-project setup and native sync
+- [x] `bash scripts/sync-agents.sh` — 2026-10-07: 0 issues/warnings
+- [x] `node scripts/test-ci-native-exit.js` — 2026-10-07: passed
+- [x] Inspect integrated candidate diff and current project/tool-registry facts — reviewed; registry not stale, no regeneration needed
+
+Codex CLI 0.125.0 `skills/list` found 46 repository skills, no discovery errors,
+and all six changed skills enabled. MCP tests passed; routing parity was checked
+again after the final intent-classifier correction. Independent review confirmed
+the read-only intent and omitted implementation-verb regressions were fixed.
+These are local candidate results, not proof of effective worker model selection
+or downstream adoption. Exact-commit Linux/Windows workflow and asset verification
+remain publication gates; inspect the run associated with the immutable tag.
 
 For changed skills, also inspect discovery with Codex `skills/list` for the
 actual project cwd and perform bounded independent decision evaluation when

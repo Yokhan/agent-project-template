@@ -1,7 +1,7 @@
-# Migration To v5.0.1
+# Migration To v5.0.2
 
 v5 changes the default operating contract, not ownership of downstream products.
-Confirm a major upgrade before applying; `5.0.0 -> 5.0.1` is a compatible patch.
+Confirm a major upgrade before applying; `5.0.1 -> 5.0.2` is a compatible patch.
 The earlier `4.10.0` development
 candidate was not published separately; its work is incorporated into v5.
 
@@ -20,6 +20,10 @@ candidate was not published separately; its work is incorporated into v5.
 - Role-aware Sol/Luna/Astra recommendations are distinct from host capability,
   effective runtime profiles and model-quality evidence. No user-level model
   default is overwritten; optional higher effort is not a default.
+- For well-scoped, nontrivial implementation, Luna High is the recommended
+  bounded implementer when delegation is supported and useful, including a
+  sequential handoff. Sol 6.1 defines or confirms contracts and decisions, then
+  owns integration and acceptance. This guidance does not claim runtime adoption.
 - Substantive nonfiction, including explanatory answers, requires fresh
   relevant primary passages and task/draft-bound records. Actual fiction/lore
   prose is exempt, not game-business documents or production plans.
@@ -27,7 +31,7 @@ candidate was not published separately; its work is incorporated into v5.
 ## Agent-Executed Upgrade
 
 Follow `docs/TEMPLATE_RELEASES.md#canonical-agent-update-protocol`. Verify the
-non-draft/non-prerelease exact `v5.0.1` release, its tag commit and checksums.
+non-draft/non-prerelease exact `v5.0.2` release, its tag commit and checksums.
 Never infer publication from this file. Reuse a verified external canonical
 checkout or obtain the exact tag; do not sync the template repository into itself.
 For a generated project, run the target checkout's native updater explicitly:
@@ -48,7 +52,7 @@ contract into those entrypoints: preserve project facts, AgentOS authority and
 approved plans, but remove contradictory universal 1%/per-task approval ritual.
 Do not merely leave old hot-memory policy overriding the updated shared rules.
 
-After apply, confirm manifest `template_version: 5.0.1`, actual diff, preserved
+After apply, confirm manifest `template_version: 5.0.2`, actual diff, preserved
 overlays, conflict resolution and relevant project/agent/routing/text checks.
 Check entrypoint semantic consistency and run library status plus a fresh bounded
 primary retrieval for a relevant nonfiction artifact. Verify its request/draft

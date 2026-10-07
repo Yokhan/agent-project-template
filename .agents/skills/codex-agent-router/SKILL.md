@@ -30,9 +30,13 @@ continue with a proportionate approach.
 ## Model and delegation policy
 
 - Sol 6.1 `high` is the default orchestrator and integrator.
-- Luna 6 `high` fits bounded discovery, tests, docs, and implementation against
-  an explicit contract and exact file scope. Sol retains architecture decisions
-  and acceptance.
+- Luna 6 `high` is the default implementer for useful, well-scoped nontrivial
+  implementation, documentation, tests, or discovery against an explicit
+  contract and exact scope. Delegation may be sequential; parallel fan-out
+  still requires independent lanes with material parallel value. Sol retains
+  contract and architecture decisions, integration, and acceptance. Keep tiny
+  edits direct; when suitable nontrivial work stays with the parent, briefly
+  explain why rather than adding a ritual for tiny edits.
 - Astra 6 `medium` is an architecture consultant for genuine decision
   uncertainty; `high` is reserved for deep risk review. Consultation returns a
   recommendation to Sol; it does not replace the orchestrator.
@@ -40,10 +44,17 @@ continue with a proportionate approach.
   they are not defaults. Never claim a requested profile is effective without
   runtime evidence. Unknown model or effort is `unverified`.
 - Spawn no more than three children for a task, and fewer when host slots,
-  independence, or expected value warrant it. Fan out only independent lanes
-  with material parallel value, exact acceptance criteria, and non-overlapping
-  write ownership. The parent integrates and verifies. Do not recursively fan
-  out by default.
+  independence, or expected value warrant it. Respect explicit user opt-out,
+  host limits, and unsafe or inseparable scopes. Parallel fan-out requires
+  independent lanes with material parallel value, exact acceptance criteria,
+  and non-overlapping write ownership. The parent integrates and verifies. Do
+  not recursively fan out by default.
+- For design work, Sol retains visual/product judgment and final acceptance;
+  bounded implementation can be assigned by settled component or screen
+  contract when ownership and visual integration are clear.
+- A requested model is not runtime evidence. Custom-agent TOML can override an
+  explicit spawn model; verify effective metadata or report it as `unverified`.
+  Never infer Luna from a worker-role label.
 
 For detailed model guidance and fan-out patterns, read
 [`docs/OPENAI_MODEL_GUIDANCE.md`](../../../docs/OPENAI_MODEL_GUIDANCE.md) and

@@ -100,7 +100,7 @@ function runRouteCasesA(testRoute) {
       "codex-product-goal",
       "codex-strategic-review",
     ],
-    subagents: ["scout", "tester"],
+    subagents: ["implementer", "tester"],
     qualityGates: ["template-boundary", "product-goal-artifact"],
     planRequired: true,
     risk: "HIGH",

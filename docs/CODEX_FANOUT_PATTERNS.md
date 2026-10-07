@@ -1,9 +1,9 @@
 # Codex Fan-Out Patterns
 
-Use workers when independent work can proceed in parallel and the result is
-worth the coordination cost. This is a routing guide, not a requirement to
-spawn agents. Parent Codex remains responsible for scope, integration, and
-acceptance.
+Use Luna workers for useful bounded implementation, sequentially or in
+parallel. Parallel lanes must be independent and worth their coordination
+cost. Tiny edits do not need workers. Parent Codex remains responsible for
+scope, decisions, integration, and acceptance.
 
 ## Starting policy
 
@@ -23,7 +23,17 @@ model/effort. Record requested and effective values separately; when runtime
 metadata does not establish the effective values, report `unverified`. A role
 label, spawn success, prompt, or plausible output is not runtime proof.
 
-## Split only independent lanes
+## Delegate bounded work; split only independent lanes
+
+Delegation can be sequential as well as parallel. For a well-scoped,
+nontrivial implementation against a settled contract, GPT-6 Luna `high` is the
+default implementer recommendation when the host supports delegation and the
+handoff is useful. Sol retains contract and product/architecture decisions,
+integration, and acceptance. Keep tiny edits direct. When suitable nontrivial
+work stays with the parent, briefly state the concrete reason; this is not a
+ritual for tiny edits. Respect explicit opt-out, host limits, and unsafe or
+inseparable scopes. Project guidance permits delegation but does not require a
+worker for every task.
 
 For substantial staged product work, agree on the end result (audience,
 capability, acceptance, constraints), an approximate sequence of implementation
@@ -51,15 +61,15 @@ rerun the full suite, and duplicate broad runs must not overlap. A new patch is
 not a new wave. Keep command/result/scope/tested-content-state evidence in the
 existing task context, including relevant inputs/toolchain.
 
-Before spawning, identify the parent's next step and ask whether a child can
-produce a distinct result without editing the same files or waiting on another
-child. Use exact inputs, output shape, acceptance criteria, and file/write
-boundaries. Continue useful parent work while workers run. Do not delegate a
-task merely because a candidate role exists. Project guidance authorizes
-automatic delegation for useful independent lanes; it is not a blanket swarm
-requirement for every task or a typo fix. An explicit user opt-out wins. Avoid recursive fan-out
-and repeated dispatch batches; consider another worker batch only when returned
-evidence reveals new independent work. Dispatch batches do not define product waves.
+Before dispatch, identify the parent's next step and decide whether a bounded
+sequential handoff or distinct parallel result is useful. Use exact inputs,
+output shape, acceptance criteria, and file/write boundaries. Continue useful
+parent work while parallel workers run. Do not delegate merely because a
+candidate role exists. Project guidance authorizes useful delegation; it is
+not a blanket swarm requirement or a typo-fix ritual. An explicit user opt-out
+wins. Avoid recursive fan-out and repeated dispatch batches; consider another
+worker batch only when returned evidence reveals new independent work.
+Dispatch batches do not define product waves.
 
 Suggested routing:
 
@@ -67,15 +77,19 @@ Suggested routing:
 |---|---|---|
 | Repository map, focused log/source extraction | Luna `high`, read-only | Synthesis and conflicting evidence resolution |
 | Test cases or a targeted test run | Luna `high` | Choosing adequate coverage and accepting result |
-| Documentation or isolated implementation to a settled contract | Luna `high` | Product/architecture decisions, integration, final verification |
+| Well-scoped nontrivial documentation or implementation to a settled contract (sequential or parallel) | Luna `high` | Product/architecture decisions, integration, final verification |
 | Architecture options under real uncertainty | Astra `medium` consultant | Decision ownership, implementation, reconciliation |
 | Deep threat/system review | Astra `high` only when risk justifies it | Scope, remediation, proof and release decisions |
 | Ordinary correctness, design, or product review | Sol `high` | Final disposition and acceptance |
 
-Use an implementation worker only for a clearly bounded slice with exact,
-non-overlapping file ownership. Keep security-sensitive changes, shared
-architecture, broad migrations, and screenshot-driven multi-component design
-with the parent unless the owner deliberately establishes a safe split.
+Use an implementation worker for a clearly bounded slice with exact file
+ownership and acceptance evidence. Security-sensitive changes, shared
+architecture, broad migrations, or tightly coupled visual work stay with the
+parent when safe ownership boundaries cannot be established. For design work,
+Sol retains visual judgment, product/design decisions, and final surface
+acceptance; implementation may be split into component or screen contracts
+when ownership and visual integration remain clear. Screenshot-driven work is
+not categorically excluded from delegation when such contracts exist.
 
 ## Existing task ownership
 

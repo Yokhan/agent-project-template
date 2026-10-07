@@ -35,6 +35,10 @@ relevant project/goal context and these shared rules as needed:
 5. Implement the smallest complete behavior within the accepted scope. An
    enabling step is valid when it resolves a real dependency or risk; label it
    honestly and state the next useful result.
+   For nontrivial bounded changes, assign a Luna High implementer under
+   `codex-subagent-orchestration`; sequential execution is valid. Sol prepares
+   the contract and accepts the result. Keep tiny edits direct; retain larger
+   implementation only for a concrete scope, judgment, host or cost reason.
 6. Verify the user-facing behavior claimed, or the narrow contract changed.
    When the feature adds customer-facing copy, load the **Public Copy Gate** in
    `.claude/library/technical/writing.md` and check the assembled UI states;

@@ -40,7 +40,7 @@ type WritingRoutePolicy = {
 
 const require = createRequire(import.meta.url);
 const { getRoute } = require("../../../scripts/codex-route-task.js") as {
-  getRoute(task: string): Pick<RouteResult, "workflowDepth" | "resourceDecision">;
+  getRoute(task: string): Pick<RouteResult, "workflowDepth" | "resourceDecision"> & { subagents: string[] };
 };
 const { classifyWritingIntent } = require("../../../scripts/lib/writing-intent.js") as {
   classifyWritingIntent(task: string): WritingIntent;
@@ -354,7 +354,8 @@ export function routeKeywords(keywords: string): RouteResult {
     agent: bestAgent,
     files: isDirect ? [] : Array.from(matchedFiles),
     codexSkills: isDirect ? [] : Array.from(codexSkills),
-    codexSubagents: isDirect ? [] : Array.from(codexSubagents),
+    // Shared policy owns worker selection, including write intent and opt-out.
+    codexSubagents: isDirect ? [] : codexRoute.subagents,
     pipeline,
     risk,
     codeIntelligence: getToolWorkflow(keywords, [], matchedModes),

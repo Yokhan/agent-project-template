@@ -11,7 +11,7 @@ const MODEL_CAPABILITIES = Object.freeze({
 });
 
 const AGENT_POLICY = Object.freeze({
-  version: "5.0.1",
+  version: "5.0.2",
   parent: Object.freeze({
     modelSource: "user-or-ide",
     recommendedModel: "gpt-6.1-sol",
@@ -113,7 +113,7 @@ const AGENT_POLICY = Object.freeze({
 const OPT_OUT_PATTERN =
   /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент[\p{L}]*|сабагент[\p{L}]*|делегац[\p{L}]*|фан-?аут[\p{L}]*|swarm|ро[йяе][\p{L}]*|рой[\p{L}]*)|не\s+делегируй)/iu;
 const MUTATION_PATTERN =
-  /\b(?:build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши/iu;
+  /\b(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|добавь|отрефакторь|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши|напиши|сверстай|внедри/iu;
 const READ_ONLY_PATTERN =
   /\b(?:read[ -]?only|inspect|review|audit|analy[sz]e|evaluate|explain|report|research|look up)\b|без\s+изменений|только\s+чтение|проверь|аудит|разбери|оцени|посмотри|изучи|объясни|отч[её]т/iu;
 const NEGATED_MUTATION_PATTERN =
@@ -135,6 +135,28 @@ function getAgentProfiles() {
 function stripFanoutOptOut(task) {
   const pattern = new RegExp(OPT_OUT_PATTERN.source, `${OPT_OUT_PATTERN.flags}g`);
   return String(task || "").replace(pattern, " ").replace(/\s+/g, " ").replace(/\s+([.!?])/g, "$1").trim();
+}
+
+function isImplementationRequest(task) {
+  // A route name or a supplied worker contract never grants write authority.
+  if (NEGATED_MUTATION_PATTERN.test(task) ||
+      /\bread[ -]?only\b|только\s+чтение/iu.test(task)) return false;
+  // Explanations can contain imperative-looking conjunctions as their subject
+  // ("explain the build and deploy pipeline"). They do not authorize writes.
+  if (/^\s*(?:explain|describe|report|research|how\b|why\b|объясни|опиши|расскажи|как\s|почему\s)/iu.test(task)) {
+    return /[.;!]\s*(?:please\s+)?(?:implement|fix|change|create|update|write)\b/iu.test(task) ||
+      /[.;!]\s*(?:пожалуйста\s+)?(?:исправь|реализуй|обнови|измени|создай|напиши|сверстай|внедри)(?=\s|$)/iu.test(task);
+  }
+  // In an audit/question, "fix" can name the thing being inspected. Require
+  // an actual action clause instead of interpreting that noun as permission.
+  if (READ_ONLY_PATTERN.test(task) || /^(?:how\b|why\b|как\s|почему\s)/iu.test(task.trim())) {
+    // A conjunction alone is ambiguous ("audit the build and fix process").
+    // Require an explicit action object in English mixed audit/write requests.
+    return /(?:^|[.;!,?]\s*)(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\b/iu.test(task) ||
+      /\b(?:and|then)\s+(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\s+(?:the|a|an|this|that|these|those|our|my)\s+/iu.test(task) ||
+      /(?:^|[.;!,?]\s*|(?:^|\s)(?:и|затем|потом)\s+)(?:пожалуйста\s+)?(?:добавь|отрефакторь|исправь|реализуй|обнови|измени|создай|напиши|сверстай|внедри)(?=\s|$)/iu.test(task);
+  }
+  return MUTATION_PATTERN.test(task);
 }
 
 function validateResourceRequest({ model, effort, budget, reason, hostCapabilities } = {}) {
@@ -304,10 +326,23 @@ function getFanoutDecision(options) {
   const ranked = rankCandidates(candidates, modes, options.priorityCandidates || []);
   const availableSlots = options.availableSlots === undefined
     ? AGENT_POLICY.fanout.maxChildren : options.availableSlots;
-  const selected = ranked.slice(0, Math.min(AGENT_POLICY.fanout.maxChildren, availableSlots));
+  // Required verification must not be displaced by a writable implementer.
+  const needsVerification = (risk === "HIGH" || risk === "CRITICAL") && isStateChanging;
+  const verifier = needsVerification && ranked[0] === "implementer" && ranked.find((name) =>
+    /reviewer|tester/.test(name) && getAgentProfile(name)?.sandboxMode === "read-only");
+  const ordered = verifier ? [verifier, ...ranked.filter((name) => name !== verifier)] : ranked;
+  const selected = ordered.slice(0, Math.min(AGENT_POLICY.fanout.maxChildren, availableSlots));
   if (selected.length === 0) return createDecision("skip", "host-has-no-child-slots", [], ranked);
   if ((risk === "HIGH" || risk === "CRITICAL") && isStateChanging) {
     return createDecision("required", "high-risk-independent-verification", selected, ranked);
+  }
+  if (selected.includes("implementer") && options.workerContract) {
+    const contract = validateWorkerContract(options.workerContract);
+    const assignment = contract.role === "implementer" ? contract : contract.assignments?.implementer;
+    if (assignment?.scope?.length && assignment?.acceptance?.length &&
+        !assignment.integration && !assignment.strategy && isImplementationRequest(task)) {
+      return createDecision("recommended", "bounded-implementation-delegation", selected, ranked);
+    }
   }
   if (selected.length >= 2 && hasParallelValue(task, selected, modes)) {
     return createDecision("recommended", "parallel-independent-lanes-available", selected, ranked);
@@ -356,7 +391,7 @@ function createDecision(status, reason, candidates, inventory = candidates) {
     requireRuntimeProfileEvidence: AGENT_POLICY.fanout.requireRuntimeProfileEvidence,
     writePolicy: AGENT_POLICY.fanout.writePolicy,
     independenceGate:
-      "spawn only when the lane is independent, useful, non-duplicative, and faster or safer in parallel",
+      "delegate useful bounded work without duplication; sequential implementation is valid; parallel writes require independent scopes",
   };
 }
 
@@ -436,6 +471,7 @@ module.exports = {
   getFanoutDecision,
   getResourceRecommendation,
   isLikelySmallTask,
+  isImplementationRequest,
   stripFanoutOptOut,
   validateResourceRequest,
   validateWorkerContract,

@@ -516,8 +516,15 @@ function assertProactiveDelegationContract() {
   ];
   const combined = files.map((file) => readText(path.join(process.cwd(), file))).join("\n");
   state.checks += 4;
-  if (!/independent work with material parallel value/iu.test(combined)) {
-    addError("delegation must require independent material value");
+  const sequential = getRoute("Implement the approved isolated module", {
+    availableSlots: 1,
+    workerContract: { role: "implementer", scope: ["src/component.js"],
+      acceptance: ["focused component test passes"], hostDispatchCapabilities: ["explicit-model-contract"] },
+  });
+  if (sequential.subagents[0] !== "implementer" ||
+      sequential.resourceDecision.recommendedModel !== "gpt-6-luna" ||
+      !sequential.resourceDecision.dispatch.ready) {
+    addError("bounded implementation must support a single Luna worker without parallel work");
   }
   if (!/a\s+separate user request is not required/iu.test(combined)) {
     addError("agent SOT must distinguish project authorization from direct user prompting");

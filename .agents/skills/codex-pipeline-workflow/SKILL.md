@@ -20,4 +20,9 @@ Use `docs/AGENT_PIPELINES.md` as the source of truth.
 
 ## Codex Adaptation
 
-Do not reuse Claude model routing. Follow the Codex route's fan-out decision and `scripts/codex-agent-policy.js`. Spawn independent Codex specialists proactively when they reduce wall-clock time, isolate noisy context, or add a required risk gate; the parent still owns sequencing, edits, and final verification.
+Do not reuse Claude model routing. Follow `scripts/codex-agent-policy.js` and
+`codex-subagent-orchestration`: Luna High executes nontrivial bounded changes,
+including sequential work. Sol 6.1 High defines contracts, resolves uncertainty,
+integrates and accepts. Parallel lanes need independent ownership; delegation
+itself does not require parallelism. Keep tiny edits direct and respect opt-out,
+host limits and approval gates. Do not repeat the worker's implementation or checks.

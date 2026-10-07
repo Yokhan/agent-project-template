@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v5.0.1"
+        description: "Existing tag to publish, for example v5.0.2"
         required: true
         type: string
 
@@ -172,7 +172,7 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "Product-wave continuity, proportional verification, and skills aligned with the shared operating contract. See docs/RELEASE_V5_0_1.md for patch changes and evidence boundaries."
+            echo "Bounded Luna High implementation guidance with Sol 6.1 contract and integration ownership; aligned candidate policy and preserved high-risk verification gates. See docs/RELEASE_V5_0_2.md for patch changes and evidence boundaries."
             echo ""
             echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""

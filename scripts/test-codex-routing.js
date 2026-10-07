@@ -208,6 +208,55 @@ function main() {
   assert.strictEqual(bounded.resourceDecision.dispatch.strategy, "explicit-model-contract");
   assert.strictEqual(bounded.resourceDecision.dispatch.ready, false);
   assert.strictEqual(bounded.resourceDecision.runtimeStatus, "recommendation-only");
+  // A single implementation worker is useful even without a parallel lane.
+  const sequential = getRoute("Implement the approved isolated module", {
+    availableSlots: 1, workerContract: readyWorker,
+  });
+  assert.deepStrictEqual(sequential.subagents, ["implementer"]);
+  assert.strictEqual(sequential.fanout.reason, "bounded-implementation-delegation");
+  assert.strictEqual(sequential.resourceDecision.dispatch.ready, true);
+  assert.strictEqual(sequential.workerContracts[0].dispatch.ready, true);
+  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6-luna");
+  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.fork_turns, "none");
+  for (const task of ["Implement approved homepage component design", "Implement the approved feature"]) {
+    const planned = getRoute(task, { workerContract: readyWorker });
+    assert(planned.subagents.includes("implementer"), task);
+    assert.strictEqual(planned.resourceDecision.recommendedModel, "gpt-6-luna", task);
+    assert.strictEqual(planned.resourceDecision.dispatch.ready, true, task);
+    const unbounded = getRoute(task);
+    assert(unbounded.subagents.includes("implementer"), task);
+    assert.strictEqual(unbounded.resourceDecision.dispatch.ready, false, task);
+  }
+  for (const task of ["Read-only review of the implementation", "Inspect the homepage; do not modify files",
+    "Audit the proposed fix for homepage implementation",
+    "Проверь предложенное исправление компонента главной страницы",
+    "How do I implement this component?", "Explain how to fix the homepage component",
+    "Review implementation plan for update", "Explain the build and deploy pipeline",
+    "Explain how to inspect and implement the approved component",
+    "Review the build and deploy pipeline",
+    "Audit the build and fix process",
+    "Inspect update and release workflow"]) {
+    const readOnly = getRoute(task, { workerContract: readyWorker });
+    assert(!readOnly.subagents.includes("implementer"), task);
+    assert.strictEqual(readOnly.resourceDecision.dispatch.ready, false, task);
+    assert.strictEqual(readOnly.resourceDecision.dispatch.callContract, null, task);
+  }
+  for (const task of ["Review the component and implement the approved fix", "Проверь компонент и исправь ошибку",
+    "Add the approved search component", "Добавь согласованный компонент поиска",
+    "Refactor the approved isolated module", "Отрефакторь согласованный модуль"]) {
+    assert.strictEqual(getRoute(task, { workerContract: readyWorker }).resourceDecision.dispatch.ready, true, task);
+  }
+  const constrainedRisk = getRoute("Implement approved security-sensitive authentication module", {
+    availableSlots: 1, workerContract: readyWorker,
+  });
+  assert.strictEqual(constrainedRisk.fanout.status, "required");
+  assert.deepStrictEqual(constrainedRisk.subagents, ["security_reviewer"]);
+  assert.strictEqual(constrainedRisk.resourceDecision.dispatch.ready, false);
+  const unresolved = getRoute("Implement a module with unresolved architecture", {
+    availableSlots: 1, workerContract: readyWorker,
+  });
+  assert(!unresolved.subagents.includes("implementer"));
+  assert.strictEqual(unresolved.resourceDecision.dispatch.ready, false);
   const maxContract = getRoute("Implement the approved isolated module", {
     workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit tests"],
       requestedEffort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 },
@@ -299,6 +348,12 @@ function main() {
   );
   const discoveryRoute = JSON.parse(discoveryOutput);
   assert.strictEqual(discoveryRoute.blockEdits, true);
+  const blockedWorker = getRoute("fix the display bug", {
+    discovery: JSON.parse(fs.readFileSync(discoveryFixture, "utf8")), workerContract: readyWorker,
+  });
+  assert.strictEqual(blockedWorker.resourceDecision.dispatch.ready, false);
+  assert.strictEqual(blockedWorker.resourceDecision.dispatch.policyReason, "change-strategy-blocks-writes");
+  assert(!blockedWorker.subagents.includes("implementer"));
   assert(discoveryRoute.modes.includes("bugfix"));
   assert(discoveryRoute.skills.includes("codex-change-strategy"));
 
