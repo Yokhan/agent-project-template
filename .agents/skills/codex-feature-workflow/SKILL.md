@@ -36,6 +36,9 @@ relevant project/goal context and these shared rules as needed:
    enabling step is valid when it resolves a real dependency or risk; label it
    honestly and state the next useful result.
 6. Verify the user-facing behavior claimed, or the narrow contract changed.
+   When the feature adds customer-facing copy, load the **Public Copy Gate** in
+   `.claude/library/technical/writing.md` and check the assembled UI states;
+   developer notes and simulated success must not leak into product copy.
    Tests and internal artifacts support evidence but are not themselves proof
    of a user outcome. Never present a stub or unavailable behavior as complete.
    Use focused checks after coherent change batches; the parent/integrator owns

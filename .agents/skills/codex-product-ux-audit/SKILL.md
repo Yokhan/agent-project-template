@@ -21,6 +21,10 @@ Trace the user's path:
 5. Dead ends: empty screens, fake dashboards, missing CTAs, blocked permissions, broken docs links.
 6. Mobile and desktop: layout, touch targets, text fit, scrolling, and visible next step.
 7. Error handling: network/API failure, no data, access denied, and loading.
+8. Public copy: apply the **Public Copy Gate** in
+   `.claude/library/technical/writing.md`; inspect the assembled surface for
+   self-justification, production notes, stale variants and accidental repeats.
+   Check metadata/accessibility copy and whether success reflects a real action.
 
 ## Evidence
 

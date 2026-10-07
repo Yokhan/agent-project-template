@@ -21,6 +21,9 @@ product wave. For an experiment, state its question, limit, and decision it will
 inform. Keep ordinary feature work a task rather than inventing a roadmap.
 
 Define acceptance evidence proportionate to the changed behavior and risk.
+For customer-facing copy, apply the **Public Copy Gate** in
+`.claude/library/technical/writing.md`, even when writing is part of coding.
+Review the assembled UI states, not only individual strings.
 Add or update focused tests where they establish the relevant contract; choose
 broader checks only when integration risk or a required project gate justifies
 them. Follow `.claude/library/process/self-verification.md`; the parent owns

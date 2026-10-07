@@ -8,13 +8,22 @@ inventory: 100
 production: 0
 cleanup: 100
 tags: template,release,security,migration,manifest,mcp,change-strategy
-next: prepare local v5.0.1 commit and archive; publication and exact-commit Linux/Windows release gates remain separate
+next: verify public-copy follow-up and refresh local v5.0.1 candidate; publication and exact-commit Linux/Windows release gates remain separate
 -->
 
 # Current Task - Prepare v5.0.1 After Skills Audit
 
 Current request: check that skills follow the active logic, repair demonstrated
 conflicts, then prepare a release. This task does not publish or roll out projects.
+Follow-up: public copy must exclude self-justification, internal production
+notes, editing residue and accidental duplication. The Public Copy Gate is
+shared by writing, feature, design and UX review; polished presentation cannot
+invent working transactions or future commitments. Refresh the local candidate
+after the focused instruction/behavior checks; do not reuse the earlier archive.
+Public-copy follow-up evidence: seven independent editing/decision scenarios
+reviewed successfully; production-standard/skill checks passed. Structural
+validation caught a stale handoff header only, corrected with a passing focused
+progressive-status check. This is template-rule evidence, not a live-site audit.
 Parent owns integration and candidate packaging; workers performed bounded
 instruction, routing and link-guard work plus independent decision evaluation.
 

@@ -230,6 +230,12 @@ Not all states apply everywhere. But the designer must DECIDE which apply — no
 
 ## Browser And Visual Hardening Gate
 
+For customer-facing text, apply the [Public Copy Gate](../technical/writing.md#public-copy-gate),
+including copy generated during implementation. Inspect the assembled page and
+applicable states for production notes, defensive wording, stale variants and
+duplicate blocks; check metadata/accessibility text too. A clean-looking mockup
+must not imply that a simulated transaction or persistence actually occurred.
+
 For M+ UI work, product surfaces, forms, dashboards, app shells, and design-system primitives, verify real rendered behavior before closeout:
 
 - Capture or inspect desktop and mobile viewports.

@@ -66,6 +66,11 @@ Read `references/design-command-modes.md` before using a mode for M+ work or whe
 
 ## Hardening Evidence
 
+Apply the **Public Copy Gate** in `.claude/library/technical/writing.md` to
+customer-facing content, including UI states, metadata and accessibility text.
+Keep implementation notes in the owner report; verify the actual action before
+showing a success message. Inspect the assembled surface for accidental repeats.
+
 For M+ UI work, product surfaces, forms, dashboards, app shells, and design-system primitives, close out with real rendered evidence:
 
 - desktop and mobile viewport check;

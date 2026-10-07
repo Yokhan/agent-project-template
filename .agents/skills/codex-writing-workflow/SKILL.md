@@ -41,7 +41,11 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
 8. Run an independent review for public, commercial, sensitive, or M+ text.
    Independence requires a separate read-only reviewer and genuine child trace;
    otherwise label the pass `self-check`, not `independent review`.
-9. Replace obsolete passages and stale drafts, verify the channel, and report the
+9. Apply the shared **Public Copy Gate** in `writing.md`: review the assembled
+   public surface for defensive copy, production notes, editing residue and
+   accidental duplicates; keep truthful user-relevant limits and real actions.
+   Development status belongs in the owner handoff, not unsolicited site copy.
+10. Replace obsolete passages and stale drafts, verify the channel, and report the
    declared readiness level honestly.
 
 ## Gates

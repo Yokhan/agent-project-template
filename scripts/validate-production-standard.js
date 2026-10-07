@@ -83,6 +83,17 @@ const SOURCE_ONLY_REQUIRED_FILES = [
 ];
 
 const REQUIRED_TEXT = [
+  // Wiring guard only; behavioral copy quality needs artifact-level review.
+  { file: ".claude/library/technical/writing.md", text: "## Public Copy Gate" },
+  ...[
+    ".agents/skills/codex-writing-workflow/SKILL.md",
+    ".claude/skills/writing-workflow/SKILL.md",
+    ".agents/skills/codex-design-workflow/SKILL.md",
+    ".agents/skills/codex-feature-workflow/SKILL.md",
+    ".claude/skills/add-feature/SKILL.md",
+    ".agents/skills/codex-product-ux-audit/SKILL.md",
+    ".claude/library/domain/domain-design-pipeline.md",
+  ].map((file) => ({ file, text: "Public Copy Gate" })),
   { file: "AGENTS.md", text: "Strategy/Tactic/Plan/Todo/Gate" },
   { file: "AGENTS.md", text: "project-owned `project-*`" },
   { file: "AGENTS.md", text: "digest-bound plan" },

@@ -49,6 +49,12 @@ commands plus its context-loading and common-error rules.
 
 ## Ownership
 
+Public copy uses the `Public Copy Gate` in the shared writing SOT. Writing,
+feature, design and product-UX review entrypoints all load that gate. It separates
+confident customer-facing text from implementation reports and checks the final
+assembled surface, including non-default UI states and metadata. Structural
+validation protects this wiring; it does not judge tone, duplication or truth.
+
 | Decision | Owner |
 | --- | --- |
 | Authority and SOT conflict order | `docs/AGENT_CONTEXT_SOT.md` |

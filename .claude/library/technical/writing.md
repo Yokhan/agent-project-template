@@ -110,6 +110,61 @@ commercial, public, sensitive, regulated, or ambiguous work, make the contract
 explicit. If a missing fact would change the promise, advice, recipient action,
 story logic, safety, or legal meaning, stop and ask with 2-3 concrete options.
 
+## Public Copy Gate
+
+For websites, app UI, landing pages, public announcements and other customer-
+facing nonfiction, keep the published artifact separate from the agent's work
+report. This gate also applies when copy is produced inside a coding/design
+task rather than an explicit writing request.
+
+**Confident, useful, truthful.** Lead with the available value, supported facts
+and a real next action. Do not publish the agent's self-justification, defensive
+hedging, apologies for the draft, or explanations of why implementation was hard.
+For an ambiguous offer, resolve consequential facts with the owner off-page;
+offer concrete options rather than making the customer read internal debate.
+State a necessary limitation briefly in the customer's terms, then give the
+available alternative or next step. Future improvements need an approved scope;
+do not replace an awkward admission with an invented roadmap, date or guarantee.
+A genuine service apology or material warning is not prohibited self-justification.
+
+**No production-work residue.** Do not inject labels such as "prototype",
+"MVP", "mock data" or "backend not connected" merely to describe how the agent
+built the page. No TODOs, editorial notes, alternative draft blocks, revision
+instructions, prompt fragments, validation receipts, stack traces or raw debug
+messages in public copy. Keep these in development tools or the owner handoff,
+not in visitor-facing banners, tooltips, metadata, alt text or hidden DOM.
+Technical content belongs in the product when the audience actually needs it
+(for example API documentation), not as commentary on the production process.
+
+**Finished presentation is not fictional functionality.** A private visual
+prototype should contain coherent product copy, without unsolicited development
+labels; explain simulation and unimplemented behavior in the review handoff.
+If real visitors can mistake a simulation for an actual purchase, booking,
+saved record or service, isolate the demo, remove the misleading action or
+give a concise truthful boundary at that action. Never fabricate success,
+availability, customer proof or legal/safety facts. Keep required disclosures
+and deliberately approved preview/demo positioning. Do not turn this into a
+word blacklist: meaning, audience and the actual working path decide.
+
+Examples, only when the stated alternatives really exist:
+
+- "Sorry, this is only a prototype; the backend is not connected" -> keep that
+  implementation status in the owner report, not the cafe homepage.
+- "Unfortunately we haven't built online booking yet" -> "Book by phone" with
+  the working number. Do not claim "Booking confirmed" from a local simulation.
+- "We may add delivery soon" -> omit unless approved; describe currently
+  available pickup rather than inventing a delivery launch date.
+
+Before calling copy channel-ready, review the assembled artifact, not just its
+strings: visible page plus metadata/accessibility text and applicable empty,
+loading, error, success, mobile/desktop states. Remove accidental duplication,
+conflicting old/new wording, placeholder leftovers and editing residue across
+components. Repeated navigation or an intentional repeated CTA is not a defect
+by itself. Check claims and CTAs against the real path. Block acceptance on
+unresolved residue, self-justification or false claims; fix and recheck the
+affected surface. If rendering cannot be inspected, report that gap to the
+owner, not inside the published copy, and do not claim the rendered gate passed.
+
 ## Language And Reference Boundary
 
 The structured registry assigns every source a language, usage class, and allowed
@@ -291,10 +346,12 @@ word when it is the clearest accurate choice.
 3. Structure: can the reader follow the intended path and find the next action?
 4. Mode: does it pass the selected profile's gates?
 5. Voice: is the language specific, coherent, natural, and project-appropriate?
-6. Line edit: remove repetition, nominalizations, weak abstractions, accidental
+6. Public copy: apply the Public Copy Gate to the assembled customer surface;
+   keep production notes separate and verify actual claims/actions.
+7. Line edit: remove repetition, nominalizations, weak abstractions, accidental
    passive voice, buried actors, and inconsistent terminology.
-7. Grammar and format: correct errors without flattening intentional voice.
-8. Channel: verify length, hierarchy, links, accessibility, rendering, and CTA.
+8. Grammar and format: correct errors without flattening intentional voice.
+9. Channel: verify length, hierarchy, links, accessibility, rendering, and CTA.
 
 Generation and acceptance should be separate passes. A writer may self-check,
 but must not present its own unverified judgment as independent review evidence.
@@ -324,6 +381,8 @@ tests, review, release, or completion without fresh evidence.
 - The text performs its production purpose at the declared depth.
 - Facts, proof, citations, canon, and uncertainty are honest.
 - The project voice and terminology are preserved.
+- Public copy passes the Public Copy Gate: confident facts and available actions,
+  no self-justification, production notes, accidental duplicates or false promises.
 - The next action or resolution is available and clear.
 - Obsolete versions and placeholders are replaced or explicitly unresolved.
 - UTF-8, no-BOM, line-ending, and mojibake policy passes for tracked text.

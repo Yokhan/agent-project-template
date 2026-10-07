@@ -6,6 +6,10 @@ CI and asset checksum before deployment.
 
 ## Changes
 
+- Public copy now has an explicit acceptance gate shared by writing, feature,
+  design and UX review skills: no self-justification, internal production notes,
+  revision residue or accidental duplicate blocks. Finished presentation keeps
+  truthful limits and cannot invent functionality or future commitments.
 - Product waves mean successive usable versions of one product toward its
   agreed final result. Internal routes, task batches, migrations and research
   remain enabling checkpoints. Changed constraints trigger a joint review of
@@ -62,6 +66,26 @@ Host: Windows, Node 24.13.0, Git Bash, Codex CLI 0.125.0. Subsequent changes
 record these results and maintain handoff/docs only; check their text/diff
 separately instead of repeating the broad suite. Fresh Linux and Windows CI,
 including `setup.bat` and pinned-tool bootstrap, have not run for this candidate.
+
+### Public-copy follow-up
+
+The later user request adds the Public Copy Gate to the shared writing rules
+and writing/feature/design/UX entrypoints. It supersedes the earlier candidate
+archive; the 199/200 baseline above predates this follow-up. Maintained behavioral
+scenarios are in `tests/rules/public-copy.test.md`. Wiring checks do not claim
+that every generated website has automatically been scanned or reviewed.
+
+Seven independent read-only editing/decision scenarios were reviewed: private
+prototype copy, simulated public booking, unapproved future features, residue
+outside the hero, legitimate technical language, incident communication and
+intentional repetition. The observed outputs respected the boundary: clean
+product copy without false transactions or invented commitments. No live site
+or product behavior was exercised by this evaluation.
+
+Focused production-standard and skill checks passed. One structural validation
+run found only a stale handoff status header after the task body changed; the
+header was updated and the exact `progressive-status.js --check` passed.
+Other structural checks passed in that run; no second broad pass is claimed.
 
 ## Compatibility and publication
 

@@ -23,7 +23,10 @@ Read `.claude/library/technical/writing.md` as the single source of truth.
 5. Plan the final text inventory and produce a functional 1% whole.
 6. Sharpen the accepted whole instead of accumulating alternate drafts.
 7. Run the mode-specific review, then structural, line, grammar, and channel edits.
-8. Verify the production purpose, truth boundary, next action, and active version.
+8. Apply the **Public Copy Gate** in `writing.md` to the assembled artifact:
+   confident supported claims, no self-justification or production-work residue,
+   no accidental duplicates, real CTAs and necessary truthful boundaries.
+9. Verify the production purpose, truth boundary, next action, and active version.
 
 Keep language/editorial, process, domain, and technical profiles separate.
 For Russian output, load `.claude/library/technical/russian-writing-profile.md`;
