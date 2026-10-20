@@ -26,14 +26,22 @@ consumes quota; static markers never count as runtime proof.
 - [x] Exact 559-path source tree allowlisted from the published baseline plus
   71 reviewed delta paths; candidate secret scan passed. No books, text caches,
   native transcripts, local settings or dependency artifacts enter that tree.
-- [ ] Immutable tag commit accepted by release Linux and native Windows jobs,
-  including the full pinned toolchain health checks.
-- [ ] Checksum-bound archive packaged only after both platform jobs pass.
-- [ ] GitHub Release is stable/non-draft; exact tag, workflow and downloaded
-  archive, SHA256SUMS and release-metadata.json agree.
+- [x] Immutable commit `5ab1c5527a95513be5452c5818d17cfee32756dd` passed
+  [preflight Linux/Windows CI](https://github.com/Yokhan/agent-project-template/actions/runs/39400833664)
+  and the [exact-tag release workflow](https://github.com/Yokhan/agent-project-template/actions/runs/39401829471),
+  including the full pinned toolchain health checks and native Windows setup.
+- [x] Checksum-bound archive packaged only after both release platform jobs
+  passed; packaging and publication jobs completed successfully.
+- [x] [v6.0.0](https://github.com/Yokhan/agent-project-template/releases/tag/v6.0.0)
+  is stable, non-draft and latest. Downloaded archive: 1,027,480 bytes, 559
+  allowlisted files; SHA-256
+  `b98aec4d332e4fb7bcaebc00f930c1034541f03db997868f27d8240e24f76278`.
+  SHA256SUMS and release-metadata.json match; canonical Linux Git archive bytes
+  also match the exact frozen source commit.
 
-Publication evidence belongs to the exact workflow and public assets. The
-immutable source checklist deliberately leaves those later outcomes pending.
+Publication evidence belongs to the exact workflow and public assets. The tag
+snapshot left later outcomes pending; this post-release record adds the observed
+results without moving the immutable tag or replacing published assets.
 The v5 checkboxes below are dated historical evidence, not v6 gate passes.
 
 ## Historical v5.0.1 Validation Baseline (not v5.0.2 release evidence)

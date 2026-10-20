@@ -1,23 +1,41 @@
 <!-- PROGRESSIVE_STATUS
 id: template-runtime-workflow-20261018
-status: active
+status: done
 updated: 2026-10-20
-readiness: 90
+readiness: 100
 plan: 100
 inventory: 100
-production: 0
+production: 100
 cleanup: 100
 tags: template,hooks,delegation,writing,evidence
-next: validate and publish v6.0.0 from one frozen commit; do not update consumers
+next: v6.0.0 published and public assets verified; no consumer rollout authorized
 -->
 
 # Current Task - Enforce Delegation And Fresh Reading Locally
+
+Publication accepted 2026-10-20: stable/latest v6.0.0 resolves to immutable
+commit 5ab1c5527a95513be5452c5818d17cfee32756dd. The preliminary Linux/Windows
+workflow passed all six jobs:
+https://github.com/Yokhan/agent-project-template/actions/runs/39400833664.
+The release workflow passed Linux, native Windows, packaging and publication:
+https://github.com/Yokhan/agent-project-template/actions/runs/39401829471.
+Public release: https://github.com/Yokhan/agent-project-template/releases/tag/v6.0.0.
+Downloaded archive: 1,027,480 bytes, 559 exactly allowlisted files, SHA-256
+b98aec4d332e4fb7bcaebc00f930c1034541f03db997868f27d8240e24f76278.
+SHA256SUMS and release-metadata.json match the download and exact tag commit.
+The archive matches a local Git archive of that commit with canonical Linux
+line-ending settings (core.autocrlf=false, core.eol=lf). The initial Windows
+reference inherited core.autocrlf=true; its different bytes were not treated as
+source corruption or bypassed by accepting a mismatch. No global settings were
+changed. Earlier rows retain their dated pre-release evidence boundaries.
+This post-release documentation record does not move the tag or replace assets.
+Existing consumer projects remain untouched.
 
 Release authorized 2026-10-20: verify the integrated candidate and publish if
 all mandatory gates pass. This current instruction supersedes the earlier
 no-publication constraint for the template release only; no consumer update is
 authorized. Target v6.0.0: Node 24+/SQLite and the enforced native operating
-contract are major upgrade requirements. Latest verified published baseline:
+contract are major upgrade requirements. Verified pre-release baseline:
 v5.0.2 at 81e3c205a1a941e3c24d0b2e50143757bab725b8.
 Luna owns a read-only gate audit and bounded version alignment; parent owns
 source/privacy review, release notes, integration, checks, frozen commit,
@@ -35,8 +53,8 @@ errors and two existing document-age warnings. MCP tests/build passed; the
 production dependency audit reported zero vulnerabilities. The exact source
 transfer allowlist contains 559 paths and 71 reviewed delta paths; candidate
 secret scan passed. This final documentation-only status delta receives focused
-text/status checks. Immutable remote CI and public asset acceptance remain
-pending; source/tag publication is authorized only through those gates.
+text/status checks. At candidate freeze, immutable remote CI and public asset
+acceptance were pending; the publication record above closes those gates.
 
 Local repair acceptance, 2026-10-20: Node 24+/SQLite preflight rejects an old
 runtime before project writes; only a native writing_editor correlated to Luna
