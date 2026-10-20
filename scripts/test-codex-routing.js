@@ -208,6 +208,13 @@ function main() {
   assert.strictEqual(bounded.resourceDecision.dispatch.strategy, "explicit-model-contract");
   assert.strictEqual(bounded.resourceDecision.dispatch.ready, false);
   assert.strictEqual(bounded.resourceDecision.runtimeStatus, "recommendation-only");
+  assert.deepStrictEqual(bounded.delegationDecision, {
+    required: true,
+    state: "prepare-contract",
+    reason: "worker-scope-acceptance-or-host-capability-missing",
+    nextAction: "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
+    candidateRoles: ["implementer"],
+  });
   // A single implementation worker is useful even without a parallel lane.
   const sequential = getRoute("Implement the approved isolated module", {
     availableSlots: 1, workerContract: readyWorker,
@@ -218,6 +225,13 @@ function main() {
   assert.strictEqual(sequential.workerContracts[0].dispatch.ready, true);
   assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6-luna");
   assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.fork_turns, "none");
+  assert.strictEqual(sequential.delegationDecision.state, "ready");
+  assert(sequential.delegationDecision.required);
+  const native = getRoute("Implement the approved isolated module", {
+    workerContract: { ...readyWorker, hostDispatchCapabilities: ["native-custom-role"] },
+  });
+  assert.strictEqual(native.delegationDecision.state, "ready");
+  assert.strictEqual(native.workerContracts[0].dispatch.callContract.agent_type, "implementer");
   for (const task of ["Implement approved homepage component design", "Implement the approved feature"]) {
     const planned = getRoute(task, { workerContract: readyWorker });
     assert(planned.subagents.includes("implementer"), task);
@@ -240,7 +254,31 @@ function main() {
     assert(!readOnly.subagents.includes("implementer"), task);
     assert.strictEqual(readOnly.resourceDecision.dispatch.ready, false, task);
     assert.strictEqual(readOnly.resourceDecision.dispatch.callContract, null, task);
+    assert(!readOnly.delegationDecision.candidateRoles.includes("implementer"), task);
   }
+  const readOnlyResearch = getRoute("Review the implementation across modules", {
+    workerContract: { assignments: { scout: { scope: ["src/"], acceptance: ["return evidence-backed findings"] } },
+      hostDispatchCapabilities: ["explicit-model-contract"] },
+  });
+  assert.strictEqual(readOnlyResearch.delegationDecision.state, "ready");
+  assert(readOnlyResearch.delegationDecision.candidateRoles.includes("scout"));
+  const narrowInspection = getRoute("Inspect src/component.tsx; read-only review");
+  assert.strictEqual(narrowInspection.delegationDecision.state, "skip");
+  assert.strictEqual(narrowInspection.delegationDecision.reason, "narrow-read-only-inspection");
+  const highRiskInspection = getRoute("Review src/auth.ts for security flaws; read-only");
+  assert.notStrictEqual(highRiskInspection.delegationDecision.reason, "narrow-read-only-inspection");
+  const optedOut = getRoute("Implement the approved settings module without subagents", { workerContract: readyWorker });
+  assert.strictEqual(optedOut.delegationDecision.state, "skip");
+  assert.strictEqual(optedOut.delegationDecision.reason, "explicit-user-opt-out");
+  const tinyDecision = getRoute("Fix typo in README");
+  assert.strictEqual(tinyDecision.delegationDecision.state, "skip");
+  const architectureGate = getRoute("Implement a module with unresolved architecture", { workerContract: readyWorker });
+  assert.strictEqual(architectureGate.delegationDecision.state, "parent-owned");
+  assert.strictEqual(architectureGate.delegationDecision.reason, "architecture-decision-required");
+  assert.throws(() => getRoute("Implement the approved module", {
+    workerContract: { role: "implementer", scope: ["../outside"], acceptance: ["tests pass"],
+      hostDispatchCapabilities: ["explicit-model-contract"] },
+  }), /canonical relative paths/);
   for (const task of ["Review the component and implement the approved fix", "Проверь компонент и исправь ошибку",
     "Add the approved search component", "Добавь согласованный компонент поиска",
     "Refactor the approved isolated module", "Отрефакторь согласованный модуль"]) {
@@ -278,6 +316,8 @@ function main() {
   const symbolRoute = getRoute("rename the authentication symbol");
   assert.deepStrictEqual(symbolRoute.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);
   assert(formatSummary(symbolRoute).includes("CODE_INTELLIGENCE: symbol-refactor | codebase-memory -> serena -> ripgrep"));
+  assert(formatSummary(getRoute("Implement the approved component")).includes("EXECUTION_NEXT_ACTION:"));
+  assert(formatSummary(getRoute("Implement the approved component", { workerContract: readyWorker })).includes("DISPATCH: implementer:ready=true"));
   const securityRoute = getRoute("security release audit for leaked secrets");
   assert.deepStrictEqual(securityRoute.codeIntelligence.tools, ["codebase-memory", "semgrep", "gitleaks", "ripgrep"]);
 

@@ -110,7 +110,8 @@ function getSkills(intent) {
 }
 
 function getSubagents(intent) {
-  const subagents = ["reviewer"];
+  const { editorialPolicy } = require("./writing-editorial-review.js");
+  const subagents = [intent.primaryMode !== "literary" && editorialPolicy(intent.task).independentRequired ? "writing_editor" : "reviewer"];
   if (intent.specializations.includes("technical")) subagents.push("docs_researcher", "tester");
   if (intent.vendors.includes("openai")) subagents.push("docs_researcher");
   return unique(subagents);
@@ -194,8 +195,8 @@ function getWritingRoutePolicy(intent, options = {}) {
   const librarySelection = selectLibrarySources(intent.task || "", intent);
   const library = librarySelection.required ? libraryStatus(options.libraryOptions) : { state: "not-required" };
   const sourceGrounding = { ...librarySelection, library, state: !librarySelection.required ? "not-required" : library.state === "ready" ? "primary-passages-required" : "blocked",
-    command: librarySelection.required ? "node scripts/writing-library.js retrieve --task <current-artifact-task> --query <relevant-source-language-keywords>" : null,
-    evidence: "fresh task-bound primary passages + read receipts + concrete principle/application notes before drafting or review" };
+    command: librarySelection.required ? "node scripts/writing-library.js read --task <current-artifact-task> --kind nonfiction" : null,
+    evidence: "fresh mapped complete primary sections + selected-topic coverage + concrete output application; authored nonfiction additionally requires an independent editor of the exact draft" };
   return {
     mode: MODE_NAMES[intent.primaryMode],
     extraModes: unique([isTechnical ? "technical-writing" : "", intent.domains.includes("api") ? "api" : "", intent.vendors.includes("openai") ? "openai" : ""]),

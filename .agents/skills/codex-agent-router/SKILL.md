@@ -56,6 +56,14 @@ continue with a proportionate approach.
   explicit spawn model; verify effective metadata or report it as `unverified`.
   Never infer Luna from a worker-role label.
 
+`delegationDecision.nextAction` is an execution obligation. `prepare-contract`
+means the coordinator prepares scope/acceptance from source inspection and
+reroutes with the actual host dispatch capabilities; it is not a parent-only
+fallback. For useful nontrivial execution, complete bounded Luna work and
+integrate its result, or record a concrete exception through the current native
+request ledger. Native event/profile evidence and useful integration are
+separate checks; neither candidate names nor a started irrelevant agent suffice.
+
 For detailed model guidance and fan-out patterns, read
 [`docs/OPENAI_MODEL_GUIDANCE.md`](../../../docs/OPENAI_MODEL_GUIDANCE.md) and
 [`docs/CODEX_FANOUT_PATTERNS.md`](../../../docs/CODEX_FANOUT_PATTERNS.md).

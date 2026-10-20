@@ -8,6 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_VERSION=$(sed -n 's/.*Template Version: \([0-9.]*\).*/\1/p' "$SCRIPT_DIR/AGENTS.md" 2>/dev/null | head -n 1)
 [ -n "$TEMPLATE_VERSION" ] || TEMPLATE_VERSION="4.0.1"
 
+# Validate the required runtime before prompting or creating any project files.
+if ! command -v node >/dev/null 2>&1; then
+  echo "ERROR: Node.js 24+ with working node:sqlite is required. Install Node.js 24 LTS from https://nodejs.org/ and ensure it is on PATH." >&2
+  exit 1
+fi
+if ! node "$SCRIPT_DIR/scripts/lib/codex-runtime.js"; then
+  exit 1
+fi
+
 copy_entry() {
   local rel_path="$1"
   local source_path="$SCRIPT_DIR/$rel_path"
@@ -248,7 +257,7 @@ generate_manifest() {
       tests/fixtures/design-policy/fail/*.css) echo "template" ;;
       tests/fixtures/writing-tools/*.js) echo "template" ;;
       tests/fixtures/change-strategy/*.json) echo "template" ;;
-      docs/AGENT_PIPELINES.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/CODE_INTELLIGENCE_TOOLCHAIN.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
+      docs/AGENT_PIPELINES.md|docs/NATIVE_WORKFLOW_GATES.md|docs/NATIVE_WORKFLOW_ACCEPTANCE.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/CODE_INTELLIGENCE_TOOLCHAIN.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
       _reference/*.md|_reference/*.json|_reference/*.toml) echo "template" ;;
       .github/*) echo "template" ;;
       .github/workflows/validate-template.yml) echo "template" ;;
@@ -315,6 +324,8 @@ generate_manifest() {
     "tests/fixtures/writing-tools/"*.js
     "tests/fixtures/change-strategy/"*.json
     "docs/AGENT_PIPELINES.md"
+    "docs/NATIVE_WORKFLOW_GATES.md"
+    "docs/NATIVE_WORKFLOW_ACCEPTANCE.md"
     "docs/CODEX_FANOUT_PATTERNS.md"
     "docs/CODEX_SKILLS_AUDIT.md"
     "docs/CODEX_SUBAGENTS_AUDIT.md"

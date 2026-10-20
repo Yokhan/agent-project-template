@@ -2,12 +2,12 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release snapshot: **5.0.2**. This file is not proof of publication: verify the
+Release snapshot: **6.0.0**. This file is not proof of publication: verify the
 exact GitHub Release, tag commit, CI and asset checksums before consumption.
-See `docs/MIGRATION_V5.md` for the major-version migration and limits.
+See [v6.0.0 upgrade requirements and limits](RELEASE_V6_0_0.md).
 `docs/GPT6_MIGRATION_CANDIDATE.md` preserves dated development evidence.
 Historical version summaries below describe their original rules; active
-5.0.2 guidance supersedes their universal plan/skeleton/effort rituals.
+6.0.0 guidance supersedes their universal plan/skeleton/effort rituals.
 
 ## Ownership Model
 
@@ -32,8 +32,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v5.0.2
-git push origin v5.0.2
+git tag v6.0.0
+git push origin v6.0.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -122,15 +122,15 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v5.0.2`. This source snapshot does not assert GitHub
-publication. Verify that the exact `v5.0.2` release exists and is non-draft and
+Release snapshot: `v6.0.0`. This source snapshot does not assert GitHub
+publication. Verify that the exact `v6.0.0` release exists and is non-draft and
 non-prerelease. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v5.0.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -141,13 +141,23 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
 
-## v5 Operating Contract
+## v6 Operating Contract
+
+The minimum runtime is Node 24+ with working `node:sqlite`. Eligible bounded
+work uses native request-bound dispatch and completion evidence; parent scope,
+integration and acceptance ownership remain explicit, and unsupported-host
+fallbacks stay visible. Substantive nonfiction uses task-directed primary
+reading and exact-draft editorial review through the native workflow. Hook trust
+and source availability require destination-machine setup and are not activated
+by publishing the template. See [v6 upgrade requirements and evidence](RELEASE_V6_0_0.md).
+
+## Historical v5 Operating Contract
 
 Agents deploy and verify the project; users supply intent, destination and
 necessary permissions/materials rather than manually reproducing setup steps.
@@ -175,7 +185,11 @@ fresh relevant primary reading is required for substantive nonfiction, while
 actual fiction/lore prose is exempt. Missing/stale sources are explicitly blocked.
 See `SETUP_GUIDE.md` and `docs/MIGRATION_V5.md` for discovery/import/recovery.
 
-## v5.0.2 Release Notes
+## v6.0.0 Release Notes
+
+See [the v6.0.0 release notes, upgrade requirements and evidence boundaries](RELEASE_V6_0_0.md).
+
+## Historical v5.0.2 Release Notes
 
 See [the v5.0.2 release notes and evidence boundaries](RELEASE_V5_0_2.md).
 
@@ -283,7 +297,7 @@ evidence and must not be rolled out. The `v4.9.4` patch supersedes it.
 
 The `v4.9.1` tag failed cross-platform validation before packaging or publication; no GitHub Release was created. It remains immutable failure evidence and must not be rolled out.
 
-Downstream projects should sync `v5.0.2` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require consent; current migration guidance is in `docs/MIGRATION_V5.md`.
+Downstream projects should sync `v6.0.0` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require explicit approval; current upgrade requirements are in `docs/RELEASE_V6_0_0.md`.
 
 ## Release Gate
 
@@ -328,8 +342,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json --apply
 ```
 
 Preview first. If both the project and template changed a template-owned file,

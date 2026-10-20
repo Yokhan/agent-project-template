@@ -3,7 +3,7 @@
 # Model, effort, approval, and sandbox defaults come from Zed UI / ~/.codex/config.toml.
 
 [features]
-codex_hooks = true
+hooks = true
 
 [agents]
 max_concurrent_threads_per_session = 3

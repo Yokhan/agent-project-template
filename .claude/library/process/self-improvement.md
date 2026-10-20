@@ -66,7 +66,7 @@ When `tasks/lessons.md` exceeds 50 entries:
 - Promote to `.claude/rules/project-[topic].md` as permanent rules (ALWAYS create new `project-` prefixed files)
 - Extract reusable solutions into `.claude/skills/project-[name]/SKILL.md`
 - NEVER modify template rules (files without `project-` prefix) — they are the read-only baseline updated via `/update-template`
-- Archive promoted entries (move to `brain/03-knowledge/lessons-archive.md`)
+- Move promoted entries out of the active ledger into `brain/03-knowledge/lessons-archive.md`, preserving the original rule, promotion date, and destination.
 - Use `/weekly` command to trigger this process
 - Project rules overlay and complement template rules. Claude Code loads ALL files from `rules/`.
 
@@ -123,11 +123,11 @@ When the agent defended a wrong approach for 2+ iterations before correcting:
 - Periodically audit rules: can I give a concrete example of this rule preventing a mistake? If no -> sharpen or delete.
 
 ## Retirement Protocol
-- Rules that no longer apply must be ARCHIVED, not left rotting in active rule files.
-- Signs a rule is stale: never triggered in 10+ sessions, references deprecated tech, contradicts newer rules.
-- Archive process: move to `brain/03-knowledge/retired-rules.md` with date and reason for retirement.
-- Never just delete — archived rules provide context for WHY things changed.
-- Review for retirement during `/weekly` retrospectives. Rule count should stay stable, not only grow.
+- Lessons use only `ACTIVE`, `PROMOTED`, or `RETIRED` in the `Status` field. Do not invent lifecycle values such as `SUPERSEDED`.
+- Keep only actionable `ACTIVE` lessons in `tasks/lessons.md`. Move promoted or retired entries to `brain/03-knowledge/lessons-archive.md` while retaining their original text.
+- For a retired entry, record the retirement date, a concrete reason, and the successor rule or lesson. For a promoted entry, record its date and destination.
+- Retire guidance that conflicts with a newer accepted rule, depends on deprecated technology, or no longer applies. Never delete the history or leave obsolete instructions active.
+- Review lesson lifecycle during `/weekly` retrospectives. Run `node scripts/validate-lessons.js` after lifecycle edits.
 
 ## Strategic Reference: Continuous Improvement
 - **Kaizen** (improvement): small, continuous improvements compound exponentially. 1% better each session = 37x better in a year.

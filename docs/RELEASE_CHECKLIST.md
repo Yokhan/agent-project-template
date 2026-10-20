@@ -2,12 +2,39 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v5.0.2`. This checklist records required evidence, not a
+Release target: `v6.0.0`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
+
+## v6.0.0 Current Candidate
+
+- [x] Local integrated repair baseline: 210/210 aggregate; structure zero
+  errors/warnings on 2026-10-20, before release-version metadata changes.
+- [x] Actual ordinary native CLI/Desktop workflow and independent editor
+  evidence, with persisted host trust: see NATIVE_WORKFLOW_ACCEPTANCE.md.
+- [x] Real Windows setup, all 463 manifest byte hashes, isolated update/rollback
+  and preservation of 35 project-owned files: same acceptance report.
+- [x] Major-upgrade requirements and external-library/host-trust limits are
+  described in RELEASE_V6_0_0.md. Existing consumers remain untouched.
+- [x] Version-aligned local candidate on 2026-10-20: 210/210 aggregate;
+  structure zero errors/warnings; legacy hooks 12/12; entrypoint parity green;
+  drift zero errors and two document-age warnings. MCP tests/build passed and
+  production dependency audit reported zero vulnerabilities.
+- [x] Exact 559-path source tree allowlisted from the published baseline plus
+  71 reviewed delta paths; candidate secret scan passed. No books, text caches,
+  native transcripts, local settings or dependency artifacts enter that tree.
+- [ ] Immutable tag commit accepted by release Linux and native Windows jobs,
+  including the full pinned toolchain health checks.
+- [ ] Checksum-bound archive packaged only after both platform jobs pass.
+- [ ] GitHub Release is stable/non-draft; exact tag, workflow and downloaded
+  archive, SHA256SUMS and release-metadata.json agree.
+
+Publication evidence belongs to the exact workflow and public assets. The
+immutable source checklist deliberately leaves those later outcomes pending.
+The v5 checkboxes below are dated historical evidence, not v6 gate passes.
 
 ## Historical v5.0.1 Validation Baseline (not v5.0.2 release evidence)
 
@@ -37,7 +64,7 @@ structural checks. Their required release-bound overlap is not permission to
 repeat either aggregate after every local patch. Hook behavior, drift,
 entrypoint parity and native PowerShell failure propagation have separate checks.
 
-## Validation Gate (v5.0.2; local candidate passed)
+## Historical Validation Gate (v5.0.2; local candidate passed)
 
 Run this gate once on the integrated v5.0.2 candidate. Aggregates include their
 leaf validators; do not repeat those solely to check another box. Record fresh

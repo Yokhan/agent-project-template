@@ -158,11 +158,17 @@ if ! node scripts/test-writing-references.js >/dev/null 2>&1 || ! node scripts/v
 else
   echo "  OK: Writing references and project overlay validate"
 fi
-if ! node scripts/test-writing-library.js >/dev/null 2>&1; then
+  if ! node scripts/test-writing-library.js >/dev/null 2>&1 || ! node scripts/test-writing-reading-plan.js >/dev/null 2>&1 || ! node scripts/test-writing-editorial-review.js >/dev/null 2>&1 || ! node scripts/test-writing-library-index.js >/dev/null 2>&1; then
   echo "  ERROR: Shared writing library grounding validation failed"
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK: Shared writing library import/grounding/binding validate"
+fi
+if ! node scripts/test-codex-runtime.js >/dev/null 2>&1 || ! node scripts/test-codex-hooks.js >/dev/null 2>&1 || ! node scripts/test-codex-request-recovery.js >/dev/null 2>&1 || ! node scripts/test-codex-final-carrier.js >/dev/null 2>&1 || ! node scripts/test-lessons.js >/dev/null 2>&1 || ! node scripts/test-transfer-allowlist.js >/dev/null 2>&1; then
+  echo "  ERROR: Native workflow, lesson lifecycle or privacy acceptance checks failed"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "  OK: Native workflow, lesson lifecycle and privacy acceptance checks validate"
 fi
 if ! node scripts/validate-production-standard.js >/dev/null 2>&1; then
   echo "  ERROR: Production standard validation failed"
@@ -289,6 +295,19 @@ REQUIRED_FILES=(
   "scripts/sync-spec-kit.sh"
   "scripts/init-spec-kit.sh"
   "scripts/codex-agent-policy.js"
+  "scripts/codex-hooks.js"
+  "scripts/codex-turn.js"
+  "scripts/lib/codex-turn-policy.js"
+  "scripts/lib/codex-runtime.js"
+  "scripts/test-codex-runtime.js"
+  "scripts/test-codex-hooks.js"
+  "scripts/lib/codex-request-recovery.js"
+  "scripts/test-codex-request-recovery.js"
+  "scripts/test-codex-final-carrier.js"
+  "scripts/test-codex-workflows-live.js"
+  "scripts/check-transfer-allowlist.js"
+  "scripts/validate-lessons.js"
+  "docs/NATIVE_WORKFLOW_GATES.md"
   "scripts/codex-routing-cases-a.js"
   "scripts/codex-routing-cases-b.js"
   "scripts/codex-route-config.js"
@@ -336,7 +355,7 @@ else
   echo "  OK: source-only release workflow skipped for downstream"
 fi
 echo "  Checked ${#REQUIRED_FILES[@]} required files"
-if ! node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); for (const event of ['SessionStart','PreToolUse','PostToolUse','Stop']) { if (!Array.isArray(h.hooks?.[event]) || !h.hooks[event][0]?.hooks?.[0]?.command) process.exit(1); }" >/dev/null 2>&1; then
+if ! node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); for (const event of ['SessionStart','UserPromptSubmit','PreToolUse','PostToolUse','SubagentStart','SubagentStop','Stop']) { if (!Array.isArray(h.hooks?.[event]) || !h.hooks[event][0]?.hooks?.[0]?.command) process.exit(1); }" >/dev/null 2>&1; then
   echo "  ERROR: .codex/hooks.json must use Codex nested hook command schema"
   ERRORS=$((ERRORS + 1))
 else
@@ -390,8 +409,13 @@ if [ -d ".claude/library" ]; then
     .claude/library/technical/writing.md \
     .claude/library/technical/writing-mode-profiles.md \
     .claude/library/technical/writing-library-catalog.json \
+    .claude/library/technical/writing-reading-map.json \
     .claude/library/technical/writing-source-grounding.md \
     scripts/writing-library.js \
+    scripts/lib/writing-reading-plan.js \
+    scripts/lib/writing-library-index.js \
+    scripts/test-writing-library-index.js \
+    scripts/lib/writing-editorial-review.js \
     .claude/library/technical/russian-writing-profile.md \
     .claude/library/technical/russian-business-correspondence.md \
     .claude/library/technical/russian-explanation-and-persuasion.md \

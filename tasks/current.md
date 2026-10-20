@@ -1,4 +1,198 @@
 <!-- PROGRESSIVE_STATUS
+id: template-runtime-workflow-20261018
+status: active
+updated: 2026-10-20
+readiness: 90
+plan: 100
+inventory: 100
+production: 0
+cleanup: 100
+tags: template,hooks,delegation,writing,evidence
+next: validate and publish v6.0.0 from one frozen commit; do not update consumers
+-->
+
+# Current Task - Enforce Delegation And Fresh Reading Locally
+
+Release authorized 2026-10-20: verify the integrated candidate and publish if
+all mandatory gates pass. This current instruction supersedes the earlier
+no-publication constraint for the template release only; no consumer update is
+authorized. Target v6.0.0: Node 24+/SQLite and the enforced native operating
+contract are major upgrade requirements. Latest verified published baseline:
+v5.0.2 at 81e3c205a1a941e3c24d0b2e50143757bab725b8.
+Luna owns a read-only gate audit and bounded version alignment; parent owns
+source/privacy review, release notes, integration, checks, frozen commit,
+tag/workflow, public asset verification and final acceptance. Preserve the
+current dirty candidate, all machine book data and user settings. The release
+workflow must validate Linux plus native Windows setup/toolchain on the exact
+tag commit before packaging and publication. Verify non-draft/non-prerelease
+release state and downloaded asset digests; a pushed tag alone is insufficient.
+Recovery: preserve prior v5.0.2 and never replace published assets or move a
+published tag. No consumer sync/apply or main-branch force push is in scope.
+
+Version-aligned local acceptance passed: aggregate 210/210; structure zero
+errors/warnings; legacy hooks 12/12; entrypoint parity green. Drift has zero
+errors and two existing document-age warnings. MCP tests/build passed; the
+production dependency audit reported zero vulnerabilities. The exact source
+transfer allowlist contains 559 paths and 71 reviewed delta paths; candidate
+secret scan passed. This final documentation-only status delta receives focused
+text/status checks. Immutable remote CI and public asset acceptance remain
+pending; source/tag publication is authorized only through those gates.
+
+Local repair acceptance, 2026-10-20: Node 24+/SQLite preflight rejects an old
+runtime before project writes; only a native writing_editor correlated to Luna
+High satisfies mandatory review. A real ordinary letter task delivered its
+reviewed file with zero native Stop repairs and no duplicate final review.
+Changed/missing files, missing review, implementer self-review and appended
+claims were rejected by command probes against the genuine completed evidence.
+Native Windows setup passed with all 463 manifest hashes matching file bytes.
+It also exposed and fixed a previously silent Get-FileHash/wildcard defect.
+A real disposable-project update passed after exact rollback of an injected
+failure, preserved 35 project-owned files and left zero writes on repeat preview.
+Release packaging depends on same-commit Windows bootstrap acceptance; remote
+Linux/Windows release CI is still unrun. The final aggregate passed 210/210;
+structural validation reported zero errors/warnings. The first aggregate attempt
+inherited the launcher's alternate Git index in child repositories and is
+excluded; the corrected run passed. Gitleaks found no secrets in the exact 66-file
+candidate set. A later documentation-only delta closes this status and records
+that launcher lesson; focused status/text/lesson checks cover that delta.
+Details and native session IDs: docs/NATIVE_WORKFLOW_ACCEPTANCE.md.
+
+Follow-up authorized 2026-10-19: repair the five release-readiness findings.
+Posture: evolving source candidate; existing consumer projects are untouched.
+Strategy: bounded replacement/direct swap of the mismatched runtime contract
+with Node 24+ and an early SQLite capability check, plus targeted repairs to
+editor acceptance/delivery status and same-commit Windows bootstrap CI.
+Keeping a Node 20 support promise was rejected because mandatory runtime
+correlation now needs SQLite; adding an unverified alternate evidence collector
+would expand this repair's trust boundary. Node 24 matches current local/CI
+evidence. Protected contracts: original books/cache and user defaults preserved;
+request/source/draft and latest-final provenance preserved; explicit opt-out
+preserved; supported runtime dependency deliberately changed and documented.
+Luna editor lane owns policy/review tests; Luna runtime lane owns setup, runtime
+preflight, environment docs and release CI. Parent owns integration, native
+scenarios, aggregate acceptance, metadata/docs and delivery wiring.
+Acceptance: old/missing runtime rejected before creating a project; properly
+reviewed files accept a brief delivery confirmation while changed/missing files
+and additional substantive prose remain gated; only correlated Luna High can
+pass mandatory editor acceptance; Windows setup and generated-project checks
+must precede packaging the same commit. Recovery retains the current dirty
+candidate and scoped diff. No release, push/tag or real consumer updates.
+
+Follow-up authorized 2026-10-19: double the script ceiling from 48K to 96K and
+copy original contents/example passages into a local derived reference index.
+Luna owns retrieval boundaries/tests and the index builder/tests in separate
+files; parent owns CLI, hook guidance, docs and real-library acceptance. Preserve
+all existing dirty work, original/cache bytes, project voice and exact-output
+checks. Copied book text stays outside Git under the machine library. No release
+or consumer update. Accept complete coverage/navigation, exact copied offsets
+and hashes, tamper/stale rejection, a formerly over-48K real task, and real CLI
+contents/example use. Multi-packet reading is a separate proposed extension,
+not an implied capability of the doubled single-packet limit.
+
+Accepted locally: planned reading defaults/ceiling are 96,000 characters;
+explicit smaller budgets still reject incomplete reading. The machine-local
+study index contains six sources, 1,213 navigation units and 504 complete
+example-bearing contexts. Literal authored contents are retained, including
+EPUB NCX and Markdown contents; PDF ranges are pinned-edition reviewed.
+Originals/cache bytes remain unchanged. Fixture regressions, actual contents
+and example queries, independent code review and structural validation passed.
+A fresh native CLI task completed with 84,396 characters/13 complete units and
+one application repair. It used mapped reading; copied-index CLI use was
+verified separately, not inferred from this model run. Details and remaining
+transport/layout limits are in docs/NATIVE_WORKFLOW_ACCEPTANCE.md.
+The final carrier's context-compaction duplicate was also repaired against the
+actual nested native metadata; focused tests and a current-transcript full-hook
+probe passed without weakening exact response/draft checks.
+
+Follow-up authorized 2026-10-18: finish edition-bound section navigation,
+task-directed primary reading and substantive editorial acceptance; diagnose
+and fix ordinary Desktop hook activation. No release or consumer update.
+The observed mismatch is fixed anchors/source-only receipts being treated as
+sufficient writing evidence, plus a Desktop turn with no native ledger despite
+persisted trust. Destination: bounded replacement of automatic reading and
+addition of an actual editor handoff, direct reversible cutover in this local
+candidate. Retaining fixed anchors or adding longer generic notes was rejected:
+neither establishes relevant context or editorial judgment.
+Protected boundaries: machine originals/caches stay read-only; project voice
+and approved facts remain authoritative; exact-output/request provenance,
+explicit opt-out and proportionate tiny work stay; no model/approval/sandbox
+user defaults change. Desktop diagnosis must establish effective current-host
+state before changing configuration or attributing the failure to caching.
+Ownership: Luna reading-map lane owns map/planner/retriever; Luna editor lane
+owns editorial contract and read-only editor role; parent owns runtime/CLI
+integration and real acceptance. Separate read-only host discovery owns no code.
+Acceptance: different real editorial jobs select relevant verified sections;
+missing selected context blocks; a real editor rejects weak or false copy and
+accepts a corrected exact draft; changed drafts invalidate the review; a fresh
+ordinary Desktop turn records native lifecycle events with persisted trust.
+Focused worker checks precede parent-only integrated acceptance. Recovery keeps
+the current dirty candidate and ignored traces; no library/global/process
+cleanup is authorized by this work.
+
+Owner authorization (2026-10-18): implement the audited delegation, primary-book
+reading, native hooks and reusable memory approaches in this template source.
+No release, publication, push, tag or downstream project update is authorized.
+This scope supersedes the historical publication instructions below.
+
+Strategy: bounded replacement of the Codex Bash-only hook entrypoint with native
+Node lifecycle hooks; retain existing shared security checks through a resolved
+Bash executable. Preserve Claude behavior, machine book editions, user host
+configuration, project overlays, AgentOS ownership and release boundaries.
+The trigger is a policy/runtime mismatch: recommendations and static checks do
+not establish actual dispatch, current-request reading or applied output.
+Instructions alone were rejected as the destination because they already
+failed to establish those outcomes. Hooks remain workflow guardrails, not an
+adversarial security boundary or proof of semantic understanding.
+
+Responsibilities: Luna owns routing/CLI/MCP dispatch readiness and writing
+freshness/verifier changes in disjoint files. Parent owns lifecycle ledger,
+hook registration, shared guidance, memory-pattern integration and acceptance.
+
+Acceptance: a normal nontrivial task delegates to observed Luna with bounded
+ownership; small tasks and explicit opt-out stay direct; substantive prose has
+fresh primary passages and source-to-output notes; stale/replayed receipts,
+changed drafts and missing steps are detected. Stop continuations preserve the
+logical request and have a bounded failure path. Verify both focused regressions
+and fresh native CLI scenarios, recording effective runtime metadata and honest
+host limitations. No usage/cost advantage is claimed from agent counts.
+
+Recovery: revert only this task's scoped diff if acceptance fails; runtime state
+is ignored under .session-cache and the shared library is never modified.
+Historic task entries below are retained as history, not current authorization.
+
+Local acceptance completed: ordinary implementation dispatched runtime-confirmed
+Luna High; writing and explicit opt-out scenarios passed; native fault injection
+detected a missing application and repaired it once under the same request.
+A real direct-typo scenario exposed and then verified the proportionality fix.
+Fresh-reading replay, refresh, changed final bytes, narrative/nonfiction boundary
+and late child completion have focused regressions. Read the exact evidence and
+baseline-plus-delta limits in `docs/NATIVE_WORKFLOW_ACCEPTANCE.md`.
+Follow-up accepted locally on 2026-10-19: fixed anchors were replaced with an
+edition-bound topic map and complete task-selected primary sections. Actual
+service-copy and correspondence runs passed with distinct runtime-correlated
+Luna High editors; a real negative critic rejected six concrete defects in a
+misleading offer. Exact-draft/source bindings and changed-draft invalidation
+passed focused checks. Integrated smoke baseline: 206/206 before the recovery
+delta; subsequent scope is checked separately.
+
+All seven Desktop hooks are Trusted/Enabled per the user's settings check.
+Actual Desktop SessionStart/PreToolUse/PostToolUse/Stop events now ran and passed
+for fresh service-created chats, including mapped reading/exact application.
+The initial missing ledger came from create_thread delivering a typed tool
+result rather than UserPromptSubmit. Recovery is current-turn/provenance-bound,
+retains its explicit native-app-create-thread origin and fails closed. A separate
+user-started ordinary Desktop chat in this directory confirms UserPromptSubmit
+and all seven event types. Its final check exposed omission of memory-citation
+metadata from Stop input: the bounded reconciliation now verifies the complete
+unchanged artifact against the actual current-turn native final. The fresh native
+repeat passed with zero repairs and actual carrier evidence. Recovery isolation,
+observed child follow-ups and real cross-process publication were verified;
+independent-review findings were corrected with regressions. No broad acceptance
+is inferred from a helper test.
+See docs/NATIVE_WORKFLOW_ACCEPTANCE.md for evidence and limits.
+No release or downstream apply was performed.
+
+<!-- HISTORICAL_PROGRESSIVE_STATUS
 id: template-v5-0-1-candidate
 status: active
 updated: 2026-10-07

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v5.0.2"
+        description: "Existing tag to publish, for example v6.0.0"
         required: true
         type: string
 
@@ -129,6 +129,62 @@ jobs:
           npm.cmd --prefix mcp-servers/context-router test
           npm.cmd --prefix mcp-servers/context-router run build
 
+      - name: Smoke fresh project from setup.bat
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($PSVersionTable.PSVersion -lt [version]'7.3') { throw 'Native release checks require PowerShell 7.3 or newer' }
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ((git rev-parse HEAD) -ne '${{ needs.validate.outputs.commit }}') { throw 'Windows checkout commit mismatch before setup smoke' }
+          $smokeRoot = Join-Path $env:RUNNER_TEMP ('template-setup-' + [guid]::NewGuid().ToString('N'))
+          $planFile = Join-Path $env:RUNNER_TEMP 'template-setup-sync-preview.json'
+          $setup = Join-Path $env:GITHUB_WORKSPACE 'setup.bat'
+          New-Item -ItemType Directory -Path $smokeRoot | Out-Null
+          Push-Location $smokeRoot
+          try {
+            & cmd.exe /d /c "echo ci-template-smoke| `"$setup`""
+            if ($LASTEXITCODE -ne 0) { throw "setup.bat failed with exit $LASTEXITCODE" }
+            $project = Join-Path $smokeRoot 'ci-template-smoke'
+            if (-not (Test-Path (Join-Path $project '.git'))) { throw 'setup.bat did not initialize the fresh project' }
+            Set-Location $project
+            node (Join-Path $project 'scripts/lib/codex-runtime.js')
+            node (Join-Path $project 'scripts/test-codex-hooks.js')
+            node (Join-Path $project 'scripts/test-codex-request-recovery.js')
+            node (Join-Path $project 'scripts/configure-codex-mcp.js') --check
+            $manifestCheck = @'
+          const assert = require('node:assert/strict');
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const project = process.argv[2];
+          const manifest = JSON.parse(fs.readFileSync(path.join(project, '.template-manifest.json'), 'utf8'));
+          const files = manifest.files;
+          for (const [relative, entry] of Object.entries(files)) {
+            assert.match(entry.hash, /^[a-f0-9]{64}$/u, `${relative}: missing or invalid SHA-256`);
+            const actual = crypto.createHash('sha256').update(fs.readFileSync(path.join(project, relative))).digest('hex');
+            assert.equal(entry.hash, actual, `${relative}: manifest hash does not match file bytes`);
+          }
+          for (const relative of [
+            'docs/NATIVE_WORKFLOW_GATES.md',
+            'docs/NATIVE_WORKFLOW_ACCEPTANCE.md',
+            'scripts/lib/codex-runtime.js',
+            'scripts/sync-template.js',
+            'scripts/configure-codex-mcp.js',
+            'scripts/test-codex-hooks.js',
+            'scripts/test-codex-request-recovery.js',
+            '.codex/config.toml',
+            '.codex/hooks.json',
+            'AGENTS.md',
+          ]) assert.ok(files[relative], `${relative}: missing from generated template manifest`);
+          console.log(`Verified ${Object.keys(files).length} generated manifest hashes`);
+          '@
+            $manifestCheck | node - $project
+            if ($LASTEXITCODE -ne 0) { throw 'Generated template manifest verification failed' }
+            node (Join-Path $env:GITHUB_WORKSPACE 'scripts/sync-template.js') $env:GITHUB_WORKSPACE $project --plan-file $planFile
+            if (-not (Test-Path $planFile)) { throw 'Fresh-project sync preview was not written' }
+          }
+          finally { Pop-Location }
+
       - name: Install and health-check full Windows toolchain
         shell: bash
         timeout-minutes: 25
@@ -172,7 +228,7 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "Bounded Luna High implementation guidance with Sol 6.1 contract and integration ownership; aligned candidate policy and preserved high-risk verification gates. See docs/RELEASE_V5_0_2.md for patch changes and evidence boundaries."
+            echo "Native Codex hooks bind eligible Luna dispatch and task-directed primary reading to request evidence, with parent-owned scope, integration and acceptance plus visible unsupported-host fallbacks. Node 24+ with working node:sqlite is required. See docs/RELEASE_V6_0_0.md for upgrade requirements and evidence boundaries."
             echo ""
             echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""

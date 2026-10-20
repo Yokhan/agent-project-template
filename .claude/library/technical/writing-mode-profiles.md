@@ -48,6 +48,11 @@ sensory detail, dialogue function, voice, and consequences.
 
 ## Marketing And Advertising
 
+For customer-facing offer copy, apply
+[`preserve-product-value.md`](preserve-product-value.md) as a semantic check:
+retain supported customer advantages and the concrete consequence they enable
+when shortening or adapting an offer.
+
 **Input:** audience/ICP evidence, category situation, journey stage, offer, price
 and conditions, proof, objections, channel, distribution, CTA path, KPI.
 

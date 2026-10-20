@@ -1,49 +1,84 @@
 {
+  "description": "Native current-request workflow evidence; retain shared safety checks through a resolved Bash executable.",
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && bash scripts/codex-hook-adapter.sh session-start'",
-            "timeout": 15
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 15,
+            "additionalContextLimit": 10000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 30,
+            "additionalContextLimit": 10000
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Bash|shell|apply_patch|Edit|Write|file_write|file_edit)$",
+        "matcher": "^(Bash|shell|exec_command|apply_patch|Edit|Write|file_write|file_edit|functions\\.(exec_command|apply_patch))$",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && bash scripts/codex-hook-adapter.sh pre-tool-use'",
-            "timeout": 5
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 15
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "^(Bash|shell|apply_patch|Edit|Write|file_write|file_edit)$",
+        "matcher": "^(Bash|shell|exec_command|apply_patch|Edit|Write|file_write|file_edit|functions\\.(exec_command|apply_patch))$",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && bash scripts/codex-hook-adapter.sh post-tool-use'",
-            "timeout": 3
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 15,
+            "additionalContextLimit": 10000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 15
           }
         ]
       }
     ],
     "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && bash scripts/codex-hook-adapter.sh session-stop'",
-            "timeout": 10
+            "command": "node -e \"const f=require('fs'),p=require('path');let r=process.cwd();while(!f.existsSync(p.join(r,'scripts/codex-hooks.js'))){const n=p.dirname(r);if(n===r)throw Error('Template hook runner unavailable');r=n;}require(p.join(r,'scripts/codex-hooks.js')).main().catch(e=>{process.stderr.write(e.message);process.exitCode=2})\"",
+            "timeout": 30
           }
         ]
       }

@@ -48,6 +48,12 @@ reused baseline evidence from checks covering the final delta.
 
 For prompt templates and the routing matrix, read `docs/CODEX_FANOUT_PATTERNS.md`.
 
+When native request hooks are active, record the bounded assignment and actual
+integration with `scripts/codex-turn.js integrate` using the observed child ID.
+The hooks correlate completion and effective profile separately. Record concrete
+exceptions with `fallback`; this never counts as verified Luna execution. Do not
+clear the ledger or start another request to bypass an unresolved gate.
+
 ## Safe Prompt
 
 ```text

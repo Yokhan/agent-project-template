@@ -40,7 +40,7 @@ type WritingRoutePolicy = {
 
 const require = createRequire(import.meta.url);
 const { getRoute } = require("../../../scripts/codex-route-task.js") as {
-  getRoute(task: string): Pick<RouteResult, "workflowDepth" | "resourceDecision"> & { subagents: string[] };
+  getRoute(task: string, options?: { workerContract?: Record<string, unknown> }): Pick<RouteResult, "workflowDepth" | "resourceDecision" | "workerContracts" | "delegationDecision"> & { subagents: string[] };
 };
 const { classifyWritingIntent } = require("../../../scripts/lib/writing-intent.js") as {
   classifyWritingIntent(task: string): WritingIntent;
@@ -267,8 +267,11 @@ const AGENT_PRIORITY: Record<string, number> = {
   implementer: 1,
 };
 
-export function routeKeywords(keywords: string): RouteResult {
-  const codexRoute = getRoute(keywords);
+export function routeKeywords(
+  keywords: string,
+  options: { workerContract?: Record<string, unknown> } = {},
+): RouteResult {
+  const codexRoute = getRoute(keywords, { workerContract: options.workerContract });
   const writingIntent = classifyWritingIntent(keywords);
   const writingPolicy = getWritingRoutePolicy(writingIntent);
   const matchedModes: string[] = [];
@@ -350,6 +353,8 @@ export function routeKeywords(keywords: string): RouteResult {
   return {
     workflowDepth: isDirect ? "direct" : "routed",
     resourceDecision: codexRoute.resourceDecision,
+    workerContracts: codexRoute.workerContracts,
+    delegationDecision: codexRoute.delegationDecision,
     modes: Array.from(new Set(matchedModes)),
     agent: bestAgent,
     files: isDirect ? [] : Array.from(matchedFiles),

@@ -10,6 +10,29 @@ for (const task of ["What is this error and fix it", "Why is the app crashing fo
 }
 assert(routeKeywords("Разреши неоднозначную архитектуру").codexSubagents.includes("architecture_consultant"));
 assert(routeKeywords("Implement approved homepage component design").codexSubagents.includes("implementer"));
+const pendingImplementation = routeKeywords("Implement the approved homepage component");
+assert.equal(pendingImplementation.delegationDecision.state, "prepare-contract");
+assert.equal(pendingImplementation.delegationDecision.required, true);
+assert.match(pendingImplementation.delegationDecision.nextAction, /Do not guess the worker scope/u);
+const readyImplementation = routeKeywords("Implement the approved homepage component", {
+  workerContract: {
+    role: "implementer",
+    scope: ["src/homepage.tsx"],
+    acceptance: ["focused component checks pass"],
+    hostDispatchCapabilities: ["explicit-model-contract"],
+  },
+});
+assert.equal(readyImplementation.delegationDecision.state, "ready");
+assert.equal(readyImplementation.workerContracts[0]?.dispatch.ready, true);
+assert.equal(readyImplementation.workerContracts[0]?.dispatch.callContract?.model, "gpt-6-luna");
+const readOnlyContractRoute = routeKeywords("Review the implementation across modules", {
+  workerContract: {
+    assignments: { scout: { scope: ["src/"], acceptance: ["return findings"] } },
+    hostDispatchCapabilities: ["explicit-model-contract"],
+  },
+});
+assert.equal(readOnlyContractRoute.delegationDecision.state, "ready");
+assert(readOnlyContractRoute.delegationDecision.candidateRoles.includes("scout"));
 assert(!routeKeywords("Read-only review of homepage design; do not modify files").codexSubagents.includes("implementer"));
 assert.deepEqual(routeKeywords("Implement approved homepage component design without subagents").codexSubagents, []);
 const groundedExplanation = routeKeywords("Объясни, как работает кэш");
@@ -39,6 +62,8 @@ assert(
   serverSource.includes('process.env.CONTEXT_ROUTER_ENABLE_PIPELINES === "true"'),
   "run_pipeline must require an explicit state-changing opt-in",
 );
+assert(serverSource.includes("worker_contract: z"), "MCP route tools must accept a worker contract");
+assert(serverSource.includes("EXECUTION_NEXT_ACTION:"), "MCP route output must expose the required next action");
 
 function assertRoute(
   task: string,

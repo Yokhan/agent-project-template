@@ -48,6 +48,28 @@ try {
     assert.match(output, /CODEX_SUBAGENTS:.*architecture_consultant/u);
   }
 
+  const boundedRoute = await client.callTool({
+    name: "get_context",
+    arguments: {
+      keywords: "Implement the approved settings module",
+      depth: "brief",
+      worker_contract: {
+        role: "implementer",
+        scope: ["src/settings.ts"],
+        acceptance: ["focused settings checks pass"],
+        hostDispatchCapabilities: ["explicit-model-contract"],
+      },
+    },
+  });
+  assert.notEqual(boundedRoute.isError, true, JSON.stringify(boundedRoute));
+  const boundedOutput = (boundedRoute.content as Array<{ text?: string }>)
+    .map((item) => "text" in item ? item.text : "")
+    .join("\n");
+  assert.match(boundedOutput, /DELEGATION_DECISION:.*"state":"ready"/u);
+  assert.match(boundedOutput, /EXECUTION_NEXT_ACTION: Dispatch a candidate/u);
+  assert.match(boundedOutput, /"model":"gpt-6-luna"/u);
+  assert.match(boundedOutput, /"fork_turns":"none"/u);
+
   const inside = await client.callTool({ name: "research", arguments: { target: "inside.txt" } });
   assert.notEqual(inside.isError, true, JSON.stringify(inside));
   assert.match(JSON.stringify(inside.content), /inside\.txt/u);

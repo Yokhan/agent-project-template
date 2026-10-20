@@ -9,7 +9,7 @@ const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
-const { getFanoutDecision, getResourceRecommendation, isLikelySmallTask, isImplementationRequest, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
+const { getFanoutDecision, getResourceRecommendation, getDelegationDecision, isLikelySmallTask, isImplementationRequest, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
 const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
@@ -369,6 +369,22 @@ function getRoute(task, options = {}) {
     ...contract, role: contract.role || (candidateSubagents.includes("architecture_consultant")
       ? "architecture_consultant" : implementationCandidate ? "implementer" : "orchestrator"), orchestrator: orchestrator.owner,
   }));
+  const workerContracts = fanout.candidates.map(({ name }) => {
+    const assignment = contract.assignments?.[name] || (contract.role === name ? contract : {});
+    return gateDispatch(getResourceRecommendation({
+      hostDispatchCapabilities: contract.hostDispatchCapabilities,
+      hostCapabilities: contract.hostCapabilities,
+      ...assignment,
+      role: name, scope: assignment.scope,
+      acceptance: assignment.acceptance,
+      evidenceRefs: unique([...(contract.evidenceRefs || []), ...(assignment.evidenceRefs || [])]), orchestrator: orchestrator.owner,
+    }));
+  });
+  const delegationDecision = getDelegationDecision({
+    task, workflowDepth: isDirect ? "direct" : "routed", implementationRequested,
+    implementationCandidate, unresolvedArchitecture, blockEdits, risk, fanout,
+    workerContracts, workerContract: contract,
+  });
   return {
     task,
     routedAt: new Date().toISOString(),
@@ -378,17 +394,8 @@ function getRoute(task, options = {}) {
     risk,
     workflowDepth: isDirect ? "direct" : "routed",
     resourceDecision,
-    workerContracts: fanout.candidates.map(({ name }) => {
-      const assignment = contract.assignments?.[name] || (contract.role === name ? contract : {});
-      return gateDispatch(getResourceRecommendation({
-        hostDispatchCapabilities: contract.hostDispatchCapabilities,
-        hostCapabilities: contract.hostCapabilities,
-        ...assignment,
-        role: name, scope: assignment.scope,
-        acceptance: assignment.acceptance,
-        evidenceRefs: unique([...(contract.evidenceRefs || []), ...(assignment.evidenceRefs || [])]), orchestrator: orchestrator.owner,
-      }));
-    }),
+    workerContracts,
+    delegationDecision,
     skills: isDirect ? [] : unique([
       ...selected.flatMap((route) => route.skills || []),
       ["required", "recommended", "conditional"].includes(fanout.status) ? "codex-subagent-orchestration" : "",

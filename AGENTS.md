@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 5.0.2 -->
+<!-- Template Version: 6.0.0 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -13,6 +13,9 @@ Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
   source plus direct consumers. Do not overwrite unrelated changes.
 - Protect secrets and sensitive data. Never expose or commit credentials,
   tokens, private keys, or `.env` contents.
+  Recovery commits, exports and uploads also require an exact reviewed file set
+  under `.claude/library/process/privacy-transfer.md`; a secret scan alone does
+  not classify private client or clinical material.
 - Respect ownership: user instructions and project-owned `project-*` artifacts
   take precedence over template defaults. When AgentOS is present, its
   Strategy/Tactic/Plan/Todo/Gate graph remains the plan source; Codex acts as a
@@ -106,6 +109,15 @@ contract and decisions, then owns integration and acceptance. Keep tiny edits
 direct. When retaining suitable nontrivial work in the parent, briefly state
 the concrete reason; do not add this explanation ritual to tiny edits.
 
+This is an execution instruction, not only a model recommendation. When the
+route says `prepare-contract`, derive bounded scope and acceptance from the
+actual source, reroute with the observed host capabilities, and dispatch Luna;
+do not treat an initially unready contract as permission to keep all work.
+Native hooks bind dispatch, reading and output application to the current
+logical request. Follow their evidence path and `scripts/codex-turn.js help`;
+record actual child integration or a concrete visible fallback. See
+`docs/NATIVE_WORKFLOW_GATES.md` for host activation and evidence limits.
+
 For parallel work, delegate only independent lanes with material parallel
 value, exact acceptance criteria, and non-overlapping write scopes. Start with
 at most three children per task, also constrained by available host slots;
@@ -156,4 +168,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 5.0.2.
+the shared rules. Template version: 6.0.0.

@@ -1,6 +1,6 @@
 # Как развернуть проект
 
-> Версия: 5.0.2 | 2026-10-07
+> Версия: 6.0.0 | 2026-10-20
 >
 > При выпуске новой версии: перечитать этот файл, обновить устаревшие шаги,
 > проверить все команды. Добавить в чеклист релиза.
@@ -11,8 +11,13 @@
 
 - **Codex Desktop или Codex CLI** — установлен и авторизован
 - **Git** — установлен
-- **Node.js 20+** — для metadata/MCP/helper-скриптов
+- **Node.js 24+ с работающим `node:sqlite`** — для setup, native hooks,
+  request recovery, MCP и runtime evidence
 - **Bash** — для полного bootstrap и проверок; на Windows — Git Bash
+
+Обе команды setup проверяют Node.js и SQLite до запроса имени проекта и до
+создания файлов. Хуки выполняют ту же проверку; неподдерживаемая среда
+останавливает вызовы PreToolUse и блокирует Stop с понятной причиной.
 
 ---
 
@@ -21,7 +26,7 @@
 Дайте Codex ссылку на репозиторий, путь проекта и задачу:
 
 > Разверни или обнови этот проект из https://github.com/Yokhan/agent-project-template
-> до v5.0.2. Проверь exact release, сохрани проектные изменения и мои настройки.
+> до v6.0.0. Проверь exact release, сохрани проектные изменения и мои настройки.
 > Сам создай недостающую инфраструктуру в рамках проекта, проверь MCP и обнаружь
 > внешнюю общую библиотеку. Отдельно сообщи, готов ли проект и доступны ли первоисточники.
 
@@ -37,12 +42,12 @@ checkout можно переиспользовать: новый clone для к
 
 ## Развёртывание нового проекта
 
-Целевой release snapshot: `v5.0.2`. Сам файл в source checkout не доказывает,
+Целевой release snapshot: `v6.0.0`. Сам файл в source checkout не доказывает,
 что релиз опубликован: перед rollout проверьте exact tag в GitHub Releases и
 убедитесь, что он не draft и не prerelease.
 
 ```bash
-git clone --branch v5.0.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -55,7 +60,7 @@ codex
 
 Windows:
 ```powershell
-git clone --branch v5.0.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 .\setup.bat
 cd <generated-project>
@@ -122,7 +127,7 @@ store; повреждённый store не заменяйте молча. При
 The template ships a managed GitHub Spec Kit snapshot `v0.8.13` under `_reference/spec-kit/`.
 It is not applied automatically during setup.
 The 2026-10-06 freshness check found upstream `v1.1.1`: the check is stale,
-not passed. Updating that optional snapshot is separate from the v5 release.
+not passed. Updating that optional snapshot is separate from the v6 release.
 
 Validate the local snapshot:
 
@@ -311,9 +316,9 @@ bash scripts/check-drift.sh
 а не предполагает, что старый локальный updater уже умеет новый контракт.
 
 ```bash
-RELEASE_CHECKOUT=/absolute/verified-v5.0.2-checkout
+RELEASE_CHECKOUT=/absolute/verified-v6.0.0-checkout
 PROJECT=/absolute/project
-PLAN=/absolute/outside-project/agent-template-v5.0.2.plan.json
+PLAN=/absolute/outside-project/agent-template-v6.0.0.plan.json
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
@@ -325,8 +330,8 @@ node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT"
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json --apply
 ```
 
 AgentOS может решать, какой проект и какой tag обновляет, но сам payload шаблона берётся из этого репозитория. Если AgentOS найден, Codex считает его orchestrator и не создаёт конкурирующий task graph.

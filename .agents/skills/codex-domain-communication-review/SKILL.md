@@ -12,6 +12,9 @@ Read `.claude/library/technical/writing.md` and
 `.claude/library/technical/writing-mode-profiles.md`. Also load the selected
 profiles from `.claude/library/technical/writing-reference-registry.json` and the
 role composition in `.claude/library/technical/writing-editorial-board.md`.
+For customer-facing copy that presents or adapts an offer, apply
+`.claude/library/technical/preserve-product-value.md` as a semantic acceptance
+check.
 
 ## Process
 

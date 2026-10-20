@@ -9,6 +9,15 @@ echo    Project payload + MCP bootstrap + sync-ready scaffolding
 echo  ========================================================
 echo.
 
+:: Validate runtime before prompting or creating any project files.
+where node >nul 2>nul
+if errorlevel 1 (
+    echo ERROR: Node.js 24+ with working node:sqlite is required. Install Node.js 24 LTS from https://nodejs.org/ and ensure it is on PATH.
+    exit /b 1
+)
+node "%~dp0scripts\lib\codex-runtime.js"
+if errorlevel 1 exit /b 1
+
 :: Ask for project name
 set /p "PROJECT_NAME=Enter project name: "
 if "%PROJECT_NAME%"=="" (
@@ -52,6 +61,7 @@ set "RAW_PROJECT_DIR=%PROJECT_DIR%"
 :: Copy the project-facing payload from tracked files only so local artifacts never leak.
 echo [1/6] Copying template payload...
 powershell -NoProfile -Command ^
+  "$ErrorActionPreference = 'Stop';" ^
   "$templateRoot = (Resolve-Path $env:RAW_TEMPLATE_DIR).Path;" ^
   "$projectRoot = (Resolve-Path $env:RAW_PROJECT_DIR).Path;" ^
   "$payloadPrefixes = @('.agents/','.claude/','.codex/','.github/','.vscode/','_reference/','brain/','docs/','integrations/','mcp-servers/','scripts/','tasks/','tests/');" ^
@@ -59,7 +69,8 @@ powershell -NoProfile -Command ^
   "$excludePatterns = @('.claude/settings.local.json','.github/workflows/release-template.yml','brain/.obsidian/*','brain/01-daily/*','brain/03-knowledge/research/*','brain/03-knowledge/audits/*','tasks/.current.md.bak','tasks/audit/*','tasks/debug-recovery-log.md','tasks/template-production-ready-plan.md','tasks/toolchain-discovery.json','tasks/toolchain-change-strategy.json','tasks/change-strategy.json','mcp-servers/context-router/node_modules/*','mcp-servers/context-router/dist/*');" ^
   "$starterOverrides = @('tasks/current.md','tasks/goal.md','tasks/.research-cache.md','tasks/lessons.md');" ^
   "$candidateMap = @{};" ^
-  "foreach ($rel in (& git -C $templateRoot ls-files)) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^
+  "$trackedFiles = @(& git -C $templateRoot ls-files); if ($LASTEXITCODE -ne 0) { throw 'Could not enumerate tracked template files' };" ^
+  "foreach ($rel in $trackedFiles) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^
   "foreach ($rel in ($payloadFiles + $candidateMap.Keys)) {" ^
   "  $normalized = $rel.Replace('\','/');" ^
   "  $isPrefixed = $false;" ^
@@ -84,6 +95,7 @@ powershell -NoProfile -Command ^
   "    Copy-Item $_.FullName $target -Force;" ^
   "  }" ^
   "}"
+if errorlevel 1 exit /b 1
 
 if exist "%TEMPLATE_DIR%scripts\task-brief.sh" (
     if not exist "%PROJECT_DIR%\\scripts" mkdir "%PROJECT_DIR%\\scripts"
@@ -103,7 +115,9 @@ if not exist "%PROJECT_DIR%\.claude\settings.local.json" (
 echo [2/6] Generating template manifest...
 cd "%PROJECT_DIR%"
 powershell -NoProfile -Command ^
+  "$ErrorActionPreference = 'Stop';" ^
   "$today = (Get-Date -Format 'yyyy-MM-dd');" ^
+  "$getSha256 = { param([string]$path) $algorithm = [System.Security.Cryptography.SHA256]::Create(); $stream = [System.IO.File]::OpenRead($path); try { [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() } finally { $stream.Dispose(); $algorithm.Dispose() } };" ^
   "$templateVersion = '4.0.1';" ^
   "try {" ^
   "  $versionMatch = Select-String -Path (Join-Path '%TEMPLATE_DIR%' 'AGENTS.md') -Pattern 'Template Version:\s*([0-9.]+)' -ErrorAction Stop | Select-Object -First 1;" ^
@@ -167,6 +181,8 @@ powershell -NoProfile -Command ^
   "  'tests/fixtures/writing-tools/*.js'," ^
   "  'tests/fixtures/change-strategy/*.json'," ^
   "  'docs/AGENT_PIPELINES.md'," ^
+  "  'docs/NATIVE_WORKFLOW_GATES.md'," ^
+  "  'docs/NATIVE_WORKFLOW_ACCEPTANCE.md'," ^
   "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
   "  'docs/CODEX_SKILLS_AUDIT.md'," ^
   "  'docs/CODEX_SUBAGENTS_AUDIT.md'," ^
@@ -194,6 +210,8 @@ powershell -NoProfile -Command ^
   "$getCategory = {" ^
   "  param([string]$path)" ^
   "  switch -Wildcard ($path.Replace('\','/')) {" ^
+  "    'docs/NATIVE_WORKFLOW_GATES.md' { 'template'; break }" ^
+  "    'docs/NATIVE_WORKFLOW_ACCEPTANCE.md' { 'template'; break }" ^
   "    'CLAUDE.md' { 'project'; break }" ^
   "    'DESIGN.md' { 'project'; break }" ^
   "    'design-policy.ignore' { 'project'; break }" ^
@@ -211,23 +229,26 @@ powershell -NoProfile -Command ^
   "$files = @{};" ^
   "foreach ($f in $templateFiles) {" ^
   "  if (Test-Path $f) {" ^
-  "    $h = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower();" ^
-  "    $files[$f] = @{ category = (& $getCategory $f); hash = $h };" ^
+  "    foreach ($item in (Get-ChildItem -Path $f -File)) {" ^
+  "      $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
+  "      $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
+  "      $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
+  "    }" ^
   "  }" ^
   "};" ^
   "foreach ($p in $templatePatterns) {" ^
-  "  foreach ($item in (Get-ChildItem -Path $p -File -ErrorAction SilentlyContinue)) {" ^
+  "  if (Test-Path $p) { foreach ($item in (Get-ChildItem -Path $p -File)) {" ^
   "    $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
-  "    $h = (Get-FileHash $item.FullName -Algorithm SHA256).Hash.ToLower();" ^
+  "    $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
   "    $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
-  "  }" ^
+  "  } }" ^
   "};" ^
   "foreach ($p in $projectPatterns) {" ^
   "  $dir = $p.Replace('/*','');" ^
   "  if (Test-Path $dir) {" ^
-  "    foreach ($item in (Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue)) {" ^
+  "    foreach ($item in (Get-ChildItem -Path $dir -Recurse -File)) {" ^
   "      $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
-  "      $h = (Get-FileHash $item.FullName -Algorithm SHA256).Hash.ToLower();" ^
+  "      $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
   "      $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
   "    }" ^
   "  }" ^
@@ -249,6 +270,7 @@ powershell -NoProfile -Command ^
   "$json += [Environment]::NewLine + '  }' + [Environment]::NewLine + '}';" ^
   "[System.IO.File]::WriteAllText('.template-manifest.json', $json, [System.Text.UTF8Encoding]::new($false));" ^
   "Write-Host 'Generated .template-manifest.json'"
+if errorlevel 1 exit /b 1
 
 :: Initialize git
 echo [3/6] Initializing git repository...

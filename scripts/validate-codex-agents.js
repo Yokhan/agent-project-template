@@ -206,6 +206,12 @@ function validateAgent(filePath) {
       `${filePath}: approval_policy belongs to user/session config, not template agents`,
     );
   }
+  const nicknameLine = content.match(/^nickname_candidates\s*=\s*\[(.*)\]/m);
+  if (nicknameLine) {
+    for (const [, nickname] of nicknameLine[1].matchAll(/"([^"]*)"/g)) {
+      if (!/^[A-Za-z0-9 _-]+$/.test(nickname)) addError(`${filePath}: nickname_candidates must use ASCII letters, digits, spaces, hyphens or underscores`);
+    }
+  }
 
   if (lineCount > MAX_AGENT_LINES) {
     addWarning(`${filePath}: exceeds ${MAX_AGENT_LINES} lines`);

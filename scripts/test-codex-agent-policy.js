@@ -22,6 +22,7 @@ const EXPECTED_PROFILES = {
   pr_explorer: ["gpt-6-luna", "high", "read-only"],
   docs_researcher: ["gpt-6-luna", "high", "read-only"],
   tester: ["gpt-6-luna", "high", "read-only"],
+  writing_editor: ["gpt-6-luna", "high", "read-only"],
   implementer: ["gpt-6-luna", "high", "workspace-write"],
   reviewer: ["gpt-6.1-sol", "high", "read-only"],
   design_reviewer: ["gpt-6.1-sol", "high", "read-only"],
@@ -296,6 +297,9 @@ function testResourceSelection() {
   assert.strictEqual(integration.dispatch.customRole, null);
   assert.strictEqual(integration.dispatch.owner, "orchestrator");
   assert.strictEqual(getResourceRecommendation({ role: "implementer" }).dispatch.ready, false);
+  const unreadyContract = getResourceRecommendation(bounded);
+  assert.strictEqual(unreadyContract.dispatch.ready, false);
+  assert.strictEqual(unreadyContract.dispatch.callContract, null);
   const consultant = getResourceRecommendation({ ...bounded, role: "architecture_consultant", strategy: true, deepRisk: true });
   assert.strictEqual(consultant.recommendedModel, "gpt-6-astra");
   assert.strictEqual(consultant.recommendedEffort, "high");

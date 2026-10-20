@@ -1,8 +1,8 @@
-# Agent Project Template v5
+# Agent Project Template v6
 
-[![Template Version](https://img.shields.io/badge/template-v5.0.2-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v6.0.0-blue)](.)
 
-Release target: **5.0.2**. Verify the exact GitHub Release before deployment; this checkout is not publication evidence. See [patch notes and evidence](docs/RELEASE_V5_0_2.md), [v5 migration](docs/MIGRATION_V5.md) and [runtime evidence](docs/GPT6_MIGRATION_CANDIDATE.md) for compatibility boundaries.
+Release target: **6.0.0**. Verify the exact GitHub Release before deployment; this checkout is not publication evidence. See [v6 release notes, upgrade requirements and evidence boundaries](docs/RELEASE_V6_0_0.md) and [historical v5 migration guidance](docs/MIGRATION_V5.md).
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ AI-agent-first project infrastructure: give your agent the repository URL, the t
 
 The human supplies the outcome and destination, not a manual installation log.
 For example: "Create an agent-ready project in `<absolute target>` from verified
-`v5.0.2`; preserve existing work and connect the shared external writing library
+`v6.0.0`; preserve existing work and connect the shared external writing library
 if available." An update request must also authorize the major-version move.
 The agent performs the steps below within that scope and asks only for missing
 material choices, permissions, ownership conflicts or unavailable sources.
@@ -32,12 +32,16 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 8. Run `node scripts/writing-library.js discover`. A valid shared machine store is reused; a new machine may have no books. With user-supplied exact originals/cache and import authority, import once outside Git. Never create book symlinks/hardlinks inside a project or pretend memory is primary reading.
 9. Verify manifest version, diff, overlays, conflicts, runtime and source status before success. Report project readiness separately from `source-grounding-blocked`.
 
-Release snapshot: `v5.0.2`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v6.0.0`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+
+The v6 release adds native request-bound Luna dispatch, task-directed primary
+reading and lifecycle evidence. Review the exact host requirements and upgrade
+steps in [the v6 release notes](docs/RELEASE_V6_0_0.md).
 
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v5.0.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -46,9 +50,9 @@ Update an existing generated project using the verified exact-tag checkout
 (reuse it, or clone the tag above outside the project). Set these absolute paths:
 
 ```bash
-RELEASE_CHECKOUT=/absolute/verified-v5.0.2-checkout
+RELEASE_CHECKOUT=/absolute/verified-v6.0.0-checkout
 PROJECT=/absolute/project
-PLAN=/absolute/outside-project/agent-template-v5.0.2.plan.json
+PLAN=/absolute/outside-project/agent-template-v6.0.0.plan.json
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
@@ -57,13 +61,13 @@ node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT"
 
 ## Quick Start
 
-The agent runs these commands after verifying release snapshot `v5.0.2` and
+The agent runs these commands after verifying release snapshot `v6.0.0` and
 confirming the destination is appropriate for a new project. On an existing
 machine, reuse the verified canonical checkout; do not clone a template or books
 per task. These are execution references, not steps the human must perform.
 
 ```bash
-git clone --branch v5.0.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.0.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -161,10 +165,10 @@ release tags for normal project rollout:
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json
 
 # Apply the pinned release
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json --apply
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -188,8 +192,8 @@ node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-pro
 
 # Optional: after verifying the installed updater, add remote for future updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json
-node scripts/sync-template.js --from-git --ref v5.0.2 --plan-file ../agent-template-v5.0.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.0.0 --plan-file ../agent-template-v6.0.0.plan.json --apply
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -280,14 +284,14 @@ When you run the target release's `scripts/sync-template.js`:
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Rules** | 33 | Shared library rules, four-mode writing profiles, fresh primary-source grounding, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
+| **Rules** | 35 | Shared library rules, four-mode writing profiles, fresh primary-source grounding, product-value preservation, privacy transfer, technical-writing overlay, editorial board, change strategy, plus router entrypoint |
 | **Hooks** | 12 | session-start/stop, pre-compact, format, post-edit, pre-edit-safety, verify-gate, security, audit, and encoding checks |
 | **Claude Skills** | 33 | Core, development, quality, domain review, integrations, four-mode writing, and technical-writing generation/review |
 | **Codex Skills** | 46 | Pipeline, route-first orchestration, evidence-backed change strategy, truthful progressive JPEG, four-mode and technical writing, subagent orchestration, design/Figma, audit/debug/security, setup, domain review, template ops, integrations, migrations, and OpenAI model guidance |
-| **Codex Subagents** | 13 | Luna 6 High bounded workers, Sol 6.1 High review/integration, and Astra 6 architecture consultation; effective runtime evidence and exact scopes preserve orchestration ownership |
+| **Codex Subagents** | 14 | Luna 6 High bounded workers and independent writing editor, Sol 6.1 High review/integration, and Astra 6 architecture consultation; effective runtime evidence and exact scopes preserve orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 73 | validation, skill-link and focused-verification fixtures, adaptive writing/reference routing, shared writing library import/retrieval/application checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 87 | validation, skill-link and focused-verification fixtures, adaptive writing/reference routing, edition-bound writing section plans and independent editorial checks, shared writing library import/retrieval/application checks, native request hooks and live workflow scenarios, privacy and lesson lifecycle checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -388,6 +392,7 @@ Sync detects files changed both locally and in the template. Preview reports tho
 
 | Version | Key Changes |
 |---------|------------|
+| **6.0.0** | Major upgrade: native request-bound Luna dispatch and task-directed primary reading, Node 24+ with working `node:sqlite`, exact hook trust/runtime evidence, and preserved parent-owned integration and acceptance. See [upgrade requirements and evidence](docs/RELEASE_V6_0_0.md). |
 | **5.0.2** | Compatible patch: bounded nontrivial implementation defaults to Luna High, with Sol 6.1 retaining contracts, decisions and integration; Codex/MCP candidate-policy, write-intent, opt-out, slot and architecture blockers stay aligned, and high-risk verification remains required. No runtime adoption, cost-saving or publication claim. See [patch notes](docs/RELEASE_V5_0_2.md). |
 | **5.0.1** | Compatible correction: product waves remain versions of one product; scoped verification replaces per-patch full-suite cascades; skills follow shared planning/ownership rules; public copy excludes self-justification and production-work residue without inventing functionality; routing distinguishes product versions, migrations and bug reports; local skill-link checks protect reference delivery. See patch evidence before publication or rollout. |
 | **5.0.0** | Major operating-contract update: Sol 6.1 High coordination, bounded Luna High workers, Astra consultancy, evidence-backed runtime dispatch, agreed result/waves with autonomous nearest-wave execution, proportional routing, one external shared writing library and fresh request/draft-bound primary-source application. Books, automatic prompt-cache savings and native-role enforcement are not bundled guarantees. |

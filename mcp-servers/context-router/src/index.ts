@@ -37,9 +37,13 @@ server.tool(
       .describe(
         "brief=route only (~50 tokens), normal=+rules text, full=+lessons+git+registry+ecosystem",
       ),
+    worker_contract: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe("Validated worker scope, acceptance, evidence refs, assignments, and host dispatch capabilities"),
   },
-  async ({ keywords, depth }) => {
-    const route = routeKeywords(keywords);
+  async ({ keywords, depth, worker_contract }) => {
+    const route = routeKeywords(keywords, { workerContract: worker_contract });
     updateState(route.modes, route.files, keywords);
 
     const sections: string[] = [];
@@ -54,6 +58,9 @@ server.tool(
     sections.push(`RISK: ${route.risk}`);
     sections.push(`WORKFLOW_DEPTH: ${route.workflowDepth}`);
     sections.push(`RESOURCE_DECISION: ${JSON.stringify(route.resourceDecision)}`);
+    sections.push(`DELEGATION_DECISION: ${JSON.stringify(route.delegationDecision)}`);
+    sections.push(`EXECUTION_NEXT_ACTION: ${route.delegationDecision.nextAction}`);
+    sections.push(`WORKER_DISPATCH: ${JSON.stringify(route.workerContracts.map(({ role, dispatch }) => ({ role, ...dispatch })))}`);
     sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");
@@ -140,12 +147,14 @@ server.tool(
   {
     keywords: z.string().max(500).describe("New task keywords"),
     depth: z.enum(["brief", "normal", "full"]).optional().default("brief"),
+    worker_contract: z.record(z.string(), z.unknown()).optional()
+      .describe("Validated worker scope, acceptance, evidence refs, assignments, and host dispatch capabilities"),
   },
-  async ({ keywords, depth }) => {
+  async ({ keywords, depth, worker_contract }) => {
     const previousState = getState();
     const previousMode = previousState.currentModes.join("+") || "none";
 
-    const route = routeKeywords(keywords);
+    const route = routeKeywords(keywords, { workerContract: worker_contract });
     const previousRules = new Set(previousState.activeRules);
     const added = route.files.filter((f) => !previousRules.has(f));
     const dropped = previousState.activeRules.filter(
@@ -168,6 +177,9 @@ server.tool(
     sections.push(`RISK: ${route.risk}`);
     sections.push(`WORKFLOW_DEPTH: ${route.workflowDepth}`);
     sections.push(`RESOURCE_DECISION: ${JSON.stringify(route.resourceDecision)}`);
+    sections.push(`DELEGATION_DECISION: ${JSON.stringify(route.delegationDecision)}`);
+    sections.push(`EXECUTION_NEXT_ACTION: ${route.delegationDecision.nextAction}`);
+    sections.push(`WORKER_DISPATCH: ${JSON.stringify(route.workerContracts.map(({ role, dispatch }) => ({ role, ...dispatch })))}`);
     sections.push(`CODE_INTELLIGENCE: ${route.codeIntelligence.id} | ${route.codeIntelligence.tools.join(" -> ")}`);
     appendWritingContract(sections, route);
     if (route.needsFreshDocs) sections.push("FRESH_DOCS: required");

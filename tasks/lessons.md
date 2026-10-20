@@ -20,6 +20,12 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Status**: ACTIVE | PROMOTED | RETIRED
 ```
 
+Lifecycle: use only `ACTIVE`, `PROMOTED`, or `RETIRED`. Keep active lessons here;
+move retired entries to `brain/03-knowledge/lessons-archive.md` while preserving
+their original rule and recording a retirement date, reason, and successor.
+Promoted entries name the destination rule. Do not use ad hoc statuses such as
+`SUPERSEDED`.
+
 ### Tracks
 - **BUG**: Code broke, tests failed, regression. Something was WRONG.
 - **KNOWLEDGE**: Didn't know something. API quirk, wrong syntax, tool behavior.
@@ -43,6 +49,36 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 
 ## Entries
 
+### 2026-10-20 - Isolate alternate Git indexes from child repositories
+**Track**: PROCESS
+**Severity**: P2
+**Error**: An acceptance launcher exported the source candidate's temporary GIT_INDEX_FILE to the entire suite; two disposable-repository checks failed with missing Git objects or spurious checkout changes.
+**Root cause**: The alternate index was intended only for source enumeration, but child Git commands reused it against different object databases.
+**Rule**: Scope an alternate index to the exact source Git invocation. Remove inherited Git index/worktree overrides before spawning independent fixture repositories; preserve failed-run evidence and rerun with the corrected environment before claiming acceptance.
+**Applies to**: Test launchers, setup acceptance, temporary Git fixtures
+**Category**: testing
+**Status**: ACTIVE
+
+### 2026-10-20 - Windows setup must prove manifest byte hashes
+**Track**: BUG
+**Severity**: P1
+**Error**: Native setup returned success while its template manifest contained empty hashes; the next template update could not distinguish a baseline file from a local change.
+**Root cause**: A missing Get-FileHash cmdlet produced nonterminating PowerShell errors, while setup neither stopped the script nor verified the resulting manifest.
+**Rule**: Compute bootstrap digests with a supported primitive, propagate failures across shell boundaries, and check every recorded digest against installed file bytes before accepting setup. A zero exit status or an existing JSON file is insufficient evidence.
+**Applies to**: Windows setup, template manifests, release bootstrap smoke
+**Category**: tooling
+**Status**: ACTIVE
+
+### 2026-10-19 - Mandatory runtime evidence changes installation requirements
+**Track**: BUG
+**Severity**: P1
+**Error**: Native editor acceptance required SQLite-backed runtime correlation while setup still promised Node 20 and described the evidence collector as optional.
+**Root cause**: A previously optional verification dependency became part of the mandatory output path without updating installation preflight and supported-environment contracts.
+**Rule**: When an evidence dependency becomes mandatory, validate its usable capability before project writes, align the documented minimum runtime and CI, and exercise the installed workflow. A passing helper test cannot establish compatible installation or successful file delivery.
+**Applies to**: native hooks, editor acceptance, setup entrypoints, release gates
+**Category**: workflow
+**Status**: ACTIVE
+
 ### 2026-07-20 - Downstream hardening must be promoted before release closeout
 **Track**: PROCESS
 **Severity**: P1
@@ -50,16 +86,6 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Root cause**: Release verification treated the downstream canary's passing state as payload evidence without first classifying every template drift and promoting security-relevant fixes to the template source of truth.
 **Rule**: Before closing a template release after downstream validation, inventory every downstream drift against the exact tag. A security, ownership, portability, or release-safety drift blocks closeout until it is promoted upstream or explicitly rejected with evidence and a regression test.
 **Applies to**: template release, downstream canary, security review, closeout
-**Category**: workflow
-**Status**: ACTIVE
-
-### 2026-07-05 - Progressive JPEG must shape implementation, not only reports
-**Track**: PROCESS
-**Severity**: P1
-**Error**: Agents could treat progressive JPEG as status reporting or legacy harness proof, while product components still lacked known future capabilities in their first implementation shape.
-**Root cause**: The rule was encoded in planning/status/closeout paths but not as an implementation architecture gate for feature, design, product-goal, and template workflows.
-**Rule**: When final product direction is known, first useful slices should use an end-state skeleton: accepted future capabilities appear as 1% callable hooks, slots, handlers, contracts, feature flags, no-op stubs, or dev-only debug signals. Do not fake user-visible readiness and do not substitute legacy harness proof unless it protects the current product path.
-**Applies to**: product-goal loop, feature workflow, design workflow, design-system workflow, template routing
 **Category**: workflow
 **Status**: ACTIVE
 
@@ -325,16 +351,6 @@ When this file exceeds 50 entries, run `/weekly` to promote recurring patterns i
 **Applies to**: product planning, decomposition, fan-out, verification cadence
 **Category**: process
 **Status**: ACTIVE
-
-### 2026-07-05 - Progressive JPEG requires final-plan object readiness
-**Track**: PROCESS
-**Severity**: P1
-**Error**: The template described progressive JPEG as an end-state skeleton, but agents could still treat the first useful slice as a proof harness, isolated stub, or partial fragment.
-**Root cause**: The rule did not explicitly require a final product plan, object inventory, smallest production function, and readiness-level verification before judging implementation depth.
-**Rule**: For product/feature/design/game/text/project work, progressive JPEG means plan first, then a whole product-shaped object at low detail. If the final plan is missing, gate implementation and create/propose it first. At 1% readiness, all accepted future classes/components/interfaces/routes/sections/functions/contracts must exist or be callable, and the object must perform its smallest honest production function with explicit placeholder/debug behavior.
-**Applies to**: production-product-standard, product-goal-loop, client-executor-contract, Codex product/feature/design/decompose/strategic skills, release validators
-**Category**: process
-**Status**: SUPERSEDED by the 2026-10-07 product-wave rule. Preserve product continuity, not the requirement to prebuild all future objects/stubs.
 
 ### 2026-07-06 - Progressive JPEG needs machine-readable status slices
 **Track**: PROCESS

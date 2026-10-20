@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "user-writing-library-2026-10-06",
+  "editions": {
+    "write-short": "b830dc749f15c7cd41fbf39bf321843cffc75f0bf81f3065c1d30ab9ab897a46",
+    "business-correspondence": "b84dd44d1932e6c735724c65d46eb82913f484ec7d730371deab17b4118b0ee0",
+    "clear-understood": "58ab3fc1e6591120c4ae9fc3c2b4725f0e92516dad38e5d50598fafb045cc693",
+    "social-media": "920ada10a006e31edf3241b71d8f0cbcd271ef63796d51960b2c8de34b927993",
+    "game-as-business": "38f9dbc0b16f27956acbf4221c74252d728a84860e4b8ae5df5021da4e4d1e9c",
+    "project-resolution": "6965910bdb0277e3faefe574149906e04d2d20893c2a93a89df9e590fd13e3c5"
+  },
+  "topics": [
+    {"id":"reader-job","sourceId":"write-short","label":"Name the reader's task","question":"What situation is the reader in, and what useful change should this text enable?","locators":["PDF page 26"]},
+    {"id":"truth-boundary","sourceId":"write-short","label":"Keep claims answerable to facts","question":"Which statements need a fact, example, or explicit uncertainty before they can be trusted?","locators":["PDF page 28"]},
+    {"id":"basic-style-rhythm","sourceId":"write-short","label":"Check Russian sentence rhythm and action","question":"Does the text read naturally aloud, and do its sentences show who acts and what happens?","locators":["PDF page 182","PDF page 183"]},
+    {"id":"explanation-structure","sourceId":"write-short","label":"Order the explanation","question":"What must the reader understand first, and which steps or facts depend on it?","locators":["PDF page 280","PDF page 281","PDF page 282","PDF page 283","PDF page 284"]},
+    {"id":"purpose-and-structure","sourceId":"write-short","label":"Keep the text on purpose","question":"Does each section help the reader reach the intended result?","locators":["PDF page 234","PDF page 235","PDF page 236"]},
+    {"id":"recipient-action","sourceId":"business-correspondence","label":"Make the recipient's next action clear","question":"What does this recipient need to know, decide, or do next, and who owns that action?","locators":["PDF page 30","PDF page 31","PDF page 32","PDF page 33","PDF page 34"]},
+    {"id":"care-and-boundaries","sourceId":"business-correspondence","label":"State care without hiding the issue","question":"How can the message acknowledge the recipient's position while stating the actual boundary or consequence?","locators":["PDF page 52","PDF page 53","PDF page 54"]},
+    {"id":"complaint-response","sourceId":"business-correspondence","label":"Answer a complaint with a usable resolution","question":"What happened, what can be done now, who will do it, and when will the recipient hear back?","locators":["PDF page 209","PDF page 210","PDF page 211"]},
+    {"id":"context","sourceId":"clear-understood","label":"Restore the reader's context","question":"What does this reader already know, need, or care about in this situation?","locators":["EPUB section OPS/ch1-5.xhtml"]},
+    {"id":"examples","sourceId":"clear-understood","label":"Anchor an abstract idea in a case","question":"Which concrete example makes the key idea recognizable and testable?","locators":["EPUB section OPS/ch1-17.xhtml"]},
+    {"id":"explain-from-both-sides","sourceId":"clear-understood","label":"Explain boundaries and counterexamples","question":"What nearby case looks similar but leads to a different conclusion, and why?","locators":["EPUB section OPS/ch1-18.xhtml"]},
+    {"id":"reader-respect","sourceId":"clear-understood","label":"Correct the problem without shaming the reader","question":"Could this wording make the reader defensive or feel personally judged?","locators":["EPUB section OPS/ch1-19.xhtml"]},
+    {"id":"facts-and-measures","sourceId":"clear-understood","label":"Replace evaluation with observable evidence","question":"What can be counted, observed, or checked instead of asserted as an evaluation?","locators":["EPUB section OPS/ch1-22.xhtml"]},
+    {"id":"explanation-order","sourceId":"clear-understood","label":"Build the explanation in dependency order","question":"Which premise or action must come first for the next step to make sense?","locators":["EPUB section OPS/ch1-26.xhtml"]},
+    {"id":"reader-value","sourceId":"clear-understood","label":"Give the reader a reason to continue","question":"What practical or emotional result does the reader get from this text?","locators":["EPUB section OPS/ch1-12.xhtml"]},
+    {"id":"audience-value","sourceId":"social-media","label":"Connect the business purpose to reader value","question":"What useful reader outcome fits this audience and the actual stage of their decision?","locators":["EPUB section OPS/ch1-6.xhtml"]},
+    {"id":"sales-copy","sourceId":"social-media","label":"Ground an offer in its real use","question":"What supported outcome, mechanism, proof, condition, and next action can the offer honestly state?","locators":["EPUB section OPS/ch1-17.xhtml"]},
+    {"id":"social-metrics","sourceId":"social-media","label":"Measure the result that matches the audience stage","question":"Which observable metric reflects the intended reader action or business outcome?","locators":["EPUB section OPS/ch1-27.xhtml"]},
+    {"id":"content-return","sourceId":"social-media","label":"Check whether distribution pays for its purpose","question":"What costs, outcomes, and attribution limits belong in a return estimate?","locators":["EPUB section OPS/ch1-29.xhtml"]},
+    {"id":"game-direction","sourceId":"game-as-business","label":"Choose a game direction that fits the project","question":"Which game, platform, audience, team, and business constraints shape the decision?","locators":["PDF page 21","PDF page 22","PDF page 23","PDF page 24"]},
+    {"id":"game-production-plan","sourceId":"game-as-business","label":"Make the production plan test a real assumption","question":"Which evidence, dependency, or bounded production stage should change the next decision?","locators":["PDF page 102","PDF page 103","PDF page 104","PDF page 105","PDF page 106"]},
+    {"id":"game-vertical-slice","sourceId":"game-as-business","label":"Use a vertical slice to test the promised experience","question":"Does the small slice demonstrate the core experience and its production risks?","locators":["PDF page 177"]},
+    {"id":"publisher-materials","sourceId":"game-as-business","label":"Prepare materials around a publisher's decision","question":"What evidence and materials let the intended partner evaluate the game and team?","locators":["PDF page 225","PDF page 226","PDF page 227"]},
+    {"id":"project-purpose","sourceId":"project-resolution","label":"Start with a person's situation","question":"Who needs the result, in what real situation, and what outcome would help them?","locators":["Section Начните с ситуации, а не со списка функций"]},
+    {"id":"complete-result","sourceId":"project-resolution","label":"Keep the promised path complete","question":"Can the intended recipient complete the whole promised task in this version?","locators":["Section Пройдите весь путь, который обещали"]},
+    {"id":"acceptance","sourceId":"project-resolution","label":"Make completion observable","question":"What can the owner inspect to decide whether the task is complete?","locators":["Section Форма 4. Задача, которую можно принять"]},
+    {"id":"uncertainty-check","sourceId":"project-resolution","label":"Test only uncertainty that can change a decision","question":"What is unknown, how costly is a wrong assumption, and what observation would resolve it?","locators":["Section Форма 5. Проверка неизвестного"]}
+  ]
+}

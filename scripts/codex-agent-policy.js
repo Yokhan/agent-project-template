@@ -65,6 +65,12 @@ const AGENT_POLICY = Object.freeze({
       effort: "high",
       sandboxMode: "read-only",
     }),
+    writing_editor: Object.freeze({
+      file: "writing-editor.toml",
+      model: "gpt-6-luna",
+      effort: "high",
+      sandboxMode: "read-only",
+    }),
     implementer: Object.freeze({
       file: "implementer.toml",
       model: "gpt-6-luna",
@@ -244,6 +250,9 @@ function getResourceRecommendation(input = {}) {
     profile?.model === recommendedModel && profile?.effort === recommendedEffort;
   const dispatchStrategy = requiresJudgment || !profile ? "parent-owned-work" :
     nativeRole ? "native-custom-role" : "explicit-model-contract";
+  const dispatchReady = isBounded && !requiresJudgment && Boolean(profile) && resourceRequest.isValid &&
+    (!options.requestedEffort || resourceRequest.hostStatus === "verified") &&
+    Boolean(options.hostDispatchCapabilities?.includes(dispatchStrategy));
   const instructionsSource = profile ? `.codex/agents/${profile.file}` : null;
   return {
     role, recommendedModel, recommendedEffort,
@@ -262,17 +271,15 @@ function getResourceRecommendation(input = {}) {
       instructionsSource,
       requestedSandbox: profile?.sandboxMode || null,
       sandboxStatus: "inherited-or-unverified",
-      callContract: dispatchStrategy === "explicit-model-contract" ? {
+      callContract: dispatchReady && dispatchStrategy === "explicit-model-contract" ? {
         tool: "collaboration.spawn_agent", model: recommendedModel, reasoning_effort: recommendedEffort,
         fork_turns: "none", task_name: role,
         message: `Bounded role contract: ${JSON.stringify({ role, scope: options.scope || [], acceptance: options.acceptance || [], evidenceRefs: options.evidenceRefs || [], instructionsSource, requestedSandbox: profile?.sandboxMode })}. Parent must read the developer_instructions from instructionsSource and include them verbatim before dispatch. Do not write outside scope; read-only roles must not change files. Return acceptance evidence and material unknowns.`,
-      } : dispatchStrategy === "native-custom-role" ? {
+      } : dispatchReady && dispatchStrategy === "native-custom-role" ? {
         tool: "spawn_agent", agent_type: role,
         message: `Bounded role contract: ${JSON.stringify({ role, scope: options.scope || [], acceptance: options.acceptance || [], evidenceRefs: options.evidenceRefs || [] })}. Stay within scope and return acceptance evidence and material unknowns.`,
       } : null,
-      ready: isBounded && !requiresJudgment && Boolean(profile) && resourceRequest.isValid &&
-        (!options.requestedEffort || resourceRequest.hostStatus === "verified") &&
-        Boolean(options.hostDispatchCapabilities?.includes(dispatchStrategy)),
+      ready: dispatchReady,
     },
     runtimeStatus: "recommendation-only",
     effectiveModel: null, effectiveEffort: null, childThreadId: null,
@@ -348,6 +355,89 @@ function getFanoutDecision(options) {
     return createDecision("recommended", "parallel-independent-lanes-available", selected, ranked);
   }
   return createDecision("conditional", "parallel-value-not-yet-proven", selected, ranked);
+}
+
+function getDelegationDecision({
+  task, workflowDepth, implementationRequested, implementationCandidate,
+  unresolvedArchitecture, blockEdits, risk, fanout, workerContracts, workerContract,
+}) {
+  const optOutTask = String(task || "").replace(/\b(?:child|multiple)\s+agents\b/giu, "subagents")
+    .replace(/(?:дочерн[\p{L}]*|нескольк[\p{L}]*)\s+агент[\p{L}]*/giu, "субагентов");
+  if (OPT_OUT_PATTERN.test(optOutTask)) {
+    return { required: false, state: "skip", reason: "explicit-user-opt-out", nextAction: "Continue with the parent only, as requested.", candidateRoles: [] };
+  }
+  if (workflowDepth === "direct" || isLikelySmallTask(task)) {
+    return { required: false, state: "skip", reason: "xs-direct-task", nextAction: "Complete the small task directly.", candidateRoles: [] };
+  }
+  if (!implementationRequested && !["HIGH", "CRITICAL"].includes(risk) &&
+      isNarrowReadOnlyInspection(task)) {
+    return { required: false, state: "skip", reason: "narrow-read-only-inspection", nextAction: "Complete the focused read-only inspection directly.", candidateRoles: [] };
+  }
+
+  let candidateRoles = [];
+  if (implementationRequested) {
+    if (blockEdits || unresolvedArchitecture) {
+      return { required: false, state: "parent-owned", reason: blockEdits ? "change-strategy-blocks-writes" : "architecture-decision-required", nextAction: "Resolve the parent-owned decision gate before assigning implementation.", candidateRoles: [] };
+    }
+    if (!implementationCandidate || !fanout.candidates.some(({ name }) => name === "implementer")) {
+      return { required: false, state: "parent-owned", reason: fanout.reason || "no-viable-implementer", nextAction: "Keep implementation with the parent under the active routing constraints.", candidateRoles: [] };
+    }
+    candidateRoles = ["implementer"];
+  } else {
+    const researchIntent = /\b(?:research|investigate|explore|understand|analy[sz]e|review|audit|inspect|evaluate|report|explain|look up)\b|исследуй|изучи|разбер|анализ|проверь|аудит|оцени|отч[её]т/iu.test(task || "");
+    if (isImplementationRequest(task) || !researchIntent) {
+      return { required: false, state: "skip", reason: "no-delegable-execution-or-research", nextAction: "Continue with the parent route.", candidateRoles: [] };
+    }
+    candidateRoles = fanout.candidates
+      .filter(({ name }) => {
+        const profile = getAgentProfile(name);
+        return profile?.model === "gpt-6-luna" && profile.sandboxMode === "read-only";
+      })
+      .map(({ name }) => name);
+    if (!candidateRoles.length) {
+      return { required: false, state: "parent-owned", reason: "no-viable-luna-research-role", nextAction: "Keep research with the parent because no suitable read-only Luna role is available.", candidateRoles: [] };
+    }
+  }
+
+  const contract = workerContract || {};
+  const assignments = contract.assignments || {};
+  const boundedRoles = candidateRoles.filter((role) => {
+    const assignment = assignments[role] || (contract.role === role ? contract : {});
+    return assignment.scope?.length && assignment.acceptance?.length &&
+      !assignment.integration && !assignment.strategy;
+  });
+  if (boundedRoles.length) {
+    const readyRoles = boundedRoles.filter((role) => workerContracts.some((worker) =>
+      worker.role === role && worker.dispatch.ready));
+    if (readyRoles.length) {
+      return { required: true, state: "ready", reason: "bounded-worker-contract-and-host-capability-verified", nextAction: "Dispatch a candidate using its returned call contract; keep integration and acceptance with the parent.", candidateRoles: readyRoles };
+    }
+  }
+
+  const blocked = candidateRoles.find((role) => workerContracts.some((worker) =>
+    worker.role === role && worker.dispatch.policyReason));
+  if (blocked) {
+    const policyReason = workerContracts.find((worker) => worker.role === blocked).dispatch.policyReason;
+    return { required: false, state: "parent-owned", reason: policyReason, nextAction: "Keep the work with the parent until the routing policy gate is resolved.", candidateRoles: [] };
+  }
+  return {
+    required: true,
+    state: "prepare-contract",
+    reason: "worker-scope-acceptance-or-host-capability-missing",
+    nextAction: "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
+    candidateRoles,
+  };
+}
+
+function isNarrowReadOnlyInspection(task) {
+  const text = String(task || "");
+  if (!READ_ONLY_PATTERN.test(text) || isImplementationRequest(text) || PARALLEL_VALUE_PATTERN.test(text) ||
+      /\b(?:multiple|several|across|comprehensive|deep|independent)\b|нескольк[\p{L}]*|комплексн[\p{L}]*|глубок[\p{L}]*/iu.test(text)) {
+    return false;
+  }
+  const filePaths = text.match(/(?:^|\s)(?:\.\.\/|\.\/)?[\w.-]+(?:\/[\w.-]+)*\.(?:[cm]?[jt]sx?|md|json|ya?ml|toml|py|go|rs|css|html)\b/giu) || [];
+  if (filePaths.length === 1) return true;
+  return /\b(?:one|single|this)\s+(?:file|document|module)\b|один\s+(?:файл|документ|модуль)/iu.test(text);
 }
 
 function rankCandidates(candidates, modes, priorityCandidates = []) {
@@ -468,6 +558,7 @@ module.exports = {
   formatAgentProfiles,
   getAgentProfile,
   getAgentProfiles,
+  getDelegationDecision,
   getFanoutDecision,
   getResourceRecommendation,
   isLikelySmallTask,

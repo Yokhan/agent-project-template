@@ -364,6 +364,12 @@ word when it is the clearest accurate choice.
 
 Check the completed text, not just the intention behind it. Compatible review
 lenses may be covered in one pass; a role list is not a worker-count requirement.
+For source-grounded substantive authored nonfiction and material rewriting,
+the source-grounding acceptance gate requires a separate editorial pass with
+concrete observations on the completed artifact. A brief status/explanation,
+literal mechanical edit or explicit user opt-out may self-check. A short ad or
+letter remains authored writing. See `writing-source-grounding.md` for current
+reading, exact-artifact review and host evidence boundaries.
 Use a separate reviewer when explicitly requested, required by a project gate,
 or when material claim, safety, legal, operational or source-interpretation risk
 would benefit from independent evidence. Public/commercial placement or an M+

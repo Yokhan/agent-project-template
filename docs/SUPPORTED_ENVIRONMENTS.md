@@ -5,7 +5,8 @@ These are the environments the template is designed and tested to support.
 ## Required Tools
 
 - `git`
-- `node` 20+ for JSON parsing, MCP tooling, and metadata scripts
+- `node` 24+ with a working `node:sqlite` module for setup, native hooks,
+  request recovery, and runtime evidence
 - `bash` for shell-based setup and maintenance helpers; template sync itself is native Node.js
 
 ## Optional Tools
@@ -15,13 +16,13 @@ These are the environments the template is designed and tested to support.
   parent). The legacy `max_threads` alias is accepted by the static validator,
   not proof that an old client supports the new profiles. Check the actual
   model catalog, config loading, and effective child metadata on each host.
-  Config loading does not prove native custom-role dispatch. The current live
-  collaboration schema lacks `agent_type`; use a verified explicit-model-contract
-  capability instead, loading role instructions into the message. Native TOML
-  role enforcement and sandbox isolation remain unavailable/unverified there.
-- The optional read-only SQLite/rollout evidence collector requires Node 22.5+
-  (`node:sqlite`), tested locally on Node 24.13.0. Node 20 remains supported for
-  normal template/MCP tooling; missing collector capability is not runtime proof.
+  Config loading does not prove native custom-role dispatch. Host schemas and
+  effective child model/effort metadata vary by host and version; verify the
+  exposed dispatch capability and correlated runtime evidence on each host.
+  A role label or supported schema field alone does not prove execution.
+- `node:sqlite` is mandatory for native workflow evidence and recovery. Setup
+  and the hook runner check both Node.js 24+ and an in-memory SQLite query;
+  unsupported runtimes fail before project creation or hook processing.
 - AgentOS remains the task-graph owner. Its 2026-10-06 launcher accepts GPT-6
   low/medium/high but drops xhigh/max; those optional efforts are unavailable
   through that adapter until it is updated and tested. This migration does not
@@ -61,7 +62,8 @@ These are the environments the template is designed and tested to support.
 
 Current release validation covers:
 
-- Linux and Windows bootstrap smoke in CI
+- Linux bootstrap smoke and Windows fresh-project setup plus generated-project
+  hook/runtime/MCP/sync-preview checks in CI
 - release-blocking native updater transactions and MCP initialize/tools-list/cwd boundary tests on Windows
 - local validation scripts: `validate-template`, `check-drift`, `test-hooks`, `test-template`, `sync-agents`
 - Codex skill validation: `node scripts/validate-codex-skills.js`

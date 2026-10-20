@@ -22,6 +22,13 @@ export interface Route {
 
 export interface RouteResult {
   workflowDepth: "direct" | "routed";
+  delegationDecision: {
+    required: boolean;
+    state: "prepare-contract" | "ready" | "skip" | "parent-owned";
+    reason: string;
+    nextAction: string;
+    candidateRoles: string[];
+  };
   resourceDecision: {
     role: string;
     recommendedModel: string;
@@ -42,9 +49,16 @@ export interface RouteResult {
       owner: string; customRole: string | null; strategy: string; ready: boolean;
       capabilityStatus: string; instructionsSource: string | null;
       requestedSandbox: string | null; sandboxStatus: string;
-      callContract: null | { tool: string; model: string; reasoning_effort: string; fork_turns: string; task_name: string; message: string };
+      policyStatus?: string; policyReason?: string;
+      callContract: null | Record<string, string>;
     };
   };
+  workerContracts: Array<{
+    role: string;
+    recommendedModel: string;
+    recommendedEffort: string;
+    dispatch: RouteResult["resourceDecision"]["dispatch"];
+  }>;
   modes: string[];
   agent: string;
   files: string[];

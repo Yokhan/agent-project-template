@@ -17,11 +17,22 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    way that changes meaning, stop and ask with 2-3 options.
    For substantive nonfiction, including chat explanations, read
    `.claude/library/technical/writing-source-grounding.md`, retrieve a fresh
-   bounded task-specific primary-source packet and apply its principles before
+   mapped task-specific primary-source packet (`writing-library plan` / `read`)
+   and apply its principles before
    drafting/review. Record source hashes, locators, read receipts and concrete
    application; profiles and memory are not substitutes. Missing/stale sources
    block source-grounded drafting. Classify mixed work per artifact; real fiction
    and lore are exempt, game business/technical books and project plans are not.
+   Native hooks may supply fresh literal passages for this logical request;
+   read them and refine insufficient context. Inspect the local literal contents
+   and copied examples with `writing-library contents` / `examples` to find
+   relevant sections outside the finite topic map. Source-grounded planned
+   reading allows up to 96,000 characters; copied candidates and navigation
+   still require actual source reading and contextual judgment. For substantive final prose,
+   record application to the exact response bytes with `scripts/codex-turn.js
+   apply`; file deliverables use `--target file` and are rechecked after edits.
+   A prior packet, generic notes, or a completed retrieval command does not
+   establish application to this output. See `docs/NATIVE_WORKFLOW_GATES.md`.
 4. Analyze references into concrete writing properties; do not copy their
    structure or imitate a named author mechanically.
 5. For substantial staged writing, plan the final function/section inventory;
@@ -40,7 +51,14 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    `russian-business-correspondence.md` and
    `russian-explanation-and-persuasion.md` child profiles. Never let an English
    domain standard determine Russian voice, syntax, idiom, or line editing.
-8. Apply the review policy in `writing.md`: use an independent reviewer when
+8. Apply the review policy in `writing.md`: source-grounded authored nonfiction
+   and material rewrites require the distinct read-only `writing_editor` (Luna
+   High), including short ads/letters. Use `codex-turn editorial-assignment`,
+   wait for the native JSON result, fix findings, and use `review-accept` with
+   the actual child ID. Changed bytes require new review. Brief technical
+   explanations/status and literal typo edits can self-check; explicit user
+   no-agent requests win and are never labelled independent review.
+   Otherwise use an independent reviewer when
    requested, required by acceptance, or justified by material risk/uncertainty.
    Public placement or a size label alone does not require a child agent.
    Independence requires a separate read-only reviewer and genuine child trace;
