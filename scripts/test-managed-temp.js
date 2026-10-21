@@ -129,6 +129,22 @@ async function main() {
   const foregroundLease = managed.inspectRunLease(foregroundParent.root);
   assert(foregroundLease.valid && foregroundLease.active && foregroundLease.pending && foregroundLease.owner,
     "a live foreground parent should remain pending cleanup while validating its inherited lease");
+  const liveForegroundSweep = managed.sweep(foregroundDependentRoot);
+  assert(liveForegroundSweep.busy.some(item => item.path === foregroundParent.id && item.reason === "live-lease"),
+    "a live foreground owner should be classified as busy during ordinary cleanup");
+  assert(!liveForegroundSweep.pending.some(item => item.path === foregroundParent.id),
+    "a live foreground owner should not be reported as unresolved pending cleanup");
+  const originalDateNow = Date.now;
+  let budgetClockCalls = 0;
+  let budgetedForegroundSweep;
+  try {
+    Date.now = () => budgetClockCalls++ === 0 ? 1 : 2;
+    budgetedForegroundSweep = managed.sweep(foregroundDependentRoot, { budgetMs: 0 });
+  } finally { Date.now = originalDateNow; }
+  assert(budgetedForegroundSweep.busy.some(item => item.path === foregroundParent.id && item.reason === "live-lease"),
+    "a live foreground owner should be classified as busy when the cleanup budget is exhausted");
+  assert(!budgetedForegroundSweep.pending.some(item => item.path === foregroundParent.id),
+    "budget exhaustion must not misreport a live foreground owner as unresolved pending cleanup");
   const beforeForegroundChild = process.env.AGENT_MANAGED_TEMP;
   let foregroundChild;
   try {
@@ -196,9 +212,17 @@ async function main() {
   assert(!fs.existsSync(failedCache), "npm cache directory survived failed child cleanup");
   assert.deepStrictEqual(managed.status(root), [], "failed npm cache workspace was retained");
 
+  const nodeExecutables = new Set([process.execPath]);
+  try { nodeExecutables.add(fs.realpathSync(process.execPath)); } catch { /* retain the original executable candidates */ }
   const npmCliCandidates = [
-    path.join(path.dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"),
-    path.resolve(path.dirname(process.execPath), "../node_modules/npm/bin/npm-cli.js"),
+    ...[...nodeExecutables].flatMap(executable => {
+      const nodeDirectory = path.dirname(executable);
+      return [
+        path.join(nodeDirectory, "node_modules/npm/bin/npm-cli.js"),
+        path.resolve(nodeDirectory, "../node_modules/npm/bin/npm-cli.js"),
+        path.resolve(nodeDirectory, "../lib/node_modules/npm/bin/npm-cli.js"),
+      ];
+    }),
     process.env.APPDATA && path.join(process.env.APPDATA, "npm/node_modules/npm/bin/npm-cli.js"),
   ].filter(Boolean);
   const npmCli = npmCliCandidates.find(candidate => fs.existsSync(candidate));
@@ -260,6 +284,16 @@ async function main() {
   const unfinishedForeground = managed.createRun(foregroundRoot, { processContract: "foreground" });
   markStale(unfinishedForeground);
   assert(managed.sweep(foregroundRoot).pending.some(item => item.reason === "foreground-contract-not-completed"), "unfinished foreground contract must protect scratch even after all recorded PIDs die");
+  let budgetedDeadForegroundSweep;
+  budgetClockCalls = 0;
+  try {
+    Date.now = () => budgetClockCalls++ === 0 ? 1 : 2;
+    budgetedDeadForegroundSweep = managed.sweep(foregroundRoot, { budgetMs: 0 });
+  } finally { Date.now = originalDateNow; }
+  assert(budgetedDeadForegroundSweep.pending.some(item => item.path === unfinishedForeground.id && item.reason === "foreground-contract-not-completed"),
+    "budget exhaustion must preserve a dead foreground owner's specific pending reason");
+  assert(!budgetedDeadForegroundSweep.busy.some(item => item.path === unfinishedForeground.id),
+    "a dead foreground owner must not be misclassified as busy when the cleanup budget is exhausted");
   const deadForegroundChildProject = path.join(unfinishedForeground.temp, "child-project");
   fs.mkdirSync(deadForegroundChildProject);
   const beforeDeadForegroundChild = process.env.AGENT_MANAGED_TEMP;

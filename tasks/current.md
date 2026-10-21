@@ -36,6 +36,33 @@ two transient global-cache-lock fixture races; bounded fixture retries and a
 separate live lock-holder regression passed focused checks. Those observations
 are baseline-plus-delta evidence; the repaired commit still requires CI.
 
+Release strategy checkpoint after the second Linux failure (`1b2a0f2`,
+211/214): the first lease repair exposed remaining platform-state mismatches.
+The template is a production source with existing consumers. Protected
+contracts are exact resource ownership (manager/library), preservation of
+dead/uncertain/active leases (cleanup state machine), public platform limits
+(SUPPORTED_ENVIRONMENTS), and immutable verified releases (TEMPLATE_RELEASES).
+Astra's read-only consultation selected repair with a direct swap inside the
+existing approved fix/release envelope. Replacing the supervisor is unsupported
+by evidence; retiring POSIX would remove required Linux validation and change
+the promised contract. No new platform guarantee or downstream change is added.
+
+The repair aligns both normal and budget-limited sweep paths: only the exact
+foreground reason with a live owner is busy, never deletable; dead or other
+retained states remain pending. The real npm probe must locate the installed
+POSIX CLI. Timeout acceptance must exercise Windows removal and POSIX retention
+in an isolated fixture. Fixture teardown requires proof its known simple
+process/group stopped plus exact namespace validation; it cannot reset product
+markers or relax sweep. Falsifiers are a warning for a live foreground parent,
+deletion of an uncertain run, missing real npm verification, or any failed
+exact-commit Linux/Windows gate. Recovery before tagging is an ordinary source
+revert; no compatibility layer, flag or transition scaffold is introduced.
+
+The state-alignment managed-temp regression and dedicated timeout acceptance
+passed on Windows (seven focused lifecycle cases); the independent security
+review found no weakened deletion boundary. Both workers are frozen. The next
+exact commit must still pass Linux execution before an immutable tag is made.
+
 2026-10-21 continuation: user approved the broader cleanup plan. The earlier
 temporary-directory implementation below is an accepted foundation, not complete
 build/browser lifecycle acceptance. Goal: ordinary supported build/test/browser

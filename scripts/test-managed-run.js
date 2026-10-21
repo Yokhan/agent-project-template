@@ -12,6 +12,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const managed = require("./lib/managed-temp.js");
 const caches = require("./lib/managed-cache.js");
+const reports = require("./lib/managed-run-report.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-run-accept-"));
@@ -66,6 +67,27 @@ function removeOwnedNamespaces(root) {
     fs.rmSync(scratch, { recursive: true, force: false });
   }
 }
+function removeOwnedReport(root, expectedRunId) {
+  const directory = reports.reportDirectory(root);
+  const file = path.join(directory, "last.json");
+  managed.assertNoLinks(directory);
+  managed.assertNoLinks(file);
+  const entries = fs.readdirSync(directory);
+  assert.deepStrictEqual(entries, ["last.json"], "timeout fixture report namespace has unexpected contents");
+  const report = reports.readReport(root);
+  assert.strictEqual(report.runId, expectedRunId, "timeout report belongs to another managed run");
+  fs.unlinkSync(file);
+  fs.rmdirSync(directory);
+}
+function processIsAlive(pid, processGroup = false) {
+  if (!Number.isInteger(pid) || pid < 1) return false;
+  try { process.kill(processGroup && process.platform !== "win32" ? -pid : pid, 0); return true; }
+  catch (error) {
+    if (error.code === "ESRCH") return false;
+    if (error.code === "EPERM") return true;
+    throw error;
+  }
+}
 function writeEvidence() {
   evidence.completedAt = new Date().toISOString();
   const destination = path.resolve(__dirname, "../.session-cache/resource-lifecycle-real.json");
@@ -101,10 +123,59 @@ async function focused() {
   assert.deepStrictEqual(managed.status(root), [], "failed command retained scratch");
   record("child-failure-exit-code-preserved", failure);
 
-  const timeout = await cliRun(root, commandFor(["--timeout-ms", "700"], process.execPath, nodeCode("setInterval(()=>{},1000)")));
+  const timeoutRoot = project("timeout-only");
+  const timeoutPidFile = path.join(timeoutRoot, "timeout-child-pid.txt");
+  const timeoutEnv = { ...process.env };
+  // This is a separate timeout project but remains bound to the outer managed
+  // test run. Its dependent lease is settled by the parent's normal cleanup.
+  // Exercise the explicit foreground contract on POSIX only.
+  if (process.platform === "win32") delete timeoutEnv.AGENT_MANAGED_PROCESS_CONTRACT;
+  else timeoutEnv.AGENT_MANAGED_PROCESS_CONTRACT = "foreground";
+  const timeout = await cliRun(timeoutRoot, commandFor(["--timeout-ms", "3000"], process.execPath,
+    nodeCode("require('fs').writeFileSync(process.argv[1],String(process.pid));setInterval(()=>{},1000)").concat(timeoutPidFile)), timeoutEnv);
   assert.strictEqual(timeout.code, 124, `timeout result was not reported: ${timeout.stderr}`);
-  assert.deepStrictEqual(managed.status(root), [], "timed out command retained scratch after supervisor stopped it");
-  record("timeout-and-owned-process-stop", timeout);
+  const timeoutReport = reports.readReport(timeoutRoot);
+  assert(timeoutReport, "timeout command did not write its bounded report");
+  assert(fs.existsSync(timeoutPidFile), "timeout child did not write its PID marker");
+  const childPid = Number(fs.readFileSync(timeoutPidFile, "utf8"));
+  fs.unlinkSync(timeoutPidFile);
+  assert(Number.isInteger(childPid) && childPid > 0, "timeout child wrote an invalid PID marker");
+  assert.strictEqual(timeoutReport.stopReason, "timeout");
+  if (process.platform === "win32") {
+    assert.strictEqual(timeoutReport.scratchRemoved, true, "Windows timeout must remove scratch after stopping the process tree");
+    assert.strictEqual(timeoutReport.process?.treeStopped, true, "Windows timeout must include stopped-tree proof");
+    assert.deepStrictEqual(managed.status(timeoutRoot), [], "Windows timeout retained scratch after supervisor stopped it");
+    assert(!processIsAlive(childPid), "timed out Windows command process is still alive");
+  } else {
+    const retained = managed.status(timeoutRoot);
+    assert.strictEqual(timeoutReport.scratchRemoved, false, "aborted POSIX foreground runs must retain scratch for recovery");
+    assert.strictEqual(timeoutReport.process?.treeStopped, false, "POSIX foreground timeout must not claim whole-tree proof");
+    assert.strictEqual(timeoutReport.process?.groupStopped, true, "timeout supervisor did not prove its process group stopped");
+    assert.strictEqual(timeoutReport.process?.proof, "owned-process-group-absent");
+    assert.strictEqual(retained.length, 1, "POSIX timeout fixture must retain its owned run marker");
+    assert.strictEqual(retained[0].active, false, "POSIX timeout retained an active run");
+    assert.strictEqual(retained[0].retainedReason, "process-family-termination-unverified");
+    assert(!processIsAlive(childPid), "timed out POSIX command process is still alive");
+    assert(!processIsAlive(retained[0].childPid), "timed out POSIX host supervisor is still alive");
+    assert(!processIsAlive(childPid, true), "timed out POSIX process group is still alive");
+
+    // The production sweep correctly preserves an aborted foreground marker.
+    // Once its exact PID/group are independently proven stopped, this fixture
+    // owns and removes only its hashed scratch/cache namespace and report.
+    const refusal = managed.sweep(timeoutRoot, { budgetMs: 10000 });
+    assert(refusal.pending.some(item => item.path === retained[0].id && item.reason === "process-family-termination-unverified"),
+      "production sweep must retain the unverified foreground marker");
+  }
+  // The process is independently proven stopped above on each platform.
+  // Remove only this fixture's exact hashed namespaces, including the empty
+  // project base Windows leaves after normal run cleanup.
+  removeOwnedNamespaces(timeoutRoot);
+  assert.deepStrictEqual(managed.status(timeoutRoot), [], "verified timeout fixture teardown left scratch");
+  removeOwnedReport(timeoutRoot, timeoutReport.runId);
+  assert(!fs.existsSync(managed.managedBase(timeoutRoot)), "timeout scratch namespace remains after fixture teardown");
+  assert(!fs.existsSync(cacheNamespace(timeoutRoot)), "timeout cache namespace remains after fixture teardown");
+  assert(!fs.existsSync(reports.reportDirectory(timeoutRoot)), "timeout report namespace remains after fixture teardown");
+  record("timeout-and-owned-process-stop", timeout, { scratchRetainedForRecovery: process.platform !== "win32", treeStopped: timeoutReport.process?.treeStopped, groupStopped: timeoutReport.process?.groupStopped });
 
   const rawBuild = await cliRun(root, commandFor([], "vite", ["build"]));
   assert.notStrictEqual(rawBuild.code, 0, "unprofiled Vite build was allowed");

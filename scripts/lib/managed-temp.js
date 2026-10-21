@@ -102,6 +102,9 @@ function isAlive(pid, group = false) {
 function leaseActive(owner, ignoredPid = null) {
   return owner.launching || owner.pid !== ignoredPid && isAlive(owner.pid) || isAlive(owner.childPid, owner.childGroup === true);
 }
+function liveForegroundRetainedOwner(owner) {
+  return owner.retainedReason === "foreground-contract-not-completed" && isAlive(owner.pid);
+}
 function writeOwner(directory, owner) {
   const target = path.join(directory, OWNER_FILE);
   assertNoLinks(target, { allowMissing: true });
@@ -589,6 +592,16 @@ function sweep(root, options = {}) {
         if (!UUID.test(remaining)) { report.skipped.push({ path: remaining, reason: "unknown-name" }); continue; }
         const pendingOwner = readOwner(path.join(roots.base, remaining), roots.project, roots.projectHash);
         if (!pendingOwner) report.skipped.push({ path: remaining, reason: "invalid-owner" });
+        else if (pendingOwner.retainedReason) {
+          if (liveForegroundRetainedOwner(pendingOwner)) {
+            report.busy.push({ path: remaining, reason: "live-lease" });
+            report.skipped.push({ path: remaining, reason: "live-lease" });
+            observeRemaining(remaining, path.join(roots.base, remaining), "live-lease");
+          } else {
+            report.pending.push({ path: remaining, reason: pendingOwner.retainedReason });
+            observeRemaining(remaining, path.join(roots.base, remaining), pendingOwner.retainedReason);
+          }
+        }
         else if (pendingOwner.launching && !isAlive(pendingOwner.pid) && !isAlive(pendingOwner.childPid, pendingOwner.childGroup)) {
           report.pending.push({ path: remaining, reason: "unresolved-launch-lease" });
           observeRemaining(remaining, path.join(roots.base, remaining), "unresolved-launch-lease");
@@ -628,8 +641,14 @@ function sweep(root, options = {}) {
     const owner = readOwner(directory, roots.project, roots.projectHash);
     if (!owner) { report.skipped.push({ path: name, reason: "invalid-owner" }); continue; }
     if (owner.retainedReason) {
-      report.pending.push({ path: name, reason: owner.retainedReason });
-      observeRemaining(name, directory, owner.retainedReason);
+      if (liveForegroundRetainedOwner(owner)) {
+        report.busy.push({ path: name, reason: "live-lease" });
+        report.skipped.push({ path: name, reason: "live-lease" });
+        observeRemaining(name, directory, "live-lease");
+      } else {
+        report.pending.push({ path: name, reason: owner.retainedReason });
+        observeRemaining(name, directory, owner.retainedReason);
+      }
       continue;
     }
     if (owner.launching && !isAlive(owner.pid) && !isAlive(owner.childPid, owner.childGroup)) {
@@ -730,7 +749,7 @@ function inspectRunLease(runRoot) {
       // completion, but a live wrapper still owns a valid inherited lease.
       // Other retained reasons are unresolved cleanup and must never authorize
       // dependent work, even if their recorded PID happens to be alive.
-      const activeForegroundParent = owner.retainedReason === "foreground-contract-not-completed" && isAlive(owner.pid);
+      const activeForegroundParent = liveForegroundRetainedOwner(owner);
       const inspectedOwner = activeForegroundParent ? {
         id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid,
         childPid: owner.childPid ?? null, childGroup: owner.childGroup === true,
