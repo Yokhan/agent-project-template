@@ -26,6 +26,16 @@ owned cleanup. POSIX foreground interruption retains protected scratch and
 requires manual recovery; this is a documented limitation, not full process-tree
 supervision. Public candidates exclude ignored local receipts and transcripts.
 
+Preflight of `277c6aa` found four Linux failures caused by rejecting a live
+foreground parent's inherited lease; Windows CI passed its aggregate and both
+platforms passed full-toolchain/bootstrap jobs. The repair recognizes only the
+exact foreground reason plus a live owner PID while preserving pending cleanup.
+Live/dead/other-retained regression checks passed and security review confirmed
+that no deletion boundary changed. The local aggregate's 212/214 result exposed
+two transient global-cache-lock fixture races; bounded fixture retries and a
+separate live lock-holder regression passed focused checks. Those observations
+are baseline-plus-delta evidence; the repaired commit still requires CI.
+
 2026-10-21 continuation: user approved the broader cleanup plan. The earlier
 temporary-directory implementation below is an accepted foundation, not complete
 build/browser lifecycle acceptance. Goal: ordinary supported build/test/browser

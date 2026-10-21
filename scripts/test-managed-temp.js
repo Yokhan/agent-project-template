@@ -122,6 +122,29 @@ async function main() {
   assert(!fs.existsSync(dependentCachePath));
   assert(!fs.existsSync(dependentReportDirectory), "fixture apt-r report namespace was not reclaimed");
 
+  const foregroundDependentRoot = project("foreground-dependent-parent");
+  const foregroundParent = managed.createRun(foregroundDependentRoot, { processContract: "foreground" });
+  const foregroundChildProject = path.join(foregroundParent.temp, "child-project");
+  fs.mkdirSync(foregroundChildProject);
+  const foregroundLease = managed.inspectRunLease(foregroundParent.root);
+  assert(foregroundLease.valid && foregroundLease.active && foregroundLease.pending && foregroundLease.owner,
+    "a live foreground parent should remain pending cleanup while validating its inherited lease");
+  const beforeForegroundChild = process.env.AGENT_MANAGED_TEMP;
+  let foregroundChild;
+  try {
+    process.env.AGENT_MANAGED_TEMP = foregroundParent.root;
+    foregroundChild = managed.createRun(foregroundChildProject);
+  } finally {
+    if (beforeForegroundChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
+    else process.env.AGENT_MANAGED_TEMP = beforeForegroundChild;
+  }
+  assert(fs.existsSync(path.join(foregroundParent.root, "dependents", `${foregroundChild.id}.json`)),
+    "a live foreground parent should register inherited child work");
+  markStale(foregroundChild);
+  assert(managed.sweep(foregroundChildProject).removed.includes(foregroundChild.id));
+  assert(foregroundParent.finish({ foregroundCompleted: true }).removed,
+    "confirmed foreground completion should clean the parent after its child is gone");
+
   const emptyReportRoot = project("empty-report-parent");
   const emptyReportParent = managed.createRun(emptyReportRoot);
   const emptyReportProject = path.join(emptyReportParent.temp, "project");
@@ -237,6 +260,18 @@ async function main() {
   const unfinishedForeground = managed.createRun(foregroundRoot, { processContract: "foreground" });
   markStale(unfinishedForeground);
   assert(managed.sweep(foregroundRoot).pending.some(item => item.reason === "foreground-contract-not-completed"), "unfinished foreground contract must protect scratch even after all recorded PIDs die");
+  const deadForegroundChildProject = path.join(unfinishedForeground.temp, "child-project");
+  fs.mkdirSync(deadForegroundChildProject);
+  const beforeDeadForegroundChild = process.env.AGENT_MANAGED_TEMP;
+  try {
+    process.env.AGENT_MANAGED_TEMP = unfinishedForeground.root;
+    assert.throws(() => managed.createRun(deadForegroundChildProject), /Inherited managed parent run is not a validated live lease/u,
+      "dead foreground owners must not authorize dependent runs");
+  } finally {
+    if (beforeDeadForegroundChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
+    else process.env.AGENT_MANAGED_TEMP = beforeDeadForegroundChild;
+  }
+  assert(!fs.existsSync(managed.managedBase(deadForegroundChildProject)), "rejected dead-parent registration must allocate no child namespace");
   const completedForeground = managed.createRun(foregroundRoot, { processContract: "foreground" });
   assert(completedForeground.finish({ foregroundCompleted: true }).removed, "normal caller-confirmed foreground completion must clean its own scratch");
 
@@ -314,6 +349,18 @@ async function main() {
   const retainedRoot = project("retained");
   const retained = managed.createRun(retainedRoot);
   assert.deepStrictEqual(retained.retain("candidate scratch cleanup unresolved"), { retained: true, reason: "candidate scratch cleanup unresolved" });
+  const retainedChildProject = path.join(retained.temp, "child-project");
+  fs.mkdirSync(retainedChildProject);
+  const beforeRetainedChild = process.env.AGENT_MANAGED_TEMP;
+  try {
+    process.env.AGENT_MANAGED_TEMP = retained.root;
+    assert.throws(() => managed.createRun(retainedChildProject), /Inherited managed parent run is not a validated live lease/u,
+      "a live owner with a different unresolved-retention reason must not authorize dependent runs");
+  } finally {
+    if (beforeRetainedChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
+    else process.env.AGENT_MANAGED_TEMP = beforeRetainedChild;
+  }
+  assert(!fs.existsSync(managed.managedBase(retainedChildProject)), "rejected retained-parent registration must allocate no child namespace");
   markStale(retained);
   const retainedStatus = managed.status(retainedRoot).find(item => item.id === retained.id);
   assert.strictEqual(retainedStatus.retainedReason, "candidate scratch cleanup unresolved");

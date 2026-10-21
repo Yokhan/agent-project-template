@@ -27,6 +27,23 @@ function leaseFiles(cachePath) {
   const dir = path.join(path.dirname(cachePath), ".leases", path.basename(cachePath));
   return fs.existsSync(dir) ? fs.readdirSync(dir).map(name => path.join(dir, name)) : [];
 }
+async function retryOperationInProgress(operation) {
+  const deadline = Date.now() + 1500;
+  while (true) {
+    try {
+      const result = operation();
+      if (result?.reason !== "operation-in-progress") return result;
+    } catch (error) {
+      if (!error.message.endsWith("operation-in-progress")) throw error;
+    }
+    if (Date.now() >= deadline) throw new Error("Timed out waiting for the managed-cache fixture operation claim");
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+}
+const acquireCache = (...args) => retryOperationInProgress(() => cache.acquireCache(...args));
+const pruneCaches = (...args) => retryOperationInProgress(() => cache.pruneCaches(...args));
+const releaseCache = lease => retryOperationInProgress(() => lease.release());
+const bindSupervisor = (lease, pid) => retryOperationInProgress(() => lease.bindSupervisor(pid));
 function cleanup() {
   for (const root of projects) {
     const directory = cache.cachePath(root, "npm");
@@ -52,31 +69,60 @@ async function main() {
   const otherProject = project("cache-owner-mismatch");
   assert.throws(() => cache.acquireCache(otherProject, "npm", { runRoot: run.root }), /same canonical project/);
   assert(!fs.existsSync(cache.cachePath(otherProject, "npm")), "cross-project refusal must not allocate a cache");
-  const first = cache.acquireCache(root, "node-compile", { runRoot: run.root, maxBytes: 1024 * 1024 });
+  const first = await acquireCache(root, "node-compile", { runRoot: run.root, maxBytes: 1024 * 1024 });
   assert.strictEqual(first.path, cache.cachePath(root, "node-compile"));
   fs.writeFileSync(path.join(first.path, "compile.bin"), Buffer.alloc(64, 7));
   const marker = JSON.parse(fs.readFileSync(path.join(first.path, cache.CACHE_MARKER), "utf8"));
   assert.strictEqual(marker.projectRoot, fs.realpathSync(root));
   assert.match(marker.projectHash, /^[0-9a-f]{64}$/u);
   assert.strictEqual(marker.kind, "node-compile");
-  assert.deepStrictEqual(first.release(), { released: true });
+  assert.deepStrictEqual(await releaseCache(first), { released: true });
 
-  const reused = cache.acquireCache(root, "node-compile", { runRoot: run.root, maxBytes: 1024 * 1024 });
+  const reused = await acquireCache(root, "node-compile", { runRoot: run.root, maxBytes: 1024 * 1024 });
   assert.strictEqual(reused.path, first.path, "repeated acquisitions should reuse a stable cache directory");
   assert(fs.existsSync(path.join(reused.path, "compile.bin")));
-  assert.deepStrictEqual(reused.release(), { released: true });
-  const evicted = cache.pruneCaches({ projectRoot: root, maxBytes: 0, maxAgeMs: 7 * 24 * 60 * 60 * 1000, budgetMs: 1000 });
+  assert.deepStrictEqual(await releaseCache(reused), { released: true });
+  const evicted = await pruneCaches({ projectRoot: root, maxBytes: 0, maxAgeMs: 7 * 24 * 60 * 60 * 1000, budgetMs: 1000 });
   assert(evicted.removed.some(item => item.path === first.path), "idle cache over the byte budget was not evicted");
   assert(evicted.bytesFreed >= 64);
   assert(!fs.existsSync(first.path));
-  const plateau = cache.pruneCaches({ projectRoot: root, maxBytes: 0, budgetMs: 1000 });
+  const plateau = await pruneCaches({ projectRoot: root, maxBytes: 0, budgetMs: 1000 });
   assert.strictEqual(plateau.bytesFreed, 0, "repeated prune should plateau after the owned cache is removed");
   assert(run.finish().removed);
 
+  const retryRoot = project("transient-operation-claim");
+  const retryRun = managedTemp.createRun(retryRoot);
+  const claimHolder = spawn(process.execPath, ["-e", "const fs=require('fs'),path=require('path');const file=path.join(process.argv[1],'.operation.claim');fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify({version:1,pid:process.pid,token:'fixture-claim'}),{flag:'wx'});process.stdout.write('ready\\n');setTimeout(()=>fs.unlinkSync(file),200);", cache.cacheBase()], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+  const claimHolderClosed = new Promise((resolve, reject) => {
+    claimHolder.once("error", reject);
+    claimHolder.once("close", code => code === 0 ? resolve() : reject(new Error(`operation-claim fixture exited with ${code}`)));
+  });
+  await new Promise((resolve, reject) => {
+    let output = "";
+    claimHolder.stdout.on("data", chunk => {
+      output += chunk.toString();
+      if (output.includes("ready\n")) resolve();
+    });
+    claimHolder.once("error", reject);
+    claimHolder.once("close", code => { if (code !== 0 && !output.includes("ready\n")) reject(new Error(`operation-claim fixture exited before ready (${code})`)); });
+  });
+  let observedRetry = false;
+  const retryLease = await retryOperationInProgress(() => {
+    try { return cache.acquireCache(retryRoot, "npm", { runRoot: retryRun.root }); }
+    catch (error) {
+      if (error.message.endsWith("operation-in-progress")) observedRetry = true;
+      throw error;
+    }
+  });
+  assert(observedRetry, "fixture must observe a live operation claim before succeeding");
+  assert.deepStrictEqual(await releaseCache(retryLease), { released: true });
+  await claimHolderClosed;
+  assert(retryRun.finish().removed);
+
   const claimRoot = project("stale-claim");
   const claimRun = managedTemp.createRun(claimRoot);
-  const claimCache = cache.acquireCache(claimRoot, "npm", { runRoot: claimRun.root });
-  claimCache.release();
+  const claimCache = await acquireCache(claimRoot, "npm", { runRoot: claimRun.root });
+  await releaseCache(claimCache);
   const claimFile = path.join(cache.cacheBase(), ".operation.claim");
   let createdClaim = false;
   try {
@@ -84,28 +130,28 @@ async function main() {
     createdClaim = true;
     try { fs.writeFileSync(fd, JSON.stringify({ version: 1, pid: 2147483647, token: "stale-test-claim" })); }
     finally { fs.closeSync(fd); }
-    const claimResult = cache.pruneCaches({ projectRoot: claimRoot, maxBytes: 0 });
+    const claimResult = await pruneCaches({ projectRoot: claimRoot, maxBytes: 0 });
     assert.strictEqual(claimResult.reason, "stale-operation-claim-requires-manual-recovery");
     assert(fs.existsSync(claimCache.path), "stale operation claim must not permit cache deletion");
   } finally { if (createdClaim) fs.unlinkSync(claimFile); }
-  assert(cache.pruneCaches({ projectRoot: claimRoot, maxBytes: 0 }).removed.some(item => item.path === claimCache.path));
+  assert((await pruneCaches({ projectRoot: claimRoot, maxBytes: 0 })).removed.some(item => item.path === claimCache.path));
   assert(claimRun.finish().removed);
 
   const oldestRoot = project("oldest-first");
   const oldestRun = managedTemp.createRun(oldestRoot);
-  const oldest = cache.acquireCache(oldestRoot, "npm", { runRoot: oldestRun.root });
+  const oldest = await acquireCache(oldestRoot, "npm", { runRoot: oldestRun.root });
   fs.writeFileSync(path.join(oldest.path, "old.dat"), Buffer.alloc(32, 1));
-  oldest.release();
-  const newer = cache.acquireCache(oldestRoot, "cargo-home", { runRoot: oldestRun.root });
+  await releaseCache(oldest);
+  const newer = await acquireCache(oldestRoot, "cargo-home", { runRoot: oldestRun.root });
   fs.writeFileSync(path.join(newer.path, "new.dat"), Buffer.alloc(32, 2));
-  newer.release();
+  await releaseCache(newer);
   const oldMarkerPath = path.join(oldest.path, cache.CACHE_MARKER);
   const oldMarker = JSON.parse(fs.readFileSync(oldMarkerPath, "utf8"));
   oldMarker.lastUsedAt = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   fs.writeFileSync(oldMarkerPath, JSON.stringify(oldMarker));
   const currentSizes = cache.status().filter(item => item.projectRoot === fs.realpathSync(oldestRoot));
   const newerBytes = currentSizes.find(item => item.kind === "cargo-home").bytes;
-  const oldestPrune = cache.pruneCaches({ projectRoot: oldestRoot, maxBytes: newerBytes, maxAgeMs: 30 * 24 * 60 * 60 * 1000, budgetMs: 1000 });
+  const oldestPrune = await pruneCaches({ projectRoot: oldestRoot, maxBytes: newerBytes, maxAgeMs: 30 * 24 * 60 * 60 * 1000, budgetMs: 1000 });
   assert(oldestPrune.removed.some(item => item.path === oldest.path), "oldest idle cache should be evicted first");
   assert(!oldestPrune.removed.some(item => item.path === newer.path), "newer cache should survive when oldest eviction meets the budget");
   assert(fs.existsSync(newer.path));
@@ -116,14 +162,14 @@ async function main() {
   const child = spawn(process.execPath, ["-e", "setInterval(()=>{},1000)"], { stdio: "ignore", windowsHide: true });
   const childClosed = new Promise(resolve => child.once("close", resolve));
   liveRun.setChildPid(child.pid);
-  const liveCache = cache.acquireCache(liveRoot, "cargo-home", { runRoot: liveRun.root, maxBytes: 1024 * 1024 });
+  const liveCache = await acquireCache(liveRoot, "cargo-home", { runRoot: liveRun.root, maxBytes: 1024 * 1024 });
   const liveLeaseFile = leaseFiles(liveCache.path)[0];
   const liveLease = JSON.parse(fs.readFileSync(liveLeaseFile, "utf8"));
   liveLease.pid = 2147483647;
   fs.writeFileSync(liveLeaseFile, JSON.stringify(liveLease));
   setRunOwner(liveRun, { pid: 2147483647 });
   try {
-    const protectedReport = cache.pruneCaches({ projectRoot: liveRoot, maxBytes: 0, budgetMs: 1000 });
+    const protectedReport = await pruneCaches({ projectRoot: liveRoot, maxBytes: 0, budgetMs: 1000 });
     assert(protectedReport.retained.some(item => item.path === liveCache.path && item.reason === "active-lease"));
     assert(protectedReport.activeOverBudget, "live supervisor cache over budget was not surfaced");
     assert(fs.existsSync(liveCache.path));
@@ -132,7 +178,7 @@ async function main() {
     await childClosed;
   }
   setRunOwner(liveRun, { childPid: null, childGroup: false, launching: false });
-  const stale = cache.pruneCaches({ projectRoot: liveRoot, maxBytes: 0, budgetMs: 1000 });
+  const stale = await pruneCaches({ projectRoot: liveRoot, maxBytes: 0, budgetMs: 1000 });
   assert(stale.removed.some(item => item.path === liveCache.path), "cache lease with a known stale run was not recovered");
   assert(managedTemp.sweep(liveRoot).removed.includes(liveRun.id));
 
@@ -140,8 +186,8 @@ async function main() {
   const sweptRun = managedTemp.createRun(sweptRoot);
   const supervisor = spawn(process.execPath, ["-e", "setInterval(()=>{},1000)"], { stdio: "ignore", windowsHide: true });
   const supervisorClosed = new Promise(resolve => supervisor.once("close", resolve));
-  const sweptCache = cache.acquireCache(sweptRoot, "npm", { runRoot: sweptRun.root, maxBytes: 1024 * 1024 });
-  assert.deepStrictEqual(sweptCache.bindSupervisor(supervisor.pid), { bound: true, supervisorPid: supervisor.pid });
+  const sweptCache = await acquireCache(sweptRoot, "npm", { runRoot: sweptRun.root, maxBytes: 1024 * 1024 });
+  assert.deepStrictEqual(await bindSupervisor(sweptCache, supervisor.pid), { bound: true, supervisorPid: supervisor.pid });
   const sweptLeaseFile = leaseFiles(sweptCache.path)[0];
   const sweptLease = JSON.parse(fs.readFileSync(sweptLeaseFile, "utf8"));
   sweptLease.pid = 2147483647;
@@ -149,38 +195,38 @@ async function main() {
   setRunOwner(sweptRun, { pid: 2147483647 });
   try {
     assert(managedTemp.sweep(sweptRoot).removed.includes(sweptRun.id), "scratch sweep should be able to remove a stopped run before cache pruning");
-    const held = cache.pruneCaches({ projectRoot: sweptRoot, maxBytes: 0, budgetMs: 1000 });
+    const held = await pruneCaches({ projectRoot: sweptRoot, maxBytes: 0, budgetMs: 1000 });
     assert(held.retained.some(item => item.path === sweptCache.path && item.reason === "active-lease"), "bound live supervisor must protect a cache after scratch marker removal");
     assert(fs.existsSync(sweptCache.path));
   } finally {
     supervisor.kill();
     await supervisorClosed;
   }
-  const recovered = cache.pruneCaches({ projectRoot: sweptRoot, maxBytes: 0, budgetMs: 1000 });
+  const recovered = await pruneCaches({ projectRoot: sweptRoot, maxBytes: 0, budgetMs: 1000 });
   assert(recovered.removed.some(item => item.path === sweptCache.path), "dead bound supervisor should allow recovery after the run marker was swept");
 
   const unboundRoot = project("swept-run-unbound-lease");
   const unboundRun = managedTemp.createRun(unboundRoot);
-  const unboundCache = cache.acquireCache(unboundRoot, "npm", { runRoot: unboundRun.root, maxBytes: 1024 * 1024 });
+  const unboundCache = await acquireCache(unboundRoot, "npm", { runRoot: unboundRun.root, maxBytes: 1024 * 1024 });
   const unboundLeaseFile = leaseFiles(unboundCache.path)[0];
   const unboundLease = JSON.parse(fs.readFileSync(unboundLeaseFile, "utf8"));
   unboundLease.pid = 2147483647;
   fs.writeFileSync(unboundLeaseFile, JSON.stringify(unboundLease));
   setRunOwner(unboundRun, { pid: 2147483647 });
   assert(managedTemp.sweep(unboundRoot).removed.includes(unboundRun.id));
-  const unbound = cache.pruneCaches({ projectRoot: unboundRoot, maxBytes: 0, budgetMs: 1000 });
+  const unbound = await pruneCaches({ projectRoot: unboundRoot, maxBytes: 0, budgetMs: 1000 });
   assert(unbound.retained.some(item => item.path === unboundCache.path && item.reason === "missing-or-invalid-run-owner"), "unbound missing-run lease must remain uncertain");
 
   const unresolvedRoot = project("unresolved-run");
   const unresolvedRun = managedTemp.createRun(unresolvedRoot);
   unresolvedRun.setLaunching(true);
-  const unresolvedCache = cache.acquireCache(unresolvedRoot, "npm", { runRoot: unresolvedRun.root, maxBytes: 1024 * 1024 });
+  const unresolvedCache = await acquireCache(unresolvedRoot, "npm", { runRoot: unresolvedRun.root, maxBytes: 1024 * 1024 });
   const unresolvedLeaseFile = leaseFiles(unresolvedCache.path)[0];
   const unresolvedLease = JSON.parse(fs.readFileSync(unresolvedLeaseFile, "utf8"));
   unresolvedLease.pid = 2147483647;
   fs.writeFileSync(unresolvedLeaseFile, JSON.stringify(unresolvedLease));
   setRunOwner(unresolvedRun, { pid: 2147483647 });
-  const unresolved = cache.pruneCaches({ projectRoot: unresolvedRoot, maxBytes: 0, budgetMs: 1000 });
+  const unresolved = await pruneCaches({ projectRoot: unresolvedRoot, maxBytes: 0, budgetMs: 1000 });
   assert(unresolved.retained.some(item => item.path === unresolvedCache.path && item.reason === "unresolved-launch-lease"));
   assert(fs.existsSync(unresolvedCache.path), "unresolved launch lease must protect its cache");
   fs.unlinkSync(unresolvedLeaseFile);
@@ -192,19 +238,19 @@ async function main() {
   unresolvedOwner.launching = false;
   fs.writeFileSync(ownerPath(unresolvedRun), JSON.stringify(unresolvedOwner));
   assert(managedTemp.sweep(unresolvedRoot).removed.includes(unresolvedRun.id));
-  const unresolvedEviction = cache.pruneCaches({ projectRoot: unresolvedRoot, maxBytes: 0, budgetMs: 1000 });
+  const unresolvedEviction = await pruneCaches({ projectRoot: unresolvedRoot, maxBytes: 0, budgetMs: 1000 });
   assert(unresolvedEviction.removed.some(item => item.path === unresolvedCache.path));
 
   const linkRoot = project("linked-cache");
   const linkRun = managedTemp.createRun(linkRoot);
-  const linkCache = cache.acquireCache(linkRoot, "npm", { runRoot: linkRun.root });
+  const linkCache = await acquireCache(linkRoot, "npm", { runRoot: linkRun.root });
   const outside = path.join(fixture, "outside");
   fs.mkdirSync(outside);
   fs.writeFileSync(path.join(outside, "keep.txt"), "keep");
   try {
     fs.symlinkSync(outside, path.join(linkCache.path, "linked"), process.platform === "win32" ? "junction" : "dir");
-    linkCache.release();
-    const linkReport = cache.pruneCaches({ projectRoot: linkRoot, maxBytes: 0, budgetMs: 1000 });
+    await releaseCache(linkCache);
+    const linkReport = await pruneCaches({ projectRoot: linkRoot, maxBytes: 0, budgetMs: 1000 });
     assert(linkReport.retained.some(item => item.path === linkCache.path && item.reason === "linked-cache-entry"));
     assert(fs.existsSync(path.join(outside, "keep.txt")));
     assert(fs.existsSync(linkCache.path));
@@ -216,10 +262,10 @@ async function main() {
 
   const budgetRoot = project("budget");
   const budgetRun = managedTemp.createRun(budgetRoot);
-  const budgetCache = cache.acquireCache(budgetRoot, "npm", { runRoot: budgetRun.root });
+  const budgetCache = await acquireCache(budgetRoot, "npm", { runRoot: budgetRun.root });
   for (let index = 0; index < 2000; index += 1) fs.writeFileSync(path.join(budgetCache.path, `item-${index}.dat`), "x");
-  budgetCache.release();
-  const budget = cache.pruneCaches({ projectRoot: budgetRoot, maxBytes: 0, budgetMs: 0 });
+  await releaseCache(budgetCache);
+  const budget = await pruneCaches({ projectRoot: budgetRoot, maxBytes: 0, budgetMs: 0 });
   assert(!budget.complete || budget.retained.some(item => item.reason === "budget-exhausted"));
   assert(fs.existsSync(budgetCache.path), "budget-limited prune must not delete incompletely observed cache data");
   assert(budgetRun.finish().removed);

@@ -725,7 +725,19 @@ function inspectRunLease(runRoot) {
     if (canonicalProject !== owner.root || !readOwner(directory, owner.root, projectHash(owner.root)) || path.resolve(directory) !== path.resolve(managedBaseFor(owner.root), owner.id)) {
       return { valid: false, active: null, reason: "invalid-run-owner" };
     }
-    if (owner.retainedReason) return { valid: true, active: null, pending: true, reason: owner.retainedReason };
+    if (owner.retainedReason) {
+      // POSIX foreground runs are retained until their wrapper confirms normal
+      // completion, but a live wrapper still owns a valid inherited lease.
+      // Other retained reasons are unresolved cleanup and must never authorize
+      // dependent work, even if their recorded PID happens to be alive.
+      const activeForegroundParent = owner.retainedReason === "foreground-contract-not-completed" && isAlive(owner.pid);
+      const inspectedOwner = activeForegroundParent ? {
+        id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid,
+        childPid: owner.childPid ?? null, childGroup: owner.childGroup === true,
+        launching: owner.launching === true, retainedReason: owner.retainedReason,
+      } : undefined;
+      return { valid: true, active: activeForegroundParent, pending: true, reason: owner.retainedReason, ...(inspectedOwner ? { owner: inspectedOwner } : {}) };
+    }
     if (owner.launching && !isAlive(owner.pid) && !isAlive(owner.childPid, owner.childGroup)) return { valid: true, active: null, pending: true, reason: "unresolved-launch-lease" };
     const active = leaseActive(owner);
     return { valid: true, active, pending: false, reason: active ? "live-run-lease" : "stale-run-lease", owner: { id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid, childPid: owner.childPid ?? null, childGroup: owner.childGroup === true, launching: owner.launching === true, retainedReason: owner.retainedReason || null } };
