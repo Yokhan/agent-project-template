@@ -71,7 +71,8 @@ powershell -NoProfile -Command ^
   "$candidateMap = @{};" ^
   "$trackedFiles = @(& git -C $templateRoot ls-files); if ($LASTEXITCODE -ne 0) { throw 'Could not enumerate tracked template files' };" ^
   "foreach ($rel in $trackedFiles) { if ($rel) { $candidateMap[$rel.Replace('\','/')] = $true } }" ^
-  "foreach ($rel in ($payloadFiles + $candidateMap.Keys)) {" ^
+  "$copied = New-Object 'System.Collections.Generic.List[string]';" ^
+  "foreach ($rel in $candidateMap.Keys) {" ^
   "  $normalized = $rel.Replace('\','/');" ^
   "  $isPrefixed = $false;" ^
   "  foreach ($prefix in $payloadPrefixes) { if ($normalized.StartsWith($prefix)) { $isPrefixed = $true; break } }" ^
@@ -84,23 +85,20 @@ powershell -NoProfile -Command ^
   "  if (-not (Test-Path $source -PathType Leaf)) { continue }" ^
   "  $target = Join-Path $projectRoot $normalized;" ^
   "  New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($target)) | Out-Null;" ^
-  "  Copy-Item $source $target -Force;" ^
+  "  Copy-Item $source $target -Force; $copied.Add($normalized);" ^
   "}" ^
   "$starterRoot = Join-Path $templateRoot 'templates/project-starter';" ^
   "if (Test-Path $starterRoot) {" ^
-  "  Get-ChildItem $starterRoot -Recurse -File | ForEach-Object {" ^
-  "    $rel = $_.FullName.Substring($starterRoot.Length + 1).Replace('\','/');" ^
+  "  foreach ($sourceRel in $candidateMap.Keys) { if ($sourceRel.StartsWith('templates/project-starter/')) {" ^
+  "    $rel = $sourceRel.Substring('templates/project-starter/'.Length);" ^
   "    $target = Join-Path $projectRoot $rel;" ^
   "    New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($target)) | Out-Null;" ^
-  "    Copy-Item $_.FullName $target -Force;" ^
-  "  }" ^
-  "}"
+  "    $source = Join-Path $templateRoot $sourceRel; if (-not (Test-Path $source -PathType Leaf)) { continue };" ^
+  "    Copy-Item $source $target -Force; $copied.Add($rel);" ^
+  "  } }" ^
+  "}" ^
+  "[System.IO.File]::WriteAllText((Join-Path $projectRoot '.setup-copy-receipt.json'), (ConvertTo-Json -InputObject @{ files = @($copied | Sort-Object -Unique) } -Depth 3), [System.Text.UTF8Encoding]::new($false));"
 if errorlevel 1 exit /b 1
-
-if exist "%TEMPLATE_DIR%scripts\task-brief.sh" (
-    if not exist "%PROJECT_DIR%\\scripts" mkdir "%PROJECT_DIR%\\scripts"
-    copy /Y "%TEMPLATE_DIR%scripts\task-brief.sh" "%PROJECT_DIR%\\scripts\\task-brief.sh" >nul
-)
 
 set "RAW_TEMPLATE_DIR="
 set "RAW_PROJECT_DIR="
@@ -111,166 +109,10 @@ if not exist "%PROJECT_DIR%\.claude\settings.local.json" (
     copy /Y "%TEMPLATE_DIR%.claude\settings.local.json.example" "%PROJECT_DIR%\.claude\settings.local.json" >nul 2>&1
 )
 
-:: Generate template manifest
+:: Generate template manifest from the exact successful copy receipt
 echo [2/6] Generating template manifest...
 cd "%PROJECT_DIR%"
-powershell -NoProfile -Command ^
-  "$ErrorActionPreference = 'Stop';" ^
-  "$today = (Get-Date -Format 'yyyy-MM-dd');" ^
-  "$getSha256 = { param([string]$path) $algorithm = [System.Security.Cryptography.SHA256]::Create(); $stream = [System.IO.File]::OpenRead($path); try { [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() } finally { $stream.Dispose(); $algorithm.Dispose() } };" ^
-  "$templateVersion = '4.0.1';" ^
-  "try {" ^
-  "  $versionMatch = Select-String -Path (Join-Path '%TEMPLATE_DIR%' 'AGENTS.md') -Pattern 'Template Version:\s*([0-9.]+)' -ErrorAction Stop | Select-Object -First 1;" ^
-  "  if ($versionMatch.Matches.Count -gt 0) { $templateVersion = $versionMatch.Matches[0].Groups[1].Value }" ^
-  "} catch {}" ^
-  "$templateFiles = @(" ^
-  "  '.codex/config.toml'," ^
-  "  '.codex/hooks.json'," ^
-  "  '.codex/agents/*.toml'," ^
-  "  '.claude/settings.json'," ^
-  "  '.claude/settings.local.json.example'," ^
-  "  '.github/ci.yml.template'," ^
-  "  '.editorconfig'," ^
-  "  '.env.example'," ^
-  "  '.gitattributes'," ^
-  "  'Makefile'," ^
-  "  'SECURITY.md'," ^
-  "  'CONTRIBUTING.md'," ^
-  "  'README.md'," ^
-  "  'SETUP_GUIDE.md'," ^
-  "  'upgrade-project.sh'," ^
-  "  'AGENTS.md'," ^
-  "  'CLAUDE.md'," ^
-  "  'DESIGN.md'," ^
-  "  'design-policy.ignore'," ^
-  "  'PROJECT_SPEC.md'," ^
-  "  'ecosystem.md'," ^
-  "  '.gitignore'," ^
-  "  '.mcp.json'," ^
-  "  '.vscode/extensions.json'" ^
-  ");" ^
-  "$templatePatterns = @(" ^
-  "  '.agents/skills/*/SKILL.md'," ^
-  "  '.agents/skills/*/agents/openai.yaml'," ^
-  "  '.agents/skills/*/references/*.md'," ^
-  "  '.claude/docs/*.md'," ^
-  "  '.claude/docs/domain-full/*.md'," ^
-  "  '.claude/rules/*.md'," ^
-  "  '.claude/library/process/*.md'," ^
-  "  '.claude/library/technical/*.md'," ^
-  "  '.claude/library/technical/*.json'," ^
-  "  '.claude/library/meta/*.md'," ^
-  "  '.claude/library/domain/*.md'," ^
-  "  '.claude/library/product/*.md'," ^
-  "  '.claude/library/conflict/*.md'," ^
-  "  '.claude/agents/*.md'," ^
-  "  '.claude/skills/*/SKILL.md'," ^
-  "  '.claude/commands/*.md'," ^
-  "  '.claude/hooks/*.sh'," ^
-  "  '.claude/pipelines/*.md'," ^
-  "  'scripts/*.sh'," ^
-  "  'scripts/*.js'," ^
-  "  'scripts/lib/managed-process.ps1'," ^
-  "  'scripts/*.cmd'," ^
-  "  'scripts/lib/*.sh'," ^
-  "  'scripts/lib/*.js'," ^
-  "  'mcp-servers/context-router/package-lock.json'," ^
-  "  'mcp-servers/context-router/src/*.ts'," ^
-  "  'mcp-servers/context-router/package.json'," ^
-  "  'mcp-servers/context-router/tsconfig.json'," ^
-  "  'tests/rules/*.test.md'," ^
-  "  'tests/fixtures/writing-tools/*.js'," ^
-  "  'tests/fixtures/change-strategy/*.json'," ^
-  "  'docs/AGENT_PIPELINES.md'," ^
-  "  'docs/NATIVE_WORKFLOW_GATES.md'," ^
-  "  'docs/NATIVE_WORKFLOW_ACCEPTANCE.md'," ^
-  "  'docs/CODEX_FANOUT_PATTERNS.md'," ^
-  "  'docs/CODEX_SKILLS_AUDIT.md'," ^
-  "  'docs/CODEX_SUBAGENTS_AUDIT.md'," ^
-  "  'docs/CODE_INTELLIGENCE_TOOLCHAIN.md'," ^
-  "  'docs/MIGRATION_MATRIX.md'," ^
-  "  'docs/OPENAI_MODEL_GUIDANCE.md'," ^
-  "  'docs/WRITING_REFERENCE_PROVENANCE.md'," ^
-  "  'docs/WRITING_WORKFLOW.md'," ^
-  "  'docs/PRODUCT_BOUNDARY.md'," ^
-  "  'docs/RELEASE_CHECKLIST.md'," ^
-  "  'docs/TEMPLATE_RELEASES.md'," ^
-  "  'docs/SAFE_DEFAULTS.md'," ^
-  "  'docs/SHARED_CONVENTIONS.md'," ^
-  "  'docs/SUPPORTED_ENVIRONMENTS.md'," ^
-  "  'docs/*.md.template'," ^
-  "  '_reference/*.md'," ^
-  "  '_reference/*.json'," ^
-  "  '_reference/*.toml'," ^
-  "  '.github/workflows/validate-template.yml'" ^
-  ");" ^
-  "$projectPatterns = @(" ^
-  "  'tasks/*'," ^
-  "  'brain/*'" ^
-  ");" ^
-  "$getCategory = {" ^
-  "  param([string]$path)" ^
-  "  switch -Wildcard ($path.Replace('\','/')) {" ^
-  "    'docs/NATIVE_WORKFLOW_GATES.md' { 'template'; break }" ^
-  "    'docs/NATIVE_WORKFLOW_ACCEPTANCE.md' { 'template'; break }" ^
-  "    'CLAUDE.md' { 'project'; break }" ^
-  "    'DESIGN.md' { 'project'; break }" ^
-  "    'design-policy.ignore' { 'project'; break }" ^
-  "    'PROJECT_SPEC.md' { 'project'; break }" ^
-  "    'ecosystem.md' { 'project'; break }" ^
-  "    'tasks/*' { 'project'; break }" ^
-  "    'brain/*' { 'project'; break }" ^
-  "    '.gitignore' { 'hybrid'; break }" ^
-  "    '.codex/config.toml' { 'hybrid'; break }" ^
-  "    '.mcp.json' { 'hybrid'; break }" ^
-  "    '.vscode/extensions.json' { 'hybrid'; break }" ^
-  "    default { 'template' }" ^
-  "  }" ^
-  "};" ^
-  "$files = @{};" ^
-  "foreach ($f in $templateFiles) {" ^
-  "  if (Test-Path $f) {" ^
-  "    foreach ($item in (Get-ChildItem -Path $f -File)) {" ^
-  "      $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
-  "      $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
-  "      $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
-  "    }" ^
-  "  }" ^
-  "};" ^
-  "foreach ($p in $templatePatterns) {" ^
-  "  if (Test-Path $p) { foreach ($item in (Get-ChildItem -Path $p -File)) {" ^
-  "    $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
-  "    $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
-  "    $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
-  "  } }" ^
-  "};" ^
-  "foreach ($p in $projectPatterns) {" ^
-  "  $dir = $p.Replace('/*','');" ^
-  "  if (Test-Path $dir) {" ^
-  "    foreach ($item in (Get-ChildItem -Path $dir -Recurse -File)) {" ^
-  "      $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\','/');" ^
-  "      $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw ('Invalid SHA-256 for ' + $rel) };" ^
-  "      $files[$rel] = @{ category = (& $getCategory $rel); hash = $h };" ^
-  "    }" ^
-  "  }" ^
-  "};" ^
-  "$entries = @();" ^
-  "foreach ($key in ($files.Keys | Sort-Object)) {" ^
-  "  $v = $files[$key];" ^
-  "  $entries += ('    \"' + $key + '\": { \"category\": \"' + $v.category + '\", \"hash\": \"' + $v.hash + '\" }');" ^
-  "};" ^
-  "$templateRemote = '';" ^
-  "try { $templateRemote = (& git -C '%TEMPLATE_DIR%' remote get-url origin 2>$null) } catch {};" ^
-  "$json = '{' + [Environment]::NewLine;" ^
-  "$json += '  \"template_version\": \"' + $templateVersion + '\",' + [Environment]::NewLine;" ^
-  "$json += '  \"template_remote\": \"' + $templateRemote + '\",' + [Environment]::NewLine;" ^
-  "$json += '  \"created\": \"' + $today + '\",' + [Environment]::NewLine;" ^
-  "$json += '  \"updated\": \"' + $today + '\",' + [Environment]::NewLine;" ^
-  "$json += '  \"files\": {' + [Environment]::NewLine;" ^
-  "$json += ($entries -join (',' + [Environment]::NewLine));" ^
-  "$json += [Environment]::NewLine + '  }' + [Environment]::NewLine + '}';" ^
-  "[System.IO.File]::WriteAllText('.template-manifest.json', $json, [System.Text.UTF8Encoding]::new($false));" ^
-  "Write-Host 'Generated .template-manifest.json'"
+node scripts\lib\setup-manifest.js --receipt .setup-copy-receipt.json --source "%TEMPLATE_DIR%."
 if errorlevel 1 exit /b 1
 
 :: Initialize git
@@ -312,8 +154,8 @@ where npm.cmd >nul 2>nul
 if errorlevel 1 (
     echo WARNING: npm.cmd not found. Run npm.cmd ci in mcp-servers\context-router later.
 ) else (
-    npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" ci || exit /b 1
-    npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" run build || exit /b 1
+    call npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" ci || exit /b 1
+    call npm.cmd --prefix "%PROJECT_DIR%\mcp-servers\context-router" run build || exit /b 1
 )
 echo.
 echo [6/6] Done!

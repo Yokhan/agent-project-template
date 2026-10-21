@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v6.1.0"
+        description: "Existing tag to publish, for example v6.1.1"
         required: true
         type: string
 
@@ -150,6 +150,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "setup.bat failed with exit $LASTEXITCODE" }
             $project = Join-Path $smokeRoot 'ci-template-smoke'
             if (-not (Test-Path (Join-Path $project '.git'))) { throw 'setup.bat did not initialize the fresh project' }
+            if (-not (Test-Path (Join-Path $project 'mcp-servers/context-router/dist/index.js'))) { throw 'setup.bat did not complete the context-router build' }
             Set-Location $project
             node (Join-Path $project 'scripts/lib/codex-runtime.js')
             node (Join-Path $project 'scripts/test-codex-hooks.js')
@@ -242,7 +243,7 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "Managed test, build and browser runs allocate owned scratch and tool-specific output paths, stop their Windows process family, and reclaim disposable resources. Optional shared caches have per-project budgets and preserve active leases. Existing native hooks sweep owned inactive resources and report incomplete cleanup. See docs/RELEASE_V6_1_0.md for commands, acceptance and limits."
+            echo "Managed test, build and browser runs allocate owned scratch and tool-specific output paths, stop their Windows process family, and reclaim disposable resources. Optional shared caches have per-project budgets and preserve active leases. Existing native hooks sweep owned inactive resources and report incomplete cleanup. See docs/RELEASE_V6_1_1.md for patch acceptance and docs/RELEASE_V6_1_0.md for lifecycle details."
             echo ""
             echo "Windows process-family supervision uses Job Objects. POSIX supports only explicitly declared foreground test/command runs; interrupted runs remain protected for manual recovery. Shared browser installations, MCP databases, books, chat history, sources and unknown paths are preserved. Budgets are sampled limits, not a filesystem hard quota. Node 24+ with working node:sqlite is required."
             echo ""

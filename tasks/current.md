@@ -2,24 +2,38 @@
 id: template-runtime-workflow-20261018
 status: active
 updated: 2026-10-21
-readiness: 95
+readiness: 97
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
 tags: template,hooks,delegation,writing,evidence
-next: accept private library setup and final 575-file candidate, verify Linux/Windows CI, publish immutable v6.1.0 assets; no consumer rollout
+next: verify v6.1.1 exact-commit CI then immutable exact-tag assets and fast-forward main; no consumer rollout
 -->
 
 # Current Task - Owned Build And Browser Resource Lifecycle
 
 2026-10-21 release continuation: the owner authorized publication only after
-verification. Prepare compatible minor v6.1.0 from this source, run the mandatory
+verification. Prepare compatible v6.1.1 patch from this source, run the mandatory
 release gates, and require green exact-commit Linux/Windows preflight before
 creating the immutable tag. Verify the published stable release, downloaded
 checksums, metadata, exact file set and canonical archive. No downstream project
 update is authorized by this release task. The local evidence below remains the
 accepted baseline; subsequent version/workflow changes require release checks.
+
+The v6.1.0 tag remains immutable at `88e6bdd`. Exact-tag release run
+`39652334813` failed the Windows fresh-project manifest assertion: the library
+setup document was copied but absent from the separate manifest list. Packaging
+and publication were skipped. The v6.1.1 repair derives manifest membership from
+tracked copy provenance, preserves canonical categories and hashes destination
+bytes; it must pass fresh setup before a new immutable tag.
+
+The repaired full Windows setup passed all 539 copied-file hashes/categories,
+no-BOM manifest, actual MCP build and completion on PowerShell 5.1. A separate
+Unix fixture verified exact copied-set equality and tracked-only source/starter
+selection. Focused native/manifest checks passed. Local bounded runs explicitly
+used a lower free-space floor because the host is below the unchanged default
+2 GiB reserve; final aggregate acceptance is required on clean CI hosts.
 
 Independent runtime and security reviews found no blocking defect in normal
 owned cleanup. POSIX foreground interruption retains protected scratch and

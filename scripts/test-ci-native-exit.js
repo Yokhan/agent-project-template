@@ -7,54 +7,83 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { createManifest } = require("./lib/setup-manifest");
 
 const root = path.resolve(__dirname, "..");
 const setupBatchFile = path.join(root, "setup.bat");
 if (fs.existsSync(setupBatchFile)) {
   const setupBatch = fs.readFileSync(setupBatchFile, "utf8").replace(/\r\n/gu, "\n");
-  assert.equal([...setupBatch.matchAll(/\$ErrorActionPreference = 'Stop'/gu)].length, 2,
-    "Windows copy and manifest PowerShell blocks must fail on cmdlet errors");
-  assert.doesNotMatch(setupBatch, /Get-FileHash/u, "Windows manifest hashing must not depend on the Get-FileHash cmdlet");
-  assert.match(setupBatch, /\[System\.Security\.Cryptography\.SHA256\]::Create\(\)/u,
-    "Windows manifest hashing must use the .NET SHA-256 stream helper");
-  assert.match(setupBatch, /foreach \(\$f in \$templateFiles\) \{[\s\S]*?foreach \(\$item in \(Get-ChildItem -Path \$f -File\)\)/u,
-    "Windows manifest hashing must expand wildcard template paths to concrete files");
-  assert.match(setupBatch, /Write-Host 'Generated \.template-manifest\.json'"\nif errorlevel 1 exit \/b 1/u,
-    "Windows setup must stop when manifest generation fails");
-  assert.match(setupBatch, /echo \[1\/6\] Copying template payload\.\.\.[\s\S]*?^  "\}"\nif errorlevel 1 exit \/b 1/mu,
+  assert.equal([...setupBatch.matchAll(/\$ErrorActionPreference = 'Stop'/gu)].length, 1,
+    "Windows payload copy must fail on PowerShell errors");
+  assert.match(setupBatch, /git -C \$templateRoot ls-files/u,
+    "Windows setup must derive its candidate set from tracked files");
+  assert.doesNotMatch(setupBatch, /\$payloadFiles \+ \$candidateMap\.Keys/u,
+    "Windows setup must not admit untracked root payload files");
+  assert.match(setupBatch, /foreach \(\$sourceRel in \$candidateMap\.Keys\)[\s\S]*?StartsWith\('templates\/project-starter\/'\)/u,
+    "Windows starter overrides must come from the tracked candidate set");
+  assert.match(setupBatch, /\.setup-copy-receipt\.json/u,
+    "Windows setup must record its successful copy set");
+  assert.match(setupBatch, /node scripts\\lib\\setup-manifest\.js --receipt \.setup-copy-receipt\.json/u,
+    "Windows setup must generate the manifest from the successful copy receipt");
+  assert.match(setupBatch, /if errorlevel 1 exit \/b 1\n\n:: Initialize git/u,
+    "Windows setup must stop before git init when manifest generation fails");
+  assert.match(setupBatch, /echo \[1\/6\] Copying template payload\.\.\.[\s\S]*?\.setup-copy-receipt\.json'\),[\s\S]*?\nif errorlevel 1 exit \/b 1/mu,
     "Windows setup must stop when payload copying fails");
 
   const shellSetup = fs.readFileSync(path.join(root, "setup.sh"), "utf8");
-  for (const relative of ["docs/NATIVE_WORKFLOW_GATES.md", "docs/NATIVE_WORKFLOW_ACCEPTANCE.md"]) {
-    assert.match(setupBatch, new RegExp(`'${relative.replaceAll("/", "[/\\\\]")}'`, "u"),
-      `${relative} must be included in the Windows manifest path list`);
-    assert.match(shellSetup, new RegExp(`"${relative}"`, "u"),
-      `${relative} must be included in the Unix manifest path list`);
-    assert.match(shellSetup, new RegExp(`${relative.replaceAll("/", "[/\\\\]")}.*echo "template"`, "u"),
-      `${relative} must be categorized as a template in the Unix manifest`);
-  }
+  assert.match(shellSetup, /git ls-files -- templates\/project-starter/u,
+    "Unix starter overrides must come from tracked files");
+  assert.match(shellSetup, /\.setup-copy-receipt/u,
+    "Unix setup must record its successful copy set");
+  assert.match(shellSetup, /node scripts\/lib\/setup-manifest\.js --receipt \.setup-copy-receipt/u,
+    "Unix setup must generate the manifest from the successful copy receipt");
 
-  if (process.platform === "win32") {
-    const helper = setupBatch.match(/^\s*"\$getSha256 = (\{[^\n]+\});"\s*\^$/mu)?.[1];
-    assert(helper, "Windows manifest SHA-256 helper must be extractable for legacy PowerShell verification");
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "template-sha256-"));
-    const projectDir = path.join(tempDir, "Generated Project");
-    const agentDir = path.join(projectDir, ".codex", "agents");
-    fs.mkdirSync(agentDir, { recursive: true });
-    const fixture = path.join(agentDir, "runtime-helper.toml");
-    const bytes = Buffer.from("legacy powershell sha256 fixture\n", "utf8");
-    fs.writeFileSync(fixture, bytes);
-    try {
-      const result = spawnSync("powershell.exe", [
-        "-NoProfile", "-NonInteractive", "-Command",
-        `$ErrorActionPreference = 'Stop'; $getSha256 = ${helper}; $templateFiles = @('.codex/agents/*.toml'); $files = @{}; foreach ($f in $templateFiles) { if (Test-Path $f) { foreach ($item in (Get-ChildItem -Path $f -File)) { $rel = $item.FullName.Substring((Get-Location).Path.Length + 1).Replace('\\','/'); $h = & $getSha256 $item.FullName; if ($h -notmatch '^[0-9a-f]{64}$') { throw 'Invalid SHA-256' }; $files[$rel] = @{ category = 'template'; hash = $h } } } }; $files['.codex/agents/runtime-helper.toml'].hash`,
-      ], { encoding: "utf8", cwd: projectDir });
-      assert(!result.error, result.error?.message);
-      assert.equal(result.status, 0, result.stderr);
-      assert.equal(result.stdout.trim(), crypto.createHash("sha256").update(bytes).digest("hex"));
-    } finally {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+}
+
+{
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "template-copy-manifest-"));
+  const projectRoot = path.join(tempDir, "project");
+  const sourceRoot = path.join(tempDir, "source");
+  fs.mkdirSync(path.join(projectRoot, "docs"), { recursive: true });
+  fs.mkdirSync(path.join(projectRoot, "tasks"), { recursive: true });
+  fs.mkdirSync(path.join(sourceRoot), { recursive: true });
+  const copied = ["docs/WRITING_LIBRARY_SETUP.md", "tasks/current.md", "CLAUDE.md", ".mcp.json"];
+  const bytesByPath = new Map(copied.map((file) => [file, Buffer.from(`fixture:${file}\n`, "utf8")]));
+  for (const [file, bytes] of bytesByPath) {
+    const destination = path.join(projectRoot, ...file.split("/"));
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(destination, bytes);
+  }
+  fs.writeFileSync(path.join(sourceRoot, "AGENTS.md"), "<!-- Template Version: 6.1.1 -->\n");
+  const receiptPath = path.join(tempDir, "receipt.json");
+  fs.writeFileSync(receiptPath, JSON.stringify({ files: copied }));
+  try {
+    const manifest = createManifest({ projectRoot, sourceRoot, receiptPath, date: new Date("2026-10-21T00:00:00.000Z") });
+    assert.deepEqual(Object.keys(manifest.files).sort(), copied.slice().sort(),
+      "manifest file set must exactly match the receipt, including newly added docs");
+    assert.equal(manifest.files["docs/WRITING_LIBRARY_SETUP.md"].category, "template");
+    assert.equal(manifest.files["tasks/current.md"].category, "project");
+    assert.equal(manifest.files["CLAUDE.md"].category, "project");
+    assert.equal(manifest.files[".mcp.json"].category, "hybrid");
+    for (const file of copied) {
+      assert.equal(manifest.files[file].hash, crypto.createHash("sha256").update(bytesByPath.get(file)).digest("hex"),
+        `${file} must hash the actual copied bytes`);
     }
+
+    const nulReceiptPath = path.join(tempDir, "receipt.nul");
+    fs.writeFileSync(nulReceiptPath, Buffer.from(`${copied.join("\0")}\0`, "utf8"));
+    const fromUnixReceipt = createManifest({ projectRoot, sourceRoot, receiptPath: nulReceiptPath });
+    assert.deepEqual(Object.keys(fromUnixReceipt.files).sort(), copied.slice().sort(),
+      "Unix NUL-delimited receipt must describe the same exact copied set");
+
+    fs.writeFileSync(receiptPath, JSON.stringify(["../outside.txt"]));
+    assert.throws(() => createManifest({ projectRoot, sourceRoot, receiptPath }), /Unsafe template path/u,
+      "receipt path traversal must fail closed");
+    fs.writeFileSync(receiptPath, JSON.stringify(["docs/missing.md"]));
+    assert.throws(() => createManifest({ projectRoot, sourceRoot, receiptPath }), /ENOENT/u,
+      "missing copied file must fail rather than produce an incomplete manifest");
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 }
 

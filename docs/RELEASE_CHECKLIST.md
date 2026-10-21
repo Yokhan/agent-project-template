@@ -2,23 +2,26 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.1.0`. This checklist records required evidence, not a
+Release target: `v6.1.1`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.1.0 Candidate (Local Evidence Only)
+## v6.1.1 Candidate (Acceptance Pending)
 
-- [x] Local Windows managed-run aggregate: 214/214 checks passed on 2026-10-21; see the retained aggregate log. This is local evidence, not the release workflow.
-- [x] Three real build runs each for Vite, TypeScript and offline Cargo used disposable profile outputs; three Playwright runs passed browser assertions and closed their owned processes.
-- [x] Ordinary native hooks ran without a per-request trust bypass. Windows process-family tests observed root membership and `KILL_ON_JOB_CLOSE`; abrupt nested CLI exit exercised cleanup.
-- [x] Run summaries record observed output cleanup. Shared reusable caches are opt-in and sampled at 10 GiB per project; idle project-owned entries are eligible after seven days. These are cleanup bounds, not a machine-wide hard quota.
-- [ ] Run the exact candidate commit through required Linux and Windows CI/release gates. POSIX foreground-process support has not been runtime-verified on this Windows host.
-- [x] Cleanup candidate `d2a1ddc` passed all six Linux/Windows preflight jobs in run `39646790758`; private-source provisioning was added afterward and needs final-commit CI.
-- [x] Owner-authenticated private-library provisioning into a fresh isolated external store passed: six sources, 12 exact hashes, ready contents/examples index, task-directed reading, zero-network reuse, preserved existing library and reclaimed scratch. Recipient access is verified separately after invitation acceptance.
-- [ ] Inspect exact-tag workflow, downloaded release assets, checksums and canonical archive after CI; no v6.1.0 publication is claimed here.
+- [x] The immutable `v6.1.0` tag at `88e6bdd` failed exact-tag Windows CI run [`39652334813`](https://github.com/Yokhan/agent-project-template/actions/runs/39652334813): the generated-project manifest assertion found `docs/WRITING_LIBRARY_SETUP.md` missing from the manifest. No GitHub Release was published for that tag; do not move or reuse it.
+- [x] The earlier preflight for `88e6bdd` passed run [`39651182625`](https://github.com/Yokhan/agent-project-template/actions/runs/39651182625). That preflight does not override the later exact-tag failure or prove the `v6.1.1` candidate.
+- [x] Replace duplicated setup manifest lists with tracked-copy receipts and canonical categories. Fresh full Windows setup verified all 539 copied-file hashes/categories, no BOM, actual context-router build and batch completion. The Unix fixture verified copied-set parity and exclusion of untracked sources/starter files.
+- [x] Focused native-exit/manifest and fresh setup checks passed. The earlier 215-check aggregate is baseline evidence; full final aggregate runs remain mandatory in CI. Bounded local fixtures used an explicit lower free-space floor because this host was below the unchanged 2 GiB default reserve.
+- [ ] Run required exact-commit Linux and Windows CI/release gates. POSIX foreground-process support remains declared but was not runtime-verified on the Windows development host.
+- [ ] Inspect the exact-tag workflow, downloaded release assets, checksums and canonical archive after CI. No v6.1.1 tag or publication is claimed here.
+
+The v6.1.1 candidate carries the v6.1.0 lifecycle behavior: managed disposable
+run outputs, supervised Windows process-family cleanup, opt-in bounded project
+caches, and cleanup evidence. The v6.1.0 lifecycle notes remain the feature
+record; see [v6.1.1 patch notes](RELEASE_V6_1_1.md) for the candidate boundary.
 
 The direct Chromium `--dump-dom` probe timed out; its timeout cleanup completed.
 That probe is not a pass. The passing browser evidence above is from the

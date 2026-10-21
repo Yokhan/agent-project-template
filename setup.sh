@@ -62,12 +62,18 @@ copy_starter_overrides() {
   local starter_root="$SCRIPT_DIR/templates/project-starter"
   [ -d "$starter_root" ] || return
 
-  while IFS= read -r -d '' starter_file; do
-    local rel_path="${starter_file#$starter_root/}"
+  local source_rel
+  while IFS= read -r source_rel; do
+    [ -n "$source_rel" ] || continue
+    [[ "$source_rel" == templates/project-starter/* ]] || continue
+    local starter_file="$SCRIPT_DIR/$source_rel"
+    [ -f "$starter_file" ] || continue
+    local rel_path="${source_rel#templates/project-starter/}"
     local target_path="$PROJECT_DIR/$rel_path"
     mkdir -p "$(dirname "$target_path")"
     cp "$starter_file" "$target_path"
-  done < <(find "$starter_root" -type f -print0)
+    COPIED_FILES+=("$rel_path")
+  done < <(cd "$SCRIPT_DIR" && git ls-files -- templates/project-starter)
 }
 
 copy_template_payload() {
@@ -76,6 +82,7 @@ copy_template_payload() {
   local rel_path=""
   declare -A payload_files=()
   local copy_files=()
+  COPIED_FILES=()
 
   # Ship only tracked files so maintainer-local artifacts cannot leak into child projects.
   while IFS= read -r rel_path; do
@@ -109,20 +116,22 @@ copy_template_payload() {
         const source = path.join(sourceRoot, file);
         const target = path.join(targetRoot, file);
         if (!fs.existsSync(source)) {
-          process.stderr.write(`WARNING: Missing template entry: ${file}\n`);
-          continue;
+          throw new Error(`Tracked template entry is missing: ${file}`);
         }
         fs.mkdirSync(path.dirname(target), { recursive: true });
         fs.copyFileSync(source, target);
       }
     ' -- "$node_source_root" "$node_target_root" "${copy_files[@]}"
+    COPIED_FILES+=("${copy_files[@]}")
   else
     for rel_path in "${copy_files[@]}"; do
       copy_entry "$rel_path"
+      COPIED_FILES+=("$rel_path")
     done
   fi
 
   copy_starter_overrides
+  printf '%s\0' "${COPIED_FILES[@]}" > "$PROJECT_DIR/.setup-copy-receipt"
 }
 
 # Parse flags and project name
@@ -201,242 +210,8 @@ if [ "$IS_ORCHESTRATOR" = true ]; then
   echo "Orchestrator directories created"
 fi
 
-# Generate template manifest
-generate_manifest() {
-  local manifest=".template-manifest.json"
-  local today
-  today=$(date +%Y-%m-%d)
-
-  # Determine hash command
-  local hash_cmd
-  if command -v sha256sum >/dev/null 2>&1; then
-    hash_cmd="sha256sum"
-  elif command -v shasum >/dev/null 2>&1; then
-    hash_cmd="shasum -a 256"
-  else
-    echo "WARNING: No SHA-256 tool found. Skipping manifest generation."
-    return
-  fi
-
-  get_category() {
-    local fpath="$1"
-    case "$fpath" in
-      .codex/config.toml) echo "hybrid" ;;
-      .codex/*) echo "template" ;;
-      .agents/skills/*/SKILL.md) echo "template" ;;
-      .agents/skills/*/agents/openai.yaml) echo "template" ;;
-      .agents/skills/*/references/*.md) echo "template" ;;
-      .claude/settings.json) echo "template" ;;
-      .claude/settings.local.json.example) echo "template" ;;
-      .claude/rules/*.md) echo "template" ;;
-      .claude/docs/*.md) echo "template" ;;
-      .claude/docs/domain-full/*.md) echo "template" ;;
-      .claude/library/process/*.md) echo "template" ;;
-      .claude/library/technical/*.md) echo "template" ;;
-      .claude/library/technical/*.json) echo "template" ;;
-      .claude/library/meta/*.md) echo "template" ;;
-      .claude/library/domain/*.md) echo "template" ;;
-      .claude/library/product/*.md) echo "template" ;;
-      .claude/library/conflict/*.md) echo "template" ;;
-      .claude/agents/*.md) echo "template" ;;
-      .claude/skills/*/SKILL.md) echo "template" ;;
-      .claude/commands/*.md) echo "template" ;;
-      .claude/hooks/*.sh) echo "template" ;;
-      .claude/pipelines/*.md) echo "template" ;;
-      scripts/*.sh) echo "template" ;;
-      scripts/*.js) echo "template" ;;
-      scripts/*.cmd) echo "template" ;;
-      scripts/lib/*.sh) echo "template" ;;
-      scripts/lib/*.js) echo "template" ;;
-      mcp-servers/context-router/package-lock.json) echo "template" ;;
-      mcp-servers/context-router/src/*.ts) echo "template" ;;
-      mcp-servers/context-router/package.json) echo "template" ;;
-      mcp-servers/context-router/tsconfig.json) echo "template" ;;
-      tests/rules/*.test.md) echo "template" ;;
-      tests/fixtures/design-policy/pass/*.css) echo "template" ;;
-      tests/fixtures/design-policy/fail/*.css) echo "template" ;;
-      tests/fixtures/writing-tools/*.js) echo "template" ;;
-      tests/fixtures/change-strategy/*.json) echo "template" ;;
-      docs/AGENT_PIPELINES.md|docs/NATIVE_WORKFLOW_GATES.md|docs/NATIVE_WORKFLOW_ACCEPTANCE.md|docs/CODEX_FANOUT_PATTERNS.md|docs/CODEX_SKILLS_AUDIT.md|docs/CODEX_SUBAGENTS_AUDIT.md|docs/CODE_INTELLIGENCE_TOOLCHAIN.md|docs/MIGRATION_MATRIX.md|docs/OPENAI_MODEL_GUIDANCE.md|docs/WRITING_REFERENCE_PROVENANCE.md|docs/WRITING_WORKFLOW.md|docs/PRODUCT_BOUNDARY.md|docs/RELEASE_CHECKLIST.md|docs/TEMPLATE_RELEASES.md|docs/SAFE_DEFAULTS.md|docs/SHARED_CONVENTIONS.md|docs/SUPPORTED_ENVIRONMENTS.md|docs/*.md.template) echo "template" ;;
-      _reference/*.md|_reference/*.json|_reference/*.toml) echo "template" ;;
-      .github/*) echo "template" ;;
-      .github/workflows/validate-template.yml) echo "template" ;;
-      .editorconfig) echo "template" ;;
-      .env.example) echo "template" ;;
-      .gitattributes) echo "template" ;;
-      Makefile) echo "template" ;;
-      SECURITY.md) echo "template" ;;
-      CONTRIBUTING.md) echo "template" ;;
-      README.md) echo "template" ;;
-      SETUP_GUIDE.md) echo "template" ;;
-      upgrade-project.sh) echo "template" ;;
-      AGENTS.md) echo "template" ;;
-      CLAUDE.md) echo "project" ;;
-      DESIGN.md) echo "project" ;;
-      design-policy.ignore) echo "project" ;;
-      PROJECT_SPEC.md) echo "project" ;;
-      ecosystem.md) echo "project" ;;
-      tasks/*) echo "project" ;;
-      brain/*) echo "project" ;;
-      .gitignore) echo "hybrid" ;;
-      .mcp.json) echo "hybrid" ;;
-      .vscode/extensions.json) echo "hybrid" ;;
-      *) echo "" ;;
-    esac
-  }
-
-  # Collect all files that belong in the manifest
-  local files=()
-  local patterns=(
-    ".codex/config.toml"
-    ".codex/hooks.json"
-    ".codex/agents/"*.toml
-    ".agents/skills/"*/SKILL.md
-    ".agents/skills/"*/agents/openai.yaml
-    ".agents/skills/"*/references/*.md
-    ".claude/settings.json"
-    ".claude/settings.local.json.example"
-    ".claude/rules/"*.md
-    ".claude/docs/"*.md
-    ".claude/docs/domain-full/"*.md
-    ".claude/library/process/"*.md
-    ".claude/library/technical/"*.md
-    ".claude/library/technical/"*.json
-    ".claude/library/meta/"*.md
-    ".claude/library/domain/"*.md
-    ".claude/library/product/"*.md
-    ".claude/library/conflict/"*.md
-    ".claude/agents/"*.md
-    ".claude/skills/"*/SKILL.md
-    ".claude/commands/"*.md
-    ".claude/hooks/"*.sh
-    ".claude/pipelines/"*.md
-    "scripts/"*.sh
-    "scripts/"*.js
-    "scripts/"*.cmd
-    "scripts/lib/"*.sh
-    "scripts/lib/"*.js
-    "mcp-servers/context-router/package-lock.json"
-    "mcp-servers/context-router/src/"*.ts
-    "mcp-servers/context-router/package.json"
-    "mcp-servers/context-router/tsconfig.json"
-    "tests/rules/"*.test.md
-    "tests/fixtures/writing-tools/"*.js
-    "tests/fixtures/change-strategy/"*.json
-    "docs/AGENT_PIPELINES.md"
-    "docs/NATIVE_WORKFLOW_GATES.md"
-    "docs/NATIVE_WORKFLOW_ACCEPTANCE.md"
-    "docs/CODEX_FANOUT_PATTERNS.md"
-    "docs/CODEX_SKILLS_AUDIT.md"
-    "docs/CODEX_SUBAGENTS_AUDIT.md"
-    "docs/CODE_INTELLIGENCE_TOOLCHAIN.md"
-    "docs/MIGRATION_MATRIX.md"
-    "docs/OPENAI_MODEL_GUIDANCE.md"
-    "docs/WRITING_REFERENCE_PROVENANCE.md"
-    "docs/WRITING_WORKFLOW.md"
-    "docs/PRODUCT_BOUNDARY.md"
-    "docs/RELEASE_CHECKLIST.md"
-    "docs/TEMPLATE_RELEASES.md"
-    "docs/SAFE_DEFAULTS.md"
-    "docs/SHARED_CONVENTIONS.md"
-    "docs/SUPPORTED_ENVIRONMENTS.md"
-    "docs/"*.md.template
-    "_reference/"*.md
-    "_reference/"*.json
-    "_reference/"*.toml
-    ".github/"*.template
-    ".github/workflows/validate-template.yml"
-    ".editorconfig"
-    ".env.example"
-    ".gitattributes"
-    "Makefile"
-    "SECURITY.md"
-    "CONTRIBUTING.md"
-    "README.md"
-    "SETUP_GUIDE.md"
-    "upgrade-project.sh"
-    "AGENTS.md"
-    "CLAUDE.md"
-    "DESIGN.md"
-    "design-policy.ignore"
-    "PROJECT_SPEC.md"
-    "ecosystem.md"
-    ".mcp.json"
-    ".gitignore"
-    ".vscode/extensions.json"
-  )
-
-  # Add pattern-matched files
-  for pattern in "${patterns[@]}"; do
-    for f in $pattern; do
-      [ -f "$f" ] && files+=("$f")
-    done
-  done
-
-  # Add tasks/* and brain/* recursively
-  if [ -d "tasks" ]; then
-    while IFS= read -r -d '' f; do
-      files+=("$f")
-    done < <(find tasks -type f -print0 2>/dev/null)
-  fi
-  if [ -d "brain" ]; then
-    while IFS= read -r -d '' f; do
-      files+=("$f")
-    done < <(find brain -type f -print0 2>/dev/null)
-  fi
-
-  # Hash the manifest payload in one process when Node.js is available. Spawning
-  # sha256sum + awk once per file makes project creation take several minutes on
-  # Windows/Git Bash. Keep the portable shell path as a compatibility fallback.
-  declare -A file_hashes=()
-  if command -v node >/dev/null 2>&1; then
-    while IFS= read -r -d '' hash_path && IFS= read -r -d '' hash_value; do
-      file_hashes["$hash_path"]="$hash_value"
-    done < <(node -e '
-      const crypto = require("node:crypto");
-      const fs = require("node:fs");
-      for (const file of process.argv.slice(1)) {
-        const hash = crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
-        process.stdout.write(`${file}\0${hash}\0`);
-      }
-    ' -- "${files[@]}")
-  else
-    for f in "${files[@]}"; do
-      file_hashes["$f"]=$($hash_cmd "$f" | awk '{print $1}')
-    done
-  fi
-
-  # Build JSON
-  {
-    printf '{\n'
-    printf '  "template_version": "%s",\n' "$TEMPLATE_VERSION"
-    printf '  "template_remote": "%s",\n' "$TEMPLATE_REMOTE"
-    printf '  "created": "%s",\n' "$today"
-    printf '  "updated": "%s",\n' "$today"
-    printf '  "files": {\n'
-
-    local first=true
-    for f in "${files[@]}"; do
-      local cat
-      cat=$(get_category "$f")
-      [ -z "$cat" ] && continue
-      local hash="${file_hashes[$f]}"
-      if [ "$first" = true ]; then
-        first=false
-      else
-        printf ',\n'
-      fi
-      printf '    "%s": { "category": "%s", "hash": "%s" }' "$f" "$cat" "$hash"
-    done
-
-    printf '\n  }\n'
-    printf '}\n'
-  } > "$manifest"
-
-  echo "Generated $manifest"
-}
-
-generate_manifest
+# Generate template manifest from the exact successful copy receipt
+node scripts/lib/setup-manifest.js --receipt .setup-copy-receipt --source "$SCRIPT_DIR"
 
 # Initialize new git repo
 git init
