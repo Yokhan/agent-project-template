@@ -1,17 +1,23 @@
 <!-- PROGRESSIVE_STATUS
 id: template-runtime-workflow-20261018
-status: active
-updated: 2026-10-21
-readiness: 97
+status: done
+updated: 2026-10-22
+readiness: 100
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
 tags: template,hooks,delegation,writing,evidence
-next: verify v6.1.1 exact-commit CI then immutable exact-tag assets and fast-forward main; no consumer rollout
+next: stable v6.1.1 verified; private library invitation awaits recipient acceptance; no consumer rollout
 -->
 
 # Current Task - Owned Build And Browser Resource Lifecycle
+
+2026-10-22 publication acceptance: stable v6.1.1 at `f2c313f7a02f26007de67ca253153925105ad6a1`
+passed all six preflight jobs (`39656474228`) and exact-tag release
+`39657696286`. Downloaded 577-file archive, metadata, SHA256SUMS and
+canonical Git archive bytes match. No downstream project was updated.
+
 
 2026-10-21 release continuation: the owner authorized publication only after
 verification. Prepare compatible v6.1.1 patch from this source, run the mandatory

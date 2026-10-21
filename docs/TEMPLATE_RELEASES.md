@@ -2,8 +2,10 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release target: **6.1.1**. This file is not proof of publication: verify the
-exact GitHub Release, tag commit, CI and asset checksums before consumption.
+Release snapshot: **6.1.1**. The [stable release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.1),
+exact-tag Linux/Windows CI and downloaded assets are verified in
+[the publication record](RELEASE_V6_1_1.md). Consumers must still verify their
+selected tag and asset checksums before rollout.
 See [v6.1.1 patch notes and current evidence](RELEASE_V6_1_1.md),
 [v6.1.0 feature and lifecycle notes](RELEASE_V6_1_0.md) and
 [v6.0.0 upgrade requirements](RELEASE_V6_0_0.md).

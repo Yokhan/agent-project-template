@@ -9,14 +9,14 @@ non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.1.1 Candidate (Acceptance Pending)
+## v6.1.1 Verified Publication
 
 - [x] The immutable `v6.1.0` tag at `88e6bdd` failed exact-tag Windows CI run [`39652334813`](https://github.com/Yokhan/agent-project-template/actions/runs/39652334813): the generated-project manifest assertion found `docs/WRITING_LIBRARY_SETUP.md` missing from the manifest. No GitHub Release was published for that tag; do not move or reuse it.
 - [x] The earlier preflight for `88e6bdd` passed run [`39651182625`](https://github.com/Yokhan/agent-project-template/actions/runs/39651182625). That preflight does not override the later exact-tag failure or prove the `v6.1.1` candidate.
 - [x] Replace duplicated setup manifest lists with tracked-copy receipts and canonical categories. Fresh full Windows setup verified all 539 copied-file hashes/categories, no BOM, actual context-router build and batch completion. The Unix fixture verified copied-set parity and exclusion of untracked sources/starter files.
 - [x] Focused native-exit/manifest and fresh setup checks passed. The earlier 215-check aggregate is baseline evidence; full final aggregate runs remain mandatory in CI. Bounded local fixtures used an explicit lower free-space floor because this host was below the unchanged 2 GiB default reserve.
-- [ ] Run required exact-commit Linux and Windows CI/release gates. POSIX foreground-process support remains declared but was not runtime-verified on the Windows development host.
-- [ ] Inspect the exact-tag workflow, downloaded release assets, checksums and canonical archive after CI. No v6.1.1 tag or publication is claimed here.
+- [x] All six [preflight jobs](https://github.com/Yokhan/agent-project-template/actions/runs/39656474228) and the [exact-tag Linux/Windows release workflow](https://github.com/Yokhan/agent-project-template/actions/runs/39657696286) passed for `f2c313f7a02f26007de67ca253153925105ad6a1`, including 215/215 aggregate checks on each preflight platform, fresh native Windows setup and full toolchains. POSIX was verified in Linux CI within its declared foreground contract.
+- [x] [v6.1.1](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.1) is stable and non-draft. Downloaded archive: 1,106,030 bytes, 577 allowlisted files; SHA-256 `02a6a6247a618657c8f49753afc266b394807125861e828b973042ffba5fc68d`. Checksums, metadata, exact file set and canonical Git archive bytes match.
 
 The v6.1.1 candidate carries the v6.1.0 lifecycle behavior: managed disposable
 run outputs, supervised Windows process-family cleanup, opt-in bounded project

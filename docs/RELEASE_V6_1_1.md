@@ -1,7 +1,12 @@
-# v6.1.1 Release Candidate Notes
+# Agent Project Template v6.1.1
 
-`v6.1.1` is the prepared compatible-patch target. It is not a published
-release: exact-commit CI, the tag, and release assets are still pending. Verify the exact GitHub Release before using this version.
+[v6.1.1](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.1) is published as a stable, non-draft release from
+`f2c313f7a02f26007de67ca253153925105ad6a1`. All six [preflight jobs](https://github.com/Yokhan/agent-project-template/actions/runs/39656474228) and the
+[exact-tag release workflow](https://github.com/Yokhan/agent-project-template/actions/runs/39657696286) passed.
+
+The downloaded archive contains 577 allowlisted files (1,106,030 bytes).
+SHA-256: `02a6a6247a618657c8f49753afc266b394807125861e828b973042ffba5fc68d`. SHA256SUMS, metadata, exact file set and
+the canonical local Git archive match; the archives are byte-identical.
 
 ## Why this patch is needed
 
@@ -39,7 +44,7 @@ The patch target retains the v6.1.0 feature set and its documented limits:
 
 See [v6.1.0 feature and lifecycle notes](RELEASE_V6_1_0.md) for the original
 feature record and platform details. The current release checklist records
-which v6.1.1 gates remain open.
+the verified v6.1.1 publication.
 
 ## Acceptance
 
@@ -51,9 +56,11 @@ parity, hashes, categories, ignored starter scaffolding and exclusion of untrack
 documents, untracked starter files and generated local settings. Native-exit and
 manifest regression checks passed.
 
-The 215-check aggregate baseline predates this patch. Local acceptance used an
+The earlier 215-check aggregate is baseline evidence. Final-commit Linux and
+Windows preflight each passed all 215 checks. Local acceptance used an
 explicit lower free-space floor for bounded fixtures because this host has less
 than the default 2 GiB reserve; the production default remains unchanged. Full
-aggregate acceptance requires the clean Linux/Windows CI hosts. Exact-commit CI,
-exact-tag release gates, and downloaded checksum/metadata/file-set/canonical
-archive verification remain required before calling v6.1.1 published.
+aggregate acceptance passed on clean Linux/Windows CI hosts. Exact-tag Linux and
+Windows gates, including fresh Windows setup and the full pinned toolchain, passed
+before packaging/publication. The public assets were independently downloaded and
+verified. No downstream project was updated.
