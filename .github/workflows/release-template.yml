@@ -179,6 +179,9 @@ jobs:
             'scripts/lib/managed-cache.js',
             'scripts/lib/managed-run-profiles.js',
             'scripts/lib/managed-run-report.js',
+            'scripts/lib/writing-library-provision.js',
+            '_reference/writing-library-source.json',
+            'docs/WRITING_LIBRARY_SETUP.md',
             'scripts/sync-template.js',
             'scripts/configure-codex-mcp.js',
             'scripts/test-codex-hooks.js',
@@ -253,7 +256,7 @@ jobs:
             echo ""
             echo "Inspect conflicts and project-owned instructions before apply; preserve AgentOS ownership and semantically merge applicable rules into preserved hot entrypoints. See docs/TEMPLATE_RELEASES.md for preflight, legacy fallback, verification and rollback."
             echo ""
-            echo "Books and extracted primary-text caches are not release or sync payload. A new machine remains source-grounding-blocked until supplied exact originals and pinned caches are imported once into an external shared store."
+            echo "Books and extracted primary-text caches are excluded from this public release. Authorized users can run node scripts/writing-library.js provision to obtain the exact pinned private library through their own GitHub CLI account, verify its source hashes, import it once into the shared external store, and build local contents/examples. See docs/WRITING_LIBRARY_SETUP.md. Missing repository access remains an explicit setup blocker."
             echo ""
             echo "AgentOS may orchestrate rollout order, but projects consume this template through the same pinned sync contract."
           } > release-notes.md

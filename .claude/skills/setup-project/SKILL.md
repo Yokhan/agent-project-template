@@ -7,6 +7,13 @@ description: "Full project setup: detect stack, install deps, configure tooling,
 
 You are configuring a fresh project from the agent-project-template. Follow these phases exactly.
 
+During an authorized setup, check `node scripts/writing-library.js status`.
+Reuse a ready library; authorized private-library users run
+`node scripts/writing-library.js provision` and verify library plus `index-status`
+readiness. Follow `docs/WRITING_LIBRARY_SETUP.md`. Missing account access remains
+an explicit source-setup blocker. Keep books outside project checkouts and never
+copy another account's credentials.
+
 ## Phase 1: Gather Information
 
 Ask the user (use AskUserQuestion or chat):

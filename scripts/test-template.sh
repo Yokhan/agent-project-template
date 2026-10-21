@@ -515,6 +515,7 @@ check "technical writing skill" test -f .agents/skills/codex-technical-writing/S
 check "technical writing review skill" test -f .agents/skills/codex-technical-writing-review/SKILL.md
 check "writing intent classifier" node scripts/test-writing-intent.js
 check "shared writing library import/grounding/binding" node scripts/test-writing-library.js
+check "pinned private writing library provisioning" node scripts/test-writing-library-provision.js
 check "task-directed writing section map" node scripts/test-writing-reading-plan.js
 check "local literal contents and source examples" node scripts/test-writing-library-index.js
 check "exact-draft independent editorial contract" node scripts/test-writing-editorial-review.js
@@ -679,6 +680,7 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-library-catalog.json .claude/library/technical/writing-source-grounding.md scripts/writing-library.js scripts/test-writing-library.js scripts/lib/writing-library-store.js scripts/lib/writing-library-policy.js scripts/lib/writing-library-retrieve.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A _reference/writing-library-source.json docs/WRITING_LIBRARY_SETUP.md scripts/lib/writing-library-provision.js scripts/test-writing-library-provision.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .codex/hooks.json scripts/codex-hooks.js scripts/codex-turn.js scripts/lib/codex-turn-policy.js scripts/test-codex-hooks.js scripts/test-codex-workflows-live.js scripts/check-transfer-allowlist.js scripts/test-transfer-allowlist.js scripts/validate-lessons.js scripts/test-lessons.js .claude/library/process/privacy-transfer.md .claude/library/technical/preserve-product-value.md docs/NATIVE_WORKFLOW_GATES.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-reading-map.json scripts/lib/writing-reading-plan.js scripts/lib/writing-editorial-review.js scripts/test-writing-reading-plan.js scripts/test-writing-editorial-review.js .codex/agents/writing-editor.toml
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/codex-request-recovery.js scripts/test-codex-request-recovery.js
@@ -704,6 +706,9 @@ if is_template_source_repo; then
       [ -f "$project/scripts/lib/managed-temp.js" ] &&
       [ -f "$project/scripts/lib/managed-process.ps1" ] &&
       [ -f "$project/scripts/lib/managed-cache.js" ] &&
+      [ -f "$project/scripts/lib/writing-library-provision.js" ] &&
+      [ -f "$project/_reference/writing-library-source.json" ] &&
+      [ -f "$project/docs/WRITING_LIBRARY_SETUP.md" ] &&
       [ -f "$project/scripts/managed-temp.js" ] &&
       node -e 'const fs=require("fs");const expected=fs.readFileSync("CLAUDE.md","utf8")+"\n"+fs.readFileSync("templates/orchestrator/CLAUDE.md","utf8");if(fs.readFileSync(process.argv[1],"utf8")!==expected)process.exit(1)' "$project/CLAUDE.md" &&
       [ -z "$(git -C "$project" status --porcelain)" ] &&
@@ -930,6 +935,7 @@ if false; then
     cp scripts/lib/writing-intent.js "$template/scripts/lib/writing-intent.js"
     cp scripts/lib/writing-route-policy.js "$template/scripts/lib/writing-route-policy.js"
     cp scripts/lib/writing-library-store.js "$template/scripts/lib/writing-library-store.js"
+    cp scripts/lib/writing-library-provision.js "$template/scripts/lib/writing-library-provision.js"
     cp scripts/lib/writing-library-policy.js "$template/scripts/lib/writing-library-policy.js"
     cp scripts/lib/writing-library-retrieve.js "$template/scripts/lib/writing-library-retrieve.js"
     cp scripts/lib/writing-reference-policy.js "$template/scripts/lib/writing-reference-policy.js"

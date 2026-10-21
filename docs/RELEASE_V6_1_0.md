@@ -40,6 +40,22 @@ unregistered external caches were removed.
 
 ## Local acceptance evidence
 
+Authorized users can provision the pinned private writing library through
+`node scripts/writing-library.js provision`. Originals and text caches stay in
+the private repository and the shared external machine store. Public setup/sync
+ships the descriptor and importer; it does not include the books. The separate
+operation verifies the exact source commit and file hashes before import and
+builds the local contents/examples index. See [library setup](WRITING_LIBRARY_SETUP.md).
+
+The cleanup candidate at `d2a1ddc` passed Linux and Windows preflight
+[39646790758](https://github.com/Yokhan/agent-project-template/actions/runs/39646790758),
+including full toolchains. Private-library provisioning is a subsequent source
+change. Owner-authenticated provisioning into a fresh isolated store passed all
+six sources and 12 source/cache hashes, local index readiness, task-directed
+reading, repeat reuse without network, preserved existing library and complete
+owned scratch cleanup. Final-commit CI and recipient-account access remain
+separate checks.
+
 The Windows local aggregate passed 214/214 checks on 2026-10-21. Real Vite,
 TypeScript and offline Cargo profile builds each ran three times. The Playwright
 profile passed three browser runs and closed its owned processes. Ordinary

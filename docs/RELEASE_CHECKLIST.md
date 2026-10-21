@@ -16,6 +16,8 @@ consumes quota; static markers never count as runtime proof.
 - [x] Ordinary native hooks ran without a per-request trust bypass. Windows process-family tests observed root membership and `KILL_ON_JOB_CLOSE`; abrupt nested CLI exit exercised cleanup.
 - [x] Run summaries record observed output cleanup. Shared reusable caches are opt-in and sampled at 10 GiB per project; idle project-owned entries are eligible after seven days. These are cleanup bounds, not a machine-wide hard quota.
 - [ ] Run the exact candidate commit through required Linux and Windows CI/release gates. POSIX foreground-process support has not been runtime-verified on this Windows host.
+- [x] Cleanup candidate `d2a1ddc` passed all six Linux/Windows preflight jobs in run `39646790758`; private-source provisioning was added afterward and needs final-commit CI.
+- [x] Owner-authenticated private-library provisioning into a fresh isolated external store passed: six sources, 12 exact hashes, ready contents/examples index, task-directed reading, zero-network reuse, preserved existing library and reclaimed scratch. Recipient access is verified separately after invitation acceptance.
 - [ ] Inspect exact-tag workflow, downloaded release assets, checksums and canonical archive after CI; no v6.1.0 publication is claimed here.
 
 The direct Chromium `--dump-dom` probe timed out; its timeout cleanup completed.

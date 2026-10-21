@@ -16,6 +16,12 @@ Use this for generated projects after bootstrap.
 5. Keep `AGENTS.md` under the Codex size budget.
 6. Preserve shared rules in `.claude/library/`.
 7. Add project-specific Codex skills under `.agents/skills/project-*`.
-8. Run relevant validation.
+8. Run `node scripts/writing-library.js status`. Reuse ready sources. For an
+   authorized user of the pinned private library, run
+   `node scripts/writing-library.js provision`, then require library and
+   `index-status` readiness. Follow `docs/WRITING_LIBRARY_SETUP.md`; missing
+   account access is explicit and never waived. Do not copy books into projects
+   or copy another account's credentials.
+9. Run relevant validation.
 
 Do not hardcode model, effort, approval, or sandbox in project `.codex/config.toml`.

@@ -323,6 +323,7 @@ echo    Project "%PROJECT_DIR%" created successfully!
 echo    Shared writing library discovery ^(read-only; no books copied^):
 node "%PROJECT_DIR%\scripts\writing-library.js" discover
 if errorlevel 1 echo    Writing source grounding is blocked until the shared machine library is available.
+echo    Authorized private-library users: node scripts\writing-library.js provision ^(requires your gh account access^).
 echo.
 echo    Next steps:
 echo    1. cd "%PROJECT_DIR%"

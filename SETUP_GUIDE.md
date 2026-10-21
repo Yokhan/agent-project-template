@@ -82,6 +82,20 @@ codex
 Шесть первоисточников и их pinned text cache **не входят в релиз**. На новой
 машине их наличие не обещается. Setup и sync только обнаруживают store; они не
 скачивают книги и не создают их копии, symlink или hardlink внутри проекта.
+Для пользователей с доступом к приватной библиотеке агент отдельно выполняет
+подключение по закреплённому коммиту:
+
+```bash
+node scripts/writing-library.js provision
+node scripts/writing-library.js status
+node scripts/writing-library.js index-status
+```
+
+Нужны принятое приглашение в `Yokhan/agent-project-template-library` и GitHub CLI
+с авторизацией самого пользователя. Команда проверяет оригиналы и текстовые
+копии всех шести источников, импортирует их во внешний store и строит оглавления
+и примеры. Токены и книги в публичный шаблон не попадают. Подробнее:
+[подключение приватной библиотеки](docs/WRITING_LIBRARY_SETUP.md).
 
 По умолчанию все проекты используют один каталог:
 `<home>/.local/share/agent-project-template/writing-library`. Для другого внешнего
@@ -92,7 +106,7 @@ node scripts/writing-library.js discover
 node scripts/writing-library.js status
 ```
 
-Если библиотека отсутствует, агент просит предоставленные пользователем originals
+Если приватный источник недоступен, для офлайн-импорта агент просит предоставленные пользователем originals
 и соответствующий extracted-text cache с import manifest. Этот manifest содержит
 пути к локальным файлам и provenance; SHA-256 и edition должны совпадать с
 `.claude/library/technical/writing-library-catalog.json`. Импорт выполняется один

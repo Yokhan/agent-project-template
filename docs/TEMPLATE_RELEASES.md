@@ -188,7 +188,9 @@ owns integration and acceptance. This recommendation does not prove runtime
 adoption or cost savings. Candidate eligibility remains subject to shared
 policy, write-intent, user opt-out, available-slot and architecture blockers;
 required high-risk verification is not displaced.
-One external writing library serves all projects. Books/cache are not shipped;
+One external writing library serves all projects. Public payloads exclude books/cache;
+authorized users provision the exact private-source commit with
+`node scripts/writing-library.js provision`. See `docs/WRITING_LIBRARY_SETUP.md`.
 fresh relevant primary reading is required for substantive nonfiction, while
 actual fiction/lore prose is exempt. Missing/stale sources are explicitly blocked.
 See `SETUP_GUIDE.md` and `docs/MIGRATION_V5.md` for discovery/import/recovery.

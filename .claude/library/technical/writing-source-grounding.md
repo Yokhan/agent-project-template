@@ -8,9 +8,29 @@ The same machine library resolves to
 `AGENT_WRITING_LIBRARY` or `--root` can select an absolute external path. No global
 agent configuration is edited. The template is the canonical source of scripts
 and rules; the machine store is the canonical local book copy. Setup/sync ship
-only metadata and code and never import, move, delete or bundle books.
+only metadata and code; public Git/setup/sync/release payloads never bundle books.
+Authorized first-machine provisioning is a separate explicit operation.
 
-For a first machine import, with user authority, run:
+For an authorized user of the pinned private source repository, run:
+
+```text
+node scripts/writing-library.js provision
+```
+
+This requires GitHub CLI (`gh`) authenticated as that user with access to
+`Yokhan/agent-project-template-library`. The template pins one immutable commit
+in `_reference/writing-library-source.json`. Provisioning verifies the remote
+file set and edition hashes, imports all six originals and text caches into the
+external machine store, and builds the local contents/examples index. Existing
+valid sources are reused. Temporary download inputs use managed scratch;
+credentials and book bodies must never enter logs or the public template.
+
+An invitation alone is not active access: the recipient must accept it and
+authenticate on their own machine. On missing access, report the blocked source
+setup. Do not claim writing readiness or replace primary reading with summaries.
+See `docs/WRITING_LIBRARY_SETUP.md` for setup and acceptance.
+
+For an offline first-machine import from supplied exact files, with user authority, run:
 
 ```text
 node scripts/writing-library.js import --manifest <supplied-manifest.json>

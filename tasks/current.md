@@ -2,13 +2,13 @@
 id: template-runtime-workflow-20261018
 status: active
 updated: 2026-10-21
-readiness: 90
+readiness: 95
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
 tags: template,hooks,delegation,writing,evidence
-next: verify exact v6.1.0 candidate on Linux and Windows, publish immutable assets and verify downloaded archive; no consumer rollout
+next: accept private library setup and final 575-file candidate, verify Linux/Windows CI, publish immutable v6.1.0 assets; no consumer rollout
 -->
 
 # Current Task - Owned Build And Browser Resource Lifecycle
@@ -62,6 +62,25 @@ The state-alignment managed-temp regression and dedicated timeout acceptance
 passed on Windows (seven focused lifecycle cases); the independent security
 review found no weakened deletion boundary. Both workers are frozen. The next
 exact commit must still pass Linux execution before an immutable tag is made.
+
+Cleanup candidate `d2a1ddcdd8c8c8a5067f9587c485263d2419eb1a` passed all six
+Linux/Windows preflight jobs in run `39646790758`. Before tagging, the owner
+expanded the release to deliver the writing sources through a separate private
+Git repository. That repository is verified private and contains only the exact
+12 original/cache files plus metadata and binary-preservation attributes;
+public source pins commit `b2b7e5993393ef9e55a22420b01c54e8564272da`.
+
+The explicit provisioning CLI uses the recipient's own authenticated GitHub CLI,
+validates commit/tree/blob/catalog identities and exact paths, imports outside
+Git, builds the local index and preserves stale stores. Public CI uses generated
+fixtures and receives no private books. An owner-authenticated real acceptance
+on a copied source with a completely empty external library passed: six sources,
+all 12 SHA-256 hashes, ready study index, 14 task-directed complete sections,
+repeat provision with zero network/copies, existing library unchanged, and
+owned scratch removed (45,484,415 observed bytes). Recipient-account acceptance
+is separate from an invitation. This subsequent source change requires final
+integration checks and exact-commit CI before publication. No consumer project
+has been updated.
 
 2026-10-21 continuation: user approved the broader cleanup plan. The earlier
 temporary-directory implementation below is an accepted foundation, not complete

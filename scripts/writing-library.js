@@ -32,8 +32,13 @@ function parseArgs(argv) {
 
 function run(argv) {
   const { command, options } = parseArgs(argv);
-  if (command === "help" || command === "--help") return { usage: "node scripts/writing-library.js status | index | index-status | contents [--source ID] [--limit N] [--offset N] | examples --query QUESTION [--source ID] [--limit N] | map [--source ID] | plan --task TASK | read --task TASK [--query EXTRA_EDITORIAL_QUESTION] [--request-id ID] [--max-characters 96000] | import --manifest FILE | select --task TASK | retrieve --task TASK [--query KEYWORDS] [--sources IDS] [--request-id ID] [--request-started-at ISO] [--kind nonfiction|fiction|mixed|code|small-chat] [--root ABSOLUTE] | verify-application --task TASK --request-id ID --request-started-at ISO --max-age-ms MS --packet FILE --application FILE --artifact FILE",
-    note: "Import and index are explicit local writes. Index copies literal contents/examples only into the machine library's derived study directory; originals and pinned caches stay unchanged. Other commands are read-only. No network, dependency install, book copies in projects, or guaranteed prompt caching." };
+  if (command === "help" || command === "--help") return { usage: "node scripts/writing-library.js status | provision [--root ABSOLUTE] | index | index-status | contents [--source ID] [--limit N] [--offset N] | examples --query QUESTION [--source ID] [--limit N] | map [--source ID] | plan --task TASK | read --task TASK [--query EXTRA_EDITORIAL_QUESTION] [--request-id ID] [--max-characters 96000] | import --manifest FILE | select --task TASK | retrieve --task TASK [--query KEYWORDS] [--sources IDS] [--request-id ID] [--request-started-at ISO] [--kind nonfiction|fiction|mixed|code|small-chat] [--root ABSOLUTE] | verify-application --task TASK --request-id ID --request-started-at ISO --max-age-ms MS --packet FILE --application FILE --artifact FILE",
+    note: "Import and index are explicit local writes. Index copies literal contents/examples only into the machine library's derived study directory; originals and pinned caches stay unchanged. provision uses authenticated gh to fetch only the exact pinned private source when the local store is absent; it never overwrites a stale store. Other commands are read-only. No dependency install, book copies in projects, or guaranteed prompt caching." };
+  if (command === "provision") return require("./lib/writing-library-provision.js").provision(options);
+  if (command === "__provision-owned") {
+    if (Object.keys(options).length) throw new Error("Internal provision command accepts no overrides");
+    return require("./lib/writing-library-provision.js").provisionOwned();
+  }
   if (["index", "index-status", "contents", "examples"].includes(command)) {
     const index = require("./lib/writing-library-index.js");
     if (command === "index") return index.buildLibraryIndex(options);
