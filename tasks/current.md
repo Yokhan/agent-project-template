@@ -1,17 +1,174 @@
 <!-- PROGRESSIVE_STATUS
 id: template-runtime-workflow-20261018
-status: done
-updated: 2026-10-20
-readiness: 100
+status: active
+updated: 2026-10-21
+readiness: 90
 plan: 100
 inventory: 100
 production: 100
 cleanup: 100
 tags: template,hooks,delegation,writing,evidence
-next: v6.0.0 published and public assets verified; no consumer rollout authorized
+next: verify exact v6.1.0 candidate on Linux and Windows, publish immutable assets and verify downloaded archive; no consumer rollout
 -->
 
-# Current Task - Enforce Delegation And Fresh Reading Locally
+# Current Task - Owned Build And Browser Resource Lifecycle
+
+2026-10-21 release continuation: the owner authorized publication only after
+verification. Prepare compatible minor v6.1.0 from this source, run the mandatory
+release gates, and require green exact-commit Linux/Windows preflight before
+creating the immutable tag. Verify the published stable release, downloaded
+checksums, metadata, exact file set and canonical archive. No downstream project
+update is authorized by this release task. The local evidence below remains the
+accepted baseline; subsequent version/workflow changes require release checks.
+
+Independent runtime and security reviews found no blocking defect in normal
+owned cleanup. POSIX foreground interruption retains protected scratch and
+requires manual recovery; this is a documented limitation, not full process-tree
+supervision. Public candidates exclude ignored local receipts and transcripts.
+
+2026-10-21 continuation: user approved the broader cleanup plan. The earlier
+temporary-directory implementation below is an accepted foundation, not complete
+build/browser lifecycle acceptance. Goal: ordinary supported build/test/browser
+runs allocate disposable resources before use, close owned descendants, remove
+one-use outputs, bound explicitly managed reusable cache, and report observed
+bytes removed/retained. Repeated real runs must plateau; error/interruption and
+parallel chats must preserve sources, media, durable releases and other runs.
+
+Strategy trigger: TEMP-only ownership does not cover tool-specific build paths
+or descendants left running. Bounded replacement of runner orchestration in one
+local transition; retain the existing strict scratch ownership and CLI entry.
+Per-tool output profiles plus a supervised process family and a separate owned
+cache store are the chosen destination. Repairing more finally blocks leaves
+unregistered outputs and crash gaps; universal name/age deletion cannot preserve
+unknown user data. Containerizing every task adds unrelated runtime/storage cost.
+Protect no-links/containment, trusted hook definitions, return codes, actual
+stdout, current dirty npm-cache additions, book/history data and user settings.
+
+Parent owns CLI/profiles, hook integration, instructions, setup payload and broad
+acceptance. Luna process lane owns scripts/lib/managed-process.js/.ps1 and its
+focused test. Luna storage lane owns managed-temp library/accounting plus the
+new managed-cache library and their focused tests. Scopes do not overlap. One
+parent-owned aggregate follows integrated acceptance, with focused checks after
+coherent batches. Native Job Object/owned process-group evidence, repeated real
+Cargo/JavaScript builds, Chromium, errors, abrupt interruption and concurrent
+neighbors establish the outcome. Existing old directories receive no deletion
+or downstream migration in this phase. No release is authorized.
+
+Acceptance 2026-10-21: final parent aggregate **214/214 passed**, exit 0, owned
+scratch removed (957,273 observed bytes); log
+`.session-cache/resource-lifecycle-aggregate-final.log`. The initial aggregate
+found platform-helper and README-count mismatches, both corrected, and was
+interrupted by editing its running shell source. The completed repeat ran with
+the executable sources frozen. The current README count is 92 (all root script
+files, including the existing .cmd). No release, push or consumer update ran.
+
+Windows supervisor proof now reads the kernel's effective kill-on-close flag,
+checks root membership and root-handle termination, and confirms zero remaining
+Job processes. A real hard-kill regression exposed PowerShell boxed-value struct
+assignment: the old nested assignment silently left flags zero. Astra isolated
+the cause; Luna fixed it and verified native flags plus nested hard CLI death
+before its outer job exited. Actual runtime metadata correlates the three
+implementation/testing children with gpt-6-luna high; Astra consultations used
+gpt-6-astra medium. POSIX strict mode refuses full-family claims; the explicit
+foreground contract preserves trusted aggregate tests, marks interruption before
+launch, and never returns treeStopped=true. POSIX runtime was not tested here.
+
+Stop repair delta: the exact final body/footer matched the actual transcript,
+but the last native turn_context was 2.65 MiB before the final, outside the old
+2 MiB carrier read. Reconciliation now widens only for missing/ambiguous context
+in bounded 2/4/8/16 MiB steps, retains exact prefix/footer/path/latest-final
+checks, and rejects a later different turn. Focused carrier and native hook
+integration tests passed. Replaying the observed Stop prefix against the actual
+authoritative transcript reconciled at 4 MiB and the real handler returned
+allow/state passed with no issues; this is a replay of observed native evidence,
+not a new host event. Receipt `.session-cache/resource-final-carrier-replay.json`.
+The 214/214 aggregate above remains the pre-delta broad baseline; this isolated
+two-file carrier repair received focused integration and actual-history checks.
+
+Real acceptance: Vite, TypeScript 6 and offline Cargo each completed 3 builds;
+temporary dist/target/build outputs disappeared and source hashes stayed intact.
+Reusable caches plateaued (Vite 939,345 B; TypeScript 2,302,825 B; Cargo 58,464 B).
+Playwright completed 3 DOM assertions and in-memory PNG captures, awaited close,
+and removed 1,147,671 / 1,147,719 / 1,147,695 observed scratch bytes. Direct
+Chromium dump-dom failed to finish on this installed browser, including its
+local-file/no-sandbox diagnostic attempt; it remains a failed browser check.
+After the kernel fix the timeout correctly removed its entire profile
+(4,007,406 observed bytes). No automatic sandbox bypass was added. Evidence:
+`.session-cache/resource-lifecycle-real-browser-timeout.json` (build baseline and
+initial browser failure), `resource-lifecycle-real-browser-delta.json` (timeout
+cleanup), `resource-lifecycle-playwright-delta.json` (successful browser flow),
+and `resource-lifecycle-real.json` (7 focused cases, including deterministic
+concurrent cache leases, export refusal and measured cleanup).
+
+Ordinary native session 01a15e09-0480-7101-bc3a-acdf3a82eb60 used persisted hook
+trust with no per-run bypass. SessionStart/Stop removed an abandoned 8 MiB run
+and expired owned cache, preserving a live parallel 1 MiB run and its lease;
+receipt `.session-cache/native-resource-acceptance.json`. Existing hook
+definitions and user trust were unchanged. New nested-project dependent records
+preserve source roots until their exact scratch/cache/report namespaces settle;
+active caches, unknown report contents, interrupted registration and an empty
+interrupted report directory received focused regression coverage. Parent review
+also closed cross-project cache lease binding. Injected EXDEV export and report
+rename failure checks verified no partial output or growing report temp files.
+
+Defaults are disposable caches, with optional owned shared cache pruning at
+10 GiB **per project** and 7 idle days. Active/uncertain files are preserved and
+reported; this is not a machine-wide hard disk quota. Sampled work/free-space
+guards do not replace OS quotas. Required output must be exported deliberately
+to a new same-volume destination. Registered copies, archives and logs share
+the cleanup lifecycle. The exact pre-fix browser fixture orphan created in this
+task was reclaimed only after receipt/hash/path and dead-process verification
+(3,156,839 bytes); no legacy cache, books, history, global browser/toolchain or
+other-project data was purged. Full cleanup and runtime activation claims apply
+to the measured supported Windows scenarios, not arbitrary scripts writing
+undeclared paths. User/project adapters remain required for other output paths.
+
+# Previous Task - Managed Test Temporary Files
+
+2026-10-21: user authorized automatic cleanup of disposable test/cache files.
+No release or consumer update is included in this new task. Preserve all
+published release evidence below. Inspection found live-workflow snapshots
+have no cleanup, while individual OS-temp tests clean only on normal exit.
+Strategy: bounded replacement of unowned test scratch with per-run owned
+workspaces outside Git; retain compact acceptance evidence outside disposable
+copies. First aggregate 206/211 diagnosed four failures caused by scratch inside
+the source Git tree (book-store isolation and sync ancestry) and one invalid
+status-header value. Keep those production safeguards; move managed scratch to
+a deterministic per-project machine cache outside Git and correct the header.
+The external prefix initially made Windows Git object paths exceed 260
+characters: measured managed temp prefix 163, fixture suffix about 110. Use
+short ~/.cache/apt-t/<128-bit namespace> while retaining the full root digest
+and exact canonical root in ownership records; expected prefix about 104.
+Repairing each finally block alone cannot recover interrupted processes;
+deleting legacy caches by name cannot establish ownership. Protect books,
+chat history, source, unknown old directories and active concurrent runs.
+Luna owns the managed-temp library/CLI and focused regressions; parent owns
+existing native/Claude hook integration, test harnesses, documentation and
+acceptance. Check normal/failing real child tests, stale-run recovery, live
+leases, symlink protection and actual native hook invocation. One aggregate
+template run will cover integration and generated payload delivery.
+
+Acceptance 2026-10-21: final aggregate baseline 210/211. The sole failure was
+the README count after a separate active task added storage-guard scripts;
+corrected count 91 and reran the exact documentation-count check successfully.
+Those parallel files were preserved and are not this task's reviewed payload.
+The aggregate covered normal/failing/interrupted commands, incremental cleanup,
+claims, active leases, links, book isolation, bootstrap delivery and native sync.
+Later live-harness retention/error handling received syntax and real snapshot
+allocation/removal checks (342 files, 1,951,465 bytes). Native ordinary session
+01a15db4-77a8-7963-8d8e-c114ab1b0a0c automatically removed 16 MiB of
+abandoned owned scratch without a hook-trust bypass, while preserving the live
+concurrent aggregate lease. Current canonical namespace is empty. Small receipts
+remain in .session-cache/native-cleanup-proof-final.json and
+.session-cache/snapshot-cleanup-proof-final.json; no raw transcript is published.
+Independent security review drove claim/retention/nested-workspace safeguards.
+Foreground commands must await their children; arbitrary daemons are outside
+this runner's contract. Legacy Temp, books and chat histories were not purged.
+An exact empty stalled regression fixture from this task was cleaned after
+verifying its UUID, digest, dead process and complete entry set. No release or
+consumer update was performed.
+
+# Previous Task - Enforce Delegation And Fresh Reading Locally
 
 Publication accepted 2026-10-20: stable/latest v6.0.0 resolves to immutable
 commit 5ab1c5527a95513be5452c5818d17cfee32756dd. The preliminary Linux/Windows

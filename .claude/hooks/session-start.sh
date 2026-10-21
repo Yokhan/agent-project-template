@@ -30,6 +30,12 @@ if [ "$TEST_MODE" = "1" ]; then
   exit 0
 fi
 
+# Reclaim only manager-owned abandoned test workspaces, including interrupted runs.
+if [ -n "$NODE" ] && [ -f scripts/managed-temp.js ]; then
+  "$NODE" scripts/managed-temp.js sweep || echo "WARNING: managed test cleanup needs attention"
+  echo "Run disposable tests through: node scripts/managed-temp.js run -- <executable> <args>"
+fi
+
 # Session log
 if [ -d "brain/01-daily" ]; then
   d=$(date +%Y-%m-%d)

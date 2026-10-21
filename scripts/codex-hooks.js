@@ -8,6 +8,9 @@ const policy = require("./lib/codex-turn-policy.js");
 const { recoverNativeDelegation, reconcileNativeFinal } = require("./lib/codex-request-recovery.js");
 const { sha256 } = require("./lib/writing-library-store.js");
 const { assertSupportedRuntime } = require("./lib/codex-runtime.js");
+const managedTemp = require("./lib/managed-temp.js");
+const managedCache = require("./lib/managed-cache.js");
+const managedReports = require("./lib/managed-run-report.js");
 
 function currentTurnRecord(root, input, allowInitializing = true) {
   if (!input.turn_id) throw new Error("Native current turn_id is required");
@@ -148,8 +151,24 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
   assertSupportedRuntime();
   const event = input.hook_event_name;
   recordLifecycle(root, input);
+  // Keep existing trusted hook definitions: cleanup only manager-owned scratch.
+  // A live wrapper/child lease is never removed, including at another chat's Stop.
+  let cleanup = null;
+  if (["SessionStart", "PostToolUse", "Stop"].includes(event)) {
+    let cache = managedCache.pruneCaches({ projectRoot: root, budgetMs: 1000 });
+    const cacheDeadline = Date.now() + 1500;
+    while (cache.reason === "operation-in-progress" && Date.now() < cacheDeadline) {
+      await new Promise(resolve => setTimeout(resolve, 25));
+      cache = managedCache.pruneCaches({ projectRoot: root, budgetMs: 1000 });
+    }
+    cleanup = { ...managedTemp.sweep(root, { budgetMs: 1000 }), cache };
+    if ((cleanup.errors.length || cleanup.pending.length || cache.overBudget || (!cache.complete && cache.reason !== "operation-in-progress")) && event !== "Stop") {
+      return { systemMessage: "Temporary test cleanup needs attention: " + JSON.stringify(cleanup) +
+        ". Run node scripts/managed-temp.js sweep --budget-ms 10000; preserve unknown and active directories." };
+    }
+  }
   if (event === "SessionStart") return context(event,
-    `Native template lifecycle hooks loaded. Root: ${root}. Node: ${process.version}. Shared safety shell: ${resolveBash() || "UNAVAILABLE; security calls will block"}. Follow AGENTS.md. Hooks must be trusted in the host; scripts passing unit tests do not establish native activation.`);
+    `Native template lifecycle hooks loaded. Root: ${root}. Node: ${process.version}. Shared safety shell: ${resolveBash() || "UNAVAILABLE; security calls will block"}. Follow AGENTS.md. Hooks must be trusted in the host; scripts passing unit tests do not establish native activation. Run tests through node scripts/managed-temp.js run -- <executable> <args>; choose --profile vite|tsc|cargo|browser for supported direct build/browser tools. Windows Job Objects stop the owned process family before cleanup; unsupported platforms fail closed. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/COPY_DIR/ARCHIVE_DIR/LOG_DIR (each variable has AGENT_RUN_ prefix). Defaults: disposable cache; optional --cache shared is owned, capped at 10 GiB/project and 7 idle days, preserving active leases. Required build output needs --keep-output NEW_DIRECTORY. Owned inactive scratch and idle owned caches are swept after tools and at Stop/SessionStart; existing shared browser binaries, MCP databases, books, history, sources and unknown paths are preserved. Read node scripts/managed-temp.js report for the last bounded measured cleanup result. Cleanup: ${JSON.stringify(cleanup)}.`);
   if (event === "UserPromptSubmit") {
     const { getRoute } = require("./codex-route-task.js");
     const route = getRoute(input.prompt || "", { cwd: root });
@@ -174,6 +193,14 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
     if (!shell && !edit) return {};
     legacyCheck(root, "deny-sensitive-paths.sh", input, true);
     if (shell) legacyCheck(root, "pre-bash-safety.sh", input, true);
+    if (shell) {
+      const tool = input.tool_input || {};
+      const command = String(tool.command || tool.cmd || (typeof tool.input === "string" ? tool.input : ""));
+      const knownTest = /\b(?:node|bash)(?:\.exe)?\s+["']?(?:\.\/[\\/]?)?scripts[\\/]test-[\w.-]+\.(?:js|sh)\b/u.test(command);
+      const knownBuild = /^\s*(?:(?:npm|pnpm|yarn)(?:\.cmd)?\s+(?:run\s+)?build\b|cargo(?:\.exe)?\s+(?:build|test|check|run|doc)\b|(?:vite(?:\.cmd)?\s+build|tsc(?:\.cmd)?)(?:\s|$)|(?:chrome|chromium|msedge)(?:\.exe)?(?:\s|$))/u.test(command);
+      const ownedEntry = /^\s*(?:node(?:\.exe)?\s+["']?(?:\.\/)?scripts[\\/]managed-temp\.js["']?\s+run(?:\s+--[\w-]+\s+[^\s]+)*\s+--\s|bash\s+["']?(?:\.\/)?scripts[\\/]test-template\.sh["']?\s*$|node\s+["']?(?:\.\/)?scripts[\\/]test-codex-workflows-live\.js["']?(?:\s|$))/u.test(command);
+      if ((knownTest || knownBuild) && !ownedEntry) throw new Error("Run template tests with owned scratch: node scripts/managed-temp.js run [--profile vite|tsc|cargo|browser] -- <executable> <args>. The aggregate test-template.sh and live harness own their scratch automatically. Keep required evidence outside scratch. This guard recognizes normal template invocations; it is not a general shell parser.");
+    }
     const record = await ensureRequest(root, input);
     if (edit) legacyCheck(root, "pre-edit-safety.sh", input, true);
     if (!record.recovered) return {};
@@ -210,6 +237,13 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       } catch { /* Normal exact-output checks retain missing/invalid evidence. */ }
     }
     const result = policy.checkRequest(record, deliveredMessage);
+    const cacheIncomplete = cleanup?.cache && (cleanup.cache.overBudget && !cleanup.cache.activeOverBudget || !cleanup.cache.complete && cleanup.cache.reason !== "operation-in-progress");
+    if (cleanup?.errors.length || cleanup?.pending.length || cacheIncomplete) {
+      result.issues.push("temporary-test-cleanup-incomplete: " + JSON.stringify(cleanup) +
+        ". Run node scripts/managed-temp.js sweep --budget-ms 10000; preserve active, unknown and unresolved ownership. Diagnose refused paths; never erase markers to bypass the gate");
+      result.state = "unresolved";
+      policy.writeJson(path.join(record.directory, "result.json"), result);
+    }
     if (result.issues.length) {
       // If a direct task produced substantive prose, provide reading on repair.
       let primary = "";
@@ -226,7 +260,9 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       }
       return repair;
     }
-    return result.exception ? { systemMessage: `Delegation exception: ${result.exception.category}: ${result.exception.reason}. Luna execution is not claimed.` } : {};
+    const last = managedReports.readReport(root);
+    const summary = last ? `Owned resource result: ${JSON.stringify({ completedAt: last.completedAt, scratchRemoved: last.scratchRemoved, observedBytesRemoved: last.cleanup?.accounting?.observedBytesRemoved ?? null, cacheBytesRetained: cleanup?.cache?.bytesRetained ?? null, activeCacheOverBudget: cleanup?.cache?.activeOverBudget || false })}. Inspect node scripts/managed-temp.js report.` : null;
+    return result.exception ? { systemMessage: `Delegation exception: ${result.exception.category}: ${result.exception.reason}. Luna execution is not claimed. ${summary || ""}` } : summary ? { systemMessage: summary } : {};
   }
   throw new Error(`Unsupported native hook event: ${event}`);
 }

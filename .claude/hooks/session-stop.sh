@@ -35,4 +35,12 @@ if [ -f scripts/session-metrics.sh ]; then
   bash scripts/session-metrics.sh 2>/dev/null || true
 fi
 
+# The same trusted Stop command verifies owned test scratch, never OS Temp broadly.
+if [ -f scripts/managed-temp.js ]; then
+  node scripts/managed-temp.js sweep || {
+    echo "Managed test cleanup incomplete. Inspect node scripts/managed-temp.js status." >&2
+    exit 2
+  }
+fi
+
 exit 0

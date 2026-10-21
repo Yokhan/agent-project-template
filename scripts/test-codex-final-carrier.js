@@ -41,6 +41,17 @@ function final(text) {
     content: [{ type: "output_text", text }],
   });
 }
+function eventTraffic(bytes) {
+  const payloadBytes = 8 * 1024;
+  const item = row("response_item", { type: "function_call_output", name: "exec_command", output: "x".repeat(payloadBytes) });
+  const events = [];
+  let total = 0;
+  while (total < bytes) {
+    events.push(item);
+    total += Buffer.byteLength(item, "utf8") + 1;
+  }
+  return events;
+}
 function fixture(lines) {
   fs.writeFileSync(transcriptPath, lines.join("\n") + "\n", "utf8");
   return { lookupTranscriptPath: id => id === sessionId ? transcriptPath : null };
@@ -79,6 +90,8 @@ try {
     "non-native turn identifiers are rejected");
   assert.equal(reconcile([context(turnId + "-stale"), final(artifactText)]), null,
     "a stale turn context cannot establish the current turn");
+  assert.equal(reconcile([context(), final(artifactText), context(sessionId)]), null,
+    "a matching artifact cannot be carried after a newer turn context appears");
   assert.equal(reconcile([context(), final(artifactText)], { ...input, transcript_path: path.join(tmp, "wrong.jsonl") }), null,
     "hook transcript path must match the authoritative lookup");
   assert.equal(reconcile([context(), final(artifactText)], input, { lookupTranscriptPath: () => null }), null,
@@ -118,7 +131,19 @@ try {
   assert.equal(reconcile([context(), final(prefix + "without citation")]), null,
     "a body-only artifact cannot be reconciled");
 
-  console.log("Codex native final carrier: exact prefix, current-turn finals, explicit compaction resume, footer integrity and fail-closed cases passed");
+  const longTurn = reconcile([context(), ...eventTraffic(2.5 * 1024 * 1024), final(artifactText)]);
+  assert.equal(longTurn && longTurn.message, artifactText,
+    "a legitimate current turn is found after more than the initial 2 MiB of event traffic");
+  assert(longTurn.evidence.transcriptTailBytes > 2 * 1024 * 1024 &&
+    longTurn.evidence.transcriptTailBytes <= 4 * 1024 * 1024,
+  "tail expands only to the next bounded 4 MiB step when its current-turn context was truncated");
+
+  const beyondCap = reconcile([context(), ...eventTraffic(5 * 1024 * 1024), final(artifactText)], input,
+    { maxFinalTailBytes: 4 * 1024 * 1024 });
+  assert.equal(beyondCap, null,
+    "a transcript whose current-turn context is beyond the configured finite cap fails closed");
+
+  console.log("Codex native final carrier: exact prefix, adaptive bounded tail, current-turn finals, explicit compaction resume, footer integrity and fail-closed cases passed");
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }

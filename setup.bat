@@ -170,6 +170,7 @@ powershell -NoProfile -Command ^
   "  '.claude/pipelines/*.md'," ^
   "  'scripts/*.sh'," ^
   "  'scripts/*.js'," ^
+  "  'scripts/lib/managed-process.ps1'," ^
   "  'scripts/*.cmd'," ^
   "  'scripts/lib/*.sh'," ^
   "  'scripts/lib/*.js'," ^

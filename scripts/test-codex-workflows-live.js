@@ -3,8 +3,10 @@
 // Explicit opt-in. These are real model calls in disposable candidate snapshots.
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const { spawnSync, spawn } = require("child_process");
+const managedTemp = require("./lib/managed-temp.js");
+const managedCache = require("./lib/managed-cache.js");
+const { launchOwned } = require("./lib/managed-process.js");
+const { spawnSync } = require("child_process");
 
 const SCENARIOS = {
   implementation: "Исправь parseCount в src/count.js: строка с целым неотрицательным числом должна превращаться в число; пустая строка, дробь, отрицательное число и мусор должны приводить к понятной ошибке. Проверь поведение на этих случаях.",
@@ -36,7 +38,10 @@ async function main(argv) {
   const codex = get("--codex");
   if (!SCENARIOS[scenario] || !codex || !fs.existsSync(codex)) throw new Error("Valid scenario and existing native Codex executable required");
   const root = path.resolve(__dirname, "..");
-  const destination = path.join(root, ".session-cache", "workflow-live-" + scenario + "-" + crypto.randomUUID());
+  const workspace = managedTemp.createRun(root, { label: "workflow-live-" + scenario });
+  const destination = path.join(workspace.temp, "snapshot");
+  const reportFile = path.join(root, ".session-cache", "workflow-acceptance-" + workspace.id + ".json");
+  try {
   snapshot(root, destination);
   if (scenario === "missing-application") {
     // Fault injection belongs only to this disposable harness, never the payload.
@@ -53,12 +58,14 @@ process.stdout.write(JSON.stringify(await engine.handle(input,root))+'\\n');};
   const startedAt = new Date().toISOString();
   const args = ["--strict-config", "--dangerously-bypass-hook-trust", "-C", destination,
     "-c", 'model_reasoning_effort="high"', "-a", "never", "exec", "--json", "-s", "workspace-write", "-m", "gpt-6.1-sol", SCENARIOS[scenario]];
-  const result = await new Promise(resolve => {
-    const child = spawn(codex, args, { cwd: destination, stdio: ["ignore", log, errors], windowsHide: true });
-    child.once("error", error => resolve({ error: error.message }));
-    child.once("close", code => resolve({ code }));
-  });
-  fs.closeSync(log); fs.closeSync(errors);
+  let result;
+  try {
+  workspace.setLaunching(true);
+  result = await launchOwned(codex, args, { cwd: destination, stdio: ["ignore", log, errors], env: { ...process.env, TEMP: workspace.temp, TMP: workspace.temp, TMPDIR: workspace.temp, AGENT_MANAGED_TEMP: workspace.root },
+    onSpawn({ hostPid, pid }) { workspace.setChildPid(hostPid || pid); } });
+  if (result.treeStopped) workspace.setChildPid(null);
+  else throw new Error("Native workflow process family termination is unverified");
+  } finally { fs.closeSync(log); fs.closeSync(errors); }
   const events = fs.readFileSync(path.join(destination, "native.jsonl"), "utf8").split(/\r?\n/u).filter(Boolean).map(line => { try { return JSON.parse(line); } catch { return {}; } });
   const threadId = events.find(x => x.type === "thread.started")?.thread_id;
   const finals = events.filter(x => x.item?.type === "agent_message").map(x => x.item.text);
@@ -75,16 +82,40 @@ process.stdout.write(JSON.stringify(await engine.handle(input,root))+'\\n');};
     }
   }
   scan(ledgerRoot);
-  const report = { scenario, destination, threadId, startedAt, completedAt: new Date().toISOString(), result, hookTrust: "reviewed-per-invocation; persisted trust unchanged", results, groundingPacketCount,
+  const report = { scenario, destination, reportFile, threadId, startedAt, completedAt: new Date().toISOString(), result, hookTrust: "reviewed-per-invocation; persisted trust unchanged", results, groundingPacketCount,
     finalMessageSha256: finals.length ? require("crypto").createHash("sha256").update(finals.at(-1)).digest("hex") : null,
     usage: events.filter(x => x.type === "turn.completed").map(x => x.usage) };
-  fs.writeFileSync(path.join(destination, "acceptance.json"), JSON.stringify(report, null, 2));
+  fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (result.code !== 0 || !results.length || results.some(x => x.state !== "passed")) process.exitCode = 1;
   if (scenario === "implementation" && !results.some(x => x.children.some(c => c.completedAt && c.profile.model === "gpt-6-luna" && c.profile.effort === "high"))) process.exitCode = 1;
   if (["tiny", "optout"].includes(scenario) && results.some(x => x.children.length)) process.exitCode = 1;
   if (scenario === "tiny" && (groundingPacketCount || results.some(x => x.repairCount > 0))) process.exitCode = 1;
   if (scenario === "missing-application" && (!results.some(x => x.repairCount > 0) || !fs.existsSync(path.join(destination, ".session-cache/injected-once.json")))) process.exitCode = 1;
+  } catch (error) {
+    fs.writeFileSync(reportFile, JSON.stringify({ scenario, reportFile, error: error.message, completedAt: new Date().toISOString() }, null, 2));
+    throw error;
+  } finally {
+    if (fs.existsSync(destination)) {
+      try {
+        const candidateCache = managedCache.pruneCaches({ projectRoot: destination, maxAgeMs: 0, budgetMs: 5000 });
+        const candidateCleanup = managedTemp.sweep(destination, { budgetMs: 5000 });
+        const candidateRuns = managedTemp.status(destination);
+        if (!candidateCache.complete || candidateCache.retained.length || candidateCleanup.errors.length || candidateCleanup.pending.length || candidateRuns.length) {
+          // Its external namespace still needs this project root for safe discovery.
+          workspace.retain("Candidate scratch unresolved; preserve snapshot root for cleanup: " + destination);
+          console.error("Candidate scratch unresolved: " + JSON.stringify({ candidateCleanup, candidateRuns }));
+          process.exitCode = 1;
+        }
+      } catch (error) {
+        workspace.retain("Candidate scratch could not be inspected; preserve snapshot: " + destination);
+        console.error("Candidate cleanup check failed: " + error.message);
+        process.exitCode = 1;
+      }
+    }
+    const cleanup = workspace.finish();
+    if (!cleanup.removed) { console.error("Live workflow scratch cleanup incomplete: " + JSON.stringify(cleanup)); process.exitCode = 1; }
+  }
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });
 module.exports = { snapshot, SCENARIOS };

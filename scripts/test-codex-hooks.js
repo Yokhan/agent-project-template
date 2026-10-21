@@ -9,6 +9,7 @@ const policy = require("./lib/codex-turn-policy.js");
 const { run } = require("./codex-turn.js");
 
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-native-hooks-"));
+const cleanupRoot = path.join(fixture, "cleanup-hooks");
 try {
   const input = { session_id: "session-one", turn_id: "turn-one", prompt: "Спасибо" };
   const record = policy.startRequest(fixture, input, { workflowDepth: "direct", delegationDecision: { required: false } });
@@ -122,5 +123,46 @@ try {
   const native = spawnSync(process.execPath, [path.join(__dirname, "codex-hooks.js")], { input: JSON.stringify({ hook_event_name: "SessionStart", cwd: path.resolve(__dirname, "..") }), encoding: "utf8", windowsHide: true });
   assert.equal(native.status, 0, native.stderr);
   assert(JSON.parse(native.stdout).hookSpecificOutput.additionalContext.includes("Native template lifecycle"));
+  // Exercise real handler entrypoints in separate processes, with abandoned owned scratch.
+  fs.mkdirSync(cleanupRoot);
+  const engine = path.join(__dirname, "codex-hooks.js");
+  const manager = path.join(__dirname, "lib/managed-temp.js");
+  const cacheManager = path.join(__dirname, "lib/managed-cache.js");
+  for (const event of ["SessionStart", "PostToolUse", "Stop"]) {
+    const allocate = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path'),c=require(process.argv[3]);const r=m.createRun(process.argv[2]);fs.writeFileSync(p.join(r.temp,'test-cache'),Buffer.alloc(4096));const l=c.acquireCache(process.argv[2],'hook-fixture',{runRoot:r.root});fs.writeFileSync(p.join(l.path,'cache'),Buffer.alloc(8192));l.release();const f=p.join(l.path,c.CACHE_MARKER),v=JSON.parse(fs.readFileSync(f));v.lastUsedAt='2000-01-01T00:00:00Z';fs.writeFileSync(f,JSON.stringify(v));", manager, cleanupRoot, cacheManager], { encoding: "utf8", windowsHide: true });
+    assert.equal(allocate.status, 0, allocate.stderr);
+    const invoke = spawnSync(process.execPath, ["-e", "const root=process.argv[2],event=process.argv[3],policy=require(process.argv[4]);const input={hook_event_name:event,session_id:'cleanup-hook',turn_id:event,prompt:'Спасибо',tool_name:'exec_command',last_assistant_message:'Пожалуйста.'};policy.startRequest(root,input,{workflowDepth:'direct',delegationDecision:{required:false}});require(process.argv[1]).handle(input,root).then(r=>console.log(JSON.stringify(r))).catch(e=>{console.error(e);process.exitCode=1});", engine, cleanupRoot, event, path.join(__dirname, "lib/codex-turn-policy.js")], { encoding: "utf8", windowsHide: true });
+    assert.equal(invoke.status, 0, invoke.stderr);
+    assert(!JSON.parse(invoke.stdout).stopReason, invoke.stdout);
+    assert.deepEqual(require(manager).status(cleanupRoot), [], event + " must remove abandoned owned work");
+    assert(!fs.existsSync(require(cacheManager).cachePath(cleanupRoot, "hook-fixture")), event + " must remove expired inactive owned cache");
+  }
+  const guard = spawnSync(process.execPath, ["-e", "require(process.argv[1]).handle({hook_event_name:'PreToolUse',tool_name:'exec_command',tool_input:{cmd:'node scripts/test-sync-template.js'}},process.argv[2]).then(()=>{console.error('unmanaged test accepted');process.exitCode=1}).catch(e=>{if(!e.message.includes('owned scratch')){console.error(e);process.exitCode=1}});", engine, cleanupRoot], { encoding: "utf8", windowsHide: true });
+  assert.equal(guard.status, 0, guard.stderr);
+  for (const command of ["cargo build --offline", "npm run build", "chrome.exe --headless"]) {
+    const buildGuard = spawnSync(process.execPath, ["-e", "require(process.argv[1]).handle({hook_event_name:'PreToolUse',tool_name:'exec_command',tool_input:{cmd:process.argv[3]}},process.argv[2]).then(()=>{process.exitCode=1}).catch(e=>{if(!e.message.includes('owned scratch')){console.error(e);process.exitCode=1}});", engine, cleanupRoot, command], { encoding: "utf8", windowsHide: true });
+    assert.equal(buildGuard.status, 0, buildGuard.stderr);
+  }
+  const stalled = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path');const r=m.createRun(process.argv[2]);fs.writeFileSync(p.join(p.dirname(r.root),r.id+'.cleanup-claim'),'');", manager, cleanupRoot], { encoding: "utf8", windowsHide: true });
+  assert.equal(stalled.status, 0, stalled.stderr);
+  const blocked = spawnSync(process.execPath, ["-e", "const root=process.argv[2],input={hook_event_name:'Stop',session_id:'cleanup-block',turn_id:'cleanup-block',prompt:'Спасибо',last_assistant_message:'Пожалуйста.'};require(process.argv[3]).startRequest(root,input,{workflowDepth:'direct',delegationDecision:{required:false}});require(process.argv[1]).handle(input,root).then(r=>console.log(JSON.stringify(r)));", engine, cleanupRoot, path.join(__dirname, "lib/codex-turn-policy.js")], { encoding: "utf8", windowsHide: true });
+  assert.equal(blocked.status, 0, blocked.stderr);
+  assert.equal(JSON.parse(blocked.stdout).decision, "block", "unresolved cleanup must block completion");
+  assert(JSON.parse(blocked.stdout).reason.includes("temporary-test-cleanup-incomplete"));
+  const blockedRecord = policy.findState(cleanupRoot, { session_id: "cleanup-block", turn_id: "cleanup-block" });
+  assert.equal(policy.readJson(path.join(blockedRecord.directory, "result.json")).state, "unresolved");
   console.log("Native hooks: request isolation, continuation/replay, missing reading/delegation, unknown model, fallback and bounded failure checks passed");
-} finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+} finally {
+  // This test deliberately leaves malformed claims. Remove only its exact
+  // randomly allocated namespace before deleting the fixture project root.
+  if (fs.existsSync(cleanupRoot)) {
+    const managed = require("./lib/managed-temp.js");
+    const namespace = managed.managedBase(cleanupRoot);
+    const expected = path.join(os.homedir(), ".cache", "apt-t",
+      require("crypto").createHash("sha256").update(fs.realpathSync.native(cleanupRoot), "utf8").digest("hex").slice(0, 32));
+    assert.equal(namespace, expected);
+    managed.assertNoLinks(namespace, { allowMissing: true });
+    fs.rmSync(namespace, { recursive: true, force: true });
+  }
+  fs.rmSync(fixture, { recursive: true, force: true });
+}

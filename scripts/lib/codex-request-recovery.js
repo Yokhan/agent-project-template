@@ -6,6 +6,7 @@ const os = require("os");
 const path = require("path");
 
 const MAX_TAIL_BYTES = 2 * 1024 * 1024;
+const MAX_FINAL_TAIL_BYTES = 16 * 1024 * 1024;
 const MAX_OUTPUT_CHARS = 64 * 1024;
 const MAX_PROMPT_CHARS = 48 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -166,6 +167,95 @@ function sha256(text) {
   return crypto.createHash("sha256").update(text, "utf8").digest("hex");
 }
 
+function inspectCurrentFinal(tail, turnId, artifactText) {
+  const lines = tail.split(/\r?\n/u).filter(Boolean);
+  let current = false;
+  let matchingContexts = 0;
+  let ambiguousContext = false;
+  let laterTurnContext = false;
+  let currentRootTurnId = null;
+  let currentRootTurnIdState = "missing";
+  let compactionBoundary = null;
+  const finalAnswers = [];
+  for (const line of lines) {
+    let event;
+    try { event = JSON.parse(line); } catch {
+      if (compactionBoundary) compactionBoundary = null;
+      continue;
+    }
+    if (event?.type === "compacted") {
+      const payload = event.payload;
+      const attribution = payload?.resume_metadata?.turn_attribution;
+      const rootTurnId = attribution?.root_turn_id;
+      const compactedTurnId = attribution?.turn_id;
+      const lastStartedTurnId = payload?.resume_metadata?.last_started_turn_id;
+      const sameCurrentTurn = current && compactedTurnId === turnId &&
+        lastStartedTurnId === turnId &&
+        UUID.test(String(rootTurnId || "")) && currentRootTurnIdState === "valid" && currentRootTurnId === rootTurnId;
+      current = false;
+      finalAnswers.length = 0;
+      compactionBoundary = sameCurrentTurn ? { rootTurnId, phase: "after-compacted" } : null;
+      continue;
+    }
+    if (event?.type === "world_state") {
+      if (compactionBoundary?.phase === "after-compacted") compactionBoundary.phase = "after-world-state";
+      else if (compactionBoundary) compactionBoundary = null;
+      continue;
+    }
+    if (event?.type === "turn_context") {
+      const payload = event.payload;
+      if (payload?.turn_id !== turnId) {
+        if (matchingContexts > 0) laterTurnContext = true;
+        current = false;
+        compactionBoundary = null;
+        continue;
+      }
+      const resumedRootTurnId = payload.root_turn_id;
+      if (matchingContexts === 0) {
+        matchingContexts = 1;
+        current = true;
+        currentRootTurnIdState = Object.hasOwn(payload, "root_turn_id")
+          ? UUID.test(String(resumedRootTurnId || "")) ? "valid" : "invalid"
+          : "missing";
+        currentRootTurnId = currentRootTurnIdState === "valid" ? resumedRootTurnId : null;
+        compactionBoundary = null;
+        continue;
+      }
+      const recognizedResume = compactionBoundary && UUID.test(String(resumedRootTurnId || "")) &&
+        compactionBoundary.rootTurnId === resumedRootTurnId &&
+        currentRootTurnIdState === "valid" && currentRootTurnId === resumedRootTurnId;
+      if (!recognizedResume) {
+        ambiguousContext = true;
+        current = true;
+        compactionBoundary = null;
+        continue;
+      }
+      // Compaction creates a new context for the same native turn. Discard
+      // every pre-compaction final before accepting the resumed context.
+      matchingContexts += 1;
+      current = true;
+      currentRootTurnId = resumedRootTurnId;
+      currentRootTurnIdState = "valid";
+      finalAnswers.length = 0;
+      compactionBoundary = null;
+      continue;
+    }
+    if (compactionBoundary) compactionBoundary = null;
+    if (!current) continue;
+    const item = event.payload;
+    if (event.type === "response_item" && item?.type === "message" && item.role === "assistant" && item.phase === "final_answer") {
+      // An unsupported latest final is still a boundary. Never fall back to
+      // an earlier matching draft when the actual latest output is unknown.
+      finalAnswers.push(finalAnswerText(event));
+    }
+  }
+
+  if (matchingContexts === 0 || ambiguousContext) return { needsMoreHistory: true };
+  if (laterTurnContext) return { matches: false, finalAnswerCount: finalAnswers.length };
+  return { matches: finalAnswers.length > 0 && finalAnswers[finalAnswers.length - 1] === artifactText,
+    finalAnswerCount: finalAnswers.length };
+}
+
 function reconcileNativeFinal(input, artifactText, options = {}) {
   const sessionId = input?.session_id;
   const turnId = input?.turn_id;
@@ -191,88 +281,22 @@ function reconcileNativeFinal(input, artifactText, options = {}) {
     const requestedTail = Number.isSafeInteger(options.maxTailBytes) && options.maxTailBytes > 0
       ? options.maxTailBytes
       : MAX_TAIL_BYTES;
-    const tail = readTail(authoritativePath, Math.min(requestedTail, MAX_TAIL_BYTES));
-    if (!tail) return null;
-    const lines = tail.split(/\r?\n/u).filter(Boolean);
-    let current = false;
-    let matchingContexts = 0;
-    let ambiguousContext = false;
-    let currentRootTurnId = null;
-    let currentRootTurnIdState = "missing";
-    let compactionBoundary = null;
-    const finalAnswers = [];
-    for (const line of lines) {
-      let event;
-      try { event = JSON.parse(line); } catch {
-        if (compactionBoundary) compactionBoundary = null;
-        continue;
-      }
-      if (event?.type === "compacted") {
-        const payload = event.payload;
-        const attribution = payload?.resume_metadata?.turn_attribution;
-        const rootTurnId = attribution?.root_turn_id;
-        const compactedTurnId = attribution?.turn_id;
-        const lastStartedTurnId = payload?.resume_metadata?.last_started_turn_id;
-        const sameCurrentTurn = current && compactedTurnId === turnId &&
-          lastStartedTurnId === turnId &&
-          UUID.test(String(rootTurnId || "")) && currentRootTurnIdState === "valid" && currentRootTurnId === rootTurnId;
-        current = false;
-        finalAnswers.length = 0;
-        compactionBoundary = sameCurrentTurn ? { rootTurnId, phase: "after-compacted" } : null;
-        continue;
-      }
-      if (event?.type === "world_state") {
-        if (compactionBoundary?.phase === "after-compacted") compactionBoundary.phase = "after-world-state";
-        else if (compactionBoundary) compactionBoundary = null;
-        continue;
-      }
-      if (event?.type === "turn_context") {
-        const payload = event.payload;
-        if (payload?.turn_id !== turnId) {
-          current = false;
-          compactionBoundary = null;
-          continue;
-        }
-        const resumedRootTurnId = payload.root_turn_id;
-        if (matchingContexts === 0) {
-          matchingContexts = 1;
-          current = true;
-          currentRootTurnIdState = Object.hasOwn(payload, "root_turn_id")
-            ? UUID.test(String(resumedRootTurnId || "")) ? "valid" : "invalid"
-            : "missing";
-          currentRootTurnId = currentRootTurnIdState === "valid" ? resumedRootTurnId : null;
-          compactionBoundary = null;
-          continue;
-        }
-        const recognizedResume = compactionBoundary && UUID.test(String(resumedRootTurnId || "")) &&
-          compactionBoundary.rootTurnId === resumedRootTurnId &&
-          currentRootTurnIdState === "valid" && currentRootTurnId === resumedRootTurnId;
-        if (!recognizedResume) {
-          ambiguousContext = true;
-          current = true;
-          compactionBoundary = null;
-          continue;
-        }
-        // Compaction creates a new context for the same native turn. Discard
-        // every pre-compaction final before accepting the resumed context.
-        matchingContexts += 1;
-        current = true;
-        currentRootTurnId = resumedRootTurnId;
-        currentRootTurnIdState = "valid";
-        finalAnswers.length = 0;
-        compactionBoundary = null;
-        continue;
-      }
-      if (compactionBoundary) compactionBoundary = null;
-      if (!current) continue;
-      const item = event.payload;
-      if (event.type === "response_item" && item?.type === "message" && item.role === "assistant" && item.phase === "final_answer") {
-        // An unsupported latest final is still a boundary. Never fall back to
-        // an earlier matching draft when the actual latest output is unknown.
-        finalAnswers.push(finalAnswerText(event));
-      }
+    const maxTailBytes = Math.min(MAX_FINAL_TAIL_BYTES,
+      Number.isSafeInteger(options.maxFinalTailBytes) && options.maxFinalTailBytes > 0
+        ? options.maxFinalTailBytes
+        : MAX_FINAL_TAIL_BYTES);
+    let tailLimit = Math.min(requestedTail, MAX_TAIL_BYTES, maxTailBytes);
+    let tail;
+    let inspection;
+    while (true) {
+      tail = readTail(authoritativePath, tailLimit);
+      if (!tail) return null;
+      inspection = inspectCurrentFinal(tail, turnId, artifactText);
+      if (!inspection.needsMoreHistory) break;
+      if (tailLimit >= maxTailBytes) return null;
+      tailLimit = Math.min(tailLimit * 2, maxTailBytes);
     }
-    if (matchingContexts === 0 || ambiguousContext || finalAnswers.length === 0 || finalAnswers[finalAnswers.length - 1] !== artifactText) return null;
+    if (!inspection.matches) return null;
 
     return {
       message: artifactText,
@@ -283,7 +307,8 @@ function reconcileNativeFinal(input, artifactText, options = {}) {
         transcriptSha256: sha256(tail),
         artifactSha256: sha256(artifactText),
         hookPrefixSha256: sha256(input.last_assistant_message),
-        finalAnswerCount: finalAnswers.length,
+        finalAnswerCount: inspection.finalAnswerCount,
+        transcriptTailBytes: Buffer.byteLength(tail, "utf8"),
       },
     };
   } catch {

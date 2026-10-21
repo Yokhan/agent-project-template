@@ -1,10 +1,18 @@
 # Agent-Ready Project
-<!-- Template Version: 6.0.0 -->
+<!-- Template Version: 6.1.0 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
 
 Preserve existing dirty work: inspect affected changes before editing; never overwrite unrelated user or project-owned work.
+
+Run tests and disposable build/copy experiments through
+`node scripts/managed-temp.js run -- <executable> <args>`; the template aggregate
+wraps itself. Keep required evidence outside scratch. Follow
+`.claude/library/technical/testing.md` for owned build/browser profiles, Windows
+process-family supervision, configurable cache budgets, measured reports and custom output
+paths. Existing hooks reclaim owned inactive runs and report incomplete cleanup;
+never delete unowned caches, book stores, chat history or active leases.
 
 ## Philosophy — Quality Over Speed
 1. **Think before you type.** Research and planning ARE the work. Code is just output.
@@ -272,7 +280,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-6.0.0 - Run `bash scripts/check-drift.sh` to verify health.
+6.1.0 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

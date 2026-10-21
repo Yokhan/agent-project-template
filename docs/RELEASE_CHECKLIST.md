@@ -2,14 +2,29 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.0.0`. This checklist records required evidence, not a
+Release target: `v6.1.0`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.0.0 Current Candidate
+## v6.1.0 Candidate (Local Evidence Only)
+
+- [x] Local Windows managed-run aggregate: 214/214 checks passed on 2026-10-21; see the retained aggregate log. This is local evidence, not the release workflow.
+- [x] Three real build runs each for Vite, TypeScript and offline Cargo used disposable profile outputs; three Playwright runs passed browser assertions and closed their owned processes.
+- [x] Ordinary native hooks ran without a per-request trust bypass. Windows process-family tests observed root membership and `KILL_ON_JOB_CLOSE`; abrupt nested CLI exit exercised cleanup.
+- [x] Run summaries record observed output cleanup. Shared reusable caches are opt-in and sampled at 10 GiB per project; idle project-owned entries are eligible after seven days. These are cleanup bounds, not a machine-wide hard quota.
+- [ ] Run the exact candidate commit through required Linux and Windows CI/release gates. POSIX foreground-process support has not been runtime-verified on this Windows host.
+- [ ] Inspect exact-tag workflow, downloaded release assets, checksums and canonical archive after CI; no v6.1.0 publication is claimed here.
+
+The direct Chromium `--dump-dom` probe timed out; its timeout cleanup completed.
+That probe is not a pass. The passing browser evidence above is from the
+Playwright profile. Machine-wide tool caches, browser binaries, MCP databases,
+unknown files and active leases remain outside cleanup; custom scripts must
+write outputs under their documented `AGENT_RUN_*` paths to receive cleanup.
+
+## Published v6.0.0 Record
 
 - [x] Local integrated repair baseline: 210/210 aggregate; structure zero
   errors/warnings on 2026-10-20, before release-version metadata changes.

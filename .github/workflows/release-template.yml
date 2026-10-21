@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to publish, for example v6.0.0"
+        description: "Existing tag to publish, for example v6.1.0"
         required: true
         type: string
 
@@ -120,6 +120,10 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           if ((git rev-parse HEAD) -ne '${{ needs.validate.outputs.commit }}') { throw 'Windows checkout commit mismatch' }
           node scripts/test-ci-native-exit.js
+          node scripts/managed-temp.js run -- node scripts/test-managed-process.js
+          node scripts/managed-temp.js run -- node scripts/test-managed-temp.js
+          node scripts/managed-temp.js run -- node scripts/test-managed-cache.js
+          node scripts/managed-temp.js run -- node scripts/test-managed-run.js
           node scripts/test-sync-template.js
           node scripts/test-safe-config-write.js
           node scripts/test-code-intelligence-tools.js
@@ -168,6 +172,13 @@ jobs:
             'docs/NATIVE_WORKFLOW_GATES.md',
             'docs/NATIVE_WORKFLOW_ACCEPTANCE.md',
             'scripts/lib/codex-runtime.js',
+            'scripts/managed-temp.js',
+            'scripts/lib/managed-temp.js',
+            'scripts/lib/managed-process.js',
+            'scripts/lib/managed-process.ps1',
+            'scripts/lib/managed-cache.js',
+            'scripts/lib/managed-run-profiles.js',
+            'scripts/lib/managed-run-report.js',
             'scripts/sync-template.js',
             'scripts/configure-codex-mcp.js',
             'scripts/test-codex-hooks.js',
@@ -228,7 +239,9 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "Native Codex hooks bind eligible Luna dispatch and task-directed primary reading to request evidence, with parent-owned scope, integration and acceptance plus visible unsupported-host fallbacks. Node 24+ with working node:sqlite is required. See docs/RELEASE_V6_0_0.md for upgrade requirements and evidence boundaries."
+            echo "Managed test, build and browser runs allocate owned scratch and tool-specific output paths, stop their Windows process family, and reclaim disposable resources. Optional shared caches have per-project budgets and preserve active leases. Existing native hooks sweep owned inactive resources and report incomplete cleanup. See docs/RELEASE_V6_1_0.md for commands, acceptance and limits."
+            echo ""
+            echo "Windows process-family supervision uses Job Objects. POSIX supports only explicitly declared foreground test/command runs; interrupted runs remain protected for manual recovery. Shared browser installations, MCP databases, books, chat history, sources and unknown paths are preserved. Budgets are sampled limits, not a filesystem hard quota. Node 24+ with working node:sqlite is required."
             echo ""
             echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""

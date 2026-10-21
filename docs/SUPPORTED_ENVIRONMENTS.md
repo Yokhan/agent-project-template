@@ -51,7 +51,27 @@ These are the environments the template is designed and tested to support.
 - Template-owned shell scripts must route OS, architecture, and temp-path behavior through `scripts/lib/platform.sh`
 - Raw `uname`, `/tmp`, and `mktemp` are not allowed outside the shared platform helper
 
-## Not A Supported Assumption
+## Managed Disposable Runs
+
+`node scripts/managed-temp.js run -- <executable> <args>` owns scratch and
+disposable caches. Windows uses a Job Object to stop the process family before
+cleanup; the `vite`, `tsc`, `cargo` and `browser` profiles also assign supported
+tool outputs to owned paths. Generic commands must consume the advertised
+`AGENT_RUN_*` paths for their custom outputs.
+
+On POSIX, strict process-family supervision is unavailable. Explicit
+`--process-contract foreground` supports only test/command runs whose commands
+keep descendants in the foreground. The aggregate selects this limited contract
+for its nested tests. Interrupted foreground runs remain protected and require
+manual recovery; hooks do not infer that an abandoned foreground marker is safe
+to delete. Build/browser profiles require Windows supervision.
+
+The optional shared cache has a per-project budget and idle expiry; active or
+uncertain leases remain protected. Limits are sampled and do not enforce a
+machine-wide hard quota. Existing browser installations, MCP databases, books,
+history, sources and unknown directories are outside automatic cleanup.
+
+## Unsupported Assumptions
 
 - invoking shell-only maintenance tooling as though PowerShell or `cmd.exe` were a Linux shell; use the native Node updater for sync
 - Linux filesystem, temp directory, shell, or command behavior on Windows unless explicitly detected first

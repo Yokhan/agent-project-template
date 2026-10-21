@@ -130,6 +130,19 @@ metadata for model/effort; missing metadata stays unverified. Timings describe
 observed execution only, not savings. Evaluate total duration, available usage
 and rework on comparable tasks before claiming an improvement.
 
+## Owned Resource Lifecycle
+
+The existing SessionStart, PostToolUse and Stop handlers also sweep inactive
+registered scratch and prune this project's idle owned caches. Their hook
+definitions do not change. Launch supported tests/build/browser tools through
+`scripts/managed-temp.js`; adapters, cache limits, export behavior, and the Windows
+Job Object versus POSIX foreground-contract boundary are documented in
+`.claude/library/technical/testing.md`. Last-run accounting is bounded and stored
+outside scratch; inspect `node scripts/managed-temp.js report`. Cleanup errors,
+unresolved leases and partial scans remain visible at Stop. Live jobs keep their
+leases. Trusted/enabled configuration still requires a real native event to prove
+activation; a synthetic handler test alone is insufficient.
+
 ## Semantic And Privacy Limits
 
 Records do not prove comprehension, relevance, text quality or useful delegation.

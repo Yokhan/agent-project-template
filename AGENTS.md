@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 6.0.0 -->
+<!-- Template Version: 6.1.0 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -152,6 +152,14 @@ planning is relevant, not as a blanket requirement for every change.
 
 ## Verification and handoff
 
+Run tests and disposable build/copy experiments through
+`node scripts/managed-temp.js run -- <executable> <args>`; the template aggregate
+wraps itself. Keep required evidence outside scratch. Follow
+`.claude/library/technical/testing.md` for owned build/browser profiles, Windows
+process-family supervision, configurable cache budgets, measured reports and custom output
+paths. Existing hooks reclaim owned inactive runs and report incomplete cleanup;
+never delete unowned caches, book stores, chat history or active leases.
+
 Choose checks that can establish the requested result, expanding for risk and
 blast radius. Follow `.claude/library/process/self-verification.md`: define
 focused checks and broad acceptance before a useful wave; use focused checks
@@ -168,4 +176,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 6.0.0.
+the shared rules. Template version: 6.1.0.

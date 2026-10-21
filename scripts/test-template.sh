@@ -23,6 +23,14 @@ cd "$TEMPLATE_DIR"
 
 [ -f "$TEMPLATE_DIR/scripts/lib/platform.sh" ] && source "$TEMPLATE_DIR/scripts/lib/platform.sh"
 
+# The runner isolates inherited OS temporary paths even when a leaf test crashes.
+if [ -z "${AGENT_MANAGED_TEMP:-}" ]; then
+  case "$(_detect_os)" in
+    windows) exec node "$TEMPLATE_DIR/scripts/managed-temp.js" run -- bash "$0" "$@" ;;
+    *) exec node "$TEMPLATE_DIR/scripts/managed-temp.js" run --process-contract foreground -- bash "$0" "$@" ;;
+  esac
+fi
+
 pass() { echo "  PASS: $1"; CHECKS=$((CHECKS+1)); }
 fail() { echo "  FAIL: $1"; ERRORS=$((ERRORS+1)); CHECKS=$((CHECKS+1)); }
 skip() { echo "  SKIP: $1"; CHECKS=$((CHECKS+1)); }
@@ -511,6 +519,10 @@ check "task-directed writing section map" node scripts/test-writing-reading-plan
 check "local literal contents and source examples" node scripts/test-writing-library-index.js
 check "exact-draft independent editorial contract" node scripts/test-writing-editorial-review.js
 check "native current-request workflow evidence" node scripts/test-codex-hooks.js
+check "managed test scratch ownership and cleanup" node scripts/test-managed-temp.js
+check "owned process family supervisor" node scripts/test-managed-process.js
+check "owned reusable cache budget and leases" node scripts/test-managed-cache.js
+check "owned resource command integration" node scripts/test-managed-run.js
 check "required Node runtime and SQLite preflight" node scripts/test-codex-runtime.js
 check "native service-chat request recovery" node scripts/test-codex-request-recovery.js
 check "native citation metadata carrier" node scripts/test-codex-final-carrier.js
@@ -649,7 +661,8 @@ echo ""
 echo "Bootstrap trust smoke:"
 if is_template_source_repo; then
   SMOKE_SENTINEL="docs/.setup-leak-sentinel-$RANDOM-$$.txt"
-  SMOKE_PROJECT="template-leak-smoke-$RANDOM-$$"
+  SMOKE_PARENT="$(_temp_dir template-setup-smoke)"
+  SMOKE_PROJECT="$SMOKE_PARENT/project"
   SMOKE_INDEX=""
   cleanup_smoke() {
     rm -f "$SMOKE_SENTINEL"
@@ -672,12 +685,14 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/test-codex-final-carrier.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/writing-library-index.js scripts/test-writing-library-index.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/codex-runtime.js scripts/test-codex-runtime.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-temp.js scripts/managed-temp.js scripts/test-managed-temp.js .claude/hooks/session-start.sh .claude/hooks/session-stop.sh .claude/library/technical/testing.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-process.js scripts/lib/managed-process.ps1 scripts/lib/managed-cache.js scripts/lib/managed-run-profiles.js scripts/lib/managed-run-report.js scripts/test-managed-process.js scripts/test-managed-cache.js scripts/test-managed-run.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A docs/MIGRATION_V5.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/test-verify-check.js scripts/verify-check.sh scripts/check-drift.sh scripts/test-template.sh .claude/hooks/post-edit.sh .claude/agents/writer.md .claude/docs/domain-full/domain-design.md .claude/library/technical/atomic-reuse.md .claude/skills/audit .claude/skills/security-audit .claude/skills/domain-design-review tests/rules/skill-proportionality.test.md tests/rules/domain-software.test.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/lib/sync-manifest-reconcile.js scripts/lib/sync-safe-copy.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy tasks/change-strategy.json
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/sync-template.js scripts/sync-template.cmd scripts/sync-all.js scripts/lib/sync-template-core.js scripts/lib/sync-template-apply.js scripts/lib/template-payload-policy.js scripts/lib/safe-config-write.js scripts/test-sync-template.js scripts/test-safe-config-write.js scripts/lib/skill-links.js scripts/test-skill-links.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/skills .claude/pipelines scripts/check-drift.sh docs/MIGRATION_V5.md docs/MIGRATION_MATRIX.md docs/RELEASE_CHECKLIST.md docs/RELEASE_V5_0_1.md
-    if ! GIT_INDEX_FILE="$SMOKE_INDEX" bash setup.sh --orchestrator "$project" >"$project.setup.log" 2>&1; then
+    if ! (cd "$(dirname "$project")" && GIT_INDEX_FILE="$SMOKE_INDEX" bash "$TEMPLATE_DIR/setup.sh" --orchestrator "$(basename "$project")") >"$project.setup.log" 2>&1; then
       cat "$project.setup.log"
       return 1
     fi
@@ -686,6 +701,10 @@ if is_template_source_repo; then
       [ ! -f "$project/tasks/change-strategy.json" ] &&
       [ -f "$project/scripts/lib/sync-manifest-reconcile.js" ] &&
       [ -f "$project/scripts/lib/sync-safe-copy.js" ] &&
+      [ -f "$project/scripts/lib/managed-temp.js" ] &&
+      [ -f "$project/scripts/lib/managed-process.ps1" ] &&
+      [ -f "$project/scripts/lib/managed-cache.js" ] &&
+      [ -f "$project/scripts/managed-temp.js" ] &&
       node -e 'const fs=require("fs");const expected=fs.readFileSync("CLAUDE.md","utf8")+"\n"+fs.readFileSync("templates/orchestrator/CLAUDE.md","utf8");if(fs.readFileSync(process.argv[1],"utf8")!==expected)process.exit(1)' "$project/CLAUDE.md" &&
       [ -z "$(git -C "$project" status --porcelain)" ] &&
       node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8")),h=crypto.createHash("sha256").update(fs.readFileSync(p+"/AGENTS.md")).digest("hex"),source=crypto.createHash("sha256").update(fs.readFileSync("AGENTS.md")).digest("hex");if(m.files?.["AGENTS.md"]?.category!=="template"||m.files["AGENTS.md"].hash!==h||h!==source)process.exit(1)' "$project" &&

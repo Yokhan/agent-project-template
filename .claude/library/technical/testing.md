@@ -1,5 +1,92 @@
 # Testing Rules
 
+## Disposable files and cleanup
+
+Run tests and disposable build/copy experiments through
+`node scripts/managed-temp.js run -- <executable> <args>` from the project root.
+For example: `node scripts/managed-temp.js run -- node scripts/test-sync-template.js`.
+The aggregate `bash scripts/test-template.sh` wraps itself automatically. The
+live workflow harness also owns and removes its snapshot; its compact acceptance
+report stays outside the snapshot. Keep required outputs outside scratch before
+the process finishes. Do not copy books, chats or private source into reports.
+
+On Windows the runner assigns the suspended command to an owned Job Object
+before allowing it to execute. Its independent supervisor stops the family when
+the foreground command ends, fails, is cancelled, or loses its runner. Cleanup
+requires the supervisor's zero-active-process result. An unverified termination
+retains resources and reports a failure. Strict launches on other platforms fail
+closed: a POSIX process group cannot contain children that start another session.
+For trusted test/command adapters, explicit `--process-contract foreground`
+declares that every child stays in the group and is awaited. The aggregate selects
+this limited mode on POSIX and passes it to nested test runs via
+`AGENT_MANAGED_PROCESS_CONTRACT=foreground`. It never reports whole-family proof:
+normal results plus group absence permit cleanup under that declared contract;
+cancelled, interrupted, or uncertain runs remain protected by a marker written
+before launch. Build/browser profiles cannot inherit this exception. Do not claim
+POSIX has equivalent process cleanup. Persistent servers need a
+separate explicit lifecycle; this runner stops its owned servers at command exit.
+
+Select a profile for disposable builds/browser runs:
+
+| Profile | Direct executable example | Managed outputs |
+| --- | --- | --- |
+| `test` (default) | `node scripts/test-sync-template.js` | TEMP/TMP/TMPDIR, npm/npx cache, Node compile cache |
+| `vite` | `node node_modules/vite/bin/vite.js build` | build output; config runner avoids temporary config bundles in node_modules |
+| `tsc` | `node node_modules/typescript/lib/tsc.js` | JS, declarations, incremental state, configured outFile |
+| `cargo` | `cargo build --offline` | target and intermediate build directories, Cargo home cache |
+| `browser` | direct Chromium/Chrome/Edge executable | fresh profile, disk cache, crash logs, default download directory; default 60s deadline |
+| `command` | project-owned script | script must consume the declared output variables below |
+
+For example, `node scripts/managed-temp.js run --profile cargo -- cargo build --offline`.
+Vite requires a version supporting `--configLoader runner`. TypeScript build/watch,
+trace/profiling, Cargo runtime argument forwarding, and browser screenshot/PDF flags
+are rejected until an adapter owns those outputs. Configurations and plugins can
+write custom paths: these profiles are adapters, not an OS filesystem sandbox.
+Compound package build scripts require an explicit project adapter. Generic scripts
+must use `AGENT_RUN_OUTPUT`, `AGENT_RUN_BROWSER_DIR`, `AGENT_RUN_COPY_DIR`,
+`AGENT_RUN_ARCHIVE_DIR`, and `AGENT_RUN_LOG_DIR`; these paths are allocated and
+registered before execution. Do not copy project snapshots to unregistered paths.
+
+For ordinary browser assertions prefer the project's Playwright script through
+the `test` profile. Its temporary profile inherits owned TEMP; direct traces,
+screenshots and downloads to owned output and await browser.close(). The direct
+`browser` adapter controls files and process lifetime; it does not guarantee that
+every installed browser's sandbox/headless CLI works on this host. Never add
+`--no-sandbox` automatically to conceal startup failures. A timeout is a failed
+browser check even when its resource cleanup succeeds.
+
+Default caches are disposable. `--cache shared` reuses only newly owned caches
+outside the repository; defaults are **10 GiB per project** and **7 idle days**.
+`--cache-max-bytes` and `--cache-max-age-ms` configure one invocation; hooks use
+the defaults. Pruning removes oldest idle owned caches first, preserves active
+supervisor leases, and reports incomplete scans and budget excess. It never
+cleans machine-wide npm/Cargo caches, downloaded browser binaries or toolchains.
+`--max-work-bytes` (10 GiB) and `--min-free-bytes` (2 GiB) sample owned scratch
+and disk space every five seconds and cancel the owned job on a breached limit;
+these are best-effort guards, not hard disk quotas. `--timeout-ms` bounds a run.
+
+Successful output is discarded unless explicitly exported with
+`--keep-output NEW_DIRECTORY`; an existing destination is refused. Export is an
+atomic directory move on the same volume; cross-volume fallback copies are refused
+to avoid leaving partial output after interruption. Required
+release/evidence artifacts are persistent only when deliberately saved. A compact
+last result (at most 64 KiB) lives outside scratch: inspect
+`node scripts/managed-temp.js report`. It records observed bytes actually removed,
+retained cache bytes, process proof, and unresolved cleanup; it does not claim
+to measure every byte created during execution. Command failure codes survive.
+
+Existing trusted lifecycle hooks reclaim owned inactive remnants and idle owned
+caches after tools, at Stop and next SessionStart. Inspect
+`node scripts/managed-temp.js status`; retry
+`node scripts/managed-temp.js sweep --budget-ms 10000` for partial cleanup.
+Preserve active leases and investigate refused paths; never erase markers to
+silence a warning. Explicit npm `--cache` flags can override environment routing;
+do not point disposable commands at unmanaged caches. Sources, dependencies,
+MCP databases, legacy directories, chat history, books, and unknown files stay
+outside this cleanup contract. Never sweep OS Temp or .session-cache by prefix
+or age. If all runners/app processes are stopped, recovery waits for the next
+lifecycle event.
+
 ## Test Location
 - Tests colocated with source code: `module.test.ts`, `test_module.py`, `module_test.go`
 - Integration tests in `tests/integration/`
