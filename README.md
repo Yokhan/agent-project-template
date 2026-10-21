@@ -32,7 +32,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 8. Run `node scripts/writing-library.js discover`. Reuse a valid shared store. For an authorized user of the private source repository, run `node scripts/writing-library.js provision` once; it imports the pinned six sources and builds the local contents/examples index. Otherwise import exact supplied files outside Git. See [library setup](docs/WRITING_LIBRARY_SETUP.md). Never create book symlinks/hardlinks inside a project or pretend memory is primary reading.
 9. Verify manifest version, diff, overlays, conflicts, runtime and source status before success. Report project readiness separately from `source-grounding-blocked`.
 
-Release target: `v6.1.1`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v6.1.1`. This source snapshot does not by itself prove that GitHub has published it; verify the exact release is non-draft and non-prerelease before rollout.
 
 The v6 release adds native request-bound Luna dispatch, task-directed primary
 reading and lifecycle evidence. Review the exact host requirements and upgrade

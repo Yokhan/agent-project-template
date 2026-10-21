@@ -124,7 +124,7 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release target: `v6.1.1`. This source snapshot does not assert GitHub
+Release snapshot: `v6.1.1`. This source snapshot does not assert GitHub
 publication. Verify that the exact `v6.1.1` release exists and is non-draft and
 non-prerelease. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
