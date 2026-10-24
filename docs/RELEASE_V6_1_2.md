@@ -61,8 +61,7 @@ An earlier native CLI acceptance observed a request with a runtime-correlated
 GPT-6 Luna High child that completed and was integrated. This is prior-root
 runtime evidence, separate from validation of the current candidate. It does
 not establish current candidate CI or publication, generalize to a workload
-benchmark, or demonstrate token/quota savings. The release gate and exact-tag
-publication checks remain pending.
+benchmark, or demonstrate token/quota savings. Current release CI and publication checks are recorded separately above.
 
 ## Install and update
 
