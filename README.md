@@ -2,7 +2,7 @@
 
 [![Template Version](https://img.shields.io/badge/template-v6.1.2-blue)](.)
 
-Release candidate: **6.1.2**. Publication, exact-tag CI and downloadable assets are not yet verified; do not use this candidate for rollout. See [v6.1.2 patch notes and current evidence](docs/RELEASE_V6_1_2.md), [the previous stable v6.1.1 release record](docs/RELEASE_V6_1_1.md), [v6.1.0 feature and lifecycle notes](docs/RELEASE_V6_1_0.md), [v6.0.0 upgrade requirements](docs/RELEASE_V6_0_0.md), and [historical v5 migration guidance](docs/MIGRATION_V5.md).
+Stable release: **6.1.2**. The [published release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.2), exact-tag Linux/Windows CI and downloaded archive are verified; use the pinned tag for rollout. See [v6.1.2 patch notes and current evidence](docs/RELEASE_V6_1_2.md), [the previous stable v6.1.1 release record](docs/RELEASE_V6_1_1.md), [v6.1.0 feature and lifecycle notes](docs/RELEASE_V6_1_0.md), [v6.0.0 upgrade requirements](docs/RELEASE_V6_0_0.md), and [historical v5 migration guidance](docs/MIGRATION_V5.md).
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 

@@ -9,19 +9,21 @@ non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.1.2 Candidate — Pending
+## v6.1.2 Verified Publication And Scoped Rollout
 
-- [ ] Integrate the compatible routing, request-normalization, continuation-evidence and delegation-report changes with the v6.1.2 metadata and patch notes.
-- [ ] Run the current release gate on the integrated candidate and record exact-commit Linux/Windows CI results. Earlier local validation and route replay are baseline evidence only.
-- [ ] Confirm any live Luna calls from correlated runtime profiles and current-request integration records. Requested roles, replay results and prepared contracts do not count as calls.
-- [ ] After the release gates pass, verify the exact `v6.1.2` tag, published release and downloaded assets/checksums before describing it as live.
-- [ ] Build a reviewed downstream census and exact-tag preview for each authorized project; apply only after the release is verified and conflicts/overlays are reviewed.
+- [x] Integrate the compatible routing and request-context repair at
+  `e2c8bb6566a847c0db3773918672b5731d6f3385`; preserve unrelated work.
+- [x] All six [preflight jobs](https://github.com/Yokhan/agent-project-template/actions/runs/40070470065) and the
+  [exact-tag release workflow](https://github.com/Yokhan/agent-project-template/actions/runs/40070918272) passed on Linux/Windows.
+- [x] Verify stable non-draft v6.1.2 and the downloaded archive against its
+  metadata, SHA-256 and canonical Git archive.
+- [x] Apply reviewed digest-bound plans to the 36 approved v6.1.1 consumers,
+  retain external rollback bytes and project overlays, and verify six focused
+  checks per consumer plus zero-write/zero-conflict convergence.
 
-The current local candidate does not yet establish release-gate completion,
-publication, live delegation coverage or quota savings. See
-[v6.1.2 patch notes](RELEASE_V6_1_2.md). The v6.1.1 record below remains
-historical publication evidence and its immutable tag/assets must not be
-replaced.
+The earlier ordinary native CLI probe remains separately correlated runtime
+evidence; this rollout does not measure fleet-wide live call coverage, existing
+MCP reloads or quota savings. See [patch notes](RELEASE_V6_1_2.md).
 
 ## v6.1.1 Verified Publication
 

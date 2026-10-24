@@ -1,9 +1,9 @@
 # Agent Project Template v6.1.2
 
-This is a prepared compatible patch candidate. This document does not establish
-a published tag, passing exact-tag CI, or verified downloadable assets. Do not
-roll it out until those release checks pass and the exact GitHub release is
-confirmed.
+This compatible patch was published on 2026-10-24 at immutable commit
+`e2c8bb6566a847c0db3773918672b5731d6f3385`. The stable, non-draft
+[release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.2),
+exact-tag CI and downloaded assets are verified.
 
 ## Changes
 
@@ -28,6 +28,24 @@ confirmed.
   result. Input/output size thresholds remain uncalibrated; spending savings
   require a comparison of equivalent accepted outcomes.
 
+## Verified publication and local rollout
+
+- All six [preflight jobs](https://github.com/Yokhan/agent-project-template/actions/runs/40070470065) and the
+  [exact-tag Linux/Windows release workflow](https://github.com/Yokhan/agent-project-template/actions/runs/40070918272) passed. The
+  Windows Semgrep health probe failed once after installation; rerunning the
+  failed job on the same immutable tag passed without a source change.
+- Downloaded archive: 1,129,422 bytes; SHA-256
+  `ca9bbb23b1df817545d2c6abbbb3ad0c2a1008f8f98c873ce09e20e090fbcb60`. Metadata, checksums
+  and canonical Git archive bytes match. Canonical comparison uses the
+  command-local `-c core.autocrlf=false` setting on Windows.
+- The owner-authorized local rollout updated 36 consumers from 6.1.1, retained
+  external rollback bytes and project rules, passed six focused checks per
+  consumer, and converged to zero pending writes/conflicts. Three entrypoint
+  line-ending repairs use unchanged baseline checks plus a focused text delta.
+  Nineteen older/unknown-version consumers remained outside the approved scope.
+- Live activation in every already-running chat and quota savings remain
+  unverified; configured profiles and file convergence do not prove either.
+
 ## Local evidence available before release integration
 
 An earlier local validation report records a `validate-template`
@@ -50,5 +68,5 @@ publication checks remain pending.
 
 After the exact `v6.1.2` release and its assets are verified, use the pinned
 commands in [the canonical release protocol](TEMPLATE_RELEASES.md). This source
-snapshot alone does not authorize rollout. No downstream project update is
-recorded here.
+snapshot alone does not authorize rollout. The verified local rollout above
+does not authorize updates to other consumers.

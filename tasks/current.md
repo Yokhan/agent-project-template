@@ -1,14 +1,14 @@
 <!-- PROGRESSIVE_STATUS
 id: template-release-v612-20261024
-status: active
+status: done
 updated: 2026-10-24
-readiness: 85
+readiness: 100
 plan: 100
 inventory: 100
-production: 85
+production: 100
 cleanup: 100
 tags: template,release,v612,delegation,routing
-next: integrate candidate and run complete release gate; verify exact-tag CI and assets; only then authorize fleet rollout previews
+next: v6.1.2 publication and approved 36-consumer rollout verified; older consumers require a separate migration decision
 -->
 
 # Current Task - Compatible v6.1.2 Release And Fleet Rollout
@@ -22,11 +22,13 @@ Preserve the v6.1.1 release record and user-owned model and permission settings.
 
 ## Current status
 
-The candidate implementation and version metadata are present in the isolated
-release worktree. Focused metadata consistency checks passed. The parent owns
-integration and the full release gate; release CI, publication, assets, native
-call coverage and downstream rollout remain pending. No quota-savings claim is
-supported.
+Stable v6.1.2 at `e2c8bb6566a847c0db3773918672b5731d6f3385` is published.
+All six preflight jobs and exact-tag Linux/Windows CI passed; downloaded assets
+match checksums, metadata and canonical archive bytes. The 36 authorized
+consumers are on 6.1.2 with six focused checks each, zero pending writes and
+conflicts, and external rollback records. Nineteen legacy consumers were not
+updated. Live activation across existing chats and quota savings were not
+measured. Unrelated storage-coordination work remains outside this release.
 
 ## Release and rollout plan
 
