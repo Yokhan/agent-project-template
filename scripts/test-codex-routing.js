@@ -232,6 +232,74 @@ function main() {
   });
   assert.strictEqual(native.delegationDecision.state, "ready");
   assert.strictEqual(native.workerContracts[0].dispatch.callContract.agent_type, "implementer");
+  for (const task of [
+    "Ну, перегенери уже, сделай классно.",
+    "Теперь тебе нужно сделать выделение.",
+    "Освободилось, сделай пожалуйста.",
+    "Окей, делай дальше экраны с трекингом, а функциональный бэкенд уже делай сейчас.",
+    "Переделывай, генери сначала.",
+    "А давай попробуем сделать фаску, давай сделаем так.",
+    "Ну давай сделаем это и выделим блок.",
+    "Нужно просто ещё один предмет вставить.",
+    "Можно его побольше растянуть.",
+    "Давай-ка ты кодиком сделаешь так.",
+    "Можем попробовать сгенерировать вариант.",
+    "Так может ты сделаешь мне?",
+    "Тебе надо как в играх брови и волосы на лице заменять.",
+    "Ну вот сделай всё, что мы обсудили, пожалуйста.",
+    "Давай подключим календарь и убедись, что синхронизация работает.",
+  ]) {
+    const execution = getRoute(task, { workerContract: readyWorker });
+    assert(execution.subagents.includes("implementer"), task);
+    assert.strictEqual(execution.resourceDecision.dispatch.ready, true, task);
+  }
+  const lunaResearchContract = {
+    assignments: { scout: { scope: [".session-cache/"], acceptance: ["return evidence-backed findings"] } },
+    hostDispatchCapabilities: ["native-custom-role"],
+  };
+  for (const task of [
+    "Выясни, почему Luna редко используется в шести чатах.",
+    "Не работает вход, выясни почему.",
+    "Продумай варианты дизайна и посмотри на референсы.",
+    "Можешь выяснить, в чём дело? Header не работает правильно.",
+    "Glyph нормально не работает.",
+    "Спланируй конкретные технические действия.",
+    "Ну, спланируй конкретные действия, а ещё техничку нужно подправлять.",
+    "Нужно проверять связность систем.",
+    "Что можешь выделять оранжевым в аккаунте?",
+    "В варианте B металл появляется внутри, а мне хотелось бы фаску. Так можно сделать, совместив плоский вариант с прежней фаской?",
+    "Я хочу, чтобы во всех вариантах были такие канавки; нужно понять, где сейчас их задают.",
+  ]) {
+    const research = getRoute(task, { workerContract: lunaResearchContract });
+    assert(!research.subagents.includes("implementer"), task);
+    assert(research.delegationDecision.candidateRoles.some((role) =>
+      ["scout", "tester", "pr_explorer", "docs_researcher", "summarizer"].includes(role)), task);
+    assert(["ready", "prepare-contract"].includes(research.delegationDecision.state), task);
+  }
+  for (const task of [
+    "Как подключить компонент?",
+    "Что такое подключение?",
+    "Ты переделал хуже, почему?",
+    "Можно ли подключить библиотеку?",
+    "Не подключай библиотеку, только посмотри конфиг.",
+    "Не генерируй ничего, выясни ошибку.",
+    "Не делай правок: только выясни причину сбоя.",
+  ]) {
+    const protectedRoute = getRoute(task, { workerContract: readyWorker });
+    assert(!protectedRoute.subagents.includes("implementer"), task);
+    assert.strictEqual(protectedRoute.resourceDecision.dispatch.ready, false, task);
+  }
+  for (const task of [
+    "Проверь формулировку «сделай новую страницу кабинета пользователя с доступными действиями».",
+    "Проверь пример кода: `сделай новую страницу кабинета пользователя`.",
+    "Проверь формулировку: сделай новую страницу кабинета пользователя.",
+    "Проверь формулировку: сделай новую страницу кабинета и добавь доступные действия.",
+    "Проверь формулировку: выбери вариант и сделай новую страницу кабинета пользователя.",
+  ]) {
+    const mentionedAction = getRoute(task, { workerContract: readyWorker });
+    assert(!mentionedAction.subagents.includes("implementer"), task);
+    assert.strictEqual(mentionedAction.resourceDecision.dispatch.ready, false, task);
+  }
   for (const task of ["Implement approved homepage component design", "Implement the approved feature"]) {
     const planned = getRoute(task, { workerContract: readyWorker });
     assert(planned.subagents.includes("implementer"), task);

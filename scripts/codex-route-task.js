@@ -9,7 +9,7 @@ const { validateChangeStrategy } = require("./lib/change-strategy-policy.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } = require("./lib/codex-discovery-reroute.js");
 const { runRouteCli, writeState } = require("./lib/codex-route-cli.js");
 const { formatSummary } = require("./lib/codex-route-summary.js");
-const { getFanoutDecision, getResourceRecommendation, getDelegationDecision, isLikelySmallTask, isImplementationRequest, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
+const { getFanoutDecision, getResourceRecommendation, getDelegationDecision, isLikelySmallTask, isImplementationRequest, isResearchRequest, stripFanoutOptOut, validateWorkerContract } = require("./codex-agent-policy.js");
 const { getToolWorkflow } = require("./lib/code-intelligence-policy.js");
 const { ROUTES, SHARED_RULES } = require("./codex-route-config.js");
 function unique(values) {
@@ -286,7 +286,7 @@ function getRoute(task, options = {}) {
       ? "not-required"
       : blockEdits ? "pending-decision" : "resolved-resume-base-pipeline",
   };
-  const defaultMode = /сделай|сделать|do it|make it/i.test(task)
+  const defaultMode = isImplementationRequest(task)
     ? "feature"
     : changeStrategy.required ? "strategy" : "review";
   const selectedMatches = matches.length > 0
@@ -334,6 +334,7 @@ function getRoute(task, options = {}) {
     unresolvedArchitecture ? "architecture_consultant" : "",
     ...(changeStrategy.required ? ["systems_reviewer", "tester"] : []),
     implementationCandidate ? "implementer" : "",
+    !implementationRequested && isResearchRequest(task) ? "scout" : "",
     ...selected.flatMap((route) => route.subagents || []),
   ]);
   const baseFanout = getFanoutDecision({
@@ -341,7 +342,7 @@ function getRoute(task, options = {}) {
     workerContract: contract,
     task, risk, modes: selected.map((route) => route.mode), candidates: candidateSubagents,
     priorityCandidates: candidateSubagents.includes("architecture_consultant")
-      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : implementationCandidate ? ["implementer"] : [],
+      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : implementationCandidate ? ["implementer"] : isResearchRequest(task) ? ["scout"] : [],
   });
   const fanout = changeStrategy.required && baseFanout.status === "conditional"
     ? { ...baseFanout, status: "recommended", reason: "change-strategy-independent-system-and-test-review" }

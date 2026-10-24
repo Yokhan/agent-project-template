@@ -164,7 +164,7 @@ fi
 else
   echo "  OK: Shared writing library import/grounding/binding validate"
 fi
-if ! node scripts/test-codex-runtime.js >/dev/null 2>&1 || ! node scripts/test-codex-hooks.js >/dev/null 2>&1 || ! node scripts/test-codex-request-recovery.js >/dev/null 2>&1 || ! node scripts/test-codex-final-carrier.js >/dev/null 2>&1 || ! node scripts/test-lessons.js >/dev/null 2>&1 || ! node scripts/test-transfer-allowlist.js >/dev/null 2>&1; then
+if ! node scripts/test-codex-runtime.js >/dev/null 2>&1 || ! node scripts/test-codex-hooks.js >/dev/null 2>&1 || ! node scripts/test-codex-request-recovery.js >/dev/null 2>&1 || ! node scripts/test-codex-delegation-report.js >/dev/null 2>&1 || ! node scripts/test-codex-final-carrier.js >/dev/null 2>&1 || ! node scripts/test-lessons.js >/dev/null 2>&1 || ! node scripts/test-transfer-allowlist.js >/dev/null 2>&1; then
   echo "  ERROR: Native workflow, lesson lifecycle or privacy acceptance checks failed"
   ERRORS=$((ERRORS + 1))
 else
@@ -297,6 +297,9 @@ REQUIRED_FILES=(
   "scripts/codex-agent-policy.js"
   "scripts/codex-hooks.js"
   "scripts/codex-turn.js"
+  "scripts/codex-delegation-report.js"
+  "scripts/test-codex-delegation-report.js"
+  "scripts/lib/codex-request-context.js"
   "scripts/lib/codex-turn-policy.js"
   "scripts/lib/codex-runtime.js"
   "scripts/test-codex-runtime.js"
@@ -308,6 +311,7 @@ REQUIRED_FILES=(
   "scripts/check-transfer-allowlist.js"
   "scripts/validate-lessons.js"
   "docs/NATIVE_WORKFLOW_GATES.md"
+  "docs/LUNA_EXECUTION_POLICY.md"
   "scripts/codex-routing-cases-a.js"
   "scripts/codex-routing-cases-b.js"
   "scripts/codex-route-config.js"

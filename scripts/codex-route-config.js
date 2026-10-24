@@ -198,7 +198,7 @@ const ROUTES = [
   {
     mode: "release",
     pattern:
-      /\b(?:release|tag|changelog|publish|deploy)\b|github release|\b(?:bump|increment)\s+(?:the\s+)?version\b|релиз|(?:подним[\p{L}]*|повыс[\p{L}]*|выпуст[\p{L}]*|выпусти|выкат[\p{L}]*)\s+верси|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/iu,
+      /\b(?:release|tag|changelog|publish|deploy)\b|github release|\b(?:bump|increment)\s+(?:the\s+)?version\b|релиз|(?:подним[\p{L}]*|повыс[\p{L}]*|выпуст[\p{L}]*|выпусти|выкат[\p{L}]*|задепло(?:ю|ишь|ит|им|ите|ят|ить|й|йте))\s*(?:апдейт|обновлен|верси|релиз)?|(?:^|[^А-Яа-яЁё])тег(?:$|[^А-Яа-яЁё])|опубликуй|выкат/iu,
     skills: ["codex-template-sync", "codex-health-check", "codex-test-rules"],
     pipeline: "release",
     subagents: ["tester", "reviewer", "security_reviewer"],
@@ -279,7 +279,7 @@ const ROUTES = [
   {
     mode: "feature",
     pattern:
-      /implement|build|create|add|feature|module|component|service|создай|добавь|реализуй|настрой\w*\s+(?:проект|модул|сервис|интеграц|окружен)/i,
+      /implement|build|create|add|feature|module|component|service|создай|добавь|реализуй|сделай|делай|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|давай(?:-ка)?\s+(?:(?:попробуем|попробуй)\s+)?(?:сделаем|сделать|подключим|сгенерировать)|настрой\w*\s+(?:проект|модул|сервис|интеграц|окружен)/iu,
     skills: ["codex-feature-workflow", "codex-pipeline-workflow"],
     pipeline: "feature",
     subagents: ["pr_explorer", "tester", "reviewer"],

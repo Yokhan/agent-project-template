@@ -1,6 +1,6 @@
 # OpenAI Model Guidance
 
-Snapshot checked against official OpenAI documentation on 2026-10-07. This is a
+Routing and pricing checked against official OpenAI documentation on 2026-10-24. This is a
 task-routing recommendation, not a benchmark of this repository or a guarantee
 that a given host can run a requested profile. Recheck the linked sources when
 model availability or client behavior matters.
@@ -76,6 +76,60 @@ Codex custom-agent profiles and Responses API request parameters are different
 configuration surfaces. Do not transpose API settings into Codex config.
 
 ## Measurement
+
+### Workload and benchmark check, 2026-10-24
+
+Choose by decision uncertainty, required output and accepted-task cost. Large
+input alone does not justify Sol: precise extraction can use Luna, while a
+short unresolved architecture question can justify Sol. Use the workload table
+in `LUNA_EXECUTION_POLICY.md`; retain complete worker contracts and fresh source
+grounding.
+
+Current [official API pricing](https://developers.openai.com/api/docs/pricing)
+lists Standard prices per million tokens:
+
+| Exact model | Uncached input | Cached input | Output |
+| --- | --- | --- | --- |
+| `gpt-6.1-sol` | $2.00 | $0.10 | $10.00 |
+| `gpt-6-luna` | $0.10 | $0.01 | $0.50 |
+
+Luna is 20 times cheaper per uncached input/output token and 10 times cheaper
+per cached input token at these API rates. Sol's model page also documents a
+long-context surcharge above 272K input tokens. These are dated rate-card facts,
+not a prediction of this account's included allowance.
+
+The [Codex credit rate card](https://learn.chatgpt.com/docs/pricing) separately
+lists Sol at 50/2.5/250 credits and Luna at 2.5/0.25/12.5 credits per million
+input/cached-input/output tokens at Standard speed. The same page explicitly
+says credit prices alone do not determine included subscription usage. Preserve
+speed-mode distinctions and do not convert raw token totals into dashboard
+percentages using guessed multipliers.
+
+[Artificial Analysis's exact High-vs-High comparison](https://artificialanalysis.ai/models/comparisons/gpt-6-1-sol-high-vs-gpt-6-luna-high)
+reports Intelligence Index 50 vs 33, SciCode 56% vs 50%, Terminal-Bench 4.0
+52% vs 5%, and output speed 49 vs 123 tokens/s (Sol vs Luna). These results
+support testing bounded generation on Luna while retaining difficult autonomous
+terminal work and decisions in Sol. They do not establish performance on this
+repository. Read the [publisher's methodology](https://artificialanalysis.ai/methodology/intelligence-benchmarking):
+the index combines different task families, so a single aggregate score cannot
+choose a model for every task. No checked source directly validates a universal
+input/output-size routing threshold for this workflow.
+
+Compare accepted outcomes on matching contracts and source states. Record
+uncached input, cache hits, output/reasoning tokens, tools, speed tier, elapsed
+time, corrections and parent integration effort where available. Include child
+and parent work in the total; reading and rewriting a worker's output twice can
+erase the expected benefit. Keep API estimates, purchased-credit estimates and
+observed subscription usage as distinct measurements. The current conversation
+replay measures routing coverage, not comparative model quality or savings.
+
+For example, with equal token counts, token mix and Standard API conditions,
+splitting the work equally between Sol and Luna leaves Luna with about 4.8% of
+the combined uncached-input/output spend at a 20:1 price ratio. A low spending
+share therefore does not establish a low workload share. Warm-cache conditions
+also matter: one million Sol cache-hit tokens and one million Luna uncached
+input tokens both list at $0.10, before output and other charges. Avoid replaying
+large already-understood context merely to move a call to the cheaper model.
 
 Treat the routing matrix as a hypothesis. Validate with representative tasks
 before making quality, latency, cost, or savings claims. Compare complete task

@@ -35,6 +35,13 @@ ritual for tiny edits. Respect explicit opt-out, host limits, and unsafe or
 inseparable scopes. Project guidance permits delegation but does not require a
 worker for every task.
 
+Use the complete bounded inspect/change/focused-check cycle as the handoff unit.
+The minimum measured coverage target is 50% of eligible execution/research
+requests; inspect all-request coverage alongside it. See
+`LUNA_EXECUTION_POLICY.md` for the read-only report, runtime evidence and
+denominator limits. A scout token call followed by all execution in Sol is not
+evidence that implementation was offloaded.
+
 For substantial staged product work, agree on the end result (audience,
 capability, acceptance, constraints), an approximate sequence of implementation
 waves with useful outcomes and rationale. Then derive and record a detailed

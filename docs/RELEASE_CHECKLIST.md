@@ -2,12 +2,26 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.1.1`. This checklist records required evidence, not a
+Release target: `v6.1.2`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
+
+## v6.1.2 Candidate — Pending
+
+- [ ] Integrate the compatible routing, request-normalization, continuation-evidence and delegation-report changes with the v6.1.2 metadata and patch notes.
+- [ ] Run the current release gate on the integrated candidate and record exact-commit Linux/Windows CI results. Earlier local validation and route replay are baseline evidence only.
+- [ ] Confirm any live Luna calls from correlated runtime profiles and current-request integration records. Requested roles, replay results and prepared contracts do not count as calls.
+- [ ] After the release gates pass, verify the exact `v6.1.2` tag, published release and downloaded assets/checksums before describing it as live.
+- [ ] Build a reviewed downstream census and exact-tag preview for each authorized project; apply only after the release is verified and conflicts/overlays are reviewed.
+
+The current local candidate does not yet establish release-gate completion,
+publication, live delegation coverage or quota savings. See
+[v6.1.2 patch notes](RELEASE_V6_1_2.md). The v6.1.1 record below remains
+historical publication evidence and its immutable tag/assets must not be
+replaced.
 
 ## v6.1.1 Verified Publication
 

@@ -118,12 +118,34 @@ const AGENT_POLICY = Object.freeze({
 
 const OPT_OUT_PATTERN =
   /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент[\p{L}]*|сабагент[\p{L}]*|делегац[\p{L}]*|фан-?аут[\p{L}]*|swarm|ро[йяе][\p{L}]*|рой[\p{L}]*)|не\s+делегируй)/iu;
-const MUTATION_PATTERN =
-  /\b(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|добавь|отрефакторь|выпусти|исправ|измен|мигрир|обнов|опубликуй|реализ|релизь|созда|тегир|выкат|запиши|напиши|сверстай|внедри/iu;
+const RUSSIAN_EXECUTION_REQUEST_PATTERN = new RegExp([
+  String.raw`(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|выкат(?:и|ай)|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|задеплой|задеплойте)(?!\p{L})`,
+  String.raw`давай(?:-ка)?\s+(?:(?:попробуем|попробуй)\s+)?(?:сделаем|сделать|подключим|перегенерировать|сгенерировать|перерисовать|пересоздать)(?!\p{L})`,
+  String.raw`давай-ка\s+ты\s+.{0,50}?сделаешь(?!\p{L})`,
+  String.raw`(?:может\s+ты\s+сделаешь|можешь\s+сделать|(?:ты|вы)\s+бы\s+сделал)(?!\p{L})`,
+  String.raw`(?:можем\s+попробовать|можно)\s+(?!ли(?!\p{L})).{0,100}?(?:сделать|сгенерировать|растянуть|выделить|вставить|подключить|подправить|заменить|заменять|нарисовать|задеплоить)(?!\p{L})`,
+  String.raw`(?:тебе\s+)?(?:нужно|надо|следует|пора)\s+.{0,120}?(?:сделать|вставить|подключить|переделать|перегенерить|перегенерировать|сгенерировать|перерисовать|пересоздать|собрать|разработать|заменить|заменять|сохранить|подправить|подправлять|растянуть|выделить|нарисовать|задеплоить)(?!\p{L})`,
+  String.raw`(?:хочу|хочется|хотелось\s+бы)\s+.{0,120}?(?:сделать|сгенерировать|стало\s+базой|стала\s+базой|перерисовать|добавить|ввести)(?!\p{L})`,
+  String.raw`задеплоишь(?!\p{L})`,
+].join("|"), "iu");
+const MUTATION_PATTERN = new RegExp(
+  String.raw`\b(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|(?:добавь|добавьте|отрефакторь|отрефакторьте|выпусти|выпустите|исправь|исправьте|измени|измените|мигрируй|мигрируйте|обнови|обновите|опубликуй|опубликуйте|реализуй|реализуйте|релизь|создай|создайте|тегируй|тегируйте|выкати|выкатите|запиши|запишите|напиши|напишите|сверстай|сверстайте|внедри|внедрите)(?!\p{L})|${RUSSIAN_EXECUTION_REQUEST_PATTERN.source}`,
+  "iu",
+);
 const READ_ONLY_PATTERN =
-  /\b(?:read[ -]?only|inspect|review|audit|analy[sz]e|evaluate|explain|report|research|look up)\b|без\s+изменений|только\s+чтение|проверь|аудит|разбери|оцени|посмотри|изучи|объясни|отч[её]т/iu;
+  /\b(?:read[ -]?only|inspect|review|audit|analy[sz]e|evaluate|explain|report|research|look up)\b|без\s+изменений|только\s+чтение|проверь|проверять|проверить|убедись|аудит|разбери|оцени|посмотри|изучи|объясни|отч[её]т|выясни|узнай|почему|в\s+чем\s+причин|не\s+работает|ошибк/iu;
+const RESEARCH_REQUEST_PATTERN =
+  /\b(?:research|investigate|explore|understand|analy[sz]e|review|audit|inspect|evaluate|report|explain|look up|plan)\b|исследуй|изучи|разбер|анализ|провер(?:ь|и|ять|ить)|аудит|оцени|посмотри|отч[её]т|выясни(?:ть)?|узнай|спланируй|планируй|не\s+работает|ошибк.{0,80}почему|почему.{0,80}(?:не\s+работает|ошибк|падает)|в\s+чем\s+(?:причин|дело)|что\s+происходит|убедись|что\s+можешь.{0,80}(?:выдел|подсвет|сгенерир)|так\s+можно\s+сделать|можно\s+ли.{0,100}(?:сделать|подключить|совместить|имитировать)|хочу.{0,160}(?:во\s+всех\s+вариант|базой|основой)/iu;
+const FEEDBACK_DISCOVERY_PATTERN =
+  /не\s+работает|ошибк|сбо[йя]|сломал|не\s+совпадает|не\s+хватает|косяч|гряз[ьи]|разрыв|не\s+нравится|не\s+то|хуже|не\s+премиальн|не\s+современн|не\s+понятн|не\s+красив|нужна\s+другая/iu;
+const REPORTED_INSTRUCTION_PATTERN =
+  /^\s*(?:(?:ну|так|окей|слушай|а|да)(?!\p{L})[\s,]*)*(?:проверь|оцени|разбери|проанализируй|прочитай|провалидируй)\s+(?:формулировк[\p{L}]*|фраз[\p{L}]*|пример[\p{L}]*|текст[\p{L}]*|инструкц[\p{L}]*|команд[\p{L}]*|цитат[\p{L}]*)/iu;
+const EXPLICIT_FOLLOWUP_ACTION_PATTERN =
+  /(?:[.!?;]\s*|(?:и|а\s+потом|затем)\s+)(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
+const REPORTED_COLON_FOLLOWUP_ACTION_PATTERN =
+  /[.!?;]\s*(?:(?:и|а\s+потом|затем|потом)\s+)?(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
 const NEGATED_MUTATION_PATTERN =
-  /\b(?:do not|don't|dont|never)\s+(?:edit|modify|change|patch|write)(?:\s+(?:files?|code))?\b|не\s+(?:редактир|изменя|патч|прав|трогай)|без\s+(?:правок|изменений)/iu;
+  /\b(?:do not|don't|dont|never)\s+(?:edit|modify|change|patch|write)(?:\s+(?:files?|code))?\b|не\s+(?:редактир|изменя|патч|прав|трогай)|не\s+(?:делай|сделай|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})|не\s+(?:нужно|надо)\s+.{0,80}?(?:сделать|вставить|подключить|переделать|перегенерировать|сгенерировать|перерисовать|пересоздать|разработать|заменить|заменять|сохранить|подправить|растянуть|выделить|нарисовать|задеплоить)(?!\p{L})|без\s+(?:правок|изменений)/iu;
 const PARALLEL_VALUE_PATTERN =
   /\b(?:parallel|independent lanes?|compare|cross-check|deep audit|comprehensive audit|across (?:modules|systems|sources|projects)|multiple (?:modules|sources|projects)|swarm|release announcement.{0,40}diagrams?)\b|параллел|независим[\p{L}]*\s+(?:поток|провер|аудит)|сравни|глубок[\p{L}]*\s+аудит|комплексн[\p{L}]*\s+аудит|нескольк[\p{L}]*\s+(?:модул|источник|проект)|(?:через|используя)\s+рой|сайт[\p{L}]*\s+релиз.{0,40}диаграм/iu;
 
@@ -143,26 +165,60 @@ function stripFanoutOptOut(task) {
   return String(task || "").replace(pattern, " ").replace(/\s+/g, " ").replace(/\s+([.!?])/g, "$1").trim();
 }
 
+function stripQuotedOrCodeText(task) {
+  return String(task || "")
+    .replace(/```[\s\S]*?```/gu, " ")
+    .replace(/`[^`\r\n]*`/gu, " ")
+    .replace(/«[^»]*»|“[^”]*”|„[^“]*“|"[^"\r\n]*"|'[^'\r\n]*'/gu, " ")
+    .replace(/^\s*>.*$/gmu, " ");
+}
+
 function isImplementationRequest(task) {
+  const text = String(task || "");
+  const actionText = stripQuotedOrCodeText(text);
+  const leadingTask = text.replace(/^\s*(?:(?:ну|так|окей|слушай|теперь|а|да)(?!\p{L})[\s,]*)+/iu, "");
+  const reportedLead = actionText.match(REPORTED_INSTRUCTION_PATTERN);
+  if (reportedLead) {
+    const colonAfterLead = actionText.slice(reportedLead[0].length).match(/^\s*:/u);
+    const colonIndex = colonAfterLead
+      ? reportedLead[0].length + colonAfterLead[0].lastIndexOf(":")
+      : -1;
+    const hasReportedFollowup = colonIndex >= 0
+      ? REPORTED_COLON_FOLLOWUP_ACTION_PATTERN.test(actionText.slice(colonIndex + 1))
+      : EXPLICIT_FOLLOWUP_ACTION_PATTERN.test(actionText);
+    if (!hasReportedFollowup) return false;
+  }
   // A route name or a supplied worker contract never grants write authority.
-  if (NEGATED_MUTATION_PATTERN.test(task) ||
-      /\bread[ -]?only\b|только\s+чтение/iu.test(task)) return false;
+  if (NEGATED_MUTATION_PATTERN.test(actionText) ||
+      /\bread[ -]?only\b|только\s+чтение/iu.test(actionText)) return false;
+  // "What can/should be done?" asks for a judgment, not execution.
+  if (/^\s*что\s+(?:можно|нужно|надо)(?!\p{L})/iu.test(leadingTask)) return false;
+  if (/(?:^|[\s,])так\s+можно(?!\p{L}).{0,160}\?/iu.test(text)) return false;
   // Explanations can contain imperative-looking conjunctions as their subject
   // ("explain the build and deploy pipeline"). They do not authorize writes.
-  if (/^\s*(?:explain|describe|report|research|how\b|why\b|объясни|опиши|расскажи|как\s|почему\s)/iu.test(task)) {
-    return /[.;!]\s*(?:please\s+)?(?:implement|fix|change|create|update|write)\b/iu.test(task) ||
-      /[.;!]\s*(?:пожалуйста\s+)?(?:исправь|реализуй|обнови|измени|создай|напиши|сверстай|внедри)(?=\s|$)/iu.test(task);
+  if (/^\s*(?:explain|describe|report|research|how\b|why\b|объясни|опиши|расскажи|спланируй|планируй|как\s|почему\s)/iu.test(leadingTask)) {
+    return /[.;!]\s*(?:please\s+)?(?:implement|fix|change|create|update|write)\b/iu.test(actionText) ||
+      /[.;!]\s*(?:пожалуйста\s+)?(?:сделай|делай|исправь|реализуй|обнови|измени|создай|напиши|сверстай|внедри|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu.test(actionText);
   }
   // In an audit/question, "fix" can name the thing being inspected. Require
   // an actual action clause instead of interpreting that noun as permission.
-  if (READ_ONLY_PATTERN.test(task) || /^(?:how\b|why\b|как\s|почему\s)/iu.test(task.trim())) {
+  if (READ_ONLY_PATTERN.test(text) || /^(?:how\b|why\b|как\s|почему\s)/iu.test(text.trim())) {
     // A conjunction alone is ambiguous ("audit the build and fix process").
     // Require an explicit action object in English mixed audit/write requests.
-    return /(?:^|[.;!,?]\s*)(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\b/iu.test(task) ||
-      /\b(?:and|then)\s+(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\s+(?:the|a|an|this|that|these|those|our|my)\s+/iu.test(task) ||
-      /(?:^|[.;!,?]\s*|(?:^|\s)(?:и|затем|потом)\s+)(?:пожалуйста\s+)?(?:добавь|отрефакторь|исправь|реализуй|обнови|измени|создай|напиши|сверстай|внедри)(?=\s|$)/iu.test(task);
+    return /(?:^|[.;!,?]\s*)(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\b/iu.test(actionText) ||
+      /\b(?:and|then)\s+(?:please\s+)?(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|update|write)\s+(?:the|a|an|this|that|these|those|our|my)\s+/iu.test(actionText) ||
+      RUSSIAN_EXECUTION_REQUEST_PATTERN.test(actionText);
   }
-  return MUTATION_PATTERN.test(task);
+  return MUTATION_PATTERN.test(actionText);
+}
+
+function isResearchRequest(task) {
+  const text = String(task || "");
+  if (isImplementationRequest(text)) return false;
+  if (RESEARCH_REQUEST_PATTERN.test(text)) return true;
+  // Substantive correction feedback can need source inspection before Sol
+  // decides whether it implies a bounded write or a product judgment.
+  return text.length >= 120 && FEEDBACK_DISCOVERY_PATTERN.test(text);
 }
 
 function validateResourceRequest({ model, effort, budget, reason, hostCapabilities } = {}) {
@@ -384,7 +440,7 @@ function getDelegationDecision({
     }
     candidateRoles = ["implementer"];
   } else {
-    const researchIntent = /\b(?:research|investigate|explore|understand|analy[sz]e|review|audit|inspect|evaluate|report|explain|look up)\b|исследуй|изучи|разбер|анализ|проверь|аудит|оцени|отч[её]т/iu.test(task || "");
+    const researchIntent = isResearchRequest(task);
     if (isImplementationRequest(task) || !researchIntent) {
       return { required: false, state: "skip", reason: "no-delegable-execution-or-research", nextAction: "Continue with the parent route.", candidateRoles: [] };
     }
@@ -563,6 +619,7 @@ module.exports = {
   getResourceRecommendation,
   isLikelySmallTask,
   isImplementationRequest,
+  isResearchRequest,
   stripFanoutOptOut,
   validateResourceRequest,
   validateWorkerContract,

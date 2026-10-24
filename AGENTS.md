@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 6.1.1 -->
+<!-- Template Version: 6.1.2 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -118,6 +118,17 @@ logical request. Follow their evidence path and `scripts/codex-turn.js help`;
 record actual child integration or a concrete visible fallback. See
 `docs/NATIVE_WORKFLOW_GATES.md` for host activation and evidence limits.
 
+Delegate the complete bounded execution cycle (inspect assigned sources, change,
+run focused checks) instead of retaining that cycle in Sol after a token scout
+call. Do not repeat the worker's implementation or unchanged focused checks.
+Track a minimum 50% Luna coverage for execution/research tasks using actual
+correlated calls and completed integration, separately from the share of all
+requests and from spending. Missing coverage requires diagnosis and useful
+handoffs, never filler agents. See `docs/LUNA_EXECUTION_POLICY.md`.
+Choose by decision uncertainty and required output: broad synthesis and material
+decisions belong to Sol; precise extraction and contract-bound generation belong
+to Luna, even when the source is large. Input length alone is not a Sol trigger.
+
 For parallel work, delegate only independent lanes with material parallel
 value, exact acceptance criteria, and non-overlapping write scopes. Start with
 at most three children per task, also constrained by available host slots;
@@ -176,4 +187,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 6.1.1.
+the shared rules. Template version: 6.1.2.

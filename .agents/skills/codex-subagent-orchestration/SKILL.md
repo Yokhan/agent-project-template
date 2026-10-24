@@ -10,6 +10,14 @@ One sequential worker is valid: Sol defines the contract, Luna implements, Sol
 accepts. Parallelism is optional, not a prerequisite for delegation. Tiny edits
 remain direct; do not create work or extra reviews to reach an agent quota.
 
+Give Luna the complete bounded inspect/change/focused-check cycle. A scout call
+followed by the parent doing all implementation does not establish execution
+offload. Measure actual calls and completed integration with
+`node scripts/codex-delegation-report.js --session <native-session-id> --limit 20`.
+The minimum coverage target is 50% of eligible execution/research requests;
+report the all-request share alongside it and never describe either as a share
+of credits. See `docs/LUNA_EXECUTION_POLICY.md` for the denominator and limits.
+
 ## Default Pattern
 
 For substantial staged product work, delegation sits inside an agreed wave,

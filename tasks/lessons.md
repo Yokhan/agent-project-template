@@ -371,3 +371,15 @@ Promoted entries name the destination rule. Do not use ad hoc statuses such as
 **Applies to**: validate-production-standard.js, test-template.sh, setup payload smoke, sync-template downstream validation
 **Category**: testing
 **Status**: ACTIVE
+
+
+### 2026-10-24 - Classify native user intent before enforcing delegation
+**Track**: BUG
+**Severity**: P1
+**Error**: Common Russian execution continuations were skipped, while quoted clarification questions triggered writing and editorial work.
+**Root cause**: Raw host envelopes and isolated current phrases were treated as complete tasks; the service-chat recovery path also bypassed normal prompt classification.
+**Rule**: Use the same canonical normalization for submit and recovery. Preserve raw provenance, carry only accepted same-session context, and require fresh execution evidence for new user requests. Check actual Luna model metadata and integrated outcomes; keep eligible-task and all-request denominators separate from spending.
+**Evidence**: Focused managed classifier/hook/recovery/report checks; ordinary fresh CLI review dispatched a runtime-correlated Luna High tester without trust bypass. See docs/LUNA_EXECUTION_POLICY.md and docs/OPENAI_MODEL_GUIDANCE.md for workload and measurement limits.
+**Applies to**: native hooks, task routing, model selection, usage audits
+**Category**: process
+**Status**: ACTIVE

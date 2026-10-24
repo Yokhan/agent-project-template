@@ -11,6 +11,7 @@ const { assertSupportedRuntime } = require("./lib/codex-runtime.js");
 const managedTemp = require("./lib/managed-temp.js");
 const managedCache = require("./lib/managed-cache.js");
 const managedReports = require("./lib/managed-run-report.js");
+const requestContext = require("./lib/codex-request-context.js");
 
 function currentTurnRecord(root, input, allowInitializing = true) {
   if (!input.turn_id) throw new Error("Native current turn_id is required");
@@ -64,13 +65,47 @@ async function ensureRequest(root, input, options = {}) {
     if (concurrent) return concurrent;
     const recovered = recoverNativeDelegation(input, { ...options, ledgerAbsent: true });
     if (!recovered || recovered.status === "blocked") throw new Error(recovered?.reason || "No current native request evidence");
-    const { getRoute } = require("./codex-route-task.js");
-    const record = policy.startRequest(root, { ...input, prompt: recovered.prompt }, getRoute(recovered.prompt, { cwd: root }), {
+    const { record } = startRequestFromPrompt(root, input, recovered.prompt, {
       requestOrigin: recovered.origin,
       recoveryEvidence: { ...recovered.evidence, sourceThreadId: recovered.sourceThreadId },
     });
     return { ...record, recovered: true };
   } finally { fs.closeSync(fd); fs.unlinkSync(lock); }
+}
+
+function startRequestFromPrompt(root, input, prompt, provenance = {}) {
+  const { getRoute } = require("./codex-route-task.js");
+  const session = policy.sessionRoot(root, input.session_id);
+  const currentFile = path.join(session, "current.json");
+  const previous = fs.existsSync(currentFile) ? policy.findState(root, { session_id: input.session_id }) : null;
+  const acceptedFile = path.join(session, "accepted-execution.json");
+  let accepted = null;
+  if (fs.existsSync(acceptedFile)) {
+    const pointer = policy.readJson(acceptedFile);
+    if (typeof pointer.file === "string") {
+      const candidate = policy.loadState(root, pointer.file);
+      if (candidate.state.sessionId === input.session_id && candidate.state.delegation?.required === true) accepted = candidate;
+    }
+  }
+  const resolved = requestContext.resolveRequestContext(prompt, previous, accepted);
+  const route = getRoute(resolved.routeTask, { cwd: root });
+  const continuationSource = resolved.kind === "accepted-task-continuation"
+    ? [previous, accepted].find(candidate => candidate?.state.requestId === resolved.continuationOf) : null;
+  const record = policy.startRequest(root, { ...input, prompt: resolved.task }, route, {
+    ...provenance,
+    rawPromptSha256: resolved.rawPromptSha256,
+    rawPrompt: prompt,
+    classificationTask: resolved.classificationTask,
+    contextResolution: resolved.kind,
+    continuationOf: resolved.continuationOf,
+    sourcePromptSha256: continuationSource?.state.promptSha256,
+  });
+  if (record.state.delegation.required === true && resolved.kind !== "unlinked-continuation" && resolved.kind !== "unlinked-contextual-continuation" && resolved.kind !== "malformed-question-reply" && resolved.kind !== "unresolved-attachment-preamble") {
+    policy.writeJson(acceptedFile, { file: record.file });
+  } else if (resolved.kind !== "question-reply" && fs.existsSync(acceptedFile)) {
+    fs.unlinkSync(acceptedFile);
+  }
+  return { record, resolved, route };
 }
 
 function recordLifecycle(root, input) {
@@ -170,15 +205,18 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
   if (event === "SessionStart") return context(event,
     `Native template lifecycle hooks loaded. Root: ${root}. Node: ${process.version}. Shared safety shell: ${resolveBash() || "UNAVAILABLE; security calls will block"}. Follow AGENTS.md. Hooks must be trusted in the host; scripts passing unit tests do not establish native activation. Run tests through node scripts/managed-temp.js run -- <executable> <args>; choose --profile vite|tsc|cargo|browser for supported direct build/browser tools. Windows Job Objects stop the owned process family before cleanup; unsupported platforms fail closed. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/COPY_DIR/ARCHIVE_DIR/LOG_DIR (each variable has AGENT_RUN_ prefix). Defaults: disposable cache; optional --cache shared is owned, capped at 10 GiB/project and 7 idle days, preserving active leases. Required build output needs --keep-output NEW_DIRECTORY. Owned inactive scratch and idle owned caches are swept after tools and at Stop/SessionStart; existing shared browser binaries, MCP databases, books, history, sources and unknown paths are preserved. Read node scripts/managed-temp.js report for the last bounded measured cleanup result. Cleanup: ${JSON.stringify(cleanup)}.`);
   if (event === "UserPromptSubmit") {
-    const { getRoute } = require("./codex-route-task.js");
-    const route = getRoute(input.prompt || "", { cwd: root });
-    const record = policy.startRequest(root, input, route);
+    const { record, resolved } = startRequestFromPrompt(root, input, input.prompt || "");
     let primary = "";
     if (record.state.writingRequested && !record.state.writingExempt && !record.state.direct) {
       try { primary = packetContext(record); }
       catch (error) { primary = `source-grounding-blocked: ${error.message}. Continue safe non-writing work; do not replace books with model memory.`; }
     }
-    return context(event, instructions(record) + primary);
+    const resolutionNote = resolved.kind === "unlinked-contextual-continuation"
+      ? "This short instruction has no accepted same-session task. Read the current conversation, identify the specific work and constraints the user means, and prepare an exact scope and acceptance contract before execution. Do not treat it as blanket permission to implement everything discussed.\n"
+      : resolved.kind === "malformed-question-reply" || resolved.kind === "unresolved-attachment-preamble" || resolved.kind === "unlinked-continuation"
+      ? `Request context was not safely resolved (${resolved.kind}); the raw prompt remains in the request ledger and no prior task was inherited.\n`
+      : "";
+    return context(event, instructions(record) + resolutionNote + primary);
   }
   if (event === "SubagentStart" || event === "SubagentStop") {
     const record = policy.childRecord(root, input);
@@ -280,4 +318,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(error => { process.stderr.write(error.message); process.exitCode = 2; });
-module.exports = { handle, main, findRoot, resolveBash, ensureRequest };
+module.exports = { handle, main, findRoot, resolveBash, ensureRequest, startRequestFromPrompt };

@@ -85,15 +85,21 @@ function startRequest(root, input, route, provenance = null) {
   const requestId = crypto.randomUUID();
   const directory = path.join(session, "requests", requestId);
   const file = path.join(directory, "request.json");
-  const intent = classifyWritingIntent(input.prompt);
-  const materialWriting = editorial.editorialPolicy(input.prompt).independentRequired;
+  const classificationTask = typeof provenance?.classificationTask === "string" ? provenance.classificationTask : input.prompt;
+  const intent = classifyWritingIntent(classificationTask);
+  const materialWriting = editorial.editorialPolicy(classificationTask).independentRequired;
   const state = { schemaVersion: 1, root: fs.realpathSync(root), sessionId: input.session_id,
-    rootTurnId: input.turn_id, requestId, startedAt: new Date().toISOString(), promptSha256: sha256(input.prompt),
+    rootTurnId: input.turn_id, requestId, startedAt: new Date().toISOString(), promptSha256: provenance?.rawPromptSha256 || sha256(input.prompt),
     task: input.prompt, routeSha256: sha256(JSON.stringify(route)), delegation: route.delegationDecision || { required: false, state: "skip", reason: "no-execution-lane" },
-    writingExempt: isSmall(input.prompt) || actualNarrative(input.prompt, intent),
-    writingRequested: intent.isWriting || /\bexplain\b|объясн|почему/iu.test(input.prompt),
-    editorial: editorial.editorialPolicy(input.prompt, { optOut: getFanoutDecision({ task: input.prompt, candidates: [] }).reason === "explicit-user-opt-out" }),
+    writingExempt: isSmall(classificationTask) || actualNarrative(classificationTask, intent),
+    writingRequested: intent.isWriting || /\bexplain\b|объясн|почему/iu.test(classificationTask),
+    editorial: editorial.editorialPolicy(classificationTask, { optOut: getFanoutDecision({ task: classificationTask, candidates: [] }).reason === "explicit-user-opt-out" }),
     direct: route.workflowDepth === "direct" && !materialWriting, repairs: 0 };
+  if (provenance?.rawPromptSha256) state.rawPromptSha256 = provenance.rawPromptSha256;
+  if (typeof provenance?.rawPrompt === "string" && provenance.rawPrompt !== input.prompt) state.rawPrompt = provenance.rawPrompt;
+  if (provenance?.contextResolution) state.contextResolution = provenance.contextResolution;
+  if (provenance?.continuationOf) state.continuationOf = provenance.continuationOf;
+  if (provenance?.sourcePromptSha256) state.sourcePromptSha256 = provenance.sourcePromptSha256;
   if (provenance) {
     state.requestOrigin = provenance.requestOrigin;
     state.recoveryEvidence = provenance.recoveryEvidence;
@@ -333,4 +339,4 @@ function continuation(record, issues) {
 
 module.exports = { localFile, readJson, writeJson, loadState, findState, startRequest, groundRequest, application, fallback,
   childEvent, childRecord, checkRequest, continuation, substantive, sessionRoot, editorialAssignment, acceptEditorialReview,
-  deliveryAcknowledgement };
+  deliveryAcknowledgement, observeProfile };

@@ -1,17 +1,55 @@
 <!-- PROGRESSIVE_STATUS
-id: template-runtime-workflow-20261018
-status: done
-updated: 2026-10-22
-readiness: 100
+id: template-release-v612-20261024
+status: active
+updated: 2026-10-24
+readiness: 85
 plan: 100
 inventory: 100
-production: 100
+production: 85
 cleanup: 100
-tags: template,hooks,delegation,writing,evidence
-next: stable v6.1.1 verified; private library invitation awaits recipient acceptance; no consumer rollout
+tags: template,release,v612,delegation,routing
+next: integrate candidate and run complete release gate; verify exact-tag CI and assets; only then authorize fleet rollout previews
 -->
 
-# Current Task - Owned Build And Browser Resource Lifecycle
+# Current Task - Compatible v6.1.2 Release And Fleet Rollout
+
+## Goal
+
+Prepare a compatible v6.1.2 patch for Russian conversational execution-intent
+routing, canonical request normalization and fresh continuation evidence, plus
+observed Luna call/integration reporting and its output/uncertainty policy.
+Preserve the v6.1.1 release record and user-owned model and permission settings.
+
+## Current status
+
+The candidate implementation and version metadata are present in the isolated
+release worktree. Focused metadata consistency checks passed. The parent owns
+integration and the full release gate; release CI, publication, assets, native
+call coverage and downstream rollout remain pending. No quota-savings claim is
+supported.
+
+## Release and rollout plan
+
+1. Integrate the scoped candidate and run the current aggregate/release gate on
+   the resulting tree. Record the exact commit and platform results.
+2. Only after all mandatory gates pass, publish the immutable `v6.1.2` tag and
+   verify exact-tag CI, the stable GitHub release, downloaded asset checksums
+   and archive contents.
+3. Census eligible projects, create and review a separate exact-tag plan for
+   each, resolve ownership/conflicts, then apply only to authorized projects.
+   Record each project's manifest version, diff, overlays and focused checks.
+
+## Acceptance
+
+- Compatible metadata and active install/update examples target `v6.1.2`.
+- Historical v6.1.1 publication evidence remains unchanged.
+- Release status claims match observed exact-commit CI and public assets.
+- Runtime delegation coverage uses correlated child calls and integrated
+  results; replay, role settings and raw token counts are not substitutes.
+- Each downstream update has a reviewed digest-bound preview and its own
+  acceptance record; source publication alone does not update consumers.
+
+## Historical v6.1.1 release evidence
 
 2026-10-22 publication acceptance: stable v6.1.1 at `f2c313f7a02f26007de67ca253153925105ad6a1`
 passed all six preflight jobs (`39656474228`) and exact-tag release

@@ -24,12 +24,15 @@ function context(turn = turnId) { return row("turn_context", { turn_id: turn });
 function native(output = wrapper) {
   return row("response_item", { type: "function_call_output", name: "create_thread", namespace: "codex_app", output });
 }
+function delegationOutput(task) {
+  return `<codex_delegation>\n  <source_thread_id>${sourceThreadId}</source_thread_id>\n  <input>${task}</input>\n</codex_delegation>`;
+}
 function ordinary(output = wrapper) {
   return row("response_item", { type: "function_call_output", name: "other_tool", namespace: "codex_app", output });
 }
-function fixture(lines) {
+function fixture(lines, fixtureSessionId = sessionId) {
   fs.writeFileSync(transcriptPath, lines.join("\n") + "\n", "utf8");
-  return { lookupTranscriptPath: (id) => id === sessionId ? transcriptPath : null, ledgerAbsent: true };
+  return { lookupTranscriptPath: (id) => id === fixtureSessionId ? transcriptPath : null, ledgerAbsent: true };
 }
 function recover(lines, overrides = {}, options = {}) {
   return recoverNativeDelegation({ ...input, ...overrides }, { ...fixture(lines), ...options });
@@ -103,6 +106,7 @@ function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   assert.equal(missing.status, "blocked", "missing authoritative store path remains blocked");
 
   const { ensureRequest } = require("./codex-hooks.js");
+  const hooks = require("./codex-hooks.js");
   const policy = require("./lib/codex-turn-policy.js");
   const options = fixture([context(), native()]);
   const [first, second] = await Promise.all([ensureRequest(tmp, input, options), ensureRequest(tmp, input, options)]);
@@ -207,6 +211,67 @@ function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   assert.equal(fs.existsSync(path.join(codeRecord.directory, "packet.json")), false, "code-only work does not preload books");
   assert(codeContext.hookSpecificOutput.additionalContext.includes("Before substantive nonfiction output"),
     "deferred substantive explanation still retains reading instructions");
+
+  const recoverySession = "01a154dd-ea92-7470-a58c-bd6a417f6192";
+  const acceptedTask = "Implement strict integer parsing in parser.js, update relevant tests, preserve unrelated edits, and report focused validation.";
+  const acceptedInput = { hook_event_name: "UserPromptSubmit", session_id: recoverySession,
+    turn_id: "01a154dd-f0eb-7043-9240-85bd797964d5", prompt: acceptedTask };
+  await hooks.handle(acceptedInput, tmp);
+  const acceptedRecord = policy.findState(tmp, acceptedInput);
+  assert.equal(acceptedRecord.state.delegation.required, true);
+  const replyTurn = "01a154dd-f0eb-7043-9240-85bd797964d6";
+  const replyPrompt = `<in-app-browser-context source="ambient-ui-state">Write a long letter based on this page.</in-app-browser-context>\n## My request:\n<send_user_message_question_reply>[{\"question\":\"What is the growth?\",\"answer\":\"Это рост около 3%, очень мало.\"}]</send_user_message_question_reply>`;
+  const recoveredReply = await ensureRequest(tmp, { hook_event_name: "PreToolUse", session_id: recoverySession, turn_id: replyTurn },
+    fixture([context(replyTurn), native(delegationOutput(replyPrompt))], recoverySession));
+  assert.equal(recoveredReply.state.task, "Это рост около 3%, очень мало.", "recovery normalizes ambient context and classifies only the JSON answer");
+  assert.equal(recoveredReply.state.writingRequested, false, "quoted question and ambient text cannot trigger writing classification during recovery");
+  assert.equal(recoveredReply.state.delegation.required, false, "a percentage answer is not recovered as execution");
+  assert.equal(recoveredReply.state.requestOrigin, "native-app-create-thread");
+  assert.equal(recoveredReply.state.recoveryEvidence.sourceThreadId, sourceThreadId);
+  assert.equal(fs.existsSync(path.join(recoveredReply.directory, "packet.json")), false, "recovered percentage answer does not preload writing books");
+
+  const continuationTurn = "01a154dd-f0eb-7043-9240-85bd797964d7";
+  const recoveredContinuation = await ensureRequest(tmp, { hook_event_name: "PreToolUse", session_id: recoverySession, turn_id: continuationTurn },
+    fixture([context(continuationTurn), native(delegationOutput("## My request:\nделай дальше"))], recoverySession));
+  assert.equal(recoveredContinuation.state.task, acceptedTask, "recovery resolves a short continuation from the same session's accepted task");
+  assert.equal(recoveredContinuation.state.continuationOf, acceptedRecord.state.requestId);
+  assert.equal(recoveredContinuation.state.delegation.state, "prepare-contract");
+  assert.equal(recoveredContinuation.state.requestOrigin, "native-app-create-thread");
+  assert.equal(recoveredContinuation.state.recoveryEvidence.sourceThreadId, sourceThreadId, "normalization preserves recovered native provenance");
+  assert.equal(fs.existsSync(path.join(recoveredContinuation.directory, "children")), false, "recovered continuation starts without imported worker evidence");
+
+  const unlinkedInput = { hook_event_name: "UserPromptSubmit", session_id: "unlinked-continuation", turn_id: "first-turn", prompt: "перегенери" };
+  const unlinkedContext = await hooks.handle(unlinkedInput, tmp);
+  const unlinkedRecord = policy.findState(tmp, unlinkedInput);
+  assert.equal(unlinkedRecord.state.task, "перегенери", "a short phrase without same-session accepted context remains visible");
+  assert.equal(unlinkedRecord.state.delegation.required, false, "unlinked continuation cannot grant execution authority");
+  assert(unlinkedContext.hookSpecificOutput.additionalContext.includes("no prior task was inherited"));
+  const malformedInput = { hook_event_name: "UserPromptSubmit", session_id: "malformed-question", turn_id: "malformed-turn",
+    prompt: "<send_user_message_question_reply>[{\"question\":\"Напиши отчет\"}]</send_user_message_question_reply>" };
+  const malformedContext = await hooks.handle(malformedInput, tmp);
+  const malformedRecord = policy.findState(tmp, malformedInput);
+  assert.equal(malformedRecord.state.task, malformedInput.prompt, "malformed question reply remains visible in the ledger");
+  assert.equal(malformedRecord.state.delegation.required, false, "malformed question reply cannot grant execution authority");
+  assert(malformedContext.hookSpecificOutput.additionalContext.includes("no prior task was inherited"));
+  const contextualInput = { hook_event_name: "UserPromptSubmit", session_id: "unlinked-discussion-action", turn_id: "contextual-turn",
+    prompt: "Ну вот сделай всё, что мы обсудили, пожалуйста." };
+  const contextualContext = await hooks.handle(contextualInput, tmp);
+  const contextualRecord = policy.findState(tmp, contextualInput);
+  assert.equal(contextualRecord.state.contextResolution, "unlinked-contextual-continuation");
+  assert.equal(contextualRecord.state.delegation.required, true, "a contextual discussion-action request enters prepare-contract for parent resolution");
+  assert.equal(contextualRecord.state.delegation.state, "prepare-contract");
+  assert(contextualContext.hookSpecificOutput.additionalContext.includes("Do not treat it as blanket permission"));
+  assert.equal(fs.existsSync(path.join(policy.sessionRoot(tmp, contextualInput.session_id), "accepted-execution.json")), false,
+    "an unresolved contextual action does not seed future continuation authority");
+  const afterContextualInput = { ...contextualInput, turn_id: "bare-after-contextual-turn", prompt: "делай" };
+  await hooks.handle(afterContextualInput, tmp);
+  const afterContextualRecord = policy.findState(tmp, afterContextualInput);
+  assert.equal(afterContextualRecord.state.contextResolution, "unlinked-continuation");
+  assert.equal(afterContextualRecord.state.delegation.required, false,
+    "an unresolved contextual action cannot become accepted context for a later bare command");
+  const bareActionInput = { hook_event_name: "UserPromptSubmit", session_id: "unlinked-bare-action", turn_id: "bare-turn", prompt: "делай" };
+  await hooks.handle(bareActionInput, tmp);
+  assert.equal(policy.findState(tmp, bareActionInput).state.delegation.required, false, "bare unlinked action stays non-executing");
   const parent = policy.startRequest(tmp, { session_id: "child-session", turn_id: "parent-turn", prompt: "Inspect assigned code" }, {});
   const childId = "01a154dd-ea92-7470-a58c-bd6a417f6191";
   policy.childEvent(parent, { hook_event_name: "SubagentStart", agent_id: childId, agent_type: "scout", turn_id: "child-first" });

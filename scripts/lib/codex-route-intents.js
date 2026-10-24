@@ -174,7 +174,7 @@ function getChangeStrategyActivation(task) {
 }
 
 const REFERENCE_RESEARCH_PATTERN =
-  /\b(?:analy[sz]e|compare|inspect|research|study)\b|изуч|исслед|посмотр|проанализ|сравн/iu;
+  /\b(?:analy[sz]e|compare|inspect|research|study|find out|investigate)\b|изуч|исслед|посмотр|проанализ|сравн|выясн|узнай/iu;
 const EXTERNAL_REFERENCE_PATTERN =
   /\b(?:announcement|chart|diagram|release|site|website)\b|график|диаграм|релиз|сайт|страниц/iu;
 const OPERATION_ACTION_PATTERN =
