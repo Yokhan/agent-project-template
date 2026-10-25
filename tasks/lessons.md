@@ -49,6 +49,52 @@ Promoted entries name the destination rule. Do not use ad hoc statuses such as
 
 ## Entries
 
+### 2026-10-25 - Separate native writing application and editorial failures
+**Track**: BUG
+**Severity**: P2
+**Error**: A voice completion status repeated application steps although exact final bytes already matched the saved application.
+**Root cause**: A realtime transcript was classified as the current writing request, and missing editorial evidence raised ENOENT inside a broad application catch.
+**Rule**: Classify the authoritative realtime input while preserving its raw envelope. Diagnose application bytes and independent editorial acceptance separately; verify the existing bindings before asking an agent to reread sources or regenerate evidence.
+**Applies to**: Native request normalization and writing evidence
+**Category**: workflow
+**Status**: PROMOTED
+**Destination**: docs/NATIVE_WORKFLOW_GATES.md
+
+
+### 2026-10-25 - Coordinator death is not resource ownership proof
+**Track**: BUG
+**Severity**: P1
+**Error**: A dead cache coordinator left a shared operation claim and prevented later clients from acquiring it.
+**Root cause**: File-based mutex lifetime was conflated with protected resource lifetime; retries could not remove the stale coordination barrier.
+**Rule**: Serialize new coordinators with a crash-released SQLite mutex while retaining the common file barrier for old clients. Recover only proven mutex metadata under the exact protocol; resource leases, process-family proof and payload ownership remain separate checks.
+**Applies to**: Managed cache coordinator
+**Category**: architecture
+**Status**: PROMOTED
+**Destination**: .claude/library/technical/testing.md
+
+### 2026-10-25 - Bind writing claims to each case and remove artificial padding
+**Track**: PROCESS
+**Severity**: P2
+**Error**: A five-case writing check passed structural checks but an independent editor found cross-case facts, repeated definitions and an ambiguous action result.
+**Root cause**: Shared context let one case borrow a plausible fact from another; internally invented word minimums rewarded padding.
+**Rule**: Give the author explicit per-artifact facts and a reader action. Keep only requested length constraints; send semantic findings to the same author and independently review the changed artifact bytes.
+**Applies to**: Writing author/editor workflow
+**Category**: workflow
+**Status**: PROMOTED
+**Destination**: .agents/skills/codex-writing-workflow/SKILL.md
+
+### 2026-10-25 - Source fixes need installation and native activation evidence
+**Track**: PROCESS
+**Severity**: P1
+**Error**: A consumer continued blocking on foreign runs although the canonical handler already had the scoped repair.
+**Root cause**: Source implementation and synthetic handler checks were treated as installed consumer behavior.
+**Rule**: Keep source, publication, installation and active native execution as separate states. Verify installed bytes and correlate a fresh ordinary host event before claiming that the consumer uses the fix.
+**Applies to**: Template release and scoped consumer repairs
+**Category**: testing
+**Status**: PROMOTED
+**Destination**: .claude/library/process/self-verification.md
+
+
 ### 2026-10-20 - Isolate alternate Git indexes from child repositories
 **Track**: PROCESS
 **Severity**: P2

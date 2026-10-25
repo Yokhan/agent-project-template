@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 const policy = require("./lib/codex-turn-policy.js");
+const outcomes = require("./lib/outcome-acceptance.js");
 
 function run(argv, root = process.cwd()) {
   const [command = "help", ...args] = argv;
@@ -16,6 +17,8 @@ function run(argv, root = process.cwd()) {
     "node scripts/codex-turn.js editorial-assignment --state <request.json> --artifact <draft.txt>",
     "node scripts/codex-turn.js review-accept --state <request.json> --artifact <draft.txt> --child <native-editor-id>",
     "node scripts/codex-turn.js integrate --state <request.json> --child <native-id> --assignment <contract.json> --result <integration evidence>",
+    "node scripts/codex-turn.js record-outcome --state <request.json> --result <outcome-evidence.json>",
+    "node scripts/codex-turn.js outcome-status --state <request.json>",
     "node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable|unsafe-split|judgment|coordination-cost --reason <concrete reason>"],
     notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. Fallback is visible, never verified Luna execution." };
   if (!options["--state"]) throw new Error("--state is required from native hook context");
@@ -48,6 +51,11 @@ function run(argv, root = process.cwd()) {
     policy.writeJson(require("path").join(record.directory, "integration-" + require("./lib/writing-library-store.js").sha256(options["--child"]) + ".json"), { requestId: record.state.requestId, childId: options["--child"], assignment, result: options["--result"] });
     return { state: "integration-recorded", childId: options["--child"], runtimeProfile: "checked separately from native child event and runtime metadata" };
   }
+  if (command === "record-outcome") {
+    if (!options["--result"]) throw new Error("record-outcome requires --result <outcome-evidence.json>");
+    return outcomes.recordOutcome(root, options["--state"], options["--result"]);
+  }
+  if (command === "outcome-status") return outcomes.outcomeStatus(root, options["--state"]);
   throw new Error("Unknown command");
 }
 if (require.main === module) {

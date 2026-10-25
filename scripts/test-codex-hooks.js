@@ -7,10 +7,12 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 const policy = require("./lib/codex-turn-policy.js");
 const requestContext = require("./lib/codex-request-context.js");
+const managedReports = require("./lib/managed-run-report.js");
+const { sha256 } = require("./lib/writing-library-store.js");
 const { run } = require("./codex-turn.js");
 
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-native-hooks-"));
-const cleanupRoot = path.join(fixture, "cleanup-hooks");
+const cleanupRoot = path.join(fixture, "cleanup hooks");
 (async () => {
 try {
   const clarification = "<send_user_message_question_reply>[{\"questionItemId\":\"q1\",\"question\":\"Напиши пояснение о росте, около 3%?\",\"answer\":\"Это рост, ну, около 3%, короче, очень мало.\"}]</send_user_message_question_reply>";
@@ -36,13 +38,78 @@ try {
   assert(authoredRequestHeading.task.includes("Не потеряй этот раздел"), "an unanchored request heading in user text is preserved");
   const quotedAttachmentHeading = requestContext.resolveRequestContext("Контекст пользовательского документа:\n# Files mentioned by the user:\nquoted heading\n## My request:\nСохрани весь этот текст.");
   assert(quotedAttachmentHeading.task.includes("Сохрани весь этот текст"), "a host-looking heading after user text is not stripped");
+  const realtimeTask = "Все, вот я тебе закинул, можешь сетапить гол";
+  const realtimePrompt = `<realtime_delegation>\n  <input>${realtimeTask}</input>\n  <transcript_delta>assistant: Понял, жду текст. user: Напиши длинный отчет из всех обсуждений.</transcript_delta>\n</realtime_delegation>`;
+  const realtimeContext = requestContext.resolveRequestContext(realtimePrompt);
+  assert.equal(realtimeContext.task, realtimeTask, "only the anchored realtime input becomes the request task");
+  assert.equal(realtimeContext.classificationTask, realtimeTask, "transcript delta cannot grant writing authority");
+  assert.equal(realtimeContext.rawPromptSha256, sha256(realtimePrompt), "normalization preserves the complete raw-prompt hash");
+  assert.equal(realtimeContext.kind, "realtime-delegation-input");
+  for (const untrustedRealtime of [
+    `<realtime_delegation><input>Напиши отчет</input><transcript_delta>assistant: подтверждено</realtime_delegation>`,
+    `В логе показано: ${realtimePrompt}`,
+  ]) {
+    const unresolvedRealtime = requestContext.resolveRequestContext(untrustedRealtime);
+    assert.equal(unresolvedRealtime.kind, "unresolved-realtime-delegation");
+    assert.equal(unresolvedRealtime.task, untrustedRealtime, "malformed or quoted realtime text remains visible in full");
+    assert.equal(unresolvedRealtime.classificationTask, "", "malformed or quoted transcript cannot grant writing authority");
+  }
   assert.equal(requestContext.isContextualContinuation("Ну вот сделай всё, что мы обсудили, пожалуйста."), true);
 
   const hooksApi = require("./codex-hooks.js");
+  const realtimeActionInput = { hook_event_name: "UserPromptSubmit", session_id: "realtime-goal-action", turn_id: "voice-action", prompt: realtimePrompt };
+  const realtimeActionContext = await hooksApi.handle(realtimeActionInput, fixture);
+  const realtimeActionRecord = policy.findState(fixture, realtimeActionInput);
+  assert.equal(realtimeActionRecord.state.task, realtimeTask);
+  assert.equal(realtimeActionRecord.state.rawPrompt, realtimePrompt, "the full host wrapper remains in provenance");
+  assert.equal(realtimeActionRecord.state.rawPromptSha256, sha256(realtimePrompt));
+  assert.equal(realtimeActionRecord.state.editorial.intent.task, realtimeTask, "classification excludes assistant transcript text");
+  assert.equal(realtimeActionRecord.state.writingRequested, false);
+  assert.equal(realtimeActionRecord.state.editorial.independentRequired, false);
+  assert.equal(fs.existsSync(path.join(realtimeActionRecord.directory, "packet.json")), false);
+  assert(!realtimeActionContext.hookSpecificOutput.additionalContext.includes("source-grounding-blocked"));
+  const longStatusAcknowledgement = "[COMPLETE] Цель установлена и активна: отслеживать все текущие работы в Codex, включая запущенные тобой напрямую и делегированные.";
+  assert(longStatusAcknowledgement.length > 120, "the voice status fixture exercises substantive-length detection");
+  const conciseStatusAcknowledgement = "[COMPLETE] Цель установлена и активна.";
+  assert(conciseStatusAcknowledgement.length < 120);
+  assert.deepEqual(policy.checkRequest(realtimeActionRecord, conciseStatusAcknowledgement).issues, [],
+    "a concise status for a non-writing realtime action stays below the existing substantive-output gate");
+  assert(policy.checkRequest(realtimeActionRecord, longStatusAcknowledgement).issues.some(issue => issue.startsWith("writing-application-missing:")),
+    "substantive final prose still requires its application even after correct non-writing task classification");
+
+  for (const [turnId, untrustedRealtime] of [
+    ["malformed-realtime", `<realtime_delegation><input>Напиши отчет</input><transcript_delta>assistant: подтверждено</realtime_delegation>`],
+    ["quoted-realtime", `В логе показано: ${realtimePrompt}`],
+  ]) {
+    const untrustedInput = { hook_event_name: "UserPromptSubmit", session_id: `untrusted-${turnId}`, turn_id: turnId, prompt: untrustedRealtime };
+    const untrustedContext = await hooksApi.handle(untrustedInput, fixture);
+    const untrustedRecord = policy.findState(fixture, untrustedInput);
+    assert.equal(untrustedRecord.state.task, untrustedRealtime, "untrusted realtime text is preserved in the request ledger");
+    assert.equal(untrustedRecord.state.writingRequested, false, "untrusted realtime text cannot trigger writing classification");
+    assert.equal(untrustedRecord.state.delegation.required, false, "untrusted realtime text cannot trigger execution routing");
+    assert.equal(fs.existsSync(path.join(untrustedRecord.directory, "packet.json")), false);
+    assert(untrustedContext.hookSpecificOutput.additionalContext.includes("raw text remains in the request ledger"));
+  }
+
+  const realtimeWritingTask = "Напиши короткое письмо клиенту о переносе встречи.";
+  const realtimeWritingPrompt = `<realtime_delegation>\n  <input>${realtimeWritingTask}</input>\n  <transcript_delta>assistant: Это обычная задача, не нужно писать.</transcript_delta>\n</realtime_delegation>`;
+  const realtimeWritingInput = { hook_event_name: "UserPromptSubmit", session_id: "realtime-writing", turn_id: "voice-writing", prompt: realtimeWritingPrompt };
+  await hooksApi.handle(realtimeWritingInput, fixture);
+  const realtimeWritingRecord = policy.findState(fixture, realtimeWritingInput);
+  assert.equal(realtimeWritingRecord.state.task, realtimeWritingTask);
+  assert.equal(realtimeWritingRecord.state.writingRequested, true, "actual writing inside the authoritative input remains gated");
+  assert.equal(realtimeWritingRecord.state.editorial.independentRequired, true, "actual authored text still requires independent review");
+  assert(fs.existsSync(path.join(realtimeWritingRecord.directory, "packet.json")), "authoritative writing input still receives the primary packet");
+  assert(policy.checkRequest(realtimeWritingRecord, longStatusAcknowledgement).issues.some(issue => issue.startsWith("writing-application-missing:")),
+    "a substantive status response still cannot bypass a genuine writing request");
+
   const acceptedTask = "Implement strict integer parsing in parser.js, update relevant tests, preserve unrelated edits, and report focused validation.";
   const routedInput = { hook_event_name: "UserPromptSubmit", session_id: "successive-native-prompts", turn_id: "execution-turn", prompt: acceptedTask };
   const routedContext = await hooksApi.handle(routedInput, fixture);
   const routedRecord = policy.findState(fixture, routedInput);
+  const lifecycle = fs.readFileSync(path.join(policy.sessionRoot(fixture, routedInput.session_id), "lifecycle.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
+  assert.equal(lifecycle.at(-1).handlerSha256, sha256(fs.readFileSync(require.resolve("./codex-hooks.js"))),
+    "native lifecycle records fingerprint the hook code loaded for this event");
   assert.equal(routedRecord.state.delegation.required, true, "nontrivial execution request is routed to prepare-contract");
   const continuationInput = { ...routedInput, turn_id: "execution-followup", prompt: "делай дальше" };
   const continuationContext = await hooksApi.handle(continuationInput, fixture);
@@ -56,6 +123,67 @@ try {
   assert.equal(continuedRecord.state.promptSha256, requestContext.resolveRequestContext("делай дальше").rawPromptSha256,
     "fresh ledger records the actual short continuation prompt hash");
   assert.equal(fs.existsSync(path.join(continuedRecord.directory, "children")), false, "a prior worker cannot satisfy a new continuation request");
+
+  const writingInput = { hook_event_name: "UserPromptSubmit", session_id: "compact-writing-packet", turn_id: "packet-turn",
+    prompt: "Напиши понятное объяснение для нового клиента: как отправить заявку, что происходит дальше и когда запись считается подтвержденной. Сохрани факты из документа о продукте." };
+  const writingContext = await hooksApi.handle(writingInput, fixture);
+  const writingRecord = policy.findState(fixture, writingInput);
+  assert.equal(writingRecord.state.writingRequested, true);
+  const packetFile = path.join(writingRecord.directory, "packet.json");
+  const fullPacket = policy.readJson(packetFile);
+  assert(fullPacket.passages.length > 0 && fullPacket.passages.every(item => typeof item.text === "string" && item.text.length > 0),
+    "the full selected primary passages stay in packet.json");
+  const compactPacketContext = hooksApi.packetContext(writingRecord);
+  assert(compactPacketContext.length <= 2500, "hook packet navigation remains compact");
+  assert(compactPacketContext.includes(packetFile), "compact navigation identifies the complete packet file");
+  assert(compactPacketContext.includes("contents --source") && compactPacketContext.includes("examples --source"),
+    "compact navigation keeps local contents and example commands");
+  for (const passage of fullPacket.passages) assert(!compactPacketContext.includes(passage.text), "full primary text is not embedded into hook context");
+  const packetBeforeLargeNavigation = JSON.stringify(policy.readJson(packetFile));
+  const originalGroundRequest = policy.groundRequest;
+  let oversizedNavigation;
+  const hugeLocators = Array.from({ length: 80 }, (_, index) => `Locator: source-${index}: section-${index}-${"locator".repeat(80)}`);
+  const hugeChecks = Array.from({ length: 80 }, (_, index) => `Editorial check: topic-${index}-${"check".repeat(70)} (Review ${index} ${"detail".repeat(70)})`);
+  try {
+    policy.groundRequest = () => ({
+      passages: hugeLocators.map((item, index) => ({ sourceId: `source-${index}`, locator: item.slice(`Locator: source-${index}: `.length) })),
+      readerPlan: { topics: hugeChecks.map((item, index) => ({ id: `topic-${index}-${"check".repeat(70)}`, label: `Review ${index} ${"detail".repeat(70)}` })) },
+    });
+    oversizedNavigation = hooksApi.packetContext(writingRecord);
+  } finally {
+    policy.groundRequest = originalGroundRequest;
+  }
+  assert(oversizedNavigation.length <= 2500, "large navigation metadata is omitted within the compact-context budget");
+  assert(oversizedNavigation.includes(packetFile), "large navigation still identifies the full packet path");
+  assert(oversizedNavigation.includes("Read every selected complete section"), "large navigation preserves the complete-reading instruction");
+  assert(oversizedNavigation.includes("contents --source") && oversizedNavigation.includes("examples --source") && oversizedNavigation.includes("codex-turn.js refresh"),
+    "large navigation preserves contents, examples and refresh commands");
+  const omittedNavigation = oversizedNavigation.match(/Navigation metadata omitted: (\d+)\./u);
+  assert(omittedNavigation && Number(omittedNavigation[1]) > 0, "large navigation reports how many metadata entries were omitted");
+  assert(oversizedNavigation.includes("Full packet is authoritative"), "large navigation states that the complete packet remains authoritative");
+  const expectedNavigationEntries = new Set([...hugeLocators, ...hugeChecks]);
+  for (const line of oversizedNavigation.split("\n").filter(item => item.startsWith("Locator:") || item.startsWith("Editorial check:"))) {
+    assert(expectedNavigationEntries.has(line), "navigation includes complete metadata entries without truncating them");
+  }
+  assert.equal(JSON.stringify(policy.readJson(packetFile)), packetBeforeLargeNavigation, "compacting navigation never changes or truncates packet.json");
+
+  const exactDraft = longStatusAcknowledgement;
+  const exactDraftFile = path.join(fixture, "authored-draft.txt");
+  const exactNotesFile = path.join(fixture, "authored-notes.json");
+  fs.writeFileSync(exactDraftFile, exactDraft, "utf8");
+  policy.writeJson(exactNotesFile, fullPacket.passages.map(passage => ({ sourceId: passage.sourceId, passageSha256: passage.passageSha256,
+    principle: `Apply the reading at ${passage.locator}.`, effect: "The draft uses a concrete, reader-centered statement." })));
+  const exactApplication = policy.application(fixture, writingRecord.file, path.relative(fixture, exactDraftFile), path.relative(fixture, exactNotesFile));
+  assert.equal(exactApplication.artifactSha256, sha256(exactDraft), "the regression fixture binds the exact final acknowledgment bytes");
+  const missingEditorResult = policy.checkRequest(writingRecord, exactDraft);
+  assert(missingEditorResult.issues.some(issue => issue.startsWith("independent-review-missing:")),
+    "a missing hash-bound editor record is diagnosed as independent review missing");
+  assert(!missingEditorResult.issues.some(issue => issue.startsWith("writing-application-missing:")),
+    "a valid application is not mislabeled missing when only its independent review is absent");
+
+  const allWritingContext = writingContext.hookSpecificOutput.additionalContext;
+  assert(allWritingContext.length <= 8000, "instructions and packet navigation stay bounded together");
+  assert(allWritingContext.includes("Read every selected complete section"), "the full-reading instruction remains explicit");
 
   const clarificationInput = { hook_event_name: "UserPromptSubmit", session_id: "clarification-hook", turn_id: "answer-turn", prompt: clarification };
   await hooksApi.handle(clarificationInput, fixture);
@@ -190,7 +318,7 @@ try {
   const manager = path.join(__dirname, "lib/managed-temp.js");
   const cacheManager = path.join(__dirname, "lib/managed-cache.js");
   for (const event of ["SessionStart", "PostToolUse", "Stop"]) {
-    const allocate = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path'),c=require(process.argv[3]);const retry=fn=>{const until=Date.now()+1500;for(;;){try{const value=fn();if(value?.reason!=='operation-in-progress')return value}catch(error){if(!error.message.endsWith('operation-in-progress'))throw error}if(Date.now()>=until)throw Error('Timed out waiting for the managed-cache fixture operation claim');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,25)}};const r=m.createRun(process.argv[2]);fs.writeFileSync(p.join(r.temp,'test-cache'),Buffer.alloc(4096));const l=retry(()=>c.acquireCache(process.argv[2],'hook-fixture',{runRoot:r.root}));fs.writeFileSync(p.join(l.path,'cache'),Buffer.alloc(8192));retry(()=>l.release());const f=p.join(l.path,c.CACHE_MARKER),v=JSON.parse(fs.readFileSync(f));v.lastUsedAt='2000-01-01T00:00:00Z';fs.writeFileSync(f,JSON.stringify(v));", manager, cleanupRoot, cacheManager], { encoding: "utf8", windowsHide: true });
+    const allocate = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path'),c=require(process.argv[3]);const env={...process.env};delete env.AGENT_MANAGED_TEMP;delete env.AGENT_MANAGED_RUN_BINDING;const retry=fn=>{const until=Date.now()+10000;let last={reason:'not-yet-attempted',owner:null};for(;;){try{const value=fn();if(value?.reason!=='operation-in-progress')return value;last={reason:value.reason,owner:value.owner||value.ownerId||null}}catch(error){if(!String(error.message).includes('operation-in-progress'))throw error;last={reason:error.reason||'operation-in-progress',owner:error.owner||error.ownerId||null}}if(Date.now()>=until)throw Error('Timed out waiting for the managed-cache fixture operation claim; last='+JSON.stringify(last));Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,25)}};const r=m.createRun(process.argv[2],{env});fs.writeFileSync(p.join(r.temp,'test-cache'),Buffer.alloc(4096));const l=retry(()=>c.acquireCache(process.argv[2],'hook-fixture',{runRoot:r.root}));fs.writeFileSync(p.join(l.path,'cache'),Buffer.alloc(8192));retry(()=>l.release());const f=p.join(l.path,c.CACHE_MARKER),v=JSON.parse(fs.readFileSync(f));v.lastUsedAt='2000-01-01T00:00:00Z';fs.writeFileSync(f,JSON.stringify(v));", manager, cleanupRoot, cacheManager], { encoding: "utf8", windowsHide: true });
     assert.equal(allocate.status, 0, allocate.stderr);
     const invoke = spawnSync(process.execPath, ["-e", "const root=process.argv[2],event=process.argv[3],policy=require(process.argv[4]);const input={hook_event_name:event,session_id:'cleanup-hook',turn_id:event,prompt:'Спасибо',tool_name:'exec_command',last_assistant_message:'Пожалуйста.'};policy.startRequest(root,input,{workflowDepth:'direct',delegationDecision:{required:false}});require(process.argv[1]).handle(input,root).then(r=>console.log(JSON.stringify(r))).catch(e=>{console.error(e);process.exitCode=1});", engine, cleanupRoot, event, path.join(__dirname, "lib/codex-turn-policy.js")], { encoding: "utf8", windowsHide: true });
     assert.equal(invoke.status, 0, invoke.stderr);
@@ -204,15 +332,41 @@ try {
     const buildGuard = spawnSync(process.execPath, ["-e", "require(process.argv[1]).handle({hook_event_name:'PreToolUse',tool_name:'exec_command',tool_input:{cmd:process.argv[3]}},process.argv[2]).then(()=>{process.exitCode=1}).catch(e=>{if(!e.message.includes('owned scratch')){console.error(e);process.exitCode=1}});", engine, cleanupRoot, command], { encoding: "utf8", windowsHide: true });
     assert.equal(buildGuard.status, 0, buildGuard.stderr);
   }
-  const stalled = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path');const r=m.createRun(process.argv[2]);fs.writeFileSync(p.join(p.dirname(r.root),r.id+'.cleanup-claim'),'');", manager, cleanupRoot], { encoding: "utf8", windowsHide: true });
+  const spacedLedger = policy.startRequest(cleanupRoot, { session_id: "request-path-space", turn_id: "request-path-space-turn", prompt: "Спасибо" }, { workflowDepth: "direct", delegationDecision: { required: false } });
+  for (const quote of ['"', "'"]) {
+    const command = `node scripts/managed-temp.js run --request-state ${quote}${spacedLedger.file}${quote} -- node scripts/test-codex-hooks.js`;
+    const accepted = await hooksApi.handle({ hook_event_name: "PreToolUse", session_id: "request-path-space", turn_id: "request-path-space-turn", tool_name: "exec_command", tool_input: { cmd: command } }, cleanupRoot);
+    assert.deepEqual(accepted, {}, `${quote}quoted request-state path with spaces remains a recognized owned test entry`);
+  }
+  const stalled = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),fs=require('fs'),p=require('path'),env={...process.env};delete env.AGENT_MANAGED_TEMP;delete env.AGENT_MANAGED_RUN_BINDING;const r=m.createRun(process.argv[2],{env});fs.writeFileSync(p.join(p.dirname(r.root),r.id+'.cleanup-claim'),'');console.log(JSON.stringify({runId:r.id,runRoot:r.root}));", manager, cleanupRoot], { encoding: "utf8", windowsHide: true });
   assert.equal(stalled.status, 0, stalled.stderr);
+  const unknownRun = JSON.parse(stalled.stdout.trim());
+  const sessionContext = await hooksApi.handle({ hook_event_name: "SessionStart", session_id: "cleanup-context", cwd: cleanupRoot }, cleanupRoot);
+  assert(sessionContext.hookSpecificOutput.additionalContext.includes("Native template lifecycle hooks loaded"), "cleanup warnings cannot suppress normal SessionStart context");
+  assert.equal(fs.existsSync(unknownRun.runRoot), true, "SessionStart preserves an unknown-owner run marker");
+  const reportDirectory = managedReports.reportDirectory(cleanupRoot);
+  fs.mkdirSync(reportDirectory, { recursive: true });
+  fs.writeFileSync(path.join(reportDirectory, "last.json"), "PRIVATE_REPORT_CONTENT_SHOULD_NOT_LEAK", "utf8");
   const blocked = spawnSync(process.execPath, ["-e", "const root=process.argv[2],input={hook_event_name:'Stop',session_id:'cleanup-block',turn_id:'cleanup-block',prompt:'Спасибо',last_assistant_message:'Пожалуйста.'};require(process.argv[3]).startRequest(root,input,{workflowDepth:'direct',delegationDecision:{required:false}});require(process.argv[1]).handle(input,root).then(r=>console.log(JSON.stringify(r)));", engine, cleanupRoot, path.join(__dirname, "lib/codex-turn-policy.js")], { encoding: "utf8", windowsHide: true });
   assert.equal(blocked.status, 0, blocked.stderr);
-  assert.equal(JSON.parse(blocked.stdout).decision, "block", "unresolved cleanup must block completion");
-  assert(JSON.parse(blocked.stdout).reason.includes("temporary-test-cleanup-incomplete"));
+  assert.notEqual(JSON.parse(blocked.stdout).decision, "block", "unknown project-wide cleanup does not block an unrelated request");
+  assert(JSON.parse(blocked.stdout).systemMessage.includes("diagnostics"), "unknown cleanup remains visible as a nonblocking diagnostic");
+  assert(JSON.parse(blocked.stdout).systemMessage.includes("report could not be read (diagnostic only") && JSON.parse(blocked.stdout).systemMessage.includes("invalid-json"), "a malformed global report is a nonblocking diagnostic");
+  assert(!JSON.parse(blocked.stdout).systemMessage.includes("PRIVATE_REPORT_CONTENT_SHOULD_NOT_LEAK"), "malformed report contents never enter hook diagnostics");
+  assert.equal(fs.existsSync(unknownRun.runRoot), true, "an unrelated Stop preserves an unknown-owner run marker");
   const blockedRecord = policy.findState(cleanupRoot, { session_id: "cleanup-block", turn_id: "cleanup-block" });
-  assert.equal(policy.readJson(path.join(blockedRecord.directory, "result.json")).state, "unresolved");
-  console.log("Native hooks: request isolation, continuation/replay, missing reading/delegation, unknown model, fallback and bounded failure checks passed");
+  assert.equal(policy.readJson(path.join(blockedRecord.directory, "result.json")).state, "passed", "project-wide unknown cleanup does not change the request result");
+
+  const exactInput = { session_id: "2aa9ff16-2b9b-47d5-beb2-677b2ff99138", turn_id: "d9b81c15-8301-42c1-b59b-3699ce031c76", prompt: "Спасибо" };
+  const exactRecord = policy.startRequest(cleanupRoot, exactInput, { workflowDepth: "direct", delegationDecision: { required: false } });
+  const exactRunResult = spawnSync(process.execPath, ["-e", "const m=require(process.argv[1]),env={...process.env,CODEX_SESSION_ID:process.argv[4]};delete env.AGENT_MANAGED_TEMP;delete env.AGENT_MANAGED_RUN_BINDING;const r=m.createRun(process.argv[2],{requestStatePath:process.argv[3],env});r.retain('process-family-termination-unverified');console.log(JSON.stringify({runId:r.id,runRoot:r.root}));", manager, cleanupRoot, exactRecord.file, exactInput.session_id], { encoding: "utf8", windowsHide: true });
+  assert.equal(exactRunResult.status, 0, exactRunResult.stderr);
+  const exactRun = JSON.parse(exactRunResult.stdout.trim());
+  const exactStop = await hooksApi.handle({ hook_event_name: "Stop", ...exactInput, last_assistant_message: "Пожалуйста." }, cleanupRoot);
+  assert.equal(exactStop.decision, "block", "a pending run with exact current request ownership blocks Stop");
+  assert(exactStop.reason.includes("current-request-managed-run-cleanup-incomplete"));
+  assert.equal(fs.existsSync(exactRun.runRoot), true, "the exact-owned pending run marker remains until resolved");
+  console.log("Native hooks: request isolation, continuation/replay, missing reading/delegation, exact cleanup ownership, nonblocking unknown cleanup and bounded failure checks passed");
 } finally {
   // This test deliberately leaves malformed claims. Remove only its exact
   // randomly allocated namespace before deleting the fixture project root.
@@ -224,6 +378,12 @@ try {
     assert.equal(namespace, expected);
     managed.assertNoLinks(namespace, { allowMissing: true });
     fs.rmSync(namespace, { recursive: true, force: true });
+    const reportNamespace = managedReports.reportDirectory(cleanupRoot);
+    const expectedReports = path.join(os.homedir(), ".cache", "apt-r",
+      require("crypto").createHash("sha256").update(fs.realpathSync.native(cleanupRoot), "utf8").digest("hex").slice(0, 32));
+    assert.equal(reportNamespace, expectedReports);
+    managed.assertNoLinks(reportNamespace, { allowMissing: true });
+    fs.rmSync(reportNamespace, { recursive: true, force: true });
   }
   fs.rmSync(fixture, { recursive: true, force: true });
 }

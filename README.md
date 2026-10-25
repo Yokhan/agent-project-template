@@ -1,8 +1,8 @@
 # Agent Project Template v6
 
-[![Template Version](https://img.shields.io/badge/template-v6.1.2-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v6.2.0-blue)](.)
 
-Stable release: **6.1.2**. The [published release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.2), exact-tag Linux/Windows CI and downloaded archive are verified; use the pinned tag for rollout. See [v6.1.2 patch notes and current evidence](docs/RELEASE_V6_1_2.md), [the previous stable v6.1.1 release record](docs/RELEASE_V6_1_1.md), [v6.1.0 feature and lifecycle notes](docs/RELEASE_V6_1_0.md), [v6.0.0 upgrade requirements](docs/RELEASE_V6_0_0.md), and [historical v5 migration guidance](docs/MIGRATION_V5.md).
+Template version: **6.2.0**. Publication and installed/native activation require the evidence in [v6.2.0 release notes](docs/RELEASE_V6_2_0.md). The previous [stable v6.1.2 release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.1.2) remains verified; use one exact verified tag for rollout.
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -15,7 +15,7 @@ AI-agent-first project infrastructure: give your agent the repository URL, the t
 
 The human supplies the outcome and destination, not a manual installation log.
 For example: "Create an agent-ready project in `<absolute target>` from verified
-`v6.1.2`; preserve existing work and connect the shared external writing library
+`v6.2.0`; preserve existing work and connect the shared external writing library
 if available." An update request must also authorize the major-version move.
 The agent performs the steps below within that scope and asks only for missing
 material choices, permissions, ownership conflicts or unavailable sources.
@@ -32,7 +32,7 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 8. Run `node scripts/writing-library.js discover`. Reuse a valid shared store. For an authorized user of the private source repository, run `node scripts/writing-library.js provision` once; it imports the pinned six sources and builds the local contents/examples index. Otherwise import exact supplied files outside Git. See [library setup](docs/WRITING_LIBRARY_SETUP.md). Never create book symlinks/hardlinks inside a project or pretend memory is primary reading.
 9. Verify manifest version, diff, overlays, conflicts, runtime and source status before success. Report project readiness separately from `source-grounding-blocked`.
 
-Release snapshot: `v6.1.2`. This source snapshot does not prove publication; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v6.2.0`. This source snapshot does not prove publication; verify the exact release is non-draft and non-prerelease before rollout.
 
 The v6 release adds native request-bound Luna dispatch, task-directed primary
 reading and lifecycle evidence. Review the exact host requirements and upgrade
@@ -41,7 +41,7 @@ steps in [the v6 release notes](docs/RELEASE_V6_0_0.md).
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v6.1.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.2.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -50,9 +50,9 @@ Update an existing generated project using the verified exact-tag checkout
 (reuse it, or clone the tag above outside the project). Set these absolute paths:
 
 ```bash
-RELEASE_CHECKOUT=/absolute/verified-v6.1.2-checkout
+RELEASE_CHECKOUT=/absolute/verified-v6.2.0-checkout
 PROJECT=/absolute/project
-PLAN=/absolute/outside-project/agent-template-v6.1.2.plan.json
+PLAN=/absolute/outside-project/agent-template-v6.2.0.plan.json
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
@@ -61,13 +61,13 @@ node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT"
 
 ## Quick Start
 
-The agent runs these commands after verifying release snapshot `v6.1.2` and
+The agent runs these commands after verifying release snapshot `v6.2.0` and
 confirming the destination is appropriate for a new project. On an existing
 machine, reuse the verified canonical checkout; do not clone a template or books
 per task. These are execution references, not steps the human must perform.
 
 ```bash
-git clone --branch v6.1.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.2.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -165,10 +165,10 @@ release tags for normal project rollout:
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json
 
 # Apply the pinned release
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json --apply
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -192,8 +192,8 @@ node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-pro
 
 # Optional: after verifying the installed updater, add remote for future updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json --apply
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -291,7 +291,7 @@ When you run the target release's `scripts/sync-template.js`:
 | **Codex Subagents** | 14 | Luna 6 High bounded workers and independent writing editor, Sol 6.1 High review/integration, and Astra 6 architecture consultation; effective runtime evidence and exact scopes preserve orchestration ownership |
 | **Agents** | 12 | protocol plus implementer, reviewer, researcher, test-engineer, security-auditor, writer, technical-writer, simplifier, documenter, devops, and profiler |
 | **Commands** | 23 | setup, implementation, review, release, audit-tools, sync, sprint, rollback, mode switching, and maintenance commands |
-| **Scripts** | 95 | validation, skill-link and focused-verification fixtures, adaptive writing/reference routing, edition-bound writing section plans and independent editorial checks, shared writing library import/retrieval/application checks, native request hooks and live workflow scenarios, privacy and lesson lifecycle checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
+| **Scripts** | 104 | validation, skill-link and focused-verification fixtures, adaptive writing/reference routing, edition-bound writing section plans and independent editorial checks, shared writing library import/retrieval/application checks, native request hooks and live workflow scenarios, privacy and lesson lifecycle checks, change-strategy validation, Codex MCP merge tests, provenance checks, agent policy, progressive plan/status and subagent-trace gates, offline live-launcher checks, design checks, drift checks, bootstrap, transactional native sync, scanning, task brief, hooks, Spec Kit setup, and release smoke |
 | **Spec Kit** | snapshot | managed upstream snapshot, freshness check, and pinned init flow |
 | **Pipelines** | 3 | feature, bugfix, security-patch |
 | **Brain** | Obsidian vault | session logs, decisions, knowledge base |
@@ -392,7 +392,8 @@ Sync detects files changed both locally and in the template. Preview reports tho
 
 | Version | Key Changes |
 |---------|------------|
-| **6.1.2** | Compatible patch candidate: repairs Russian conversational execution intent and normalizes canonical browser/question-reply inputs on submit and native recovery; adds fresh continuation evidence and CLI workload/integration reporting with explicit workload-uncertainty and output-policy boundaries. Prior local acceptance is not current release CI, live delegation proof, or a quota-savings benchmark. See [patch notes and current evidence](docs/RELEASE_V6_1_2.md). |
+| **6.2.0** | Compatible minor version: request-scoped Stop ownership, crash-safe cache coordination, physical-volume admission, completed useful Luna coverage, exact-target outcome evidence, bounded hook navigation and actual author/editor acceptance. See [behavior and evidence](docs/RELEASE_V6_2_0.md). |
+| **6.1.2** | Compatible patch: repairs Russian conversational execution intent, canonical browser/question-reply inputs and same-session continuation evidence; adds runtime-correlated Luna call/integration reporting. See [verified publication and rollout](docs/RELEASE_V6_1_2.md). |
 | **6.1.1** | Previous stable patch: carries the v6.1.0 lifecycle features and adds the missing Windows writing-library setup-manifest entry. The immutable v6.1.0 tag failed exact-tag Windows CI; v6.1.1 was subsequently published and verified. See [patch notes and publication evidence](docs/RELEASE_V6_1_1.md). |
 | **6.1.0** | Compatible minor candidate: managed disposable run outputs, supervised Windows process-family cleanup, opt-in bounded project caches, and cleanup evidence. It was not published; see [feature notes and lifecycle limits](docs/RELEASE_V6_1_0.md). |
 | **6.0.0** | Major upgrade: native request-bound Luna dispatch and task-directed primary reading, Node 24+ with working `node:sqlite`, exact hook trust/runtime evidence, and preserved parent-owned integration and acceptance. See [upgrade requirements and evidence](docs/RELEASE_V6_0_0.md). |

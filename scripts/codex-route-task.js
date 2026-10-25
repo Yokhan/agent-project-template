@@ -328,6 +328,8 @@ function getRoute(task, options = {}) {
   const shouldUseProductGoal = needsProductGoal(selected, risk);
   const contract = options.workerContract === undefined ? {} : validateWorkerContract(options.workerContract);
   const implementationRequested = !isDirect && isImplementationRequest(task);
+  const writingAuthoringRequested = implementationRequested && writingIntent.isWriting &&
+    ["create", "edit"].includes(writingIntent.action) && !isLikelySmallTask(task);
   const unresolvedArchitecture = /(?:ambiguous architecture|unresolved architecture|conflicting requirements|systemic deadlock|неоднозначн[\p{L}]*\s+архитектур|конфликт[\p{L}]*\s+требован|системн[\p{L}]*\s+тупик)/iu.test(task);
   const implementationCandidate = implementationRequested && !blockEdits && !unresolvedArchitecture;
   const candidateSubagents = unique([
@@ -342,7 +344,9 @@ function getRoute(task, options = {}) {
     workerContract: contract,
     task, risk, modes: selected.map((route) => route.mode), candidates: candidateSubagents,
     priorityCandidates: candidateSubagents.includes("architecture_consultant")
-      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : implementationCandidate ? ["implementer"] : isResearchRequest(task) ? ["scout"] : [],
+      ? ["architecture_consultant"] : changeStrategy.required ? ["systems_reviewer", "tester"] : implementationCandidate
+        ? unique(["implementer", ...(writingAuthoringRequested ? writingPolicy?.subagents || [] : [])])
+        : isResearchRequest(task) ? ["scout"] : [],
   });
   const fanout = changeStrategy.required && baseFanout.status === "conditional"
     ? { ...baseFanout, status: "recommended", reason: "change-strategy-independent-system-and-test-review" }
@@ -382,7 +386,7 @@ function getRoute(task, options = {}) {
     }));
   });
   const delegationDecision = getDelegationDecision({
-    task, workflowDepth: isDirect ? "direct" : "routed", implementationRequested,
+    task, workflowDepth: isDirect ? "direct" : "routed", implementationRequested, writingAuthoringRequested,
     implementationCandidate, unresolvedArchitecture, blockEdits, risk, fanout,
     workerContracts, workerContract: contract,
   });

@@ -5,6 +5,12 @@
 Run tests and disposable build/copy experiments through
 `node scripts/managed-temp.js run -- <executable> <args>` from the project root.
 For example: `node scripts/managed-temp.js run -- node scripts/test-sync-template.js`.
+In a native Codex request, use the hook-provided immutable ledger binding:
+`node scripts/managed-temp.js run --request-state <request.json> -- node scripts/test-sync-template.js`.
+The runner validates the ledger against the project and observed session, then
+propagates that captured identity to nested runs. A session environment variable
+alone does not prove which request started a command; a mutable current-request
+pointer must not be used to invent that proof.
 The aggregate `bash scripts/test-template.sh` wraps itself automatically. The
 live workflow harness also owns and removes its snapshot; its compact acceptance
 report stays outside the snapshot. Keep required outputs outside scratch before
@@ -61,6 +67,36 @@ outside the repository; defaults are **10 GiB per project** and **7 idle days**.
 the defaults. Pruning removes oldest idle owned caches first, preserves active
 supervisor leases, and reports incomplete scans and budget excess. It never
 cleans machine-wide npm/Cargo caches, downloaded browser binaries or toolchains.
+The cache coordinator serializes new clients with a persistent SQLite
+`BEGIN IMMEDIATE` transaction and keeps `.operation.claim` as the compatibility
+barrier for older clients. It commits the persistent database identity before
+acquiring the operation mutex; SQLite contention returns the retryable
+`operation-in-progress` result. Only a strictly recognized `sqlite-v2` claim with
+the matching database identity and an `ESRCH` process result is quarantined
+automatically; legacy v1, live/uncertain, malformed and database-mismatch cases
+stay blocked. An owner may recover a stale legacy claim only after reviewing
+its bytes and PID: `node scripts/managed-temp.js cache-recover
+--expected-sha256 <sha256> --pid <pid>`. Recovery runs under the same SQLite
+transaction, rechecks the exact bounded regular-file bytes and process death,
+then records an intent before atomically archiving the whole marker into a new
+exclusive directory. A later coordinator completes a missing receipt from the
+checked archive or blocks on an unknown/incomplete record. Recovery archives
+are bounded to 32 directories and 2 MiB total, including unfinished records;
+the marker remains in place when that budget is full. Receipts omit the marker
+nonce. Recovery never changes cache payloads, leases, run markers or resource
+ownership.
+For the default ephemeral run, a project-wide shared-cache prune happens only
+after the run's process and owned scratch cleanup. If that unrelated cache
+housekeeping is incomplete, the command can still succeed when its child and
+owned cleanup succeeded; the immutable report keeps the incomplete `cache`
+result and adds `diagnostics.cacheHousekeeping` with `blocking: false`, its
+reason, and measured remaining bytes when available. Owned process proof,
+scratch removal, cache-lease release, work/free-space admission, and child
+failures remain blocking. A run with `--cache shared` keeps cache housekeeping
+strict. Standalone `sweep` and `cache-prune` also fail when cache pruning is
+incomplete or over budget; a transient `operation-in-progress` result remains a
+nonfailure for compatibility and is reported for an explicit retry. Inspect the
+report rather than treating other incomplete cleanup as done.
 `--max-work-bytes` (10 GiB) and `--min-free-bytes` (2 GiB) sample owned scratch
 and disk space every five seconds and cancel the owned job on a breached limit;
 these are best-effort guards, not hard disk quotas. `--timeout-ms` bounds a run.
@@ -70,17 +106,29 @@ Successful output is discarded unless explicitly exported with
 atomic directory move on the same volume; cross-volume fallback copies are refused
 to avoid leaving partial output after interruption. Required
 release/evidence artifacts are persistent only when deliberately saved. A compact
-last result (at most 64 KiB) lives outside scratch: inspect
-`node scripts/managed-temp.js report`. It records observed bytes actually removed,
+terminal report (at most 64 KiB per run) lives outside scratch. Each run has an
+immutable report under the external project report namespace's `runs/` directory;
+`last.json` remains a latest-result view. Reports survive deletion of disposable
+fixture projects. Inspect `node scripts/managed-temp.js report`. It records observed bytes actually removed,
 retained cache bytes, process proof, and unresolved cleanup; it does not claim
 to measure every byte created during execution. Command failure codes survive.
+Read a saved immutable report after its project is removed with
+`node scripts/managed-temp.js report --report-path <absolute-report.json>`.
 
 Existing trusted lifecycle hooks reclaim owned inactive remnants and idle owned
 caches after tools, at Stop and next SessionStart. Inspect
 `node scripts/managed-temp.js status`; retry
 `node scripts/managed-temp.js sweep --budget-ms 10000` for partial cleanup.
 Preserve active leases and investigate refused paths; never erase markers to
-silence a warning. Explicit npm `--cache` flags can override environment routing;
+silence a warning. Stop blocks only for unresolved runs with validated exact
+ownership matching its session and request. Foreign, earlier, session-only and
+legacy unscoped runs remain protected and appear in nonblocking diagnostics;
+unattributed global cache warnings do not become the current request's failures.
+This changes responsibility for Stop, not sweep deletion eligibility or the
+standalone cleanup command's failure status. A termination-unverified reason
+means missing positive evidence, not a proven live process. Reports retain safe
+launch/proof metadata, not raw command arguments, environment or child output.
+Explicit npm `--cache` flags can override environment routing;
 do not point disposable commands at unmanaged caches. Sources, dependencies,
 MCP databases, legacy directories, chat history, books, and unknown files stay
 outside this cleanup contract. Never sweep OS Temp or .session-cache by prefix

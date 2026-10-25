@@ -4,11 +4,11 @@ const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
+const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-cache-test-"));
+process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "isolated-cache-base");
 const managedTemp = require("./lib/managed-temp.js");
 const cache = require("./lib/managed-cache.js");
-
-const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-cache-test-"));
 const projects = [];
 function project(name) {
   const root = path.join(fixture, name);
@@ -62,8 +62,80 @@ function cleanup() {
   }
   fs.rmSync(fixture, { recursive: true, force: true });
 }
+function spawnObserved(args, env) {
+  const child = spawn(process.execPath, args, { cwd: path.resolve(__dirname, ".."), env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  let stdout = "", stderr = "";
+  child.stdout.on("data", chunk => { stdout += chunk.toString(); });
+  child.stderr.on("data", chunk => { stderr += chunk.toString(); });
+  return { child, done: new Promise(resolve => child.once("close", (code, signal) => resolve({ code, signal, stdout, stderr }))) };
+}
 
 async function main() {
+  const identityBusy = cache.__testing.readIdentityUnderMutex({ prepare: () => ({ get: () => { const error = new Error("database is locked"); error.code = "ERR_SQLITE_ERROR"; throw error; } }) });
+  assert.deepStrictEqual(identityBusy, { busy: true, reason: "operation-in-progress" }, "SQLite BUSY during identity read must remain retryable");
+
+  const firstOwnerBase = path.join(fixture, "brand-new-coordinator");
+  const firstOwnerCode = "const c=require('./scripts/lib/managed-cache.js');const lock=c.__testing.acquireGate(c.cacheBase());if(lock.busy)throw Error(lock.reason);process.stdout.write('first-owner-holding\\n');setInterval(()=>{},1000);";
+  const firstOwnerEnv = { ...process.env, APT_MANAGED_CACHE_BASE: firstOwnerBase };
+  const firstOwner = spawn(process.execPath, ["-e", firstOwnerCode], { cwd: path.resolve(__dirname, ".."), env: firstOwnerEnv, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  let firstOwnerStdout = "", firstOwnerStderr = "";
+  firstOwner.stdout.on("data", chunk => { firstOwnerStdout += chunk.toString(); });
+  firstOwner.stderr.on("data", chunk => { firstOwnerStderr += chunk.toString(); });
+  const firstOwnerClosed = new Promise(resolve => firstOwner.once("close", (code, signal) => resolve({ code, signal })));
+  await new Promise((resolve, reject) => {
+    firstOwner.stdout.on("data", () => { if (firstOwnerStdout.includes("first-owner-holding\n")) resolve(); });
+    firstOwner.once("error", reject);
+    firstOwner.once("close", (code, signal) => { if (!firstOwnerStdout.includes("first-owner-holding\n")) reject(new Error(`brand-new coordinator owner exited before lock (${code}, ${signal}): ${firstOwnerStderr}`)); });
+  });
+  firstOwner.kill();
+  await firstOwnerClosed;
+  process.env.APT_MANAGED_CACHE_BASE = firstOwnerBase;
+  const firstOwnerRecovery = await cache.pruneCaches();
+  assert(firstOwnerRecovery.complete, "first-ever coordinator owner may die after locking without losing the committed database identity");
+  process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "isolated-cache-base");
+
+  const deadInitBase = path.join(fixture, "dead-init-coordinator");
+  fs.mkdirSync(deadInitBase, { recursive: true });
+  const deadInitDb = new (require("node:sqlite").DatabaseSync)(path.join(deadInitBase, ".operation.sqlite"));
+  const deadInitIdentity = require("crypto").randomUUID();
+  deadInitDb.exec("PRAGMA synchronous=FULL; BEGIN IMMEDIATE; CREATE TABLE coordinator_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
+  deadInitDb.prepare("INSERT INTO coordinator_meta(key,value) VALUES('identity',?)").run(deadInitIdentity);
+  deadInitDb.exec("COMMIT"); deadInitDb.close();
+  const deadInitFile = path.join(deadInitBase, ".operation.sqlite.init");
+  const deadInitBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: require("crypto").randomUUID(), createdAt: new Date().toISOString() })}\n`);
+  fs.writeFileSync(deadInitFile, deadInitBytes, { flag: "wx" });
+  const deadInitCode = "const r=require('./scripts/lib/managed-cache.js').pruneCaches();if(!r.complete&&r.reason!=='operation-in-progress')throw Error(JSON.stringify(r));process.stdout.write('ok\\n');";
+  const deadInitEnv = { ...process.env, APT_MANAGED_CACHE_BASE: deadInitBase };
+  const deadInitChildren = [spawnObserved(["-e", deadInitCode], deadInitEnv), spawnObserved(["-e", deadInitCode], deadInitEnv)];
+  const deadInitResults = await Promise.all(deadInitChildren.map(item => item.done));
+  assert(deadInitResults.every(result => result.code === 0), `same stale init marker contention failed: ${JSON.stringify(deadInitResults)}`);
+  assert(!fs.existsSync(deadInitFile), "one mutex owner should clear only the unchanged dead init marker");
+  const validatedDeadInitDb = new (require("node:sqlite").DatabaseSync)(path.join(deadInitBase, ".operation.sqlite"), { readOnly: true });
+  assert.strictEqual(validatedDeadInitDb.prepare("SELECT value FROM coordinator_meta WHERE key='identity'").get().value, deadInitIdentity);
+  validatedDeadInitDb.close();
+
+  const unlinkFailureBase = path.join(fixture, "init-unlink-failure");
+  fs.mkdirSync(unlinkFailureBase, { recursive: true });
+  const unlinkDbPath = path.join(unlinkFailureBase, ".operation.sqlite");
+  const unlinkSetupDb = new (require("node:sqlite").DatabaseSync)(unlinkDbPath);
+  unlinkSetupDb.exec("PRAGMA synchronous=FULL; BEGIN IMMEDIATE; CREATE TABLE coordinator_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
+  unlinkSetupDb.prepare("INSERT INTO coordinator_meta(key,value) VALUES('identity',?)").run(require("crypto").randomUUID());
+  unlinkSetupDb.exec("COMMIT"); unlinkSetupDb.close();
+  const unlinkInitFile = path.join(unlinkFailureBase, ".operation.sqlite.init");
+  const unlinkInitBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: require("crypto").randomUUID(), createdAt: new Date().toISOString() })}\n`);
+  fs.writeFileSync(unlinkInitFile, unlinkInitBytes, { flag: "wx" });
+  const originalUnlinkSync = fs.unlinkSync;
+  fs.unlinkSync = function (target, ...args) {
+    if (path.resolve(String(target)) === path.resolve(unlinkInitFile)) { const error = new Error("injected init marker unlink failure"); error.code = "EACCES"; throw error; }
+    return originalUnlinkSync.call(this, target, ...args);
+  };
+  try { assert.throws(() => cache.__testing.acquireGate(unlinkFailureBase), error => error.code === "EACCES" && /injected init marker unlink failure/u.test(error.message)); }
+  finally { fs.unlinkSync = originalUnlinkSync; }
+  assert(fs.readFileSync(unlinkInitFile).equals(unlinkInitBytes), "failed init marker unlink must preserve the exact marker");
+  const postFailureDb = new (require("node:sqlite").DatabaseSync)(unlinkDbPath, { timeout: 0 });
+  postFailureDb.exec("PRAGMA busy_timeout=0; BEGIN IMMEDIATE; ROLLBACK;");
+  postFailureDb.close();
+
   const root = project("reuse-and-evict");
   const run = managedTemp.createRun(root);
   const otherProject = project("cache-owner-mismatch");
@@ -92,7 +164,7 @@ async function main() {
 
   const retryRoot = project("transient-operation-claim");
   const retryRun = managedTemp.createRun(retryRoot);
-  const claimHolder = spawn(process.execPath, ["-e", "const fs=require('fs'),path=require('path');const file=path.join(process.argv[1],'.operation.claim');fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify({version:1,pid:process.pid,token:'fixture-claim'}),{flag:'wx'});process.stdout.write('ready\\n');setTimeout(()=>fs.unlinkSync(file),200);", cache.cacheBase()], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+  const claimHolder = spawn(process.execPath, ["-e", "const fs=require('fs'),path=require('path'),crypto=require('crypto');const file=path.join(process.argv[1],'.operation.claim');fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify({version:1,pid:process.pid,token:crypto.randomUUID(),createdAt:new Date().toISOString()}),{flag:'wx'});process.stdout.write('ready\\n');setTimeout(()=>fs.unlinkSync(file),200);", cache.cacheBase()], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
   const claimHolderClosed = new Promise((resolve, reject) => {
     claimHolder.once("error", reject);
     claimHolder.once("close", code => code === 0 ? resolve() : reject(new Error(`operation-claim fixture exited with ${code}`)));
@@ -119,21 +191,111 @@ async function main() {
   await claimHolderClosed;
   assert(retryRun.finish().removed);
 
+  const crashedRoot = project("killed-sqlite-coordinator");
+  const crashedRun = managedTemp.createRun(crashedRoot);
+  const holdCode = "const c=require('./scripts/lib/managed-cache.js');const lock=c.__testing.acquireGate(c.cacheBase());if(lock.busy)throw Error(lock.reason);process.stdout.write('holding\\n');setInterval(()=>{},1000);";
+  const mutexHolder = spawn(process.execPath, ["-e", holdCode, cache.cacheBase()], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+  const mutexClosed = new Promise(resolve => mutexHolder.once("close", resolve));
+  await new Promise((resolve, reject) => {
+    let output = "";
+    mutexHolder.stdout.on("data", chunk => { output += chunk.toString(); if (output.includes("holding\n")) resolve(); });
+    mutexHolder.once("error", reject);
+    mutexHolder.once("close", code => { if (code !== 0 && !output.includes("holding\n")) reject(new Error(`SQLite mutex fixture exited before ready (${code})`)); });
+  });
+  mutexHolder.kill();
+  await mutexClosed;
+  const recoveredLease = await acquireCache(crashedRoot, "npm", { runRoot: crashedRun.root });
+  assert.deepStrictEqual(await releaseCache(recoveredLease), { released: true }, "new client should recover only the dead matching v2 coordinator claim");
+  assert(fs.readdirSync(cache.cacheBase()).some(name => name.startsWith(".operation-recovered-")), "dead v2 coordinator bytes must be quarantined with a receipt");
+  assert(crashedRun.finish().removed);
+
+  const raceRoot = project("recover-acquire-race");
+  const raceRun = managedTemp.createRun(raceRoot);
+  const raceClaimFile = path.join(cache.cacheBase(), cache.OPERATION_CLAIM);
+  const raceBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: require("crypto").randomUUID(), createdAt: new Date().toISOString() })}\n`);
+  fs.writeFileSync(raceClaimFile, raceBytes, { flag: "wx" });
+  const raceHash = require("crypto").createHash("sha256").update(raceBytes).digest("hex");
+  const raceRecoveryCode = "const c=require('./scripts/lib/managed-cache.js'),until=Date.now()+3000;while(Date.now()<until){try{c.recoverLegacyClaim(process.argv[1],2147483647);process.stdout.write('recovered\\n');process.exit(0)}catch(e){if(!/operation-in-progress/u.test(e.message))throw e;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,20)}}throw Error('recovery timed out waiting for coordinator mutex');";
+  const raceAcquireCode = "const c=require('./scripts/lib/managed-cache.js');const until=Date.now()+3000;let lease;while(Date.now()<until){try{lease=c.acquireCache(process.argv[1],'npm',{runRoot:process.argv[2]});break}catch(e){if(!/stale-operation-claim-requires-manual-recovery|operation-in-progress/u.test(e.message))throw e;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,20)}}if(!lease)throw Error('acquire did not proceed after explicit recovery');lease.release();";
+  const raceEnv = { ...process.env, APT_MANAGED_CACHE_BASE: cache.cacheBase() };
+  const raceRecovery = spawnObserved(["-e", raceRecoveryCode, raceHash], raceEnv);
+  const raceAcquire = spawnObserved(["-e", raceAcquireCode, raceRoot, raceRun.root], raceEnv);
+  const raceResults = await Promise.all([raceRecovery.done, raceAcquire.done]);
+  assert(raceResults.every(result => result.code === 0), `recovery/acquire race failed: ${JSON.stringify(raceResults)}`);
+  assert(!fs.existsSync(raceClaimFile), "serialized explicit recovery and new acquisition should leave no coordinator claim");
+  assert(raceRun.finish().removed);
+
+  const interruptedFile = path.join(cache.cacheBase(), cache.OPERATION_CLAIM);
+  const interruptedToken = require("crypto").randomUUID();
+  const interruptedBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: interruptedToken, createdAt: new Date().toISOString() })}\n`);
+  fs.writeFileSync(interruptedFile, interruptedBytes, { flag: "wx" });
+  const interruptedHash = require("crypto").createHash("sha256").update(interruptedBytes).digest("hex");
+  const interruptAfterRenameCode = "const fs=require('fs'),path=require('path'),crypto=require('crypto');const {DatabaseSync}=require('node:sqlite');const base=process.argv[1],db=new DatabaseSync(path.join(base,'.operation.sqlite'));db.exec('BEGIN IMMEDIATE');const identity=db.prepare(\"SELECT value FROM coordinator_meta WHERE key='identity'\").get().value;const file=path.join(base,'.operation.claim'),bytes=fs.readFileSync(file),archive=path.join(base,'.operation-recovery-'+Date.now()+'-'+crypto.randomUUID());const intent={version:1,action:'explicit-legacy-v1-recovery',pid:2147483647,databaseIdentity:identity,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,createdAt:new Date().toISOString()};fs.mkdirSync(archive,{mode:0o700});fs.writeFileSync(path.join(archive,'intent.json'),JSON.stringify(intent)+'\\n',{flag:'wx'});fs.renameSync(file,path.join(archive,'.operation.claim'));process.stdout.write('renamed\\n');setInterval(()=>{},1000);";
+  const interruptedEnv = { ...process.env, APT_MANAGED_CACHE_BASE: cache.cacheBase() };
+  const interrupted = spawn(process.execPath, ["-e", interruptAfterRenameCode, cache.cacheBase()], { cwd: path.resolve(__dirname, ".."), env: interruptedEnv, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  const interruptedClosed = new Promise(resolve => interrupted.once("close", resolve));
+  await new Promise((resolve, reject) => {
+    let output = "", errorOutput = "";
+    interrupted.stdout.on("data", chunk => { output += chunk.toString(); if (output.includes("renamed\n")) resolve(); });
+    interrupted.stderr.on("data", chunk => { errorOutput += chunk.toString(); });
+    interrupted.once("error", reject);
+    interrupted.once("close", code => { if (code !== 0 && !output.includes("renamed\n")) reject(new Error(`recovery interruption fixture exited before rename (${code}): ${errorOutput}`)); });
+  });
+  interrupted.kill();
+  await interruptedClosed;
+  assert(!fs.existsSync(interruptedFile), "controlled crash must occur after atomic archive rename");
+  const resumedPrune = await pruneCaches({ maxBytes: cache.DEFAULT_MAX_BYTES });
+  assert(resumedPrune.complete, "next coordinator acquisition must complete an intent-backed archive receipt");
+  const resumedArchive = fs.readdirSync(cache.cacheBase()).filter(name => name.startsWith(".operation-recovery-")).map(name => path.join(cache.cacheBase(), name)).find(directory => {
+    try { return JSON.parse(fs.readFileSync(path.join(directory, "intent.json"), "utf8")).sha256 === interruptedHash; } catch { return false; }
+  });
+  assert(resumedArchive, "interrupted archive should remain identifiable");
+  const resumedReceipt = JSON.parse(fs.readFileSync(path.join(resumedArchive, "receipt.json"), "utf8"));
+  assert.strictEqual(resumedReceipt.sha256, interruptedHash);
+  assert(!JSON.stringify(resumedReceipt).includes(interruptedToken), "recovery receipts must not contain the raw marker nonce");
+
   const claimRoot = project("stale-claim");
   const claimRun = managedTemp.createRun(claimRoot);
   const claimCache = await acquireCache(claimRoot, "npm", { runRoot: claimRun.root });
   await releaseCache(claimCache);
+  const protectedPayload = path.join(claimCache.path, "payload.bin");
+  fs.writeFileSync(protectedPayload, "keep-payload");
+  const leaseDirBeforeRecovery = path.join(path.dirname(claimCache.path), ".leases", path.basename(claimCache.path));
+  const leaseNamesBeforeRecovery = fs.existsSync(leaseDirBeforeRecovery) ? fs.readdirSync(leaseDirBeforeRecovery) : [];
   const claimFile = path.join(cache.cacheBase(), ".operation.claim");
   let createdClaim = false;
   try {
     const fd = fs.openSync(claimFile, "wx", 0o600);
     createdClaim = true;
-    try { fs.writeFileSync(fd, JSON.stringify({ version: 1, pid: 2147483647, token: "stale-test-claim" })); }
+    try { fs.writeFileSync(fd, JSON.stringify({ version: 1, pid: 2147483647, token: require("crypto").randomUUID(), createdAt: new Date().toISOString() })); }
     finally { fs.closeSync(fd); }
     const claimResult = await pruneCaches({ projectRoot: claimRoot, maxBytes: 0 });
     assert.strictEqual(claimResult.reason, "stale-operation-claim-requires-manual-recovery");
     assert(fs.existsSync(claimCache.path), "stale operation claim must not permit cache deletion");
-  } finally { if (createdClaim) fs.unlinkSync(claimFile); }
+    const staleBytes = fs.readFileSync(claimFile);
+    const staleHash = require("crypto").createHash("sha256").update(staleBytes).digest("hex");
+    assert.throws(() => cache.recoverLegacyClaim("0".repeat(64), 2147483647), /exact expected hash\/PID/u);
+    assert.throws(() => cache.recoverLegacyClaim(staleHash, process.pid), /exact expected hash\/PID/u);
+    const originalKill = process.kill;
+    process.kill = (pid, signal) => { if (pid === 2147483647 && signal === 0) { const error = new Error("permission denied"); error.code = "EPERM"; throw error; } return originalKill(pid, signal); };
+    try { assert.throws(() => cache.recoverLegacyClaim(staleHash, 2147483647), /live or its death could not be confirmed/u); }
+    finally { process.kill = originalKill; }
+    const recovery = cache.recoverLegacyClaim(staleHash, 2147483647);
+    assert(recovery.recovered);
+    assert(!JSON.stringify(recovery).includes(JSON.parse(staleBytes.toString("utf8")).token), "recovery result must not expose the raw claim nonce");
+    assert(fs.readFileSync(path.join(recovery.archive, cache.OPERATION_CLAIM)).equals(staleBytes), "legacy recovery must retain exact marker bytes");
+    assert.strictEqual(JSON.parse(fs.readFileSync(path.join(recovery.archive, "receipt.json"), "utf8")).sha256, staleHash);
+    assert(!fs.existsSync(claimFile));
+    assert.strictEqual(fs.readFileSync(protectedPayload, "utf8"), "keep-payload", "mutex recovery must not alter cache payload");
+    assert.deepStrictEqual(fs.existsSync(leaseDirBeforeRecovery) ? fs.readdirSync(leaseDirBeforeRecovery) : [], leaseNamesBeforeRecovery, "mutex recovery must not alter cache leases");
+    const cliToken = require("crypto").randomUUID();
+    const cliBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: cliToken, createdAt: new Date().toISOString() })}\n`);
+    fs.writeFileSync(claimFile, cliBytes, { flag: "wx" });
+    const cliHash = require("crypto").createHash("sha256").update(cliBytes).digest("hex");
+    const cli = spawnSync(process.execPath, [path.resolve(__dirname, "managed-temp.js"), "cache-recover", "--expected-sha256", cliHash, "--pid", "2147483647"], { cwd: path.resolve(__dirname, ".."), env: { ...process.env, APT_MANAGED_CACHE_BASE: cache.cacheBase() }, encoding: "utf8" });
+    assert.strictEqual(cli.status, 0, `cache-recover CLI failed: ${cli.stderr}`);
+    assert(!cli.stdout.includes(cliToken), "cache-recover CLI output must not expose the raw claim nonce");
+  } finally { if (createdClaim && fs.existsSync(claimFile)) fs.unlinkSync(claimFile); }
   assert((await pruneCaches({ projectRoot: claimRoot, maxBytes: 0 })).removed.some(item => item.path === claimCache.path));
   assert(claimRun.finish().removed);
 
@@ -271,6 +433,24 @@ async function main() {
   assert(budgetRun.finish().removed);
 
   assert.throws(() => cache.acquireCache(root, "npm", { runRoot: path.join(root, "unknown-run") }), /Cannot bind cache lease/u);
+
+  const archiveBase = cache.cacheBase();
+  let archives = fs.readdirSync(archiveBase).filter(name => name.startsWith(".operation-recovered-") || name.startsWith(".operation-recovery-"));
+  const archiveSource = path.join(archiveBase, archives.find(name => name.startsWith(".operation-recovered-")));
+  assert(fs.existsSync(path.join(archiveSource, "receipt.json")), "archive-bound test needs a completed, reviewable recovery record");
+  while (archives.length < 32) {
+    const name = `.operation-recovered-budget-${archives.length}-${require("crypto").randomUUID()}`;
+    fs.cpSync(archiveSource, path.join(archiveBase, name), { recursive: true, errorOnExist: true });
+    archives.push(name);
+  }
+  const fullBudgetClaim = path.join(archiveBase, cache.OPERATION_CLAIM);
+  const fullBudgetBytes = Buffer.from(`${JSON.stringify({ version: 1, pid: 2147483647, token: require("crypto").randomUUID(), createdAt: new Date().toISOString() })}\n`);
+  fs.writeFileSync(fullBudgetClaim, fullBudgetBytes, { flag: "wx" });
+  const fullBudgetHash = require("crypto").createHash("sha256").update(fullBudgetBytes).digest("hex");
+  const archiveCountBefore = fs.readdirSync(archiveBase).filter(name => name.startsWith(".operation-recovered-") || name.startsWith(".operation-recovery-")).length;
+  assert.throws(() => cache.recoverLegacyClaim(fullBudgetHash, 2147483647), /retention limit is full/u);
+  assert(fs.readFileSync(fullBudgetClaim).equals(fullBudgetBytes), "full archive budget must preserve the marker");
+  assert.strictEqual(fs.readdirSync(archiveBase).filter(name => name.startsWith(".operation-recovered-") || name.startsWith(".operation-recovery-")).length, archiveCountBefore, "full archive budget must not create another directory");
   process.stdout.write("managed-cache focused tests passed\n");
 }
 

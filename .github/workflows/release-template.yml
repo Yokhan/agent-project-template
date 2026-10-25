@@ -243,9 +243,15 @@ jobs:
           {
             echo "# Agent Project Template ${tag}"
             echo ""
-            echo "This compatible patch repairs Russian conversational execution-intent routing and normalizes browser context and clarification replies during prompt submission and native request recovery. Fresh same-session continuation evidence preserves request authorization boundaries. The delegation report separates all-request share from eligible work and counts only runtime-correlated Luna calls and completed integrated results. Coverage is a routing diagnostic; no token or quota savings are guaranteed. See docs/RELEASE_V6_1_2.md."
+            version="${tag#v}"
+            notes_file="docs/RELEASE_V${version//./_}.md"
+            if [ -f "$notes_file" ]; then
+              cat "$notes_file"
+            else
+              echo "See docs/TEMPLATE_RELEASES.md for this tag’s behavior and compatibility."
+            fi
             echo ""
-            echo "The carried lifecycle contract allocates owned scratch for managed test, build and browser runs, supervises Windows process families with Job Objects, and reclaims disposable resources. POSIX support remains limited to declared foreground runs; interrupted runs remain protected for manual recovery. Optional per-project cache budgets are sampled limits, not a hard filesystem quota. Shared browser installations, MCP databases, books, chat history, sources and unknown paths remain outside cleanup. Node 24+ with working node:sqlite is required. See docs/RELEASE_V6_1_0.md for lifecycle details."
+            echo "Exact source commit: ${RELEASE_COMMIT}. The mandatory validation jobs for this tag passed before this immutable bundle was published. Local source notes record their acceptance state when committed; publication, installation and active runtime still need distinct evidence. See https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}."
             echo ""
             echo "An AI agent deploys and migrates the template. Update using the exact target release checkout's updater against an explicit project path and an external plan:"
             echo ""

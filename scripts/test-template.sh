@@ -520,7 +520,14 @@ check "task-directed writing section map" node scripts/test-writing-reading-plan
 check "local literal contents and source examples" node scripts/test-writing-library-index.js
 check "exact-draft independent editorial contract" node scripts/test-writing-editorial-review.js
 check "native current-request workflow evidence" node scripts/test-codex-hooks.js
+check "real-process request-scoped Stop cleanup" node scripts/test-managed-stop-scope-live.js
 check "measured Luna dispatch and integration coverage" node scripts/test-codex-delegation-report.js
+check "storage operation concurrency and preservation" node scripts/test-storage-operation-registry.js
+check "storage operation native hook ownership" node scripts/test-storage-operation-hooks.js
+check "shared physical-volume admission" node scripts/test-storage-volume-registry.js
+check "real cross-project volume admission and crash recovery" node scripts/test-storage-volume-live.js
+check "request-bound outcome evidence" node scripts/test-outcome-acceptance.js
+check "bounded project lesson navigation" node scripts/test-lesson-index.js
 check "managed test scratch ownership and cleanup" node scripts/test-managed-temp.js
 check "owned process family supervisor" node scripts/test-managed-process.js
 check "owned reusable cache budget and leases" node scripts/test-managed-cache.js
@@ -690,7 +697,9 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/writing-library-index.js scripts/test-writing-library-index.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/codex-runtime.js scripts/test-codex-runtime.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-temp.js scripts/managed-temp.js scripts/test-managed-temp.js .claude/hooks/session-start.sh .claude/hooks/session-stop.sh .claude/library/technical/testing.md
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-process.js scripts/lib/managed-process.ps1 scripts/lib/managed-cache.js scripts/lib/managed-run-profiles.js scripts/lib/managed-run-report.js scripts/test-managed-process.js scripts/test-managed-cache.js scripts/test-managed-run.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-process.js scripts/lib/managed-process.ps1 scripts/lib/managed-cache.js scripts/lib/managed-run-profiles.js scripts/lib/managed-run-report.js scripts/lib/managed-run-ownership.js scripts/test-managed-stop-scope-live.js scripts/test-managed-process.js scripts/test-managed-cache.js scripts/test-managed-run.js
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/storage-operation-registry.js scripts/lib/storage-operation-hooks.js scripts/storage-operation.js scripts/test-storage-operation-registry.js scripts/test-storage-operation-hooks.js docs/STORAGE_OPERATIONS.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/storage-volume-registry.js scripts/lib/storage-volume-identity.ps1 scripts/test-storage-volume-registry.js scripts/test-storage-volume-live.js scripts/lib/outcome-acceptance.js scripts/test-outcome-acceptance.js scripts/lesson-index.js scripts/test-lesson-index.js .claude/library/process/context-first.md .claude/library/process/self-verification.md docs/RELEASE_V6_2_0.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A docs/MIGRATION_V5.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/test-verify-check.js scripts/verify-check.sh scripts/check-drift.sh scripts/test-template.sh .claude/hooks/post-edit.sh .claude/agents/writer.md .claude/docs/domain-full/domain-design.md .claude/library/technical/atomic-reuse.md .claude/skills/audit .claude/skills/security-audit .claude/skills/domain-design-review tests/rules/skill-proportionality.test.md tests/rules/domain-software.test.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A AGENTS.md CLAUDE.md .codex/config.toml .mcp.json .gitignore README.md SETUP_GUIDE.md setup.sh setup.bat docs/SHARED_CONVENTIONS.md docs/AGENT_PIPELINES.md docs/CODE_INTELLIGENCE_TOOLCHAIN.md docs/SAFE_DEFAULTS.md _reference/tool-registry.md _reference/code-intelligence-tools.json _reference/codex-mcp-config.toml .claude/library/process/change-strategy-gate.md .claude/library/process/plan-first.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/product/production-product-standard.md .claude/library/technical/architecture.md .claude/library/meta/critical-thinking.md .agents/skills/codex-change-strategy .agents/skills/codex-debug/SKILL.md .agents/skills/codex-decompose/SKILL.md .agents/skills/codex-strategic-review/SKILL.md scripts/lib/change-strategy-policy.js scripts/lib/code-intelligence-policy.js scripts/lib/codex-route-intents.js scripts/lib/codex-route-summary.js scripts/lib/codex-route-cli.js scripts/lib/codex-discovery-reroute.js scripts/lib/sync-manifest-reconcile.js scripts/lib/sync-safe-copy.js scripts/code-intelligence-tools.js scripts/test-code-intelligence-tools.js scripts/configure-codex-mcp.js scripts/test-codex-mcp-config.js scripts/bootstrap-mcp.sh scripts/import-graph.sh scripts/blast-radius.sh scripts/sync-template.sh scripts/validate-change-strategy.js scripts/test-change-strategy.js scripts/codex-route-task.js scripts/codex-agent-policy.js scripts/codex-routing-cases-b.js scripts/test-codex-routing.js scripts/test-codex-agent-policy.js scripts/validate-production-standard.js scripts/validate-template.sh tests/fixtures/change-strategy tasks/change-strategy.json
@@ -707,6 +716,9 @@ if is_template_source_repo; then
       [ -f "$project/scripts/lib/sync-safe-copy.js" ] &&
       [ -f "$project/scripts/lib/managed-temp.js" ] &&
       [ -f "$project/scripts/lib/managed-process.ps1" ] &&
+      [ -f "$project/scripts/lib/storage-volume-identity.ps1" ] &&
+      [ -f "$project/scripts/lib/outcome-acceptance.js" ] &&
+      [ -f "$project/scripts/lesson-index.js" ] &&
       [ -f "$project/scripts/lib/managed-cache.js" ] &&
       [ -f "$project/scripts/lib/writing-library-provision.js" ] &&
       [ -f "$project/_reference/writing-library-source.json" ] &&

@@ -215,6 +215,16 @@ function main() {
     nextAction: "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
     candidateRoles: ["implementer"],
   });
+  const russianReleasePreparation = getRoute("Слушай, ну давай, вноси изменения, только чтобы реально улучшилось. Вот. И как бы поднимай версию релиза, если всё нормально будет работать.");
+  assert.strictEqual(russianReleasePreparation.delegationDecision.required, true);
+  assert.strictEqual(russianReleasePreparation.delegationDecision.state, "prepare-contract",
+    "the authored Russian execution and conditional release request needs a derived bounded contract");
+  assert(russianReleasePreparation.delegationDecision.candidateRoles.includes("implementer"));
+  assert.match(russianReleasePreparation.delegationDecision.nextAction, /derive exact scope and acceptance.*do not guess/iu,
+    "routing must preserve the parent contract and release gates");
+  const quotedAction = getRoute("Проверь формулировку «вноси изменения и поднимай версию релиза».");
+  assert(!quotedAction.delegationDecision.candidateRoles.includes("implementer"),
+    "quoted actions must not authorize an implementation worker");
   // A single implementation worker is useful even without a parallel lane.
   const sequential = getRoute("Implement the approved isolated module", {
     availableSlots: 1, workerContract: readyWorker,
@@ -407,6 +417,53 @@ function main() {
   assert(russianWriting.writingPolicy.technicalProfiles.includes("technical-developer-conventions"));
   assert.deepStrictEqual(russianWriting.writingPolicy.externalTools, [{ id: "glavred-api", access: "not-configured", execution: "not-run", paid: true }]);
   assert(russianWriting.writingPolicy.gates.includes("external-tool-unavailable"));
+
+  const writingAuthorContract = {
+    role: "implementer",
+    scope: [".session-cache/writing/draft.txt"],
+    acceptance: ["Write the requested prose into the scoped draft artifact and report its path and hash."],
+    hostDispatchCapabilities: ["explicit-model-contract"],
+  };
+  for (const task of [
+    "Напиши пост о новых возможностях личного кабинета по приложенным фактам.",
+    "Отредактируй текст лендинга по книге и верни готовый текст.",
+  ]) {
+    const authorRoute = getRoute(task, { workerContract: writingAuthorContract });
+    assert.strictEqual(authorRoute.writingIntent.isWriting, true, task);
+    assert(authorRoute.subagents.includes("implementer"), task);
+    assert(authorRoute.subagents.includes("writing_editor"), task);
+    assert.strictEqual(authorRoute.delegationDecision.state, "ready", task);
+    assert(authorRoute.delegationDecision.candidateRoles.includes("implementer"), task);
+    assert.match(authorRoute.delegationDecision.nextAction, /draft artifact.*distinct writing_editor/iu, task);
+  }
+  const uncontractedWriting = getRoute("Отредактируй текст лендинга по книге и верни готовый текст.");
+  assert.strictEqual(uncontractedWriting.delegationDecision.state, "prepare-contract");
+  assert(uncontractedWriting.delegationDecision.candidateRoles.includes("implementer"));
+  assert.match(uncontractedWriting.delegationDecision.nextAction, /request-scoped draft artifact/iu);
+
+  const diagnosedWriting = getRoute("тексты плохо пишет, выясни причину");
+  assert.strictEqual(diagnosedWriting.writingIntent.isWriting, false);
+  assert(!diagnosedWriting.subagents.includes("implementer"));
+  assert(!diagnosedWriting.subagents.includes("writing_editor"));
+  assert(diagnosedWriting.subagents.includes("scout"));
+
+  const readOnlyWriting = getRoute("Отредактируй текст лендинга в режиме только чтения.");
+  assert(!readOnlyWriting.subagents.includes("implementer"));
+  for (const task of [
+    "Напиши пост о новых возможностях личного кабинета по приложенным фактам без субагентов.",
+    "Проверь формулировку «Напиши пост о новых возможностях личного кабинета».",
+  ]) {
+    const guarded = getRoute(task, { workerContract: writingAuthorContract });
+    assert(!guarded.subagents.includes("implementer"), task);
+  }
+  for (const task of ["Исправь опечатку", "Напиши краткий статус о проверке."]) {
+    const narrow = getRoute(task, { workerContract: writingAuthorContract });
+    assert.strictEqual(narrow.workflowDepth, "direct", task);
+    assert(!narrow.subagents.includes("implementer"), task);
+  }
+  const codeWriting = getRoute("Напиши TypeScript-скрипт для проверки файла.");
+  assert.strictEqual(codeWriting.writingIntent.isWriting, false);
+  assert(codeWriting.subagents.includes("implementer"));
 
   const russianLetter = getRoute("Напиши на русском деловое письмо клиенту");
   assert(russianLetter.writingPolicy.languageProfiles.includes("russian-business-correspondence-language"));

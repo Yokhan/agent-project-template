@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
+const runOwnership = require("./managed-run-ownership.js");
 
 const OWNER_FILE = ".managed-temp-owner.json";
 const CLAIM_SUFFIX = ".cleanup-claim";
@@ -81,13 +82,27 @@ function readOwner(directory, expectedRoot, expectedHash = projectHash(expectedR
     const ownerStat = fs.lstatSync(ownerPath);
     if (!ownerStat.isFile() || ownerStat.isSymbolicLink()) return null;
     const owner = JSON.parse(fs.readFileSync(ownerPath, "utf8"));
-    if (owner.version !== 1 || !UUID.test(owner.id) || path.basename(directory) !== owner.id || owner.root !== expectedRoot || owner.projectHash !== expectedHash ||
+    if (![1, 2].includes(owner.version) || !UUID.test(owner.id) || path.basename(directory) !== owner.id || owner.root !== expectedRoot || owner.projectHash !== expectedHash ||
       !(Number.isInteger(owner.pid) && owner.pid > 0 || owner.pid === null && typeof owner.finishedAt === "string")) return null;
     if (owner.childPid !== null && owner.childPid !== undefined && (!Number.isInteger(owner.childPid) || owner.childPid < 1)) return null;
     if (owner.launching !== undefined && typeof owner.launching !== "boolean") return null;
     if (owner.childGroup !== undefined && typeof owner.childGroup !== "boolean") return null;
     if (owner.retainedReason !== undefined && owner.retainedReason !== null && typeof owner.retainedReason !== "string") return null;
     if (owner.resources !== undefined && (!Array.isArray(owner.resources) || owner.resources.some(resource => !resource || typeof resource.kind !== "string" || typeof resource.path !== "string" || path.isAbsolute(resource.path) || resource.path.split(/[\\/]+/u).includes("..")))) return null;
+    if (owner.version === 2 && owner.ownership !== undefined && owner.ownership !== null && !runOwnership.normalizeOwnership(owner.ownership)) return null;
+    if (owner.version === 2 && owner.diagnostics !== undefined) {
+      const value = owner.diagnostics;
+      if (!value || typeof value !== "object" || Array.isArray(value) ||
+          Object.keys(value).some(key => !["commandBasename", "commandHash", "argumentCount", "phase", "commandExitCode", "proof", "supervisorError"].includes(key)) ||
+          value.commandBasename !== undefined && (typeof value.commandBasename !== "string" || value.commandBasename.length > 120 || /[\\/\u0000-\u001f]/u.test(value.commandBasename)) ||
+          value.commandHash !== undefined && !/^[a-f0-9]{64}$/iu.test(value.commandHash) ||
+          value.argumentCount !== undefined && (!Number.isSafeInteger(value.argumentCount) || value.argumentCount < 0) ||
+          value.phase !== undefined && (typeof value.phase !== "string" || !/^[a-z0-9-]{1,40}$/iu.test(value.phase)) ||
+          value.commandExitCode !== undefined && (!Number.isSafeInteger(value.commandExitCode) || value.commandExitCode < 0 || value.commandExitCode > 0xffffffff) ||
+          value.proof !== undefined && (typeof value.proof !== "string" || value.proof.length > 80) ||
+          value.supervisorError !== undefined && (!value.supervisorError || typeof value.supervisorError !== "object" || !Number.isSafeInteger(value.supervisorError.length) || value.supervisorError.length < 0 || !/^[a-f0-9]{64}$/iu.test(value.supervisorError.sha256 || ""))) return null;
+    }
+    owner.ownership = owner.version === 2 ? runOwnership.normalizeOwnership(owner.ownership) : null;
     owner.launching = owner.launching === true;
     owner.childGroup = owner.childGroup === true;
     owner.retainedReason = owner.retainedReason || null;
@@ -140,6 +155,7 @@ function registerDependent(project, childId) {
     token,
     parent: { id: parent.owner.id, root: parent.owner.root, projectHash: parent.owner.projectHash },
     child: { id: childId, root: project, projectHash: projectHash(project), runRoot: path.join(managedBaseFor(project), childId) },
+    ownership: parent.owner.ownership || null,
     createdAt: new Date().toISOString(),
   };
   const file = dependentFile(canonicalParent, childId);
@@ -186,34 +202,6 @@ function removeEmptyDirectory(directory, deadline) {
     return true;
   } catch (error) { return error.code === "ENOENT"; }
 }
-function cleanReportNamespace(record, deadline) {
-  const reportBase = path.join(os.homedir(), ".cache", "apt-r");
-  const directory = path.join(reportBase, record.child.projectHash.slice(0, 32));
-  try {
-    assertNoLinks(directory);
-    const stat = fs.lstatSync(directory);
-    if (!stat.isDirectory() || stat.isSymbolicLink()) return false;
-    if (Date.now() >= deadline) return false;
-    const dir = fs.opendirSync(directory);
-    let first, second;
-    try { first = dir.readSync(); second = first && dir.readSync(); }
-    finally { dir.closeSync(); }
-    if (!first) return removeEmptyDirectory(directory, deadline);
-    if (first.name !== "last.json" || second) return false;
-    const reportPath = path.join(directory, "last.json");
-    assertNoLinks(reportPath);
-    const reportStat = fs.lstatSync(reportPath);
-    if (!reportStat.isFile() || reportStat.size > 65536) return false;
-    const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-    if (!report || report.schemaVersion !== 1 || report.projectRoot !== record.child.root) return false;
-    if (Date.now() >= deadline) return false;
-    assertNoLinks(reportPath);
-    fs.unlinkSync(reportPath);
-    assertNoLinks(directory);
-    fs.rmdirSync(directory);
-    return true;
-  } catch (error) { return error.code === "ENOENT"; }
-}
 function dependencyNamespacesEmpty(record, deadline, cacheModule = null) {
   const tempNamespace = managedBaseFor(record.child.root);
   if (!removeEmptyDirectory(tempNamespace, deadline)) return false;
@@ -222,7 +210,7 @@ function dependencyNamespacesEmpty(record, deadline, cacheModule = null) {
   const leases = path.join(cacheNamespace, ".leases");
   if (fs.existsSync(leases) && !removeEmptyDirectory(leases, deadline)) return false;
   if (!removeEmptyDirectory(cacheNamespace, deadline)) return false;
-  return cleanReportNamespace(record, deadline);
+  return true;
 }
 function settleDependent(file, parentDirectory, parentOwner, childId, deadline, maxEntries) {
   const record = readDependent(file, parentDirectory, parentOwner, childId);
@@ -490,13 +478,28 @@ function removeBounded(directory, deadline, maxEntries = 10000, owner = null, ba
 
 function createRun(root, options = {}) {
   const { project, base } = managedRoot(root, false);
+  const env = options.env || process.env;
+  const observed = runOwnership.observedSession(env.CODEX_SESSION_ID);
+  let explicit = null;
+  if (options.requestStatePath) explicit = runOwnership.readRequestState(options.requestStatePath, { projectRoot: project, observedSessionId: env.CODEX_SESSION_ID });
+  let inherited = null;
+  if (env.AGENT_MANAGED_TEMP) {
+    const parentPath = env.AGENT_MANAGED_TEMP;
+    const lease = inspectRunLease(parentPath);
+    if (!lease.valid || !lease.active || !lease.owner) throw new Error("Inherited managed-run lease is not active and validated");
+    inherited = runOwnership.readInheritedBinding(env.AGENT_MANAGED_RUN_BINDING, { parentRunRoot: parentPath, parentOwner: lease.owner, observedSessionId: env.CODEX_SESSION_ID });
+  } else if (env.AGENT_MANAGED_RUN_BINDING) throw new Error("Inherited managed-run binding has no managed parent lease");
+  if (explicit && inherited?.confidence === "exact" && (explicit.sessionId !== inherited.sessionId || explicit.requestId !== inherited.requestId || explicit.rootTurnId !== inherited.rootTurnId)) {
+    throw new Error("Explicit request-state conflicts with inherited managed-run ownership");
+  }
+  const ownership = explicit || inherited || observed;
   const id = crypto.randomUUID();
   const directory = path.join(base, id);
   const dependent = registerDependent(project, id);
   managedRoot(root, true);
   assertNoLinks(base);
   fs.mkdirSync(directory, { mode: 0o700 });
-  const owner = { version: 1, id, root: project, projectHash: projectHash(project), pid: process.pid, childPid: null, childGroup: false, launching: false, retainedReason: null, createdAt: new Date().toISOString(), label: typeof options.label === "string" ? options.label.slice(0, 120) : null, resources: [] };
+  const owner = { version: 2, id, root: project, projectHash: projectHash(project), pid: process.pid, childPid: null, childGroup: false, launching: false, retainedReason: null, createdAt: new Date().toISOString(), label: typeof options.label === "string" ? options.label.slice(0, 120) : null, ownership, diagnostics: {}, resources: [] };
   if (options.processContract === "foreground") owner.retainedReason = "foreground-contract-not-completed";
   writeOwner(directory, owner);
   const temp = path.join(directory, "tmp");
@@ -505,8 +508,29 @@ function createRun(root, options = {}) {
   writeOwner(directory, owner);
   fs.mkdirSync(temp, { mode: 0o700 });
   let finished = false;
+  const binding = runOwnership.bindingForRun({ runId: id, runRoot: directory, projectRoot: project, projectHash: owner.projectHash, ownership });
   return {
-    id, root: directory, temp,
+    id, root: directory, temp, ownership, binding,
+    setDiagnostics(value) {
+      if (finished) throw new Error("Managed run is already finished");
+      if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("diagnostics must be an object");
+      const allowed = ["commandBasename", "commandHash", "argumentCount", "phase", "commandExitCode", "proof", "supervisorError"];
+      if (Object.keys(value).some(key => !allowed.includes(key)) ||
+          value.commandBasename !== undefined && (typeof value.commandBasename !== "string" || value.commandBasename.length > 120 || /[\\/\u0000-\u001f]/u.test(value.commandBasename)) ||
+          value.commandHash !== undefined && !/^[a-f0-9]{64}$/iu.test(value.commandHash) ||
+          value.argumentCount !== undefined && (!Number.isSafeInteger(value.argumentCount) || value.argumentCount < 0) ||
+          value.phase !== undefined && (typeof value.phase !== "string" || !/^[a-z0-9-]{1,40}$/iu.test(value.phase)) ||
+          value.commandExitCode !== undefined && (!Number.isSafeInteger(value.commandExitCode) || value.commandExitCode < 0 || value.commandExitCode > 0xffffffff) ||
+          value.proof !== undefined && (typeof value.proof !== "string" || value.proof.length > 80) ||
+          value.supervisorError !== undefined && (!value.supervisorError || typeof value.supervisorError !== "object" || !Number.isSafeInteger(value.supervisorError.length) || value.supervisorError.length < 0 || !/^[a-f0-9]{64}$/iu.test(value.supervisorError.sha256 || ""))) throw new TypeError("diagnostics contain unsafe or invalid fields");
+      owner.diagnostics = Object.fromEntries(allowed.filter(key => value[key] !== undefined).map(key => [key, value[key]]));
+      writeOwner(directory, owner);
+    },
+    setPhase(phase) {
+      if (finished || typeof phase !== "string" || !/^[a-z0-9-]{1,40}$/iu.test(phase)) throw new TypeError("phase must be a short safe identifier");
+      owner.diagnostics = { ...owner.diagnostics, phase };
+      writeOwner(directory, owner);
+    },
     allocate(kind, label) {
       if (finished) throw new Error("Managed run is already finished");
       if (typeof kind !== "string" || !/^[a-z0-9][a-z0-9_-]{0,39}$/iu.test(kind)) throw new TypeError("resource kind must be a short safe identifier");
@@ -564,13 +588,15 @@ function sweep(root, options = {}) {
   const budgetMs = Number.isFinite(options.budgetMs) ? Math.max(0, options.budgetMs) : DEFAULT_BUDGET_MS;
   const deadline = started + budgetMs;
   const report = { removed: [], busy: [], skipped: [], errors: [], pending: [], accounting: { observedBytesRemoved: 0, observedFilesRemoved: 0, observedBytesRemaining: 0, observedFilesRemaining: 0, remainingComplete: true, reason: null }, observations: [], elapsedMs: 0 };
+  const pushPending = (item, owner = null, runId = null) => report.pending.push({ ...item, runId, ownership: owner?.ownership || null });
+  const pushError = (item, owner = null, runId = null) => report.errors.push({ ...item, runId, ownership: owner?.ownership || null });
   let roots;
   try { roots = managedRoot(root, false); }
-  catch (error) { report.errors.push({ path: String(root), error: error.message }); report.elapsedMs = Date.now() - started; return report; }
+  catch (cause) { pushError({ path: String(root), error: cause.message }); report.elapsedMs = Date.now() - started; return report; }
   if (!fs.existsSync(roots.base)) { report.elapsedMs = Date.now() - started; return report; }
   let names;
   try { names = fs.readdirSync(roots.base); }
-  catch (error) { report.errors.push({ path: roots.base, error: error.message }); report.elapsedMs = Date.now() - started; return report; }
+  catch (cause) { pushError({ path: roots.base, error: cause.message }); report.elapsedMs = Date.now() - started; return report; }
   const observeRemaining = (id, directory, reason) => {
     const inventory = inventoryBounded(directory, deadline, options.maxEntries || 10000);
     report.observations.push({ path: id, observedBytesRemoved: 0, observedFilesRemoved: 0, observedBytesRemaining: inventory.bytes, observedFilesRemaining: inventory.files, remainingComplete: inventory.complete, reason: inventory.reason || reason });
@@ -598,12 +624,12 @@ function sweep(root, options = {}) {
             report.skipped.push({ path: remaining, reason: "live-lease" });
             observeRemaining(remaining, path.join(roots.base, remaining), "live-lease");
           } else {
-            report.pending.push({ path: remaining, reason: pendingOwner.retainedReason });
+            pushPending({ path: remaining, reason: pendingOwner.retainedReason }, pendingOwner, pendingOwner.id);
             observeRemaining(remaining, path.join(roots.base, remaining), pendingOwner.retainedReason);
           }
         }
         else if (pendingOwner.launching && !isAlive(pendingOwner.pid) && !isAlive(pendingOwner.childPid, pendingOwner.childGroup)) {
-          report.pending.push({ path: remaining, reason: "unresolved-launch-lease" });
+          pushPending({ path: remaining, reason: "unresolved-launch-lease" }, pendingOwner, pendingOwner.id);
           observeRemaining(remaining, path.join(roots.base, remaining), "unresolved-launch-lease");
         }
         else if (leaseActive(pendingOwner)) {
@@ -612,7 +638,7 @@ function sweep(root, options = {}) {
           observeRemaining(remaining, path.join(roots.base, remaining), "live-lease");
         }
         else {
-          report.pending.push({ path: remaining, reason: "budget-exhausted" });
+          pushPending({ path: remaining, reason: "budget-exhausted" }, pendingOwner, pendingOwner.id);
           observeRemaining(remaining, path.join(roots.base, remaining), "budget-exhausted");
         }
       }
@@ -627,11 +653,11 @@ function sweep(root, options = {}) {
         report.skipped.push({ path: id, reason: "cleanup-claimed" });
       } else if (claim && !fs.existsSync(path.join(roots.base, id))) {
         try { assertSafeMutation(roots.base, path.join(roots.base, name)); fs.unlinkSync(path.join(roots.base, name)); }
-        catch (error) { report.errors.push({ path: name, error: error.message }); }
+        catch (cause) { pushError({ path: name, error: cause.message }, readOwner(path.join(roots.base, id), roots.project, roots.projectHash), id); }
       } else if (claim) {
-        report.pending.push({ path: id, reason: "stale-cleanup-claim-requires-manual-recovery" });
+        pushPending({ path: id, reason: "stale-cleanup-claim-requires-manual-recovery" }, readOwner(path.join(roots.base, id), roots.project, roots.projectHash), id);
       } else {
-        report.pending.push({ path: id, reason: "invalid-cleanup-claim" });
+        pushPending({ path: id, reason: "invalid-cleanup-claim" }, readOwner(path.join(roots.base, id), roots.project, roots.projectHash), id);
       }
       continue;
     }
@@ -646,13 +672,13 @@ function sweep(root, options = {}) {
         report.skipped.push({ path: name, reason: "live-lease" });
         observeRemaining(name, directory, "live-lease");
       } else {
-        report.pending.push({ path: name, reason: owner.retainedReason });
+        pushPending({ path: name, reason: owner.retainedReason }, owner, owner.id);
         observeRemaining(name, directory, owner.retainedReason);
       }
       continue;
     }
     if (owner.launching && !isAlive(owner.pid) && !isAlive(owner.childPid, owner.childGroup)) {
-      report.pending.push({ path: name, reason: "unresolved-launch-lease" });
+      pushPending({ path: name, reason: "unresolved-launch-lease" }, owner, owner.id);
       observeRemaining(name, directory, "unresolved-launch-lease");
       continue;
     }
@@ -664,7 +690,7 @@ function sweep(root, options = {}) {
     }
     const lock = acquireClaim(roots.base, roots.project, roots.projectHash, name);
     if (lock.busy) {
-      if (lock.reason.includes("stale") || lock.reason.includes("invalid")) report.pending.push({ path: name, reason: lock.reason });
+      if (lock.reason.includes("stale") || lock.reason.includes("invalid")) pushPending({ path: name, reason: lock.reason }, owner, owner.id);
       else {
         report.busy.push({ path: name, reason: lock.reason });
         report.skipped.push({ path: name, reason: lock.reason });
@@ -676,7 +702,7 @@ function sweep(root, options = {}) {
       assertNoLinks(directory);
       const dependencies = settleDependents(directory, owner, deadline, options.maxEntries || 10000);
       if (!dependencies.settled) {
-        report.pending.push({ path: name, reason: `dependent-resource-${dependencies.reason}` });
+        pushPending({ path: name, reason: `dependent-resource-${dependencies.reason}` }, owner, owner.id);
         observeRemaining(name, directory, `dependent-resource-${dependencies.reason}`);
         continue;
       }
@@ -688,7 +714,7 @@ function sweep(root, options = {}) {
       else { report.accounting.remainingComplete = false; report.accounting.reason = measured.reason || result.reason || "incomplete-observation"; }
       if (measured.observedFilesRemaining !== null && measured.remainingComplete) report.accounting.observedFilesRemaining += measured.observedFilesRemaining;
       if (result.removed) report.removed.push(name);
-      else report.pending.push({ path: name, reason: result.reason });
+      else pushPending({ path: name, reason: result.reason }, owner, owner.id);
     } catch (error) {
       const observed = emptyAccounting(error.message.includes("symlink") || error.message.includes("linked") ? "linked-entry" : "observation-or-cleanup-error");
       observed.observedBytesRemoved = measured.observedBytesRemoved;
@@ -707,9 +733,9 @@ function sweep(root, options = {}) {
       }
       report.accounting.remainingComplete = false;
       report.accounting.reason = observed.reason;
-      report.errors.push({ path: name, error: error.message });
+      pushError({ path: name, error: error.message }, owner, owner.id);
     }
-    finally { try { releaseClaim(roots.base, lock); } catch (error) { report.errors.push({ path: name, error: error.message }); } }
+    finally { try { releaseClaim(roots.base, lock); } catch (cause) { pushError({ path: name, error: cause.message }, owner, owner.id); } }
   }
   if (!report.accounting.remainingComplete) {
     report.accounting.observedBytesRemaining = null;
@@ -729,7 +755,7 @@ function status(root) {
       return claim ? { id, pid: claim.pid, active: isAlive(claim.pid), state: isAlive(claim.pid) ? "cleanup-claimed" : "stale-cleanup-claim" } : { name, active: null, state: "invalid-cleanup-claim" };
     }
     const owner = UUID.test(name) ? readOwner(path.join(base, name), project, hash) : null;
-    return owner ? { id: owner.id, pid: owner.pid, childPid: owner.childPid ?? null, childGroup: owner.childGroup, launching: owner.launching, retainedReason: owner.retainedReason, active: leaseActive(owner), createdAt: owner.createdAt, label: owner.label || null } : { name, active: null, state: "unknown-or-invalid" };
+    return owner ? { id: owner.id, pid: owner.pid, childPid: owner.childPid ?? null, childGroup: owner.childGroup, launching: owner.launching, retainedReason: owner.retainedReason, active: leaseActive(owner), createdAt: owner.createdAt, label: owner.label || null, ownership: owner.ownership || null, diagnostics: owner.diagnostics || {} } : { name, active: null, state: "unknown-or-invalid" };
   });
 }
 
@@ -754,12 +780,13 @@ function inspectRunLease(runRoot) {
         id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid,
         childPid: owner.childPid ?? null, childGroup: owner.childGroup === true,
         launching: owner.launching === true, retainedReason: owner.retainedReason,
+        ownership: owner.ownership || null,
       } : undefined;
       return { valid: true, active: activeForegroundParent, pending: true, reason: owner.retainedReason, ...(inspectedOwner ? { owner: inspectedOwner } : {}) };
     }
     if (owner.launching && !isAlive(owner.pid) && !isAlive(owner.childPid, owner.childGroup)) return { valid: true, active: null, pending: true, reason: "unresolved-launch-lease" };
     const active = leaseActive(owner);
-    return { valid: true, active, pending: false, reason: active ? "live-run-lease" : "stale-run-lease", owner: { id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid, childPid: owner.childPid ?? null, childGroup: owner.childGroup === true, launching: owner.launching === true, retainedReason: owner.retainedReason || null } };
+    return { valid: true, active, pending: false, reason: active ? "live-run-lease" : "stale-run-lease", owner: { id: owner.id, root: owner.root, projectHash: owner.projectHash, pid: owner.pid, childPid: owner.childPid ?? null, childGroup: owner.childGroup === true, launching: owner.launching === true, retainedReason: owner.retainedReason || null, ownership: owner.ownership || null } };
   } catch { return { valid: false, active: null, reason: "missing-or-invalid-run-owner" }; }
 }
 

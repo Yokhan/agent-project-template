@@ -36,7 +36,7 @@ function isPayloadPath(rawPath) {
   if (/^\.claude\/(?:settings\.json|settings\.local\.json\.example)$/u.test(file)) return true;
   if (/^\.claude\/(?:docs|rules|library|agents|skills|commands|hooks|pipelines)\//u.test(file)) return true;
   if (/^scripts\/(?:[^/]+\.(?:sh|js|cmd)|lib\/[^/]+\.(?:sh|js))$/u.test(file)) return true;
-  if (file === "scripts/lib/managed-process.ps1") return true;
+  if (file === "scripts/lib/managed-process.ps1" || file === "scripts/lib/storage-volume-identity.ps1") return true;
   if (/^mcp-servers\/context-router\/(?:package(?:-lock)?\.json|tsconfig\.json|src\/[^/]+\.ts)$/u.test(file)) return true;
   if (/^tests\/(?:rules\/[^/]+\.test\.md|fixtures\/(?:design-policy\/(?:pass|fail)|writing-tools|change-strategy)\/)/u.test(file)) return true;
   if (/^brain\/03-knowledge\/communication\/[^/]+\.md$/u.test(file)) return true;

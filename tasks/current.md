@@ -1,17 +1,116 @@
 <!-- PROGRESSIVE_STATUS
-id: template-release-v612-20261024
-status: done
-updated: 2026-10-24
-readiness: 100
+id: accepted-workflow-improvements-v620-20261025
+status: active
+updated: 2026-10-25
+readiness: 70
 plan: 100
-inventory: 100
-production: 100
-cleanup: 100
-tags: template,release,v612,delegation,routing
-next: v6.1.2 publication and approved 36-consumer rollout verified; older consumers require a separate migration decision
+inventory: 90
+production: 0
+cleanup: 0
+tags: template,release,v620,outcomes,writing,delegation,storage
+next: Commit the verified scoped deltas, require exact-commit Linux/Windows CI, then publish and verify v6.2.0
 -->
 
-# Current Task - Compatible v6.1.2 Release And Fleet Rollout
+# Current Task - Accepted Workflow Improvements And Conditional v6.2.0
+
+## Approved result and scope
+
+The owner approved implementing the retrospective and raising the release only
+after it works. Preserve the original scenario/product facts, verify the target
+surface, delegate complete bounded execution to GPT-6 Luna, measure integrated
+work separately from calls/spending, coordinate participating projects' declared
+disk reservations, reduce repeated hook context, and report source/published/
+installed/active evidence separately. No arbitrary data cleanup, model/permission
+defaults, product-file changes or unrequested consumer rollout is included.
+
+Parent owns integration, release metadata, one broad final aggregate and exact
+release evidence. Luna lane A owns the exact seven-file PA hotfix with external
+rollback; after that it owns the bounded volume implementation. Luna lane B owns
+useful-work reporting/routing, then outcome/context interfaces and focused checks.
+The bounded architecture decision keeps project lifecycle authority and adds one
+external volume-admission ledger; never hold write transactions in both at once.
+`tasks/change-strategy.json` is validated and binds the approved envelope.
+
+## Acceptance and release plan
+
+1. PA targeted repair: preserve config/project guards, all dirty/product files,
+   active/unknown markers; verify exact-own blocking versus nonblocking foreign
+   pending using installed code, and inspect fresh real native events separately.
+2. Focused worker checks: called-only Luna cannot earn useful-work success;
+   actual Russian execution continuation prepares a bounded contract; two real
+   processes in two projects share one volume admission budget; crashes retain
+   conservative metadata; no unknown data or evidence is deleted.
+3. Outcome/context work: bind source facts, original scenario and target surface
+   to real artifact evidence; never treat JSON as proof of meaning or rendering.
+   Keep full primary reading accessible while hook messages stay concise. Verify
+   changed code invalidates prior activation evidence.
+4. Run a real author-to-independent-editor prose scenario on supplied product
+   facts, plus installed handler/volume scenarios. Parent inspects results.
+5. Integrate all scoped changes, bump compatible minor6.2.0 metadata, inspect the
+   exact public allowlist and scan secrets/privacy, then run one full local
+   aggregate. Preserve mandatory Linux/Windows CI and exact-tag release gates;
+   publish only after green preflight. Verify downloaded assets, checksums and
+   canonical archive. Never replace an existing published asset/tag.
+6. Record the scoped PA repair installation and native activation with its
+   existing rollback receipts. A full PA version sync is outside this targeted
+   repair; its manifest remains6.1.2. Other projects remain untouched.
+
+## Current acceptance evidence
+
+PA exact-owner versus foreign-request installed-handler fixtures passed with
+file-level backups. The actual two-project Windows volume/crash scenario passed
+with scratch removed. Five controlled writing cases passed a distinct native
+Luna High editor after author revisions. A fresh trusted native CLI session
+recorded SessionStart/UserPromptSubmit/Stop. Cache mutex review corrections and isolated crash/contention checks passed.
+The first full aggregate was219/223; four failures were isolated and repaired
+with focused checks. The global DB schema race received explicit initialization
+barriers, consistent read snapshots and v1 migration regressions. Real PA
+SessionStart/UserPromptSubmit/Stop events passed without hook-trust bypass; its
+manifest stays6.1.2 for the scoped hotfix. No v6.2.0 publication or fleet rollout
+has occurred.
+
+## Previous local repair baseline
+
+## Active repair
+
+The PersonalAssistant report reproduced a source-level mismatch: project-wide
+managed-temp pending cleanup blocks unrelated current requests. Preserve all
+unproven resources while binding blocking responsibility to a validated exact
+session/request. Legacy, foreign and session-only problems stay visible as
+diagnostics. Preserve per-run terminal reports and safe launch/proof metadata;
+the original overwritten supervisor failure cannot be reconstructed.
+
+Decision: `tasks/change-strategy.json` (validated); repair the responsibility
+boundary without changing sweep deletion authority. Two bounded Luna workers
+own the coupled runner/report path and the native-hook consumer. Parent owns
+integration, privacy/safety review and acceptance in separate processes with two
+logical requests sharing a project. Focused runner/hooks regressions precede one
+structural aggregate; do not repeat unchanged focused checks. Keep unrelated
+storage coordination and the completed local writing-route correction intact.
+
+Acceptance: exact-current unresolved work blocks only its request; foreign,
+earlier and unknown retained markers survive without blocking unrelated Stop;
+new immutable report B does not replace report A; nested disposable projects
+settle without erasing external reports; lost launch handshakes never turn into
+permission to delete. New code must be included by setup/sync payload policy.
+No unrelated project rollout or product edits are included. A downstream repair
+requires an exact compatible patch/release and reviewed preview, not copying the
+whole dirty source tree.
+
+2026-10-24 local acceptance: managed-temp, managed-process, managed-run and
+native-hook focused checks passed. Separate-process handler acceptance allowed
+an unrelated request, blocked the exact owner and preserved all four marker
+classes. The desktop's real PreToolUse/PostToolUse journal records
+`managedRunOwnershipVersion: 1`; a fresh desktop chat was not created. Independent
+static safety review's two diagnostic findings were fixed and confirmed.
+Structural aggregate passed every check except this task's invalid status value;
+the status-only correction is checked separately, not claimed as a repeated
+whole-tree aggregate pass. Evidence: `.session-cache/managed-stop-scope-live.log`,
+`.session-cache/managed-stop-app-activation.json`, and
+`.session-cache/managed-stop-template-validation.log`. No new release or PA
+rollout has been performed. The source repair and publication are separate states.
+
+## Completed release baseline — v6.1.2
 
 ## Goal
 

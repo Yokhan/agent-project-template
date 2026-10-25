@@ -20,6 +20,23 @@ Do not generate or refresh context documents just because they are absent or
 stale. Create/update them when the task needs the missing context or the user
 requested project setup/audit.
 
+When a prior correction or decision may affect the task, use the bounded,
+read-only lesson index to find likely entries:
+
+```powershell
+node scripts/lesson-index.js --query "focused topic" --limit 5
+```
+
+It searches only `tasks/lessons.md`, the active-task header and nearest active
+goal in `tasks/current.md`, and optional `tasks/change-strategy.json`. Results
+are pointers with source line and SHA-256, status, rule, and a short summary;
+they do not replace reading the relevant source or establish that an old rule
+still applies. Retired lessons are excluded. Promoted lessons point to their
+destination when recorded; older entries without a status remain explicitly
+unclassified. Missing, oversized, or symlinked sources are reported as gaps.
+Use the index when it helps recover relevant decisions, not as paperwork for a
+tiny edit or a no-change answer.
+
 ## PROJECT_SPEC.md Maintenance
 
 ### When to update:

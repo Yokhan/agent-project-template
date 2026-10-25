@@ -105,9 +105,21 @@ function launchOwned(command, args = [], options = {}) {
   if (options.processContract !== undefined && !["contained", "foreground"].includes(options.processContract)) {
     throw new TypeError("processContract must be 'contained' or 'foreground' when provided");
   }
-  if (process.platform === "win32") return launchWindows(resolveWindowsCommand(command, options), args, options);
-  if (options.processContract === "foreground") return launchPosix(command, args, options);
-  return Promise.reject(new Error("Reliable whole-process-family supervision is currently supported only on Windows; refusing to launch on this platform."));
+  if (options.onLaunchAttempt !== undefined && typeof options.onLaunchAttempt !== "function") throw new TypeError("onLaunchAttempt must be a function when provided");
+  if (process.platform === "win32") {
+    const resolved = resolveWindowsCommand(command, options);
+    const attempted = options.onLaunchAttempt?.({ phase: "supervisor-launch-attempted" });
+    return attempted && typeof attempted.then === "function"
+      ? Promise.resolve(attempted).then(() => launchWindows(resolved, args, options))
+      : launchWindows(resolved, args, options);
+  }
+  if (options.processContract === "foreground") {
+    const attempted = options.onLaunchAttempt?.({ phase: "supervisor-launch-attempted" });
+    return attempted && typeof attempted.then === "function"
+      ? Promise.resolve(attempted).then(() => launchPosix(command, args, options))
+      : launchPosix(command, args, options);
+  }
+  throw new Error("Reliable whole-process-family supervision is currently supported only on Windows; refusing to launch on this platform.");
 }
 
 async function launchWindows(command, args, options) {

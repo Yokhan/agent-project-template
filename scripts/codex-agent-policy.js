@@ -119,7 +119,7 @@ const AGENT_POLICY = Object.freeze({
 const OPT_OUT_PATTERN =
   /(?:\b(?:do not|don't|dont|never)\s+(?:(?:use|spawn|run|call)\s+)?(?:any\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\b(?:do not|don't|dont|never)\s+delegate\b|\bwithout\s+(?:(?:using|any)\s+)?(?:sub-?agents?|delegation|fan-?out|swarm)\b|\bno\s+(?:sub-?agents?|delegation|fan-?out|swarm)\b|(?:без|не\s+(?:используй|запускай|вызывай|делегируй))\s+(?:любых\s+)?(?:субагент[\p{L}]*|сабагент[\p{L}]*|делегац[\p{L}]*|фан-?аут[\p{L}]*|swarm|ро[йяе][\p{L}]*|рой[\p{L}]*)|не\s+делегируй)/iu;
 const RUSSIAN_EXECUTION_REQUEST_PATTERN = new RegExp([
-  String.raw`(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|выкат(?:и|ай)|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|задеплой|задеплойте)(?!\p{L})`,
+  String.raw`(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|перепиши|отредактируй|доработай|улучши|поправь|сверстай|внедри|реализуй|выпусти|опубликуй|выкат(?:и|ай)|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|задеплой|задеплойте|внос(?:и|ите)|подним(?:ай|ите))(?!\p{L})`,
   String.raw`давай(?:-ка)?\s+(?:(?:попробуем|попробуй)\s+)?(?:сделаем|сделать|подключим|перегенерировать|сгенерировать|перерисовать|пересоздать)(?!\p{L})`,
   String.raw`давай-ка\s+ты\s+.{0,50}?сделаешь(?!\p{L})`,
   String.raw`(?:может\s+ты\s+сделаешь|можешь\s+сделать|(?:ты|вы)\s+бы\s+сделал)(?!\p{L})`,
@@ -129,7 +129,7 @@ const RUSSIAN_EXECUTION_REQUEST_PATTERN = new RegExp([
   String.raw`задеплоишь(?!\p{L})`,
 ].join("|"), "iu");
 const MUTATION_PATTERN = new RegExp(
-  String.raw`\b(?:add|refactor|build|change|create|deploy|fix|harden|implement|migrate|patch|publish|release|remediate|tag|update|write)\b|(?:добавь|добавьте|отрефакторь|отрефакторьте|выпусти|выпустите|исправь|исправьте|измени|измените|мигрируй|мигрируйте|обнови|обновите|опубликуй|опубликуйте|реализуй|реализуйте|релизь|создай|создайте|тегируй|тегируйте|выкати|выкатите|запиши|запишите|напиши|напишите|сверстай|сверстайте|внедри|внедрите)(?!\p{L})|${RUSSIAN_EXECUTION_REQUEST_PATTERN.source}`,
+  String.raw`\b(?:add|refactor|build|change|create|deploy|edit|fix|harden|improve|implement|migrate|patch|polish|publish|release|remediate|revise|rewrite|tag|tighten|update|write)\b|(?:добавь|добавьте|отрефакторь|отрефакторьте|выпусти|выпустите|исправь|исправьте|измени|измените|мигрируй|мигрируйте|обнови|обновите|опубликуй|опубликуйте|реализуй|реализуйте|релизь|создай|создайте|тегируй|тегируйте|выкати|выкатите|запиши|запишите|напиши|напишите|перепиши|перепишите|отредактируй|отредактируйте|доработай|доработайте|улучши|улучшите|поправь|поправьте|сверстай|сверстайте|внедри|внедрите)(?!\p{L})|${RUSSIAN_EXECUTION_REQUEST_PATTERN.source}`,
   "iu",
 );
 const READ_ONLY_PATTERN =
@@ -141,9 +141,9 @@ const FEEDBACK_DISCOVERY_PATTERN =
 const REPORTED_INSTRUCTION_PATTERN =
   /^\s*(?:(?:ну|так|окей|слушай|а|да)(?!\p{L})[\s,]*)*(?:проверь|оцени|разбери|проанализируй|прочитай|провалидируй)\s+(?:формулировк[\p{L}]*|фраз[\p{L}]*|пример[\p{L}]*|текст[\p{L}]*|инструкц[\p{L}]*|команд[\p{L}]*|цитат[\p{L}]*)/iu;
 const EXPLICIT_FOLLOWUP_ACTION_PATTERN =
-  /(?:[.!?;]\s*|(?:и|а\s+потом|затем)\s+)(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
+  /(?:[.!?;]\s*|(?:и|а\s+потом|затем)\s+)(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|перепиши|отредактируй|доработай|улучши|поправь|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
 const REPORTED_COLON_FOLLOWUP_ACTION_PATTERN =
-  /[.!?;]\s*(?:(?:и|а\s+потом|затем|потом)\s+)?(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
+  /[.!?;]\s*(?:(?:и|а\s+потом|затем|потом)\s+)?(?:пожалуйста\s+)?(?:сделай|делай|добавь|исправь|обнови|измени|создай|напиши|перепиши|отредактируй|доработай|улучши|поправь|сверстай|внедри|реализуй|выпусти|опубликуй|вставь|подключи|переделай|сгенерируй|перерисуй|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})/iu;
 const NEGATED_MUTATION_PATTERN =
   /\b(?:do not|don't|dont|never)\s+(?:edit|modify|change|patch|write)(?:\s+(?:files?|code))?\b|не\s+(?:редактир|изменя|патч|прав|трогай)|не\s+(?:делай|сделай|встав(?:ь|ляй)|подключ(?:и|ай)|передел(?:ай|ывай)|перегенер(?:и|ируй)|сгенерируй|генер(?:и|ируй)|перерис(?:уй|овывай)|пересозд(?:ай|авай)|собери|разработай|сохрани|выдели|растяни|подправь|нарисуй|задеплой)(?!\p{L})|не\s+(?:нужно|надо)\s+.{0,80}?(?:сделать|вставить|подключить|переделать|перегенерировать|сгенерировать|перерисовать|пересоздать|разработать|заменить|заменять|сохранить|подправить|растянуть|выделить|нарисовать|задеплоить)(?!\p{L})|без\s+(?:правок|изменений)/iu;
 const PARALLEL_VALUE_PATTERN =
@@ -190,7 +190,7 @@ function isImplementationRequest(task) {
   }
   // A route name or a supplied worker contract never grants write authority.
   if (NEGATED_MUTATION_PATTERN.test(actionText) ||
-      /\bread[ -]?only\b|только\s+чтение/iu.test(actionText)) return false;
+      /\bread[ -]?only\b|только\s+чтени[ея]/iu.test(actionText)) return false;
   // "What can/should be done?" asks for a judgment, not execution.
   if (/^\s*что\s+(?:можно|нужно|надо)(?!\p{L})/iu.test(leadingTask)) return false;
   if (/(?:^|[\s,])так\s+можно(?!\p{L}).{0,160}\?/iu.test(text)) return false;
@@ -348,9 +348,12 @@ function isLikelySmallTask(task) {
   // Match the whole request, not a keyword anywhere in a compound task.
   const boundedEdit = /^(?:fix|check|inspect|update|change|format)\s+(?:a\s+)?(?:typo|spelling|one line|single line|one comment|single comment|label)(?:\s+in\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
   const boundedRussianEdit = /^(?:исправь|проверь|обнови)\s+(?:опечатку|одну строку|один комментарий)(?:\s+в\s+(?:README(?:\.md)?|[\w.-]+\.(?:md|txt)))?[.!]?$/iu;
+  const boundedStatus = trimmed.length <= 160 &&
+    /^(?:(?:write|draft|give|report|send)\b|(?:напиши|составь|дай|подготовь)(?=\s|$))/iu.test(trimmed) &&
+    /\b(?:status|update)\b|статус|обновлени/iu.test(trimmed);
   const definition = /^(?:what is|что такое)\s+[\p{L}\p{N}_.-]{1,50}[?]?$/iu;
   const typoQuestion = /^how do I fix a typo[?]?$/iu;
-  return boundedEdit.test(trimmed) || boundedRussianEdit.test(trimmed) ||
+  return boundedEdit.test(trimmed) || boundedRussianEdit.test(trimmed) || boundedStatus ||
     definition.test(trimmed) || typoQuestion.test(trimmed);
 }
 
@@ -415,7 +418,7 @@ function getFanoutDecision(options) {
 
 function getDelegationDecision({
   task, workflowDepth, implementationRequested, implementationCandidate,
-  unresolvedArchitecture, blockEdits, risk, fanout, workerContracts, workerContract,
+  writingAuthoringRequested = false, unresolvedArchitecture, blockEdits, risk, fanout, workerContracts, workerContract,
 }) {
   const optOutTask = String(task || "").replace(/\b(?:child|multiple)\s+agents\b/giu, "subagents")
     .replace(/(?:дочерн[\p{L}]*|нескольк[\p{L}]*)\s+агент[\p{L}]*/giu, "субагентов");
@@ -466,7 +469,9 @@ function getDelegationDecision({
     const readyRoles = boundedRoles.filter((role) => workerContracts.some((worker) =>
       worker.role === role && worker.dispatch.ready));
     if (readyRoles.length) {
-      return { required: true, state: "ready", reason: "bounded-worker-contract-and-host-capability-verified", nextAction: "Dispatch a candidate using its returned call contract; keep integration and acceptance with the parent.", candidateRoles: readyRoles };
+      return { required: true, state: "ready", reason: "bounded-worker-contract-and-host-capability-verified", nextAction: writingAuthoringRequested
+        ? "Dispatch the Luna High implementer to write the scoped draft artifact; the parent integrates it, obtains the distinct writing_editor review, and routes required revisions back through the artifact."
+        : "Dispatch a candidate using its returned call contract; keep integration and acceptance with the parent.", candidateRoles: readyRoles };
     }
   }
 
@@ -480,7 +485,9 @@ function getDelegationDecision({
     required: true,
     state: "prepare-contract",
     reason: "worker-scope-acceptance-or-host-capability-missing",
-    nextAction: "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
+    nextAction: writingAuthoringRequested
+      ? "Derive the exact request-scoped draft artifact, source/fact inputs and acceptance; reroute for the Luna High implementer to author it, then send that exact artifact to the distinct writing_editor and route revisions back through the artifact."
+      : "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
     candidateRoles,
   };
 }

@@ -9,6 +9,17 @@ const managedTemp = require("./managed-temp.js");
 
 const CACHE_MARKER = ".managed-cache-owner.json";
 const OPERATION_CLAIM = ".operation.claim";
+const MUTEX_DB = ".operation.sqlite";
+const MUTEX_INIT = ".operation.sqlite.init";
+const CLAIM_LIMIT = 64 * 1024;
+const COORDINATOR_PROTOCOL = "sqlite-v2";
+const RECOVERY_INTENT = "intent.json";
+const RECOVERY_RECEIPT = "receipt.json";
+const RECOVERY_RECEIPT_PENDING = ".receipt.pending";
+const MAX_RECOVERY_ARCHIVES = 32;
+const MAX_RECOVERY_BYTES = 2 * 1024 * 1024;
+const MAX_RECOVERY_ENTRIES = 2048;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const HASH_PREFIX_LENGTH = 32;
 const DEFAULT_MAX_BYTES = 10 * 1024 * 1024 * 1024;
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -22,7 +33,7 @@ function projectRoot(root) {
   return fs.realpathSync.native(canonical);
 }
 function projectHash(root) { return crypto.createHash("sha256").update(root, "utf8").digest("hex"); }
-function cacheBase() { return path.join(os.homedir(), ".cache", "apt-c"); }
+function cacheBase() { return path.resolve(process.env.APT_MANAGED_CACHE_BASE || path.join(os.homedir(), ".cache", "apt-c")); }
 function ensureDirectory(target) {
   const absolute = path.resolve(target);
   managedTemp.assertNoLinks(absolute, { allowMissing: true });
@@ -80,32 +91,314 @@ function writeJsonAtomic(file, value) {
   managedTemp.assertNoLinks(file, { allowMissing: true });
   fs.renameSync(temp, file);
 }
-function acquireGate(base) {
-  ensureDirectory(base);
-  const file = path.join(base, OPERATION_CLAIM);
-  const claim = { version: 1, pid: process.pid, token: crypto.randomUUID(), createdAt: new Date().toISOString() };
+function sqliteModule() {
+  try { return require("node:sqlite"); }
+  catch (error) { throw new Error(`managed cache coordinator requires node:sqlite: ${error.message}`); }
+}
+function databaseIdentity(db) {
+  const row = db.prepare("SELECT value FROM coordinator_meta WHERE key = 'identity'").get();
+  if (!row || typeof row.value !== "string" || !UUID.test(row.value)) throw new Error("managed cache coordinator database identity is missing or invalid");
+  return row.value;
+}
+function sqliteBusy(error) { return /SQLITE_(?:BUSY|LOCKED)|database is (?:locked|busy)/iu.test(`${error?.code || ""} ${error?.message || ""}`); }
+function readInitRecord(file) {
+  const bytes = markerBytes(file);
+  const value = parseClaim(bytes);
+  if (!hasOnlyKeys(value, new Set(["version", "pid", "token", "createdAt"])) || value.version !== 1 || !Number.isSafeInteger(value.pid) || value.pid < 1 || !UUID.test(value.token || "") || typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt))) throw new Error("coordinator initialization marker is invalid");
+  return { bytes, value };
+}
+function readIdentityUnderMutex(db) {
+  try { return { identity: databaseIdentity(db) }; }
+  catch (error) { if (sqliteBusy(error)) return { busy: true, reason: "operation-in-progress" }; throw error; }
+}
+function processState(pid) {
+  try { process.kill(pid, 0); return "alive"; }
+  catch (error) { return error.code === "ESRCH" ? "dead" : error.code === "EPERM" ? "alive" : "unknown"; }
+}
+function closeBusyDatabase(db) {
+  try { db.exec("ROLLBACK"); } catch { /* transaction may not have started */ }
+  try { db.close(); } catch { /* original contention result wins */ }
+}
+function openMutex(base) {
+  const file = path.join(base, MUTEX_DB);
+  const initFile = path.join(base, MUTEX_INIT);
+  managedTemp.assertNoLinks(base);
+  managedTemp.assertNoLinks(file, { allowMissing: true });
+  managedTemp.assertNoLinks(initFile, { allowMissing: true });
+  const { DatabaseSync } = sqliteModule();
+  let initialInit = null;
+  try { initialInit = readInitRecord(initFile); }
+  catch (error) { if (error.code !== "ENOENT") throw new Error(`managed cache coordinator initialization blocked: ${error.message}`); }
+  if (initialInit && processState(initialInit.value.pid) === "alive") return { busy: true, reason: "operation-in-progress" };
+  let ownsInitialization = false, ownInitBytes = null;
+  if (!fs.existsSync(file)) {
+    if (initialInit) throw new Error("managed cache coordinator initialization was interrupted before database creation; manual inspection required");
+    const init = { version: 1, pid: process.pid, token: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    let fd;
+    try { fd = fs.openSync(initFile, "wx", 0o600); }
+    catch (error) { if (error.code === "EEXIST") return { busy: true, reason: "operation-in-progress" }; throw error; }
+    ownInitBytes = Buffer.from(`${JSON.stringify(init)}\n`);
+    try { fs.writeFileSync(fd, ownInitBytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+    try {
+      const dbFd = fs.openSync(file, "wx", 0o600); fs.closeSync(dbFd);
+      ownsInitialization = true;
+      const initDb = new DatabaseSync(file, { timeout: 0 });
+      try {
+        initDb.exec("PRAGMA synchronous=FULL; BEGIN IMMEDIATE; CREATE TABLE coordinator_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);");
+        const initializedIdentity = crypto.randomUUID();
+        initDb.prepare("INSERT INTO coordinator_meta(key,value) VALUES('identity',?)").run(initializedIdentity);
+        initDb.exec("COMMIT");
+      } finally { initDb.close(); }
+      const currentInit = readInitRecord(initFile);
+      if (!currentInit.bytes.equals(ownInitBytes) || currentInit.value.pid !== process.pid) throw new Error("coordinator initialization ownership changed");
+    } catch (error) {
+      throw new Error(`managed cache coordinator initialization failed closed: ${error.message}`);
+    }
+  }
+  managedTemp.assertNoLinks(file);
+  let lockDb;
   try {
-    managedTemp.assertNoLinks(base);
-    const fd = fs.openSync(file, "wx", 0o600);
-    try { fs.writeFileSync(fd, `${JSON.stringify(claim)}\n`, "utf8"); fs.fsyncSync(fd); }
-    finally { fs.closeSync(fd); }
-    return { file, claim };
+    lockDb = new DatabaseSync(file, { timeout: 0 });
+    lockDb.exec("PRAGMA busy_timeout=0; BEGIN IMMEDIATE;");
   } catch (error) {
-    if (error.code !== "EEXIST") throw error;
-    const current = safeJson(file);
-    const reason = !current || current.version !== 1 || !Number.isInteger(current.pid) || typeof current.token !== "string"
-      ? "invalid-operation-claim"
-      : isAlive(current.pid) ? "operation-in-progress" : "stale-operation-claim-requires-manual-recovery";
-    return { busy: true, reason };
+    try { lockDb?.close(); } catch { /* preserve lock attempt error */ }
+    if (sqliteBusy(error)) return { busy: true, reason: "operation-in-progress" };
+    throw new Error(`managed cache coordinator database unavailable (fail closed): ${error.message}`);
+  }
+  let identityState;
+  try { identityState = readIdentityUnderMutex(lockDb); }
+  catch (error) { closeBusyDatabase(lockDb); throw new Error(`managed cache coordinator database unavailable (fail closed): ${error.message}`); }
+  if (identityState.busy) { closeBusyDatabase(lockDb); return identityState; }
+  const identity = identityState.identity;
+  let currentInit = null;
+  try { currentInit = readInitRecord(initFile); }
+  catch (error) { if (error.code !== "ENOENT") { closeBusyDatabase(lockDb); throw new Error(`managed cache coordinator initialization blocked: ${error.message}`); } }
+  try {
+    if (currentInit) {
+      if (ownsInitialization && currentInit.value.pid === process.pid && currentInit.bytes.equals(ownInitBytes)) {
+        fs.unlinkSync(initFile);
+      } else if (initialInit && currentInit.bytes.equals(initialInit.bytes) && processState(currentInit.value.pid) === "dead") {
+        let rechecked;
+        try { rechecked = readInitRecord(initFile); }
+        catch (error) { if (error.code === "ENOENT") return { db: lockDb, identity, file }; throw error; }
+        if (!rechecked.bytes.equals(initialInit.bytes) || processState(rechecked.value.pid) !== "dead") { closeBusyDatabase(lockDb); return { busy: true, reason: "operation-in-progress" }; }
+        fs.unlinkSync(initFile);
+      } else {
+        closeBusyDatabase(lockDb);
+        return { busy: true, reason: "operation-in-progress" };
+      }
+    }
+  } catch (error) { closeBusyDatabase(lockDb); throw error; }
+  return { db: lockDb, identity, file };
+}
+function closeMutex(mutex) {
+  if (!mutex) return;
+  try { mutex.db.exec("COMMIT"); } finally { mutex.db.close(); }
+}
+function markerBytes(file) {
+  managedTemp.assertNoLinks(file);
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > CLAIM_LIMIT) throw new Error("operation claim is not a bounded regular file");
+  return fs.readFileSync(file);
+}
+function parseClaim(bytes) {
+  try { return JSON.parse(bytes.toString("utf8")); } catch { return null; }
+}
+function hasOnlyKeys(value, allowed) { return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every(key => allowed.has(key)); }
+function validV1Shape(claim) {
+  return hasOnlyKeys(claim, new Set(["version", "pid", "token", "createdAt"])) && claim.version === 1 && Number.isSafeInteger(claim.pid) && claim.pid > 0 &&
+    UUID.test(claim.token || "") && typeof claim.createdAt === "string" && Number.isFinite(Date.parse(claim.createdAt));
+}
+function validV2Shape(claim) {
+  return hasOnlyKeys(claim, new Set(["version", "coordinatorProtocol", "databaseIdentity", "pid", "token", "createdAt"])) && claim.version === 1 &&
+    claim.coordinatorProtocol === COORDINATOR_PROTOCOL && UUID.test(claim.databaseIdentity || "") && Number.isSafeInteger(claim.pid) && claim.pid > 0 &&
+    UUID.test(claim.token || "") && typeof claim.createdAt === "string" && Number.isFinite(Date.parse(claim.createdAt));
+}
+function exactDead(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return false;
+  try { process.kill(pid, 0); return false; }
+  catch (error) { return error.code === "ESRCH"; }
+}
+function recoveryArchives(base) {
+  const archives = [];
+  let bytes = 0, entries = 0;
+  for (const name of fs.readdirSync(base)) {
+    if (!name.startsWith(".operation-recovered-") && !name.startsWith(".operation-recovery-")) continue;
+    const directory = path.join(base, name);
+    managedTemp.assertNoLinks(directory);
+    const rootStat = fs.lstatSync(directory);
+    if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error("recovery archive is not a real directory");
+    const files = [];
+    for (const child of fs.readdirSync(directory)) {
+      entries += 1;
+      if (entries > MAX_RECOVERY_ENTRIES) throw new Error("recovery archive inventory exceeded its entry bound");
+      if (![RECOVERY_INTENT, RECOVERY_RECEIPT, RECOVERY_RECEIPT_PENDING, OPERATION_CLAIM].includes(child)) throw new Error("recovery archive contains an unknown entry");
+      const target = path.join(directory, child);
+      managedTemp.assertNoLinks(target);
+      const stat = fs.lstatSync(target);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > CLAIM_LIMIT) throw new Error("recovery archive contains an unsupported or oversized file");
+      bytes += stat.size;
+      files.push({ name: child, path: target, bytes: stat.size });
+    }
+    archives.push({ name, directory, files });
+  }
+  if (archives.length > MAX_RECOVERY_ARCHIVES || bytes > MAX_RECOVERY_BYTES) throw new Error("recovery archive retention limit is full");
+  return { archives, bytes };
+}
+function assertRecoveryCapacity(base, requiredBytes) {
+  const inventory = recoveryArchives(base);
+  if (inventory.archives.length >= MAX_RECOVERY_ARCHIVES || inventory.bytes + requiredBytes + 4096 > MAX_RECOVERY_BYTES) throw new Error("recovery archive retention limit is full; preserve marker and retry after review");
+}
+function intentPath(directory) { return path.join(directory, RECOVERY_INTENT); }
+function validateIntent(intent, identity) {
+  return hasOnlyKeys(intent, new Set(["version", "action", "pid", "databaseIdentity", "sha256", "bytes", "createdAt"])) && intent.version === 1 &&
+    ["automatic-v2-quarantine", "explicit-legacy-v1-recovery"].includes(intent.action) && Number.isSafeInteger(intent.pid) && intent.pid > 0 &&
+    intent.databaseIdentity === identity && /^[0-9a-f]{64}$/iu.test(intent.sha256 || "") && Number.isSafeInteger(intent.bytes) && intent.bytes >= 0 && intent.bytes <= CLAIM_LIMIT &&
+    typeof intent.createdAt === "string" && Number.isFinite(Date.parse(intent.createdAt));
+}
+function receiptFor(intent) {
+  return { version: 1, action: intent.action, pid: intent.pid, databaseIdentity: intent.databaseIdentity, sha256: intent.sha256, bytes: intent.bytes, recoveredAt: new Date().toISOString() };
+}
+function persistReceipt(directory, intent) {
+  const receiptFile = path.join(directory, RECOVERY_RECEIPT), pendingFile = path.join(directory, RECOVERY_RECEIPT_PENDING);
+  const expected = receiptFor(intent);
+  if (fs.existsSync(receiptFile)) {
+    const found = safeJson(receiptFile);
+    if (!found || found.version !== 1 || found.action !== intent.action || found.pid !== intent.pid || found.databaseIdentity !== intent.databaseIdentity || found.sha256 !== intent.sha256 || found.bytes !== intent.bytes || typeof found.recoveredAt !== "string" || !Number.isFinite(Date.parse(found.recoveredAt)) || Object.keys(found).some(key => !Object.hasOwn(expected, key))) throw new Error("recovery receipt is unknown or inconsistent");
+    return found;
+  }
+  if (fs.existsSync(pendingFile)) {
+    const pending = safeJson(pendingFile);
+    if (!pending || pending.version !== 1 || pending.action !== intent.action || pending.pid !== intent.pid || pending.databaseIdentity !== intent.databaseIdentity || pending.sha256 !== intent.sha256 || pending.bytes !== intent.bytes || typeof pending.recoveredAt !== "string" || !Number.isFinite(Date.parse(pending.recoveredAt)) || Object.keys(pending).some(key => !Object.hasOwn(expected, key))) throw new Error("pending recovery receipt is unknown or inconsistent");
+    fs.renameSync(pendingFile, receiptFile);
+    return pending;
+  }
+  const fd = fs.openSync(pendingFile, "wx", 0o600);
+  try { fs.writeFileSync(fd, `${JSON.stringify(expected)}\n`); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  fs.renameSync(pendingFile, receiptFile);
+  return expected;
+}
+function claimMatchesIntent(bytes, intent, identity) {
+  if (bytes.length !== intent.bytes || crypto.createHash("sha256").update(bytes).digest("hex") !== intent.sha256) return false;
+  const claim = parseClaim(bytes);
+  if (!claim || claim.pid !== intent.pid) return false;
+  if (intent.action === "automatic-v2-quarantine") return validV2Shape(claim) && claim.databaseIdentity === identity;
+  return validV1Shape(claim) && claim.coordinatorProtocol === undefined;
+}
+function finishArchive(archive, intent, base, identity) {
+  const allowed = new Set([RECOVERY_INTENT, RECOVERY_RECEIPT, RECOVERY_RECEIPT_PENDING, OPERATION_CLAIM]);
+  const files = fs.readdirSync(archive);
+  if (files.some(name => !allowed.has(name))) throw new Error(`recovery archive contains unknown files: ${archive}`);
+  const archivedClaim = path.join(archive, OPERATION_CLAIM);
+  let bytes;
+  if (fs.existsSync(archivedClaim)) bytes = markerBytes(archivedClaim);
+  else {
+    const source = path.join(base, OPERATION_CLAIM);
+    bytes = markerBytes(source);
+    if (!claimMatchesIntent(bytes, intent, identity) || !exactDead(intent.pid)) throw new Error(`recovery intent cannot be matched to the live coordinator marker: ${archive}`);
+    if (!markerBytes(source).equals(bytes) || !exactDead(intent.pid)) throw new Error(`recovery marker changed before rename: ${archive}`);
+    fs.renameSync(source, archivedClaim);
+    bytes = markerBytes(archivedClaim);
+  }
+  if (!claimMatchesIntent(bytes, intent, identity)) throw new Error(`archived marker does not match durable recovery intent: ${archive}`);
+  if (fs.existsSync(path.join(archive, RECOVERY_RECEIPT)) || fs.existsSync(path.join(archive, RECOVERY_RECEIPT_PENDING))) {
+    const receipt = persistReceipt(archive, intent);
+    return receipt;
+  }
+  if (!exactDead(intent.pid)) throw new Error(`recovery process death is not confirmed: ${archive}`);
+  return persistReceipt(archive, intent);
+}
+function finishPendingArchives(base, identity) {
+  const { archives } = recoveryArchives(base);
+  for (const archive of archives) {
+    const intentFile = intentPath(archive.directory);
+    if (!fs.existsSync(intentFile)) throw new Error(`recovery archive is unfinished without a durable intent: ${archive.directory}`);
+    const intent = safeJson(intentFile);
+    if (!validateIntent(intent, identity)) throw new Error(`recovery archive intent is invalid or belongs to another database: ${archive.directory}`);
+    finishArchive(archive.directory, intent, base, identity);
   }
 }
+function createRecoveryArchive(base, file, bytes, action, pid, identity) {
+  const sha256 = crypto.createHash("sha256").update(bytes).digest("hex");
+  const intent = { version: 1, action, pid, databaseIdentity: identity, sha256, bytes: bytes.length, createdAt: new Date().toISOString() };
+  if (!validateIntent(intent, identity)) throw new Error("recovery intent generation failed validation");
+  assertRecoveryCapacity(base, bytes.length + Buffer.byteLength(JSON.stringify(intent)) + 1024);
+  const archive = path.join(base, `.operation-${action === "automatic-v2-quarantine" ? "recovered" : "recovery"}-${Date.now()}-${crypto.randomUUID()}`);
+  fs.mkdirSync(archive, { mode: 0o700 });
+  const fd = fs.openSync(intentPath(archive), "wx", 0o600);
+  try { fs.writeFileSync(fd, `${JSON.stringify(intent)}\n`); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  finishArchive(archive, intent, base, identity);
+  return { archive, intent };
+}
+function inspectOrRecoverMarker(file, identity) {
+  let bytes;
+  try { bytes = markerBytes(file); }
+  catch (error) { if (error.code === "ENOENT") return null; return { busy: true, reason: "invalid-operation-claim" }; }
+  const claim = parseClaim(bytes);
+  if (!claim || claim.version !== 1 || !Number.isSafeInteger(claim.pid) || claim.pid < 1 || !UUID.test(claim.token || "")) return { busy: true, reason: "invalid-operation-claim" };
+  if (claim.coordinatorProtocol !== COORDINATOR_PROTOCOL) return { busy: true, reason: validV1Shape(claim) && exactDead(claim.pid) ? "stale-operation-claim-requires-manual-recovery" : isAlive(claim.pid) ? "operation-in-progress" : "invalid-operation-claim" };
+  if (!validV2Shape(claim)) return { busy: true, reason: "invalid-operation-claim" };
+  if (claim.databaseIdentity !== identity) return { busy: true, reason: "operation-claim-database-mismatch" };
+  if (!exactDead(claim.pid)) return { busy: true, reason: "operation-in-progress" };
+  createRecoveryArchive(path.dirname(file), file, bytes, "automatic-v2-quarantine", claim.pid, identity);
+  return null;
+}
+function acquireGate(base) {
+  ensureDirectory(base);
+  const mutex = openMutex(base);
+  if (mutex.busy) return mutex;
+  const file = path.join(base, OPERATION_CLAIM);
+  try {
+    finishPendingArchives(base, mutex.identity);
+    for (let attempts = 0; attempts < 3; attempts += 1) {
+      const existing = inspectOrRecoverMarker(file, mutex.identity);
+      if (existing) { closeMutex(mutex); return existing; }
+      const claim = { version: 1, coordinatorProtocol: COORDINATOR_PROTOCOL, databaseIdentity: mutex.identity, pid: process.pid, token: crypto.randomUUID(), createdAt: new Date().toISOString() };
+      managedTemp.assertNoLinks(base);
+      try {
+        const fd = fs.openSync(file, "wx", 0o600);
+        try { fs.writeFileSync(fd, `${JSON.stringify(claim)}\n`, "utf8"); fs.fsyncSync(fd); }
+        finally { fs.closeSync(fd); }
+        return { file, claim, mutex };
+      } catch (error) { if (error.code !== "EEXIST") throw error; }
+    }
+    closeMutex(mutex);
+    return { busy: true, reason: "operation-in-progress" };
+  } catch (error) {
+    try { closeMutex(mutex); } catch { /* original acquisition error wins */ }
+    throw error;
+  }
+}
+function recoverLegacyClaim(expectedSha256, expectedPid) {
+  if (typeof expectedSha256 !== "string" || !/^[0-9a-f]{64}$/iu.test(expectedSha256) || !Number.isSafeInteger(expectedPid) || expectedPid < 1) throw new TypeError("recovery requires --expected-sha256 and a positive --pid");
+  const base = cacheBase(); ensureDirectory(base);
+  const mutex = openMutex(base);
+  if (mutex.busy) throw new Error("Managed cache operation is unavailable: operation-in-progress");
+  const file = path.join(base, OPERATION_CLAIM);
+  try {
+    finishPendingArchives(base, mutex.identity);
+    const bytes = markerBytes(file);
+    const claim = parseClaim(bytes);
+    const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+    if (digest.toLowerCase() !== expectedSha256.toLowerCase() || !validV1Shape(claim) || claim.coordinatorProtocol !== undefined || claim.pid !== expectedPid) throw new Error("legacy operation claim does not match exact expected hash/PID and supported v1 shape");
+    if (!exactDead(expectedPid)) throw new Error("expected PID is live or its death could not be confirmed with ESRCH");
+    managedTemp.assertNoLinks(file);
+    const current = markerBytes(file);
+    if (!current.equals(bytes) || crypto.createHash("sha256").update(current).digest("hex").toLowerCase() !== expectedSha256.toLowerCase() || !exactDead(expectedPid)) throw new Error("legacy operation claim changed or process death no longer confirmed");
+    const result = createRecoveryArchive(base, file, bytes, "explicit-legacy-v1-recovery", expectedPid, mutex.identity);
+    const receipt = safeJson(path.join(result.archive, RECOVERY_RECEIPT));
+    return { recovered: true, archive: result.archive, receipt };
+  } finally { closeMutex(mutex); }
+}
 function releaseGate(lock) {
-  const current = safeJson(lock.file);
-  if (!current || current.token !== lock.claim.token || current.pid !== lock.claim.pid) return false;
-  managedTemp.assertNoLinks(path.dirname(lock.file));
-  managedTemp.assertNoLinks(lock.file);
-  fs.unlinkSync(lock.file);
-  return true;
+  try {
+    const current = parseClaim(markerBytes(lock.file));
+    if (!current || current.token !== lock.claim.token || current.pid !== lock.claim.pid) return false;
+    managedTemp.assertNoLinks(path.dirname(lock.file));
+    managedTemp.assertNoLinks(lock.file);
+    fs.unlinkSync(lock.file);
+    return true;
+  } finally { closeMutex(lock.mutex); }
 }
 function isAlive(pid) {
   if (!Number.isInteger(pid) || pid < 1) return false;
@@ -500,4 +793,4 @@ function status() {
   });
 }
 
-module.exports = { CACHE_MARKER, DEFAULT_MAX_BYTES, DEFAULT_MAX_AGE_MS, DEFAULT_BUDGET_MS, cacheBase, cachePath, acquireCache, pruneCaches, status };
+module.exports = { CACHE_MARKER, OPERATION_CLAIM, DEFAULT_MAX_BYTES, DEFAULT_MAX_AGE_MS, DEFAULT_BUDGET_MS, cacheBase, cachePath, acquireCache, pruneCaches, recoverLegacyClaim, status, __testing: Object.freeze({ acquireGate, readIdentityUnderMutex }) };

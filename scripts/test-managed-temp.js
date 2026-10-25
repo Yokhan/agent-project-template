@@ -9,6 +9,7 @@ const crypto = require("crypto");
 const { spawn } = require("child_process");
 const managed = require("./lib/managed-temp.js");
 const reports = require("./lib/managed-run-report.js");
+const ownershipApi = require("./lib/managed-run-ownership.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-temp-test-"));
@@ -50,6 +51,25 @@ async function waitForPidsStopped(pids) {
 
 async function main() {
   const root = project("cli-success");
+  const inheritedManagedTemp = process.env.AGENT_MANAGED_TEMP;
+  const inheritedManagedBinding = process.env.AGENT_MANAGED_RUN_BINDING;
+  const ownerSession = "native-session-A";
+  const ownerRequest = "22222222-2222-4222-8222-222222222222";
+  const ownerTurn = "root-turn:Case-sensitive";
+  const sessionRoot = path.join(root, ".session-cache", "codex-turns", crypto.createHash("sha256").update(ownerSession).digest("hex").slice(0, 24));
+  const ledgerFile = path.join(sessionRoot, "requests", ownerRequest, "request.json");
+  fs.mkdirSync(path.dirname(ledgerFile), { recursive: true });
+  fs.writeFileSync(ledgerFile, JSON.stringify({ schemaVersion: 1, root: fs.realpathSync(root), sessionId: ownerSession, requestId: ownerRequest, rootTurnId: ownerTurn, startedAt: new Date().toISOString() }));
+  const exactRun = managed.createRun(root, { requestStatePath: ledgerFile, env: { CODEX_SESSION_ID: ownerSession } });
+  assert.deepStrictEqual(exactRun.ownership, { sessionId: ownerSession, requestId: ownerRequest, rootTurnId: ownerTurn, source: "request-state", confidence: "exact" });
+  assert.strictEqual(ownershipApi.classifyOwnership(exactRun.ownership, { sessionId: ownerSession, requestId: ownerRequest, rootTurnId: ownerTurn }), "current");
+  assert.strictEqual(ownershipApi.classifyOwnership(exactRun.ownership, { sessionId: ownerSession, requestId: "44444444-4444-4444-8444-444444444444" }), "other");
+  assert.strictEqual(ownershipApi.classifyOwnership(exactRun.ownership, { sessionId: "native-session-a", requestId: ownerRequest }), "other", "native session IDs must remain case-distinct");
+  assert.strictEqual(ownershipApi.classifyOwnership(exactRun.ownership, { sessionId: ownerSession, requestId: ownerRequest, rootTurnId: "root-turn:case-sensitive" }), "other", "native root turn IDs must remain case-distinct");
+  assert.strictEqual(ownershipApi.classifyOwnership({ ...exactRun.ownership, confidence: "observed", requestId: null, rootTurnId: null }, { sessionId: ownerSession, requestId: ownerRequest }), "unknown");
+  assert(exactRun.finish().removed);
+  assert.throws(() => reports.readReportPath(path.join(root, "runs", "22222222-2222-4222-8222-222222222222.json")), /outside the managed report namespace/u);
+  assert.throws(() => managed.createRun(root, { requestStatePath: ledgerFile, env: { CODEX_SESSION_ID: "55555555-5555-4555-8555-555555555555" } }), /another observed session/u);
   const prefixProbe = managed.createRun(root);
   assert(path.relative(os.homedir(), prefixProbe.temp).length <= 100,
     `managed TEMP path is too long relative to the home directory: ${path.relative(os.homedir(), prefixProbe.temp)}`);
@@ -87,10 +107,10 @@ async function main() {
   const parentRun = managed.createRun(dependentRoot);
   const dependentProject = path.join(parentRun.temp, "chromium-project");
   fs.mkdirSync(dependentProject);
-  const inheritedManagedTemp = process.env.AGENT_MANAGED_TEMP;
   let dependentRun, dependentCache, dependentCachePath;
   try {
     process.env.AGENT_MANAGED_TEMP = parentRun.root;
+    process.env.AGENT_MANAGED_RUN_BINDING = parentRun.binding;
     dependentRun = managed.createRun(dependentProject);
     const cacheModule = require("./lib/managed-cache.js");
     dependentCache = cacheModule.acquireCache(dependentProject, "node-compile", { runRoot: dependentRun.root });
@@ -98,11 +118,15 @@ async function main() {
   } finally {
     if (inheritedManagedTemp === undefined) delete process.env.AGENT_MANAGED_TEMP;
     else process.env.AGENT_MANAGED_TEMP = inheritedManagedTemp;
+    if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING;
+    else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding;
   }
   const dependentBinding = path.join(parentRun.root, "dependents", `${dependentRun.id}.json`);
   assert(fs.existsSync(dependentBinding), "nested project resource was not registered under its parent run");
-  reports.writeReport(dependentProject, { completedAt: new Date().toISOString(), exitCode: 0 });
+  const dependentReport = reports.writeReport(dependentProject, { runId: dependentRun.id, completedAt: new Date().toISOString(), exitCode: 0 });
+  assert.strictEqual(reports.readReportPath(dependentReport).runId, dependentRun.id);
   const dependentReportDirectory = reports.reportDirectory(dependentProject);
+  const dependentProjectCanonical = fs.realpathSync(dependentProject);
   markStale(parentRun);
   markStale(dependentRun);
   const blockedParentSweep = managed.sweep(dependentRoot);
@@ -112,15 +136,15 @@ async function main() {
   assert(!fs.existsSync(dependentRun.root), "dependent scratch itself should be swept before cache pruning");
   assert.deepStrictEqual(dependentCache.release(), { released: true });
   fs.writeFileSync(path.join(dependentReportDirectory, "unowned.txt"), "preserve");
-  const unknownReportSweep = managed.sweep(dependentRoot);
-  assert(unknownReportSweep.pending.some(item => item.path === parentRun.id && item.reason === "dependent-resource-child-owned-namespace-not-empty"), "unknown report content must keep its parent project root");
-  assert(fs.existsSync(ownerPath(parentRun)) && fs.existsSync(dependentProject));
-  fs.unlinkSync(path.join(dependentReportDirectory, "unowned.txt"));
   const settledParentSweep = managed.sweep(dependentRoot);
   assert(settledParentSweep.removed.includes(parentRun.id), "parent cleanup did not resume after the dependent cache became idle");
   assert(!fs.existsSync(dependentProject));
   assert(!fs.existsSync(dependentCachePath));
-  assert(!fs.existsSync(dependentReportDirectory), "fixture apt-r report namespace was not reclaimed");
+  assert(fs.existsSync(dependentReportDirectory) && fs.existsSync(dependentReport) && fs.existsSync(path.join(dependentReportDirectory, "unowned.txt")), "external immutable reports and neighboring data must survive settlement");
+  assert.strictEqual(reports.readReportPath(dependentReport).runId, dependentRun.id, "immutable report path must remain readable after project deletion");
+  assert.strictEqual(path.basename(dependentReportDirectory), crypto.createHash("sha256").update(dependentProjectCanonical).digest("hex").slice(0, 32));
+  managed.assertNoLinks(dependentReportDirectory);
+  fs.rmSync(dependentReportDirectory, { recursive: true, force: false });
 
   const foregroundDependentRoot = project("foreground-dependent-parent");
   const foregroundParent = managed.createRun(foregroundDependentRoot, { processContract: "foreground" });
@@ -149,10 +173,13 @@ async function main() {
   let foregroundChild;
   try {
     process.env.AGENT_MANAGED_TEMP = foregroundParent.root;
+    process.env.AGENT_MANAGED_RUN_BINDING = foregroundParent.binding;
     foregroundChild = managed.createRun(foregroundChildProject);
   } finally {
     if (beforeForegroundChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
     else process.env.AGENT_MANAGED_TEMP = beforeForegroundChild;
+    if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING;
+    else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding;
   }
   assert(fs.existsSync(path.join(foregroundParent.root, "dependents", `${foregroundChild.id}.json`)),
     "a live foreground parent should register inherited child work");
@@ -166,13 +193,22 @@ async function main() {
   const emptyReportProject = path.join(emptyReportParent.temp, "project");
   fs.mkdirSync(emptyReportProject);
   let emptyReportChild;
-  try { process.env.AGENT_MANAGED_TEMP = emptyReportParent.root; emptyReportChild = managed.createRun(emptyReportProject); }
-  finally { if (inheritedManagedTemp === undefined) delete process.env.AGENT_MANAGED_TEMP; else process.env.AGENT_MANAGED_TEMP = inheritedManagedTemp; }
+  try { process.env.AGENT_MANAGED_TEMP = emptyReportParent.root; process.env.AGENT_MANAGED_RUN_BINDING = emptyReportParent.binding; emptyReportChild = managed.createRun(emptyReportProject); }
+  finally { if (inheritedManagedTemp === undefined) delete process.env.AGENT_MANAGED_TEMP; else process.env.AGENT_MANAGED_TEMP = inheritedManagedTemp; if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING; else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding; }
   const emptyReportDirectory = reports.reportDirectory(emptyReportProject);
   fs.mkdirSync(emptyReportDirectory, { recursive: true });
   markStale(emptyReportParent); markStale(emptyReportChild);
-  assert(managed.sweep(emptyReportRoot).removed.includes(emptyReportParent.id), "empty interrupted report namespace should not block parent recovery");
-  assert(!fs.existsSync(emptyReportDirectory));
+  let emptyReportSweep, emptyReportAttempts = 0;
+  do {
+    emptyReportSweep = managed.sweep(emptyReportRoot);
+    const transientGate = emptyReportSweep.pending.some(item => item.path === emptyReportParent.id && item.reason === "dependent-resource-operation-in-progress");
+    if (!transientGate) break;
+    await new Promise(resolve => setTimeout(resolve, 25));
+  } while (++emptyReportAttempts < 80);
+  assert(emptyReportSweep.removed.includes(emptyReportParent.id), `empty interrupted report namespace should not block parent recovery: ${JSON.stringify(emptyReportSweep.pending)}`);
+  assert(fs.existsSync(emptyReportDirectory), "settlement should not remove external report namespaces");
+  managed.assertNoLinks(emptyReportDirectory);
+  fs.rmdirSync(emptyReportDirectory);
 
   const interruptedBindingRoot = project("interrupted-binding");
   const interruptedBindingParent = managed.createRun(interruptedBindingRoot);
@@ -182,12 +218,14 @@ async function main() {
   let bindingFd;
   try {
     process.env.AGENT_MANAGED_TEMP = interruptedBindingParent.root;
+    process.env.AGENT_MANAGED_RUN_BINDING = interruptedBindingParent.binding;
     fs.openSync = (file, ...args) => { const fd = originalOpen(file, ...args); if (path.basename(String(file)).startsWith(".dependent-") && String(file).endsWith(".tmp")) bindingFd = fd; return fd; };
     fs.fsyncSync = fd => { if (fd === bindingFd) throw new Error("injected dependent staging failure"); return originalFsync(fd); };
     assert.throws(() => managed.createRun(interruptedBindingProject), /injected dependent staging failure/);
   } finally {
     fs.openSync = originalOpen; fs.fsyncSync = originalFsync;
     if (inheritedManagedTemp === undefined) delete process.env.AGENT_MANAGED_TEMP; else process.env.AGENT_MANAGED_TEMP = inheritedManagedTemp;
+    if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING; else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding;
   }
   assert(!fs.existsSync(managed.managedBase(interruptedBindingProject)), "failed registration allocated an unregistered external namespace");
   assert(interruptedBindingParent.finish().removed, "incomplete staging must not strand the parent fixture");
@@ -299,11 +337,13 @@ async function main() {
   const beforeDeadForegroundChild = process.env.AGENT_MANAGED_TEMP;
   try {
     process.env.AGENT_MANAGED_TEMP = unfinishedForeground.root;
-    assert.throws(() => managed.createRun(deadForegroundChildProject), /Inherited managed parent run is not a validated live lease/u,
+    process.env.AGENT_MANAGED_RUN_BINDING = unfinishedForeground.binding;
+    assert.throws(() => managed.createRun(deadForegroundChildProject), /Inherited managed-run lease is not active and validated/u,
       "dead foreground owners must not authorize dependent runs");
   } finally {
     if (beforeDeadForegroundChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
     else process.env.AGENT_MANAGED_TEMP = beforeDeadForegroundChild;
+    if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING; else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding;
   }
   assert(!fs.existsSync(managed.managedBase(deadForegroundChildProject)), "rejected dead-parent registration must allocate no child namespace");
   const completedForeground = managed.createRun(foregroundRoot, { processContract: "foreground" });
@@ -388,11 +428,13 @@ async function main() {
   const beforeRetainedChild = process.env.AGENT_MANAGED_TEMP;
   try {
     process.env.AGENT_MANAGED_TEMP = retained.root;
-    assert.throws(() => managed.createRun(retainedChildProject), /Inherited managed parent run is not a validated live lease/u,
+    process.env.AGENT_MANAGED_RUN_BINDING = retained.binding;
+    assert.throws(() => managed.createRun(retainedChildProject), /Inherited managed-run lease is not active and validated/u,
       "a live owner with a different unresolved-retention reason must not authorize dependent runs");
   } finally {
     if (beforeRetainedChild === undefined) delete process.env.AGENT_MANAGED_TEMP;
     else process.env.AGENT_MANAGED_TEMP = beforeRetainedChild;
+    if (inheritedManagedBinding === undefined) delete process.env.AGENT_MANAGED_RUN_BINDING; else process.env.AGENT_MANAGED_RUN_BINDING = inheritedManagedBinding;
   }
   assert(!fs.existsSync(managed.managedBase(retainedChildProject)), "rejected retained-parent registration must allocate no child namespace");
   markStale(retained);

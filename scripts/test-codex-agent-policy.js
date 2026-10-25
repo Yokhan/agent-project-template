@@ -12,6 +12,7 @@ const {
   getFanoutDecision,
   validateWriteAssignments,
   getResourceRecommendation,
+  isLikelySmallTask,
   validateResourceRequest,
   isImplementationRequest,
 } = require("./codex-agent-policy.js");
@@ -221,12 +222,25 @@ function testRussianExecutionAndResearchIntents() {
   }
   for (const task of [
     "Проверь компонент и исправь ошибку.",
+    "Слушай, ну давай, вноси изменения, только чтобы реально улучшилось. Вот. И как бы поднимай версию релиза, если всё нормально будет работать.",
     "Проверь формулировку и добавь краткое предупреждение.",
     "Проверь формулировку «сделай страницу». Затем создай новую страницу кабинета.",
     "Проверь формулировку: сделай страницу кабинета. Затем создай новую страницу.",
+    "Отредактируй текст лендинга по книге и верни готовый текст.",
+    "Перепиши пост по приложенным фактам.",
+    "Проверь формулировку: «создай страницу». Затем отредактируй сам текст.",
   ]) {
     assert.strictEqual(isImplementationRequest(task), true, task);
   }
+  for (const task of [
+    "тексты плохо пишет, выясни причину",
+    "Почему релиз не работает? Выясни причину.",
+    "Отредактируй текст в режиме только чтения.",
+    "Проверь формулировку «Отредактируй текст лендинга».",
+  ]) {
+    assert.strictEqual(isImplementationRequest(task), false, task);
+  }
+  assert.strictEqual(isLikelySmallTask("Напиши краткий статус о проверке."), true);
 }
 
 function testWriteScopes() {

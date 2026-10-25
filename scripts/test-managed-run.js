@@ -13,6 +13,7 @@ const { spawn } = require("child_process");
 const managed = require("./lib/managed-temp.js");
 const caches = require("./lib/managed-cache.js");
 const reports = require("./lib/managed-run-report.js");
+const managedCli = require("./managed-temp.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-run-accept-"));
@@ -67,15 +68,29 @@ function removeOwnedNamespaces(root) {
     fs.rmSync(scratch, { recursive: true, force: false });
   }
 }
+function removeOwnedReports(root) {
+  const directory = reports.reportDirectory(root);
+  if (!fs.existsSync(directory)) return;
+  const expected = path.join(os.homedir(), ".cache", "apt-r", crypto.createHash("sha256").update(fs.realpathSync(root), "utf8").digest("hex").slice(0, 32));
+  assert.strictEqual(path.resolve(directory), path.resolve(expected), "report cleanup must stay within the exact fixture hash");
+  managed.assertNoLinks(directory);
+  fs.rmSync(directory, { recursive: true, force: false });
+}
 function removeOwnedReport(root, expectedRunId) {
   const directory = reports.reportDirectory(root);
   const file = path.join(directory, "last.json");
+  const immutable = reports.reportFile(root, expectedRunId);
+  const runs = path.dirname(immutable);
   managed.assertNoLinks(directory);
   managed.assertNoLinks(file);
-  const entries = fs.readdirSync(directory);
-  assert.deepStrictEqual(entries, ["last.json"], "timeout fixture report namespace has unexpected contents");
+  managed.assertNoLinks(runs);
+  assert.deepStrictEqual(fs.readdirSync(directory).sort(), ["last.json", "runs"], "timeout fixture report namespace has unexpected contents");
+  assert.deepStrictEqual(fs.readdirSync(runs), [`${expectedRunId}.json`], "timeout fixture immutable report directory has unexpected contents");
   const report = reports.readReport(root);
   assert.strictEqual(report.runId, expectedRunId, "timeout report belongs to another managed run");
+  assert.strictEqual(reports.readReportPath(immutable).runId, expectedRunId);
+  fs.unlinkSync(immutable);
+  fs.rmdirSync(runs);
   fs.unlinkSync(file);
   fs.rmdirSync(directory);
 }
@@ -112,6 +127,8 @@ async function focused() {
   assert.deepStrictEqual(managed.status(root), [], "successful ephemeral run retained scratch");
   const successReport = await cliRun(root, ["report"]);
   const parsedSuccessReport = JSON.parse(successReport.stdout);
+  const successMeta = reportFrom(success);
+  assert(successMeta?.report && reports.readReportPath(successMeta.report).runId === parsedSuccessReport.runId, "immutable report path was not emitted or readable");
   assert.strictEqual(parsedSuccessReport.exitCode, 0);
   assert.strictEqual(parsedSuccessReport.scratchRemoved, true);
   assert(parsedSuccessReport.cleanup.accounting.observedBytesRemoved > 0, "cleanup report did not measure removed bytes");
@@ -122,6 +139,120 @@ async function focused() {
   assert.strictEqual(failure.code, 23, `child exit code was not preserved: ${failure.stderr}`);
   assert.deepStrictEqual(managed.status(root), [], "failed command retained scratch");
   record("child-failure-exit-code-preserved", failure);
+
+  const incompleteCacheReport = { removed: [], retained: [{ bytes: 2048, reason: "budget-exhausted" }], bytesObserved: 2048, bytesFreed: 0,
+    filesFreed: 0, bytesRetained: 2048, complete: false, overBudget: true, activeOverBudget: false, reason: "budget-exhausted", elapsedMs: 1 };
+  const originalPruneCaches = caches.pruneCaches;
+  const successLauncher = async (_command, _args, launchOptions) => {
+    await launchOptions.onLaunchAttempt();
+    return { code: 0, treeStopped: true, proof: "focused-test-launcher" };
+  };
+  const housekeepingRoot = project("ephemeral-cache-housekeeping-warning");
+  try {
+    caches.pruneCaches = () => ({ ...incompleteCacheReport });
+    const housekeepingExit = await managedCli.run(housekeepingRoot, process.execPath, [], { launcher: successLauncher });
+    const housekeepingReport = reports.readReport(housekeepingRoot);
+    assert.strictEqual(housekeepingExit, 0, "unrelated cache housekeeping failure changed a successful ephemeral run to failure");
+    assert.strictEqual(housekeepingReport.exitCode, 0);
+    assert.strictEqual(housekeepingReport.scratchRemoved, true, "ephemeral owned scratch cleanup did not complete");
+    assert.strictEqual(housekeepingReport.cache.complete, false, "incomplete project cache report was hidden");
+    assert.strictEqual(housekeepingReport.diagnostics.cacheHousekeeping.blocking, false, "ephemeral cache warning was marked blocking");
+    assert.strictEqual(housekeepingReport.diagnostics.cacheHousekeeping.reason, "budget-exhausted");
+    assert.strictEqual(housekeepingReport.diagnostics.cacheHousekeeping.remainingBytes, 2048);
+    assert.strictEqual(housekeepingReport.diagnostics.cacheHousekeeping.remainingBytesComplete, false);
+    record("ephemeral-owned-cleanup-with-nonblocking-cache-housekeeping", { code: housekeepingExit }, { scratchRemoved: true, cacheComplete: false, warning: housekeepingReport.diagnostics.cacheHousekeeping });
+  } finally { caches.pruneCaches = originalPruneCaches; }
+
+  const ownCleanupRoot = project("own-cleanup-failure-with-cache-warning");
+  const originalCreateRun = managed.createRun;
+  try {
+    caches.pruneCaches = () => ({ ...incompleteCacheReport });
+    managed.createRun = (...args) => {
+      const workspace = originalCreateRun(...args);
+      const finish = workspace.finish.bind(workspace);
+      workspace.finish = options => {
+        const result = finish(options);
+        return { ...result, removed: false, report: { ...(result.report || {}), removed: false, reason: "injected-own-cleanup-failure" } };
+      };
+      return workspace;
+    };
+    const cleanupExit = await managedCli.run(ownCleanupRoot, process.execPath, [], { launcher: successLauncher });
+    const cleanupReport = reports.readReport(ownCleanupRoot);
+    assert.strictEqual(cleanupExit, 1, "unrelated cache warning masked an owned scratch cleanup failure");
+    assert.strictEqual(cleanupReport.scratchRemoved, false);
+    assert.strictEqual(cleanupReport.diagnostics.cacheHousekeeping.blocking, true);
+    assert.strictEqual(cleanupReport.cache.complete, false);
+    record("owned-cleanup-failure-remains-blocking-with-cache-warning", { code: cleanupExit }, { scratchRemoved: false, cacheWarningBlocking: true });
+  } finally { caches.pruneCaches = originalPruneCaches; managed.createRun = originalCreateRun; }
+
+  const sharedCacheRoot = project("shared-cache-prune-remains-strict");
+  try {
+    caches.pruneCaches = () => ({ ...incompleteCacheReport });
+    const sharedExit = await managedCli.run(sharedCacheRoot, process.execPath, [], { cache: "shared", launcher: successLauncher });
+    const sharedReport = reports.readReport(sharedCacheRoot);
+    assert.strictEqual(sharedExit, 1, "shared-cache run ignored an incomplete required cache prune");
+    assert.strictEqual(sharedReport.scratchRemoved, true);
+    assert.strictEqual(sharedReport.cache.complete, false);
+    assert.strictEqual(sharedReport.diagnostics.cacheHousekeeping.blocking, true);
+    record("shared-cache-prune-remains-blocking", { code: sharedExit }, { scratchRemoved: true, cacheWarningBlocking: true });
+  } finally { caches.pruneCaches = originalPruneCaches; }
+
+  const privateArg = "ARG_PRIVATE_SENTINEL_72d01";
+  const privateEnv = "ENV_PRIVATE_SENTINEL_43bb9";
+  process.env.MANAGED_TEST_PRIVATE_SENTINEL = privateEnv;
+  const originalStderrWrite = process.stderr.write;
+  let emitted = "";
+  process.stderr.write = function(chunk, ...rest) { emitted += String(chunk); return true; };
+  try {
+    await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async () => { throw new Error(`prelaunch ${privateArg}`); } });
+    const prelaunchReport = reports.readReport(root);
+    assert.strictEqual(prelaunchReport.diagnostics.phase, "prelaunch-failure");
+    assert.strictEqual(prelaunchReport.scratchRemoved, true, "a proven prelaunch failure should clean its run");
+    assert(!JSON.stringify(prelaunchReport).includes(privateArg));
+    emitted = "";
+    await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async (_command, _args, launchOptions) => {
+      await launchOptions.onLaunchAttempt();
+      throw new Error(`supervisor ${privateArg} ${privateEnv}`);
+    } });
+    const attemptedReport = reports.readReport(root);
+    assert.strictEqual(attemptedReport.diagnostics.phase, "termination-unverified");
+    assert.strictEqual(attemptedReport.scratchRemoved, false, "a failed supervisor handshake after launch attempt must retain its run");
+    assert.strictEqual(attemptedReport.diagnostics.commandBasename, path.basename(process.execPath));
+    assert.strictEqual(attemptedReport.diagnostics.argumentCount, 2);
+    assert.match(attemptedReport.diagnostics.commandHash, /^[a-f0-9]{64}$/u);
+    const attemptedOwner = managed.status(root).find(item => item.id === attemptedReport.runId);
+    assert.strictEqual(attemptedOwner.retainedReason, "process-family-termination-unverified");
+    assert(!JSON.stringify(attemptedReport).includes(privateArg) && !JSON.stringify(attemptedReport).includes(privateEnv));
+    assert(!emitted.includes(privateArg) && !emitted.includes(privateEnv), "terminal diagnostics exposed raw arguments or environment values");
+    managed.sweep(root);
+    const retained = managed.status(root).find(item => item.id === attemptedReport.runId);
+    if (retained) {
+      const ownerFile = path.join(managed.managedBase(root), attemptedReport.runId, managed.OWNER_FILE);
+      const owner = JSON.parse(fs.readFileSync(ownerFile, "utf8"));
+      owner.pid = 2147483647; owner.retainedReason = null; owner.launching = false;
+      fs.writeFileSync(ownerFile, JSON.stringify(owner));
+      assert(managed.sweep(root).removed.includes(attemptedReport.runId));
+    }
+    const returnedSupervisorSecret = `RETURNED_SUPERVISOR_${privateArg}`;
+    emitted = "";
+    await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async (_command, _args, launchOptions) => {
+      await launchOptions.onLaunchAttempt();
+      return { treeStopped: false, code: 0, proof: "supervisor-error", error: returnedSupervisorSecret };
+    } });
+    const returnedFailureReport = reports.readReport(root);
+    assert.strictEqual(returnedFailureReport.scratchRemoved, false, "an unproven returned result must retain the run");
+    assert.strictEqual(returnedFailureReport.diagnostics.phase, "termination-unverified");
+    assert(returnedFailureReport.diagnostics.supervisorError?.sha256, "returned supervisor error fingerprint was not preserved");
+    assert(!JSON.stringify(returnedFailureReport).includes(returnedSupervisorSecret) && !emitted.includes(returnedSupervisorSecret), "returned supervisor diagnostics exposed raw error text");
+    const returnedOwnerFile = path.join(managed.managedBase(root), returnedFailureReport.runId, managed.OWNER_FILE);
+    const returnedOwner = JSON.parse(fs.readFileSync(returnedOwnerFile, "utf8"));
+    returnedOwner.pid = 2147483647; returnedOwner.retainedReason = null; returnedOwner.launching = false;
+    fs.writeFileSync(returnedOwnerFile, JSON.stringify(returnedOwner));
+    assert(managed.sweep(root).removed.includes(returnedFailureReport.runId));
+  } finally {
+    process.stderr.write = originalStderrWrite;
+    delete process.env.MANAGED_TEST_PRIVATE_SENTINEL;
+  }
 
   const timeoutRoot = project("timeout-only");
   const timeoutPidFile = path.join(timeoutRoot, "timeout-child-pid.txt");
@@ -179,7 +310,7 @@ async function focused() {
 
   const rawBuild = await cliRun(root, commandFor([], "vite", ["build"]));
   assert.notStrictEqual(rawBuild.code, 0, "unprofiled Vite build was allowed");
-  assert.match(rawBuild.stderr, /matching managed build profile/u);
+  assert.match(rawBuild.stderr, /PROFILE_REQUIRED/u);
   assert.deepStrictEqual(managed.status(root), [], "rejected raw build left scratch");
   record("known-build-requires-profile", rawBuild);
 
@@ -369,6 +500,7 @@ async function cleanup() {
       const parsed = JSON.parse(status.stdout);
       if (parsed.runs.length || parsed.caches.length) throw new Error(`fixture still owns resources: ${JSON.stringify({ runs: parsed.runs.length, caches: parsed.caches.length })}`);
       removeOwnedNamespaces(root);
+      removeOwnedReports(root);
     } catch (error) {
       evidence.cleanupError = `${error.message}`;
       throw error;

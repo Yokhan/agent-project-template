@@ -42,6 +42,32 @@ function main() {
     primaryMode: "communication",
     overlays: [],
   });
+  expectIntent("Напиши пост о новых возможностях личного кабинета по приложенным фактам.", {
+    isWriting: true,
+    action: "create",
+    primaryMode: "marketing",
+    outputLanguage: "ru",
+  });
+  expectIntent("Отредактируй текст лендинга по книге и верни готовый текст.", {
+    isWriting: true,
+    action: "edit",
+    primaryMode: "marketing",
+    outputLanguage: "ru",
+  });
+  expectIntent("тексты плохо пишет, выясни причину", {
+    isWriting: false,
+    action: null,
+    primaryMode: null,
+    outputLanguage: null,
+  });
+  for (const task of ["Поставь пакет", "Исправь постоянное зависание", "Проверь PostgreSQL"] ) {
+    expectIntent(task, { isWriting: false, action: null, primaryMode: null });
+  }
+  expectIntent("Напиши TypeScript-скрипт для проверки файла", {
+    isWriting: false,
+    action: null,
+    primaryMode: null,
+  });
   expectIntent("Review this marketing email", {
     isWriting: true,
     action: "review",

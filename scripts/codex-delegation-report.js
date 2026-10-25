@@ -95,8 +95,8 @@ function summarize(records, options = {}) {
   const allLunaShare = analyzed ? counts.lunaCalledRequests / analyzed : null;
   const allUsefulShare = analyzed ? counts.completedIntegratedUsefulLunaRequests / analyzed : null;
   return {
-    status: errors.length ? "incomplete" : (!eligible ? "no-data" : (eligibleLunaRate >= 0.5 ? "pass" : "under-target")),
-    target: { metric: "observed Luna calls per eligible task", minimumRate: 0.5 },
+    status: errors.length ? "incomplete" : (!eligible ? "no-data" : (eligibleUsefulRate >= 0.5 ? "pass" : "under-target")),
+    target: { metric: "completed integrated useful Luna work per eligible task", minimumRate: 0.5 },
     window: { newestRequestsLimit: limit, analyzed, totalInLedger: counts.requests.totalInLedger },
     counts,
     coverage: {
@@ -109,7 +109,7 @@ function summarize(records, options = {}) {
       }
     },
     errors: { count: errors.length, types: [...new Set(errors)] },
-    evidenceLimits: "Dispatch means a runtime-correlated Luna child was observed. Usefulness means completion plus current-request, exact-child assignment and result integration evidence; semantic quality is not inferred."
+    evidenceLimits: "Dispatch means a runtime-correlated Luna child was observed. Useful work means completion plus current-request, exact-child assignment and result integration evidence. Integration receipts establish provenance, not semantic quality or parent outcome acceptance."
   };
 }
 

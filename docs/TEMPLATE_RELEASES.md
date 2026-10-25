@@ -2,17 +2,18 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release snapshot: `v6.1.2` (prepared candidate). This source snapshot does not establish
+Release snapshot: `v6.2.0` (prepared candidate). This source snapshot does not establish
 publication, exact-tag Linux/Windows CI, or downloadable assets. Verify those
 before rollout. The previous stable release is **6.1.1**; see its
 [publication record](RELEASE_V6_1_1.md).
+See [v6.2.0 candidate changes and acceptance](RELEASE_V6_2_0.md).
 See [v6.1.2 patch notes and current evidence](RELEASE_V6_1_2.md),
 [v6.1.1 patch notes and publication record](RELEASE_V6_1_1.md),
 [v6.1.0 feature and lifecycle notes](RELEASE_V6_1_0.md) and
 [v6.0.0 upgrade requirements](RELEASE_V6_0_0.md).
 `docs/GPT6_MIGRATION_CANDIDATE.md` preserves dated development evidence.
 Historical version summaries below describe their original rules; active
-6.1.2 guidance supersedes their universal plan/skeleton/effort rituals.
+6.2.0 guidance supersedes their universal plan/skeleton/effort rituals.
 
 ## Ownership Model
 
@@ -37,8 +38,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v6.1.2
-git push origin v6.1.2
+git tag v6.2.0
+git push origin v6.2.0
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -127,15 +128,15 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v6.1.2` (prepared candidate). This source snapshot does not assert GitHub
-publication. Verify that the exact `v6.1.2` release exists and is non-draft and
+Release snapshot: `v6.2.0` (prepared candidate). This source snapshot does not assert GitHub
+publication. Verify that the exact `v6.2.0` release exists and is non-draft and
 non-prerelease before rollout. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v6.1.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.2.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -146,8 +147,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -312,7 +313,7 @@ evidence and must not be rolled out. The `v4.9.4` patch supersedes it.
 
 The `v4.9.1` tag failed cross-platform validation before packaging or publication; no GitHub Release was created. It remains immutable failure evidence and must not be rolled out.
 
-Downstream projects should sync `v6.1.2` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require explicit approval; v6 migration requirements are in `docs/RELEASE_V6_0_0.md`, while the current candidate status is in `docs/RELEASE_V6_1_2.md` and the v6.1 lifecycle limits remain in `docs/RELEASE_V6_1_0.md`.
+Downstream projects should sync `v6.2.0` with a reviewed external plan first and review local `project-*` skills and agents, Codex MCP conflicts, protected-contract inventories, change envelopes, route decisions, writing voice and terminology overlays, external-tool adapters, auth flows, design systems, task files, CI workflows, client-facing report conventions, progressive plan/status artifacts, adaptive fan-out behavior, update protocol assumptions, and any project-specific routing assumptions before applying. Major upgrades require explicit approval; v6 migration requirements are in `docs/RELEASE_V6_0_0.md`, while the current candidate status is in `docs/RELEASE_V6_2_0.md` and the v6.1 lifecycle limits remain in `docs/RELEASE_V6_1_0.md`.
 
 ## Release Gate
 
@@ -357,8 +358,8 @@ Inside a generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json
-node scripts/sync-template.js --from-git --ref v6.1.2 --plan-file ../agent-template-v6.1.2.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json
+node scripts/sync-template.js --from-git --ref v6.2.0 --plan-file ../agent-template-v6.2.0.plan.json --apply
 ```
 
 Preview first. If both the project and template changed a template-owned file,

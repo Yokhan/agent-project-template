@@ -247,3 +247,20 @@ guaranteed. A read receipt proves tool access to bytes, not model comprehension.
 Application notes and independent review provide stronger behavioral evidence.
 Book methods do not establish current technical facts, legal rules, markets,
 prices or platform algorithms; verify those with current primary sources.
+
+For product or service prose, name the reader's concrete situation, promised
+after-state and supplied product facts that support each claim. Keep those facts
+intact when shortening or polishing. A form submission is not a confirmed
+appointment unless the user receives the promised confirmation; describe the
+step the visitor can actually complete. Identify the exact target surface and
+environment when discussing examples or acceptance evidence. A Storybook
+preview, served-site render and native-device run describe different surfaces
+and must not be blended into one claim.
+
+Give an independent editor the reader scenario, source facts, approved
+voice/style examples and actual output surface together. Ask the editor to check
+the reader's decision, factual boundaries, voice and promised outcome. A review
+receipt establishes that a review occurred, not that the prose is true or the
+product fulfilled its promise. Missing outcome evidence can be reported as an
+explicit gap or partial handoff; it does not create a universal repeat-review
+loop.

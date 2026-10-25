@@ -31,11 +31,13 @@ thresholds remain uncalibrated until measured on comparable local tasks.
 
 ## Coverage target
 
-The minimum target is Luna involvement in 50% of eligible execution/research
-requests in a bounded session window. The default policy still requires useful
-Luna work on every supported, nontrivial bounded execution route. Fifty percent
-is a floor for detecting regressions, not a reason to retain half of suitable
-work in Sol.
+The minimum target is completed, integrated useful Luna work in 50% of eligible
+execution/research requests in a bounded session window. The default policy
+still requires useful Luna work on every supported, nontrivial bounded execution
+route. Fifty percent is a floor for detecting regressions, not a reason to
+retain half of suitable work in Sol. The report keeps runtime-correlated Luna
+calls as a separate measure; a started call alone cannot pass the useful-work
+target.
 
 Run:
 
@@ -49,12 +51,13 @@ denominator. Report pending requests, excluded routes, errors and unverified
 profiles separately. An incorrectly skipped route can artificially improve the
 eligible rate; replay realistic conversation inputs as a separate routing check.
 
-A correlated started Luna counts as a call. Completed, integrated Luna work also
-requires a completion event and a current-request integration record with scope,
-acceptance and a concrete result. A role name, requested model, prepared contract,
-fallback or test double does not count as actual execution. The integration
-receipt establishes provenance, not semantic quality: the parent must inspect
-the delivered result.
+A correlated started Luna counts as a call. Completed, integrated useful work
+also requires a completion event and a current-request integration record with
+scope, acceptance and a concrete result. A role name, requested model, prepared
+contract, fallback or test double does not count as actual execution. The
+integration receipt establishes provenance, not semantic quality or parent
+outcome acceptance: the parent must inspect the delivered result and accept the
+outcome independently.
 
 Do not spawn filler agents for acknowledgements, missing context, an explicit
 opt-out or a task with no useful worker lane. Below-target coverage is evidence

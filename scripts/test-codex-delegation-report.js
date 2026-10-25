@@ -55,7 +55,8 @@ try {
   const snapshot = records.map(x => [x.directory, fs.readdirSync(x.directory).sort().join(","), fs.statSync(x.directory).mtimeMs]);
   const output = report.summarize(records.map(({ state, directory }) => ({ state, directory })), { limit: 20, totalInLedger: 7,
     observeProfile: child => observers.get(child.id) || { status: "model-unverified" } });
-  assert.equal(output.status, "pass");
+  assert.equal(output.status, "under-target", "calls alone must not make the eligible useful-work target pass");
+  assert.deepEqual(output.target, { metric: "completed integrated useful Luna work per eligible task", minimumRate: 0.5 });
   assert.equal(output.counts.requests.totalInLedger, 7);
   assert.equal(output.counts.eligibleTasks, 5, "fallback stays in the eligible denominator");
   assert.equal(output.counts.lunaCalledRequests, 4, "started runtime-correlated Luna call counts as dispatch");
@@ -71,6 +72,24 @@ try {
   assert.equal(output.counts.runtimeUnverifiedRequests, 1);
   assert.equal(output.counts.exclusions.parentOwned, 1);
   assert.equal(output.counts.exclusions.skip, 1);
+  const startedOnly = report.summarize([{ state: started.state, directory: started.directory }], { limit: 20,
+    observeProfile: child => observers.get(child.id) });
+  assert.equal(startedOnly.status, "under-target");
+  assert.equal(startedOnly.counts.eligibleLunaCalledTasks, 1, "a correlated start remains visible as a call");
+  assert.equal(startedOnly.counts.eligibleCompletedIntegratedUsefulLunaTasks, 0);
+  const completedWithoutIntegrationChild = { id: "child-completed-without-integration", completedAt: "later" };
+  const completedWithoutIntegration = record("completed-without-integration", { child: completedWithoutIntegrationChild });
+  const completedOnly = report.summarize([{ state: completedWithoutIntegration.state, directory: completedWithoutIntegration.directory }], { limit: 20,
+    observeProfile: () => ({ status: "runtime-correlated", model: "gpt-6-luna" }) });
+  assert.equal(completedOnly.counts.eligibleLunaCalledTasks, 1);
+  assert.equal(completedOnly.counts.eligibleCompletedIntegratedUsefulLunaTasks, 0,
+    "completion without exact integration evidence cannot pass the useful-work target");
+  assert.equal(completedOnly.status, "under-target");
+  const acceptedEvidence = report.summarize([{ state: useful.state, directory: useful.directory }], { limit: 20,
+    observeProfile: child => observers.get(child.id) });
+  assert.equal(acceptedEvidence.status, "pass", "a correlated completed child with exact integration evidence passes the measured target");
+  assert.equal(acceptedEvidence.counts.eligibleLunaCalledTasks, 1);
+  assert.equal(acceptedEvidence.counts.eligibleCompletedIntegratedUsefulLunaTasks, 1);
   assert.deepEqual(snapshot, records.map(x => [x.directory, fs.readdirSync(x.directory).sort().join(","), fs.statSync(x.directory).mtimeMs]), "report must not modify ledger files");
   assert(!JSON.stringify(output).includes("PRIVATE TASK PROMPT"), "private task prompt must not appear in report");
   assert.equal(report.summarize([], { limit: 20, observeProfile: () => ({ status: "model-unverified" }) }).status, "no-data");

@@ -68,6 +68,19 @@ the machine-local store. Hooks expose their location and relevant navigation;
 inspect and read the actual references rather than treating their presence as
 proof of application. The edition-bound index never replaces primary checks.
 
+For UserPromptSubmit, an exact anchored `<realtime_delegation>` envelope uses
+only its `<input>` for routing and writing classification. The full prompt,
+including `<transcript_delta>`, remains bound as raw-prompt provenance.
+Transcript assistant text cannot change the user's task. Malformed, quoted or
+reported envelopes remain intact in the ledger and require a direct request
+before routing. Actual writing inside `<input>` keeps the normal reading and
+review gates. Normal substantive-output checks still apply to the final
+response; correct task normalization does not exempt substantive prose.
+
+This does not broaden native `create_thread` recovery: its strict
+`<codex_delegation>` parser rejects a nested realtime wrapper with literal
+`<input>` tags, so that form is not recovered from the transcript.
+
 ## Evidence Commands
 
 Use the ledger path supplied by the native hook:
@@ -143,6 +156,21 @@ unresolved leases and partial scans remain visible at Stop. Live jobs keep their
 leases. Trusted/enabled configuration still requires a real native event to prove
 activation; a synthetic handler test alone is insufficient.
 
+The sweep remains project-wide and preserves every unresolved or unknown marker.
+Only a pending/error run whose normalized marker has exact session and request
+ownership matching the Stop ledger can block that request. Other-session,
+earlier-request, legacy, malformed and unscoped results are bounded diagnostics;
+cache-budget observations are project-wide diagnostics too. SessionStart still
+delivers its normal context when diagnostics exist. Bind a managed command to the
+immutable ledger with `node scripts/managed-temp.js run --request-state
+"<request.json>" -- <executable> <args>`; mutable current pointers and bare
+session IDs do not establish exact request ownership. A global `last.json` result
+is named current only when its normalized ownership matches the current ledger.
+
+Declared bulk copies also use the project storage operation registry. Its owner
+fences, reservations, protected paths, native event behavior and cooperative
+enforcement limits are documented in [STORAGE_OPERATIONS.md](STORAGE_OPERATIONS.md).
+
 ## Semantic And Privacy Limits
 
 Records do not prove comprehension, relevance, text quality or useful delegation.
@@ -153,3 +181,106 @@ transcripts, private client/clinical data or the machine book store as evidence.
 Publish only sanitized summaries/digests when authorized. Use the shared
 privacy-transfer allowlist for recovery/export/upload and preserve supported
 product value when shortening sales copy.
+
+## Optional Outcome Evidence
+
+When a request needs a concise delivery record, attach it to the existing
+request ledger with `node scripts/codex-turn.js record-outcome --state
+<request.json> --result <outcome-evidence.json>` and inspect it with
+`node scripts/codex-turn.js outcome-status --state <request.json>`. The bounded
+JSON binds the request and original scenario to an expected outcome, product
+fact references, an exact target surface/environment, source and built-file
+SHA-256 fingerprints, evidence-file references and known gaps. It is optional
+recording support, not a new plan, universal Stop gate or substitute for the
+existing native/editor receipts.
+
+The input shape is fixed and bounded:
+
+```json
+{
+  "schemaVersion": 1,
+  "requestId": "<request id from request.json>",
+  "originalScenario": { "taskSha256": "<sha256 of the ledger task>", "description": "A new visitor needs to confirm a booking." },
+  "expectedOutcome": "The visitor sees the assigned time and confirmation.",
+  "factSources": [{ "ref": "docs/product-facts.md", "sha256": "<current file sha256>" }],
+  "target": { "surface": "served booking page", "environment": "staging desktop browser 1440x900", "modality": "ui" },
+  "artifacts": [
+    { "role": "source", "path": "src/booking.js", "sha256": "<current source sha256>" },
+    { "role": "built", "path": "dist/booking.js", "sha256": "<current build sha256>" }
+  ],
+  "evidence": [],
+  "gaps": ["Native-device behavior was not checked."]
+}
+```
+
+`publication-receipt`, `render-observation`, `installation-observation` or
+`active-observation`, plus a project-relative `ref`/`sha256`, exact `surface`
+and `environment`, and the `sourceSha256` and `builtSha256` they observed. A
+publication receipt also records `provider` and at least one of `tag`, `commit`
+or `url`. It is a local provenance record bound to the request, target and
+artifact fingerprints; its JSON contents do not independently prove that a
+remote provider published anything.
+
+Statuses are deliberately separate: `published` requires a matching local
+publication receipt; `rendered` requires a matching render observation;
+`installed` and `active` require their respective matching observations. A
+Storybook or local preview observation can establish only rendering on that
+exactly named target. It cannot establish publication on another target. A
+receipt does not establish that the published target rendered, and a render
+observation does not establish publication.
+
+Set `target.modality` to `ui` (default), `artifact`, `native-script` or
+`interpreted`. UI and release artifacts require source and built fingerprints.
+Native scripts and interpreted material require a source fingerprint and omit
+the `built` artifact; status reports `built: not-applicable`, and matching
+evidence uses `"builtSha256": null`. This represents a real no-build path
+without inventing a hash. Render observations are accepted only for `ui`.
+
+For a GitHub release, record the actual local release receipt and bind it to
+the values observed for that release. For example, use `provider: "GitHub"`,
+the exact release tag, commit, and release URL in a `publication-receipt`
+entry whose target names that release and whose hashes match the request's
+source and built artifact. The evaluator records that evidence as
+`evidence-recorded`; verification of the remote release remains external.
+
+```json
+{
+  "kind": "publication-receipt",
+  "ref": "evidence/github-release.json",
+  "sha256": "<sha256 of the saved local release receipt>",
+  "provider": "GitHub",
+  "tag": "vX.Y.Z",
+  "commit": "<release commit>",
+  "url": "https://github.com/<owner>/<repo>/releases/tag/vX.Y.Z",
+  "surface": "GitHub release vX.Y.Z",
+  "environment": "GitHub repository <owner>/<repo>",
+  "sourceSha256": "<source fingerprint>",
+  "builtSha256": "<release artifact fingerprint>"
+}
+```
+
+For a future native PersonalAssistant (PA) activation, use
+`modality: "native-script"`, fingerprint the script as `source`, omit `built`,
+and attach an `active-observation` file captured from the actual PA activation
+with the exact native target/environment and `builtSha256: null`. A local
+receipt or example alone is not activation evidence.
+
+```json
+{
+  "kind": "active-observation",
+  "ref": "evidence/pa-activation.json",
+  "sha256": "<sha256 of the saved native activation observation>",
+  "surface": "PersonalAssistant native activation",
+  "environment": "<actual PA host and version>",
+  "sourceSha256": "<native script fingerprint>",
+  "builtSha256": null
+}
+```
+
+Local file references must remain inside the project and cannot traverse
+symlinks; external product-fact URLs remain reference-only. Status
+rechecks fingerprints, so changed linked bytes become stale. `evidence-recorded`
+means the request, target and bytes line up in the ledger; it does not prove
+remote publication, device behavior, semantic quality or user acceptance.
+Missing or mismatched evidence remains an explicit gap/unknown suitable for an
+honest partial handoff.

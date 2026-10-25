@@ -13,6 +13,12 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    informational, or communication.
 2. Define the reader, production purpose, after-state, product/business link,
    target language, channel, active SOTs, voice contract, and acceptance evidence.
+   For product claims, bind the copy to a concrete user situation, the promised
+   after-state, supplied product facts and the exact surface/environment. Do not
+   describe an action as a completed outcome unless the user receives that result.
+   Keep facts scoped to each artifact: a fact supplied for one case is not
+   automatically valid for another. Do not invent minimum word counts; use the
+   requested length and remove repetition that serves only an internal quota.
 3. Load only relevant project context. If facts are missing or SOTs conflict in a
    way that changes meaning, stop and ask with 2-3 options.
    For substantive nonfiction, including chat explanations, read
@@ -37,6 +43,19 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    structure or imitate a named author mechanically.
 5. For substantial staged writing, plan the final function/section inventory;
    handle a short answer or bounded edit directly within its existing purpose.
+   For a clear, nontrivial `create` or material `edit`, give a Luna High
+   `implementer` an exact request-scoped draft artifact as its writable scope,
+   with the reader scenario, purpose, supplied facts/sources, actual output
+   surface, approved voice examples and acceptance criteria.
+   Have the child write the actual prose into that artifact and return its path
+   and hash. Read and integrate that artifact; if editorial findings require
+   prose changes, send the specific findings back to the author to revise the
+   same artifact, then review the changed bytes again. Deliver the exact accepted
+   artifact when it fits the requested output; do not recopy or rewrite unchanged
+   prose in the parent. Tiny typo fixes, narrow status messages, read-only tasks,
+   quoted/reported commands and explicit no-agent requests stay on their existing
+   direct or parent-owned route. The author and required `writing_editor` remain
+   separate children.
 6. When staged delivery is useful, produce a truthful functional 1% whole,
    then sharpen it in place. Planning,
    TODOs, evidence slots, and fragments are preparation, not product evidence.

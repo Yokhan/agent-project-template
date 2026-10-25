@@ -4,13 +4,19 @@ const { sha256 } = require("./writing-library-store.js");
 
 const REPLY_OPEN = "<send_user_message_question_reply>";
 const REPLY_CLOSE = "</send_user_message_question_reply>";
-const CONTINUATIONS = new Set(["делай", "делай дальше", "сделай пожалуйста", "освободилось, сделай пожалуйста", "перегенери", "перегенерируй", "го", "погнали"]);
+const CONTINUATIONS = new Set(["делай", "давай", "делай дальше", "сделай пожалуйста", "освободилось, сделай пожалуйста", "перегенери", "перегенерируй", "го", "погнали"]);
 
 function parseAnswerEnvelope(body) {
   let entries;
   try { entries = JSON.parse(body); } catch { return null; }
   if (!Array.isArray(entries) || entries.length === 0 || entries.some(item => !item || typeof item !== "object" || Array.isArray(item) || typeof item.answer !== "string" || !item.answer.trim())) return null;
   return entries.map(item => item.answer.trim()).join("\n");
+}
+
+function parseRealtimeDelegationEnvelope(prompt) {
+  const match = /^\s*<realtime_delegation>\s*<input>([\s\S]*?)<\/input>\s*<transcript_delta>([\s\S]*?)<\/transcript_delta>\s*<\/realtime_delegation>\s*$/u.exec(prompt);
+  if (!match || !match[1].trim() || /<\/?(?:realtime_delegation|input|transcript_delta)>/iu.test(match[1])) return null;
+  return { input: match[1].trim() };
 }
 
 function isContinuation(text) {
@@ -27,6 +33,16 @@ function isContextualContinuation(text) {
 function resolveRequestContext(prompt, previousRecord = null, acceptedRecord = undefined) {
   if (typeof prompt !== "string") throw new Error("Native prompt must be text");
   const rawPromptSha256 = sha256(prompt);
+  const realtime = parseRealtimeDelegationEnvelope(prompt);
+  if (realtime) {
+    const resolvedInput = resolveRequestContext(realtime.input, previousRecord, acceptedRecord);
+    return { ...resolvedInput, rawPromptSha256,
+      kind: resolvedInput.kind === "user-prompt" ? "realtime-delegation-input" : resolvedInput.kind };
+  }
+  if (/<\/?realtime_delegation(?:\s|>)/iu.test(prompt)) {
+    return { task: prompt, routeTask: "", classificationTask: "", rawPromptSha256,
+      kind: "unresolved-realtime-delegation", removedAmbientContext: false };
+  }
   let normalized = prompt.replace(/^\s*<in-app-browser-context\s+source="ambient-ui-state">[\s\S]*?<\/in-app-browser-context>\s*/u, "");
   let removedAmbientContext = normalized !== prompt;
   const attachmentPrefix = /^\s*# Files mentioned by the user:[ \t]*\r?\n[\s\S]*?\r?\n## My request:[ \t]*\r?\n/u.exec(normalized);
@@ -74,4 +90,4 @@ function resolveRequestContext(prompt, previousRecord = null, acceptedRecord = u
   return { task: normalized, routeTask: normalized, classificationTask: normalized, rawPromptSha256, kind: "user-prompt", removedAmbientContext };
 }
 
-module.exports = { resolveRequestContext, parseAnswerEnvelope, isContinuation, isContextualContinuation };
+module.exports = { resolveRequestContext, parseAnswerEnvelope, parseRealtimeDelegationEnvelope, isContinuation, isContextualContinuation };

@@ -75,10 +75,15 @@ function ownedContext(name) {
   const projectRoot = path.join(fixture, `${name}-${++fixtureContext}`);
   fs.mkdirSync(projectRoot, { recursive: true });
   const inherited = process.env.AGENT_MANAGED_TEMP;
+  const inheritedBinding = process.env.AGENT_MANAGED_RUN_BINDING;
   delete process.env.AGENT_MANAGED_TEMP;
+  delete process.env.AGENT_MANAGED_RUN_BINDING;
   let run;
   try { run = managed.createRun(projectRoot, { processContract: "foreground" }); }
-  finally { if (inherited !== undefined) process.env.AGENT_MANAGED_TEMP = inherited; }
+  finally {
+    if (inherited !== undefined) process.env.AGENT_MANAGED_TEMP = inherited;
+    if (inheritedBinding !== undefined) process.env.AGENT_MANAGED_RUN_BINDING = inheritedBinding;
+  }
   const copyDirectory = run.allocate("copies");
   const env = { ...process.env, AGENT_MANAGED_TEMP: run.root, AGENT_RUN_COPY_DIR: copyDirectory, AGENT_WRITING_LIBRARY: path.join(fixture, `${name}-store-${fixtureContext}`) };
   return { projectRoot, run, copyDirectory, env, root: env.AGENT_WRITING_LIBRARY };

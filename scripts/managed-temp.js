@@ -2,6 +2,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const managed = require("./lib/managed-temp.js");
 const caches = require("./lib/managed-cache.js");
 const { launchOwned } = require("./lib/managed-process.js");
@@ -24,7 +25,7 @@ function number(value, fallback, name) {
   return result;
 }
 function optionsFrom(args) {
-  const allowed = new Set(["process-contract", "profile", "cache", "cache-max-bytes", "cache-max-age-ms", "max-work-bytes", "min-free-bytes", "timeout-ms", "keep-output", "budget-ms"]), options = {};
+  const allowed = new Set(["process-contract", "profile", "cache", "cache-max-bytes", "cache-max-age-ms", "max-work-bytes", "min-free-bytes", "timeout-ms", "keep-output", "budget-ms", "request-state", "report-path", "expected-sha256", "pid"]), options = {};
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i].replace(/^--/u, "");
     if (!args[i].startsWith("--") || !allowed.has(key) || args[i + 1] === undefined || options[key] !== undefined) throw new Error(`Invalid or repeated managed option: ${args[i]}`);
@@ -63,6 +64,36 @@ function exportBuild(source, destination, runRoot) {
   catch (error) { if (error.code === "EXDEV") throw new Error("keep-output requires a destination on the same volume as managed scratch"); throw error; }
   return target;
 }
+function safeError(error) {
+  const message = String(error?.message || error || "");
+  const knownCode = /matching managed build profile/iu.test(message) ? "PROFILE_REQUIRED"
+    : /matching managed build profile|explicit .* profile/iu.test(message) ? "PROFILE_REQUIRED" : null;
+  return { code: typeof error?.code === "string" && /^[A-Z0-9_-]{1,40}$/iu.test(error.code) ? error.code : knownCode || "RUN_FAILURE",
+    length: Buffer.byteLength(message), sha256: crypto.createHash("sha256").update(message).digest("hex") };
+}
+function commandDiagnostics(command, args, phase, result, error) {
+  const raw = [String(command), ...args.map(String)].join("\0");
+  return {
+    commandBasename: path.basename(String(command)).slice(0, 120),
+    commandHash: crypto.createHash("sha256").update(raw).digest("hex"),
+    argumentCount: args.length,
+    phase,
+    ...(Number.isSafeInteger(result?.code) && result.code >= 0 && result.code <= 0xffffffff ? { commandExitCode: result.code } : {}),
+    ...(typeof result?.proof === "string" ? { proof: result.proof.slice(0, 80) } : {}),
+    ...(error ? { supervisorError: safeError(error) } : {}),
+  };
+}
+function cacheHousekeepingDiagnostics(cacheReport, cacheError, blocking) {
+  if (!cacheError && (!cacheReport || cacheReport.complete && !cacheReport.overBudget)) return null;
+  const rawReason = cacheError ? safeError(cacheError).code : cacheReport?.reason || (cacheReport?.overBudget ? "cache-budget-exceeded" : "cache-prune-incomplete");
+  const reason = typeof rawReason === "string" && /^[A-Z0-9_-]{1,80}$/iu.test(rawReason) ? rawReason : "cache-prune-incomplete";
+  const diagnostic = { blocking, reason };
+  if (Number.isSafeInteger(cacheReport?.bytesRetained) && cacheReport.bytesRetained >= 0) {
+    diagnostic.remainingBytes = cacheReport.bytesRetained;
+    diagnostic.remainingBytesComplete = cacheReport.complete === true;
+  }
+  return diagnostic;
+}
 async function run(root, command, args, options = {}) {
   command = resolveCommand(command);
   const limits = cacheOptions(options, root);
@@ -74,10 +105,11 @@ async function run(root, command, args, options = {}) {
   if (!["foreground", "contained"].includes(processContract)) throw new Error("process-contract must be contained or foreground");
   if (processContract === "foreground" && !["test", "command"].includes(profile)) throw new Error("foreground contract is limited to explicitly trusted test/command adapters");
   const limited = process.platform !== "win32" && processContract === "foreground";
-  const workspace = managed.createRun(root, { label: profile, processContract: limited ? "foreground" : "contained" }), leases = [], controller = new AbortController();
-  let exitCode = 1, started = false, stopped = false, result = null, failure = null;
+  const workspace = managed.createRun(root, { label: profile, processContract: limited ? "foreground" : "contained", requestStatePath: options["request-state"] }), leases = [], controller = new AbortController();
+  if (workspace.ownership?.confidence !== "exact") process.stderr.write("managed-temp: run has observed/session-only ownership; pass --request-state for exact request attribution\n");
+  let exitCode = 1, launchAttempted = false, stopped = false, result = null, failure = null;
   let receivedSignal = null, stopReason = null, timer = null, monitor = null, exported = null;
-  let prepared, cleanup, cacheReport;
+  let prepared, cleanup, cacheReport, cachePruneError = null;
   const abort = reason => { if (!stopReason) stopReason = reason; controller.abort(); };
   const forward = signal => { receivedSignal ||= signal; abort(signal); };
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.on(signal, forward);
@@ -97,31 +129,38 @@ async function run(root, command, args, options = {}) {
         const stat = fs.statfsSync(workspace.temp);
         if (minFree && stat.bavail * stat.bsize < minFree) abort("minimum-free-space");
         if (maxWork && managed.observeTree(workspace.root, { budgetMs: 100, maxEntries: 10000 }).bytes >= maxWork) abort("observed-work-budget");
-      } catch (error) { failure ||= error.message; abort("usage-observation-failed"); }
+      } catch (error) { failure ||= error; abort("usage-observation-failed"); }
     };
     observe();
     if (controller.signal.aborted) throw new Error(`Command not started: ${stopReason}`);
     monitor = setInterval(observe, 5000);
     if (timeout) timer = setTimeout(() => abort("timeout"), timeout);
-    workspace.setLaunching(true);
-    result = await launchOwned(prepared.command, prepared.args, { cwd: root, env: prepared.env, signal: controller.signal, processContract: limited ? "foreground" : undefined,
+    const launcher = typeof options.launcher === "function" ? options.launcher : launchOwned;
+    result = await launcher(prepared.command, prepared.args, { cwd: root, env: prepared.env, signal: controller.signal, processContract: limited ? "foreground" : undefined,
+      onLaunchAttempt() {
+        workspace.setPhase("supervisor-launch-attempted");
+        workspace.setLaunching(true);
+        launchAttempted = true;
+      },
       async onSpawn({ pid, hostPid }) {
         workspace.setChildPid(hostPid || pid);
         if (!limited) for (const lease of leases) await retryBusy(() => lease.bindSupervisor(hostPid || pid));
         // The supervisor cannot resume the command until this callback returns.
-        started = true;
       } });
     exitCode = receivedSignal ? signalCode(receivedSignal) : stopReason === "timeout" ? 124 : stopReason ? 1 : result.signal ? signalCode(result.signal) : (result.code ?? 1);
     stopped = result.treeStopped || limited && result.groupStopped && !result.aborted && !result.error && result.code !== null;
     if (!stopped) throw new Error("Owned process family did not confirm termination; retaining resources");
     workspace.setChildPid(null);
-    if (result.error) throw new Error(`Process supervisor failed: ${result.error}`);
+    if (result.error) throw Object.assign(new Error("Process supervisor failed"), { code: "SUPERVISOR_ERROR", supervisorMessage: result.error });
     if (exitCode === 0 && options["keep-output"]) exported = exportBuild(prepared.paths.build, options["keep-output"], workspace.root);
-  } catch (error) { failure = error.message; process.stderr.write(`managed-temp: ${failure}\n`); }
+  } catch (error) { failure = error; process.stderr.write(`managed-temp: run failed (${safeError(error).code})\n`); }
   finally {
     clearInterval(monitor); clearTimeout(timer);
     for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.removeListener(signal, forward);
-    const safe = stopped || !started;
+    const phase = stopped ? "termination-confirmed" : launchAttempted ? "termination-unverified" : "prelaunch-failure";
+    const diagnostics = commandDiagnostics(command, args, phase, result, result?.error || failure?.supervisorMessage || failure);
+    try { workspace.setDiagnostics(diagnostics); } catch (error) { failure ||= error; }
+    const safe = stopped || !launchAttempted;
     if (safe) {
       try { workspace.setChildPid(null); } catch (error) { failure ||= error.message; }
       for (const lease of leases) {
@@ -130,17 +169,24 @@ async function run(root, command, args, options = {}) {
       }
       try { cleanup = workspace.finish({ foregroundCompleted: limited }); } catch (error) { failure ||= error.message; }
     } else {
-      try { workspace.retain("process-family-termination-unverified"); } catch (error) { failure ||= error.message; }
+      try { workspace.retain("process-family-termination-unverified"); } catch (error) { failure ||= error; }
     }
-    try { cacheReport = await retryBusy(() => caches.pruneCaches(limits)); } catch (error) { failure ||= error.message; }
-    if (!cleanup?.removed || failure || (cacheReport?.overBudget && !cacheReport.activeOverBudget) || (cacheReport && !cacheReport.complete && cacheReport.reason !== "operation-in-progress")) { if (exitCode === 0) exitCode = 1; }
+    try { cacheReport = await retryBusy(() => caches.pruneCaches(limits)); } catch (error) { cachePruneError = error; }
+    const cacheIssue = Boolean(cachePruneError || cacheReport && (!cacheReport.complete || cacheReport.overBudget));
+    const nonblockingCacheHousekeeping = cacheIssue && options.cache !== "shared" && cleanup?.removed === true && !failure;
+    const cachePruneFailure = Boolean(cachePruneError || cacheReport && (!cacheReport.complete || cacheReport.overBudget && (options.cache === "shared" || !cacheReport.activeOverBudget)));
+    const cacheHousekeeping = cacheHousekeepingDiagnostics(cacheReport, cachePruneError, !nonblockingCacheHousekeeping);
+    if (cachePruneError && !nonblockingCacheHousekeeping) failure ||= cachePruneError;
+    if (!cleanup?.removed || failure || cachePruneFailure && !nonblockingCacheHousekeeping) { if (exitCode === 0) exitCode = 1; }
     try {
+      if (cacheHousekeeping) diagnostics.cacheHousekeeping = cacheHousekeeping;
       const reportFile = reports.writeReport(root, { completedAt: new Date().toISOString(), runId: workspace.id, profile: options.profile || "test", cacheMode: options.cache || "ephemeral", exitCode,
-        processContract, process: result && { treeStopped: result.treeStopped, groupStopped: result.groupStopped, cleanupBasis: result.cleanupBasis, supervision: result.supervision, rootInJob: result.rootInJob, killOnClose: result.killOnClose, proof: result.proof, aborted: result.aborted }, stopReason, failure, output: exported, scratchRemoved: cleanup?.removed === true,
+        ownership: workspace.ownership, diagnostics, processContract, process: result && { commandExitCode: result.code, treeStopped: result.treeStopped, groupStopped: result.groupStopped, cleanupBasis: result.cleanupBasis, supervision: result.supervision, rootInJob: result.rootInJob, killOnClose: result.killOnClose, proof: result.proof, aborted: result.aborted }, stopReason, failure: failure ? safeError(failure) : null, output: exported, scratchRemoved: cleanup?.removed === true,
         cleanup: cleanup?.report || cleanup || { retained: true, reason: "process-family-termination-unverified" }, cache: cacheReport,
         limits: { maxWorkBytes: maxWork, minFreeBytes: minFree, cacheMaxBytes: limits.maxBytes, cacheMaxAgeMs: limits.maxAgeMs } });
       process.stderr.write(`managed-run: ${JSON.stringify({ runId: workspace.id, exitCode, scratchRemoved: cleanup?.removed === true,
-        observedBytesRemoved: cleanup?.report?.accounting?.observedBytesRemoved ?? null, cacheBytesFreed: cacheReport?.bytesFreed ?? null, cacheBytesRetained: cacheReport?.bytesRetained ?? null, report: reportFile })}\n`);
+        observedBytesRemoved: cleanup?.report?.accounting?.observedBytesRemoved ?? null, cacheBytesFreed: cacheReport?.bytesFreed ?? null, cacheBytesRetained: cacheReport?.bytesRetained ?? null,
+        cacheHousekeeping, report: reportFile })}\n`);
     } catch (error) { process.stderr.write(`managed-temp: report failed: ${error.message}\n`); if (exitCode === 0) exitCode = 1; }
   }
   return exitCode;
@@ -148,20 +194,27 @@ async function run(root, command, args, options = {}) {
 async function main(argv) {
   const root = path.resolve(process.cwd()), [action, ...rest] = argv;
   if (["--help", "help"].includes(action)) {
-    process.stdout.write(`Usage: managed-temp.js <run|sweep|cache-prune|status|report>\n  run [--profile ${PROFILES.join("|")}] [--cache ephemeral|shared] [--keep-output NEW_DIRECTORY] [--timeout-ms N] [--max-work-bytes N] [--min-free-bytes N] [--cache-max-bytes N] [--cache-max-age-ms N] -- <executable> [args...]\n  sweep|cache-prune [--budget-ms N] [--cache-max-bytes N] [--cache-max-age-ms N]\nOwned temporary outputs are discarded after the owned process family stops. Shared owned caches default to 10 GiB/project and 7 idle days; active caches are preserved. Work/free-space limits are sampled, not OS quotas. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/AGENT_RUN_COPY_DIR/AGENT_RUN_ARCHIVE_DIR/AGENT_RUN_LOG_DIR; arbitrary filesystem writes are not sandboxed.\n`);
+    process.stdout.write(`Usage: managed-temp.js <run|sweep|cache-prune|cache-recover|status|report>\n  run [--profile ${PROFILES.join("|")}] [--request-state LEDGER] [--cache ephemeral|shared] [--keep-output NEW_DIRECTORY] [--timeout-ms N] [--max-work-bytes N] [--min-free-bytes N] [--cache-max-bytes N] [--cache-max-age-ms N] -- <executable> [args...]\n  sweep|cache-prune [--budget-ms N] [--cache-max-bytes N] [--cache-max-age-ms N]\n  cache-recover --expected-sha256 SHA256 --pid PID\n  report [--report-path IMMUTABLE_REPORT_JSON]\nOwned temporary outputs are discarded after the owned process family stops. Shared owned caches default to 10 GiB/project and 7 idle days; active caches are preserved. Work/free-space limits are sampled, not OS quotas. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/AGENT_RUN_COPY_DIR/AGENT_RUN_ARCHIVE_DIR/AGENT_RUN_LOG_DIR; arbitrary filesystem writes are not sandboxed.\n`);
     process.stdout.write("  --process-contract contained|foreground: strict Windows family supervision by default. POSIX foreground is an explicit caller contract for trusted test/command adapters; interruption retains scratch and never claims full-family proof.\n");
   } else if (action === "run") {
     const separator = rest.indexOf("--");
     if (separator < 0 || !rest[separator + 1]) throw new Error("Usage: managed-temp.js run [options] -- <executable> [args...]");
     process.exitCode = await run(root, rest[separator + 1], rest.slice(separator + 2), optionsFrom(rest.slice(0, separator)));
+  } else if (action === "cache-recover") {
+    const options = optionsFrom(rest);
+    if (!options["expected-sha256"] || !options.pid || !/^[1-9][0-9]*$/u.test(options.pid)) throw new Error("cache-recover requires --expected-sha256 SHA256 --pid PID");
+    print(caches.recoverLegacyClaim(options["expected-sha256"], Number(options.pid)));
   } else if (action === "sweep" || action === "cache-prune") {
     const options = optionsFrom(rest), cache = await retryBusy(() => caches.pruneCaches(cacheOptions(options, root)));
     const report = action === "sweep" ? { ...managed.sweep(root, { budgetMs: number(options["budget-ms"], 1000, "budget-ms") }), cache } : { cache };
     print(report);
     if (report.errors?.length || report.pending?.length || cache.overBudget || (!cache.complete && cache.reason !== "operation-in-progress")) process.exitCode = 1;
   } else if (action === "status") print({ runs: managed.status(root), caches: caches.status().filter(item => item.projectRoot === fs.realpathSync.native(root)), lastReport: reports.readReport(root) });
-  else if (action === "report") print(reports.readReport(root));
-  else throw new Error("Usage: managed-temp.js <run|sweep|cache-prune|status|report>");
+  else if (action === "report") {
+    const options = optionsFrom(rest);
+    print(options["report-path"] ? reports.readReportPath(options["report-path"]) : reports.readReport(root));
+  }
+  else throw new Error("Usage: managed-temp.js <run|sweep|cache-prune|cache-recover|status|report>");
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => { process.stderr.write(`managed-temp: ${error.message}\n`); process.exitCode = 2; });
 module.exports = { main, run, exportBuild };

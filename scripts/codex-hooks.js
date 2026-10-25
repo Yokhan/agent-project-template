@@ -11,7 +11,10 @@ const { assertSupportedRuntime } = require("./lib/codex-runtime.js");
 const managedTemp = require("./lib/managed-temp.js");
 const managedCache = require("./lib/managed-cache.js");
 const managedReports = require("./lib/managed-run-report.js");
+const managedRunOwnership = require("./lib/managed-run-ownership.js");
+const storageOperations = require("./lib/storage-operation-hooks.js");
 const requestContext = require("./lib/codex-request-context.js");
+const LOADED_HANDLER_SHA256 = sha256(fs.readFileSync(__filename));
 
 function currentTurnRecord(root, input, allowInitializing = true) {
   if (!input.turn_id) throw new Error("Native current turn_id is required");
@@ -114,6 +117,8 @@ function recordLifecycle(root, input) {
   fs.mkdirSync(directory, { recursive: true });
   fs.appendFileSync(path.join(directory, "lifecycle.jsonl"), JSON.stringify({
     at: new Date().toISOString(), event: input.hook_event_name,
+    storageCoordinationVersion: 1, managedRunOwnershipVersion: 1,
+    handlerSha256: LOADED_HANDLER_SHA256,
     sessionId: input.session_id, turnId: input.turn_id || null, tool: input.tool_name || null,
     agentId: input.agent_id || null,
     ...(input.hook_event_name === "Stop" && typeof input.last_assistant_message === "string" ? {
@@ -157,30 +162,87 @@ function legacyCheck(root, name, input, blocking) {
   }
 }
 function context(event, text) { return { hookSpecificOutput: { hookEventName: event, additionalContext: text } }; }
+function failureCategory(error) {
+  if (error instanceof SyntaxError) return "invalid-json";
+  if (typeof error?.code === "string" && /^[A-Z0-9_]{2,48}$/u.test(error.code)) return error.code;
+  return "operation-failed";
+}
+function cleanupAssessment(cleanup, record = null) {
+  const owner = record ? {
+    sessionId: record.state.sessionId,
+    requestId: record.state.requestId,
+    rootTurnId: record.state.rootTurnId,
+  } : {};
+  const pending = Array.isArray(cleanup?.pending) ? cleanup.pending : [];
+  const errors = Array.isArray(cleanup?.errors) ? cleanup.errors : [];
+  const entries = [...pending.map(item => ({ ...item, kind: "pending" })), ...errors.map(item => ({ ...item, kind: "error" }))];
+  const assess = item => ({
+    kind: item.kind,
+    runId: typeof item.runId === "string" ? item.runId : null,
+    path: typeof item.path === "string" ? item.path.slice(0, 300) : null,
+    reason: String(item.reason || item.error || "unspecified").slice(0, 240),
+    ownership: managedRunOwnership.classifyOwnership(item.ownership, owner),
+  });
+  const assessed = entries.map(assess);
+  const current = assessed.filter(item => item.ownership === "current");
+  const diagnostic = assessed.filter(item => item.ownership !== "current");
+  for (const item of cleanup?.busy || []) diagnostic.push(assess({ ...item, kind: "busy" }));
+  for (const item of cleanup?.skipped || []) diagnostic.push(assess({ ...item, kind: "skipped" }));
+  const cache = cleanup?.cache;
+  const cacheProblem = Boolean(cache && (cache.overBudget || (!cache.complete && cache.reason !== "operation-in-progress")));
+  if (cacheProblem) diagnostic.push({
+    kind: "cache-diagnostic", runId: null, path: null,
+    reason: String(cache.reason || (cache.overBudget ? "over-budget" : "incomplete-scan")).slice(0, 240),
+    paths: (Array.isArray(cache.retained) ? cache.retained : []).slice(0, 4).map(item => typeof item.path === "string" ? item.path.slice(0, 300) : null).filter(Boolean),
+    ownership: "unknown",
+  });
+  return {
+    current,
+    diagnostics: diagnostic,
+    cacheProblem,
+    hasWarnings: entries.length > 0 || cacheProblem,
+    summary: JSON.stringify({
+      current: current.slice(0, 8),
+      diagnostics: diagnostic.slice(0, 8),
+      omitted: Math.max(0, current.length - 8) + Math.max(0, diagnostic.length - 8),
+    }),
+  };
+}
 function packetContext(record) {
   const packet = policy.groundRequest(record);
-  return `Mapped reading: ${path.join(record.directory, "packet.json")}\nEditorial questions: ${JSON.stringify(packet.readerPlan.topics.map(({ id, question }) => ({ id, question })))}\nRead every selected complete section in packet.json even if this hook preview is shortened. The map is navigation, not comprehension.\n` + referenceIndexContext(packet, record.state.task) +
-    packet.passages.map(p => `PRIMARY ${p.sourceId} | ${p.locator} | passageSha256=${p.passageSha256}\n${p.text}`).join("\n\n");
-}
-function referenceIndexContext(packet, task) {
-  const index = require("./lib/writing-library-index.js");
-  const status = index.libraryIndexStatus();
-  if (status.state !== "ready") return "Local contents/example index is unavailable or stale. Read the pinned originals directly; build the local derived index with node scripts/writing-library.js index before using copied references.\n";
-  const navigation = [];
-  for (const sourceId of packet.selection.sourceIds) {
-    const found = index.searchExamples(task, { sourceId, limit: 2 });
-    navigation.push({ sourceId, examples: (found.examples || []).map(({ locator, passageSha256, label }) => ({ locator, passageSha256, label })) });
+  const packetFile = path.join(record.directory, "packet.json");
+  const sources = [...new Set(packet.passages.map(item => `${item.sourceId}: ${item.locator}`))];
+  const checks = packet.readerPlan.topics.map(({ id, label }) => label ? `${id} (${label})` : id);
+  const fixed = [
+    `Full primary packet (complete sections retained): ${packetFile}`,
+    "Read every selected complete section in packet.json, including needed surrounding context. The map is navigation, not comprehension.",
+    "Local navigation: node scripts/writing-library.js contents --source <id>; examples --source <id> --query <editorial question>. Add missing primary context with codex-turn.js refresh --state <request.json> --query <question>, then reread and reapply notes.",
+    "Selected navigation metadata:",
+  ];
+  const metadata = [
+    ...sources.map(item => `Locator: ${item}`),
+    ...checks.map(item => `Editorial check: ${item}`),
+  ];
+  const render = (included, omitted) => [...fixed, ...included, `Navigation metadata omitted: ${omitted}. Full packet is authoritative.`].join("\n");
+  const minimum = render([], metadata.length);
+  if (minimum.length > 2500) {
+    throw new Error(`Required primary packet navigation is ${minimum.length} characters before optional metadata, exceeding the 2500-character limit; packet path: ${packetFile}`);
   }
-  return `Literal contents/examples are available locally: ${status.indexPath}. Inspect the actual contents for applicable sources via node scripts/writing-library.js contents --source <id>, and copied examples via examples --source <id> --query <Russian editorial question>. Matched navigation: ${JSON.stringify(navigation)}. Read the full copied excerpt and surrounding source before applying it; candidates are not verified before/after pairs and extracted PDF tables may need the original layout. Bring relevant extra context into the current packet with codex-turn refresh --query <focused question>, read it, then reapply notes and review changed bytes. Navigation and copied examples do not substitute for fresh primary reading or editorial judgment.\n`;
+  const included = [];
+  for (const item of metadata) {
+    const candidate = [...included, item];
+    if (render(candidate, metadata.length - candidate.length).length <= 2500) included.push(item);
+  }
+  return render(included, metadata.length - included.length);
 }
 function instructions(record) {
-  if (record.state.direct) return `Template request evidence: ${record.file}\nDirect small task: complete it and the smallest relevant check without a child or routing ceremony. A literal typo correction and short completion status need no book/application ritual. If you add substantive explanatory prose, read fresh primary passages and apply them to its exact bytes using scripts/codex-turn.js; Stop checks that output separately.\n`;
-  return `Template request evidence: ${record.file}\nLogical request: ${record.state.requestId}. Original task and requirements survive Stop repair continuations.\n` +
-    `Delegation: ${JSON.stringify(record.state.delegation)}. When required, derive scope/acceptance and launch bounded Luna High; a sequential worker is valid. CLI contract shape: {assignments:{implementer:{scope:[exact paths],acceptance:[observable checks]}},hostDispatchCapabilities:[observed native-custom-role or explicit-model-contract]}; pass it via --contract-file. Use only capabilities actually exposed by the tool schema. Wait and integrate its result. Record assignment/result with codex-turn.js integrate; a concrete host/ownership/judgment/cost fallback is visible, not Luna success. Do not spawn irrelevant work to satisfy a quota.\n` +
-    "Before substantive nonfiction output, read the mapped complete primary sections and refine/add reading when context is insufficient. Refresh a stale or insufficient packet with codex-turn.js refresh --state <ledger> [--query <Russian editorial question>]; query supplements never replace mapped coverage. Read the fresh packet and reapply notes. Before final delivery save exact response bytes to an ignored local file; create principles.json with one {sourceId,passageSha256,principle,effect} per passage, then run node scripts/codex-turn.js apply --state <ledger> --artifact <file> --notes <principles.json>. Send exactly that response; no extra trailing newline. Use --target file for separate written deliverables.\n" +
-    "Include any required memory-citation footer and its separator newlines in the saved exact response. Do not drop the footer or trim the body to work around a Stop mismatch: the runner can verify the host's omitted citation metadata against the actual current-turn transcript without changing draft bytes.\n" +
-    "Use the local copied contents and examples to check whether the mapped reading covers the actual writing problem. Native planned reading now allows up to 96000 characters; a full packet does not silently cut sections or imply the entire book was read.\n" +
-    `Editorial policy: ${JSON.stringify(record.state.editorial)}. Material authored nonfiction requires a distinct read-only writing_editor (Luna High). Generate its exact draft/source assignment via codex-turn.js editorial-assignment --state <ledger> --artifact <draft>. Give the returned assignmentFile plus project facts/approved examples to the editor. Wait for its JSON final, fix findings, and request a new review of changed bytes. Record the actual child review via codex-turn.js review-accept --state <ledger> --artifact <draft> --child <native-editor-id>. Writer-authored review JSON cannot substitute for the native child final. A short technical explanation can self-check; user opt-out stays explicit. If required review cannot run, report the acceptance gap; do not silently downgrade it. Receipts alone are insufficient. See codex-turn.js help. Small acknowledgements, actual fiction and code-only output are exempt; ambiguous substantive explanations are not.\n`;
+  const base = `Request ledger: ${record.file}\nRequest id: ${record.state.requestId}. Original task remains authoritative across repairs.\n`;
+  const exactRuns = `Bind managed checks to this request: node scripts/managed-temp.js run --request-state "${record.file}" -- <executable> <args>.\n`;
+  if (record.state.direct) return base + exactRuns + "Do the small task and its narrow check directly. Small acknowledgements and short status need no book or review ritual. Substantive explanatory prose still needs fresh primary reading and application evidence.\n";
+  const delegation = `Delegation: ${JSON.stringify(record.state.delegation)}. Derive exact scope/acceptance before dispatch; use only observed host capabilities. A completed child or fallback is not acceptance.\n`;
+  const nonfiction = "For substantive nonfiction, read every selected complete primary section in packet.json, check reader situation, product facts and promised outcome, and add focused reading when needed. Save exact final bytes and source notes, then run codex-turn.js apply. Send the checked bytes unchanged.\n";
+  const editorial = `Editorial policy: ${JSON.stringify(record.state.editorial)}. Material authored nonfiction uses a distinct read-only writing_editor. Assign the exact draft with codex-turn.js editorial-assignment, provide facts and approved examples, apply findings, and review changed bytes again. Record the observed native editor via review-accept; author-written review JSON is not its receipt. Report gaps honestly; this is not a universal stop barrier.\n`;
+  return base + exactRuns + delegation + nonfiction + editorial + "Include required citation footer bytes in the saved response. Actual fiction, code-only output, and small acknowledgements keep their existing exemptions.\n";
 }
 async function handle(input, root = findRoot(input.cwd || process.cwd())) {
   assertSupportedRuntime();
@@ -190,20 +252,33 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
   // A live wrapper/child lease is never removed, including at another chat's Stop.
   let cleanup = null;
   if (["SessionStart", "PostToolUse", "Stop"].includes(event)) {
-    let cache = managedCache.pruneCaches({ projectRoot: root, budgetMs: 1000 });
+    const pruneCache = () => {
+      try { return managedCache.pruneCaches({ projectRoot: root, budgetMs: 1000 }); }
+      catch (error) { return { removed: [], retained: [], bytesRetained: null, complete: false, overBudget: false, activeOverBudget: false, reason: `cache-prune-${failureCategory(error)}` }; }
+    };
+    let cache = pruneCache();
     const cacheDeadline = Date.now() + 1500;
     while (cache.reason === "operation-in-progress" && Date.now() < cacheDeadline) {
       await new Promise(resolve => setTimeout(resolve, 25));
-      cache = managedCache.pruneCaches({ projectRoot: root, budgetMs: 1000 });
+      cache = pruneCache();
     }
-    cleanup = { ...managedTemp.sweep(root, { budgetMs: 1000 }), cache };
-    if ((cleanup.errors.length || cleanup.pending.length || cache.overBudget || (!cache.complete && cache.reason !== "operation-in-progress")) && event !== "Stop") {
-      return { systemMessage: "Temporary test cleanup needs attention: " + JSON.stringify(cleanup) +
-        ". Run node scripts/managed-temp.js sweep --budget-ms 10000; preserve unknown and active directories." };
+    let swept;
+    try { swept = managedTemp.sweep(root, { budgetMs: 1000 }); }
+    catch (error) {
+      swept = { removed: [], busy: [], skipped: [], pending: [], errors: [{ path: root, error: `managed-sweep-${failureCategory(error)}`, runId: null, ownership: null }] };
+    }
+    cleanup = { ...swept, cache };
+    if (event === "PostToolUse") {
+      const assessment = cleanupAssessment(cleanup);
+      if (assessment.hasWarnings) return { systemMessage: "Nonblocking project cleanup diagnostics; these observations do not identify the current request's owned runs: " + assessment.summary +
+        ". Inspect node scripts/managed-temp.js report and preserve unknown or active directories." };
     }
   }
-  if (event === "SessionStart") return context(event,
-    `Native template lifecycle hooks loaded. Root: ${root}. Node: ${process.version}. Shared safety shell: ${resolveBash() || "UNAVAILABLE; security calls will block"}. Follow AGENTS.md. Hooks must be trusted in the host; scripts passing unit tests do not establish native activation. Run tests through node scripts/managed-temp.js run -- <executable> <args>; choose --profile vite|tsc|cargo|browser for supported direct build/browser tools. Windows Job Objects stop the owned process family before cleanup; unsupported platforms fail closed. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/COPY_DIR/ARCHIVE_DIR/LOG_DIR (each variable has AGENT_RUN_ prefix). Defaults: disposable cache; optional --cache shared is owned, capped at 10 GiB/project and 7 idle days, preserving active leases. Required build output needs --keep-output NEW_DIRECTORY. Owned inactive scratch and idle owned caches are swept after tools and at Stop/SessionStart; existing shared browser binaries, MCP databases, books, history, sources and unknown paths are preserved. Read node scripts/managed-temp.js report for the last bounded measured cleanup result. Cleanup: ${JSON.stringify(cleanup)}.`);
+  if (event === "SessionStart") {
+    const assessment = cleanupAssessment(cleanup);
+    return context(event,
+    `Native template lifecycle hooks loaded. Root: ${root}. Node: ${process.version}. Shared safety shell: ${resolveBash() || "UNAVAILABLE; security calls will block"}. Follow AGENTS.md. Hooks must be trusted in the host; scripts passing unit tests do not establish native activation. Run tests through node scripts/managed-temp.js run -- <executable> <args>; choose --profile vite|tsc|cargo|browser for supported direct build/browser tools. Windows Job Objects stop the owned process family before cleanup; unsupported platforms fail closed. Generic commands must direct custom outputs into AGENT_RUN_OUTPUT/COPY_DIR/ARCHIVE_DIR/LOG_DIR (each variable has AGENT_RUN_ prefix). Defaults: disposable cache; optional --cache shared is owned, capped at 10 GiB/project and 7 idle days, preserving active leases. Required build output needs --keep-output NEW_DIRECTORY. Owned inactive scratch and idle owned caches are swept after tools and at Stop/SessionStart; existing shared browser binaries, MCP databases, books, history, sources and unknown paths are preserved. Read node scripts/managed-temp.js report for the last bounded measured cleanup result. Cleanup diagnostics (nonblocking and project-wide): ${assessment.summary}.\n${storageOperations.context(root, input)}`);
+  }
   if (event === "UserPromptSubmit") {
     const { record, resolved } = startRequestFromPrompt(root, input, input.prompt || "");
     let primary = "";
@@ -213,10 +288,12 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
     }
     const resolutionNote = resolved.kind === "unlinked-contextual-continuation"
       ? "This short instruction has no accepted same-session task. Read the current conversation, identify the specific work and constraints the user means, and prepare an exact scope and acceptance contract before execution. Do not treat it as blanket permission to implement everything discussed.\n"
+      : resolved.kind === "unresolved-realtime-delegation"
+      ? "A realtime delegation envelope was malformed or quoted and was not trusted. Its full raw text remains in the request ledger; provide the intended request directly so it can be routed safely.\n"
       : resolved.kind === "malformed-question-reply" || resolved.kind === "unresolved-attachment-preamble" || resolved.kind === "unlinked-continuation"
       ? `Request context was not safely resolved (${resolved.kind}); the raw prompt remains in the request ledger and no prior task was inherited.\n`
       : "";
-    return context(event, instructions(record) + resolutionNote + primary);
+    return context(event, instructions(record) + resolutionNote + primary + "\n" + storageOperations.context(root, input, record));
   }
   if (event === "SubagentStart" || event === "SubagentStop") {
     const record = policy.childRecord(root, input);
@@ -236,11 +313,12 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       const command = String(tool.command || tool.cmd || (typeof tool.input === "string" ? tool.input : ""));
       const knownTest = /\b(?:node|bash)(?:\.exe)?\s+["']?(?:\.\/[\\/]?)?scripts[\\/]test-[\w.-]+\.(?:js|sh)\b/u.test(command);
       const knownBuild = /^\s*(?:(?:npm|pnpm|yarn)(?:\.cmd)?\s+(?:run\s+)?build\b|cargo(?:\.exe)?\s+(?:build|test|check|run|doc)\b|(?:vite(?:\.cmd)?\s+build|tsc(?:\.cmd)?)(?:\s|$)|(?:chrome|chromium|msedge)(?:\.exe)?(?:\s|$))/u.test(command);
-      const ownedEntry = /^\s*(?:node(?:\.exe)?\s+["']?(?:\.\/)?scripts[\\/]managed-temp\.js["']?\s+run(?:\s+--[\w-]+\s+[^\s]+)*\s+--\s|bash\s+["']?(?:\.\/)?scripts[\\/]test-template\.sh["']?\s*$|node\s+["']?(?:\.\/)?scripts[\\/]test-codex-workflows-live\.js["']?(?:\s|$))/u.test(command);
+      const ownedEntry = /^\s*(?:node(?:\.exe)?\s+["']?(?:\.\/)?scripts[\\/]managed-temp\.js["']?\s+run(?:\s+--[\w-]+\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s\r\n]+))*\s+--\s|bash\s+["']?(?:\.\/)?scripts[\\/]test-template\.sh["']?\s*$|node\s+["']?(?:\.\/)?scripts[\\/]test-codex-workflows-live\.js["']?(?:\s|$))/u.test(command);
       if ((knownTest || knownBuild) && !ownedEntry) throw new Error("Run template tests with owned scratch: node scripts/managed-temp.js run [--profile vite|tsc|cargo|browser] -- <executable> <args>. The aggregate test-template.sh and live harness own their scratch automatically. Keep required evidence outside scratch. This guard recognizes normal template invocations; it is not a general shell parser.");
     }
     const record = await ensureRequest(root, input);
     if (edit) legacyCheck(root, "pre-edit-safety.sh", input, true);
+    if (shell) storageOperations.beforeTool(root, input, record);
     if (!record.recovered) return {};
     let primary = "";
     if (record.state.writingRequested && !record.state.writingExempt && !record.state.direct) {
@@ -254,6 +332,9 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       const warning = legacyCheck(root, "check-encoding.sh", input, false);
       const result = spawnSync(process.execPath, [path.join(root, "scripts/validate-design-policy.js"), "--hook"], { cwd: root, encoding: "utf8", timeout: 5000, windowsHide: true });
       if (warning || result.status) return { systemMessage: warning || result.stdout?.slice(0, 1200) || "Design policy check failed" };
+    }
+    if (input.turn_id && storageOperations.inspect(root, input).registryPresent) {
+      return context(event, storageOperations.context(root, input, currentTurnRecord(root, input)));
     }
     return {};
   }
@@ -275,10 +356,16 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       } catch { /* Normal exact-output checks retain missing/invalid evidence. */ }
     }
     const result = policy.checkRequest(record, deliveredMessage);
-    const cacheIncomplete = cleanup?.cache && (cleanup.cache.overBudget && !cleanup.cache.activeOverBudget || !cleanup.cache.complete && cleanup.cache.reason !== "operation-in-progress");
-    if (cleanup?.errors.length || cleanup?.pending.length || cacheIncomplete) {
-      result.issues.push("temporary-test-cleanup-incomplete: " + JSON.stringify(cleanup) +
-        ". Run node scripts/managed-temp.js sweep --budget-ms 10000; preserve active, unknown and unresolved ownership. Diagnose refused paths; never erase markers to bypass the gate");
+    const unfinishedStorage = storageOperations.unfinished(root, input, record);
+    if (unfinishedStorage) {
+      result.issues.push("storage-operation-unfinished: " + unfinishedStorage);
+      result.state = "unresolved";
+      policy.writeJson(path.join(record.directory, "result.json"), result);
+    }
+    const cleanupState = cleanupAssessment(cleanup, record);
+    if (cleanupState.current.length) {
+      result.issues.push("current-request-managed-run-cleanup-incomplete: " + JSON.stringify(cleanupState.current.slice(0, 8)) +
+        ". Diagnose these exact request-owned run paths; preserve markers until their ownership and process state are resolved.");
       result.state = "unresolved";
       policy.writeJson(path.join(record.directory, "result.json"), result);
     }
@@ -296,10 +383,33 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
         const pending = path.join(policy.sessionRoot(root, input.session_id), "pending.json");
         policy.writeJson(pending, { file: record.file, reason: repair.reason, reasonSha256: require("./lib/writing-library-store.js").sha256(repair.reason) });
       }
+      if (cleanupState.diagnostics.length) repair.systemMessage = `${repair.systemMessage ? repair.systemMessage + "\n" : ""}Nonblocking project cleanup diagnostics (not attributed to this request): ${cleanupState.summary}`;
       return repair;
     }
-    const last = managedReports.readReport(root);
-    const summary = last ? `Owned resource result: ${JSON.stringify({ completedAt: last.completedAt, scratchRemoved: last.scratchRemoved, observedBytesRemoved: last.cleanup?.accounting?.observedBytesRemoved ?? null, cacheBytesRetained: cleanup?.cache?.bytesRetained ?? null, activeCacheOverBudget: cleanup?.cache?.activeOverBudget || false })}. Inspect node scripts/managed-temp.js report.` : null;
+    let summary = cleanupState.diagnostics.length ? `Nonblocking project cleanup diagnostics (not attributed to this request): ${cleanupState.summary}` : null;
+    let last = null;
+    let reportReadFailure = null;
+    try { last = managedReports.readReport(root); }
+    catch (error) { reportReadFailure = failureCategory(error); }
+    if (reportReadFailure) summary = `${summary ? summary + " " : ""}Latest project report could not be read (diagnostic only; no request ownership was established): ${reportReadFailure}`;
+    let immutableReport = null;
+    let immutableReportPath = null;
+    if (last?.runId) {
+      try {
+        immutableReportPath = managedReports.reportFile(root, last.runId);
+        immutableReport = managedReports.readReportPath(immutableReportPath);
+      } catch { immutableReportPath = null; }
+    }
+    const report = immutableReport || last;
+    const reportOwnership = managedRunOwnership.classifyOwnership(report?.ownership, {
+      sessionId: record.state.sessionId, requestId: record.state.requestId, rootTurnId: record.state.rootTurnId,
+    });
+    if (immutableReport && reportOwnership === "current") {
+      summary = `Current-request managed-run result: ${JSON.stringify({ runId: report.runId, report: immutableReportPath, completedAt: report.completedAt, scratchRemoved: report.scratchRemoved, observedBytesRemoved: report.cleanup?.accounting?.observedBytesRemoved ?? null })}. Inspect node scripts/managed-temp.js report --report-path "${immutableReportPath}".` + (summary ? ` ${summary}` : "");
+    } else if (last) {
+      summary = `${summary ? summary + " " : ""}Latest project report is diagnostic only (ownership=${reportOwnership}, runId=${report?.runId || "unknown"}, path=${immutableReportPath || "unavailable"}); it is not evidence for this request.`;
+    }
+    if (cleanup?.cache) summary = `${summary ? summary + " " : ""}Project cache observation: ${JSON.stringify({ bytesRetained: cleanup.cache.bytesRetained ?? null, activeOverBudget: cleanup.cache.activeOverBudget || false, complete: cleanup.cache.complete !== false })}.`;
     return result.exception ? { systemMessage: `Delegation exception: ${result.exception.category}: ${result.exception.reason}. Luna execution is not claimed. ${summary || ""}` } : summary ? { systemMessage: summary } : {};
   }
   throw new Error(`Unsupported native hook event: ${event}`);
@@ -318,4 +428,4 @@ async function main() {
   }
 }
 if (require.main === module) main().catch(error => { process.stderr.write(error.message); process.exitCode = 2; });
-module.exports = { handle, main, findRoot, resolveBash, ensureRequest, startRequestFromPrompt };
+module.exports = { handle, main, findRoot, resolveBash, ensureRequest, startRequestFromPrompt, packetContext };

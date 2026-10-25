@@ -158,7 +158,13 @@ function acceptEditorialReview(root, file, artifact, childId) {
 }
 function checkEditorial(record, bytes) {
   if (!record.state.editorial?.independentRequired) return null;
-  const item = readJson(path.join(record.directory, `editorial-${sha256(bytes)}.json`));
+  const reviewFile = path.join(record.directory, `editorial-${sha256(bytes)}.json`);
+  if (!fs.existsSync(reviewFile)) {
+    const error = new Error("No hash-bound independent editorial review is recorded for these exact final bytes");
+    error.code = "INDEPENDENT_REVIEW_MISSING";
+    throw error;
+  }
+  const item = readJson(reviewFile);
   const packet = readJson(path.join(record.directory, "packet.json"));
   const result = editorial.verifyEditorialReview(record.state.task, item.review, { requestId: record.state.requestId,
     artifactBytes: bytes, packet, readingMap: packet.readerPlan, reviewerEvidence: reviewEvidence(record, item.childId, bytes, item.review) });
@@ -308,18 +314,26 @@ function checkRequest(record, finalMessage) {
       verifyApplication(state.task, readJson(path.join(directory, "packet.json")), app, bytes, { requestId: state.requestId, requestStartedAt: state.startedAt, kind: "nonfiction" });
       checkEditorial(record, bytes);
       registeredArtifacts.push({ app, artifact, bytes });
-    } catch (error) { issues.push(`changed-file-artifact: ${error.message}`); }
+    } catch (error) {
+      if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
+      else issues.push(`changed-file-artifact: ${error.message}`);
+    }
   }
   const verifiedDeliveryAcknowledgement = registeredArtifacts.length > 0 &&
     !issues.some(issue => issue.startsWith("changed-file-artifact:")) && deliveryAcknowledgement(finalMessage, registeredArtifacts, state.root);
-  if (!state.writingExempt && !verifiedDeliveryAcknowledgement && (substantive(finalMessage) || (state.writingRequested && !state.direct && String(finalMessage || "").replace(/```[\s\S]*?```/gu, "").trim().length > 0))) {
+  if (!state.writingExempt && !verifiedDeliveryAcknowledgement &&
+      (substantive(finalMessage) || (state.writingRequested && !state.direct && String(finalMessage || "").replace(/```[\s\S]*?```/gu, "").trim().length > 0))) {
     try {
       if (typeof finalMessage !== "string") throw new Error("final message bytes unavailable");
       const packet = readJson(path.join(directory, "packet.json"));
       if (!packet.readerPlan) throw new Error("Mapped current-task reading is required; refresh the legacy packet");
       const app = readJson(path.join(directory, "application.json"));
       verifyApplication(state.task, packet, app, Buffer.from(finalMessage, "utf8"), { requestId: state.requestId, requestStartedAt: state.startedAt, kind: "nonfiction" });
-      checkEditorial(record, Buffer.from(finalMessage, "utf8"));
+      try { checkEditorial(record, Buffer.from(finalMessage, "utf8")); }
+      catch (error) {
+        if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
+        else issues.push(`independent-review-invalid: ${error.message}`);
+      }
     } catch (error) { issues.push(`writing-application-missing: ${error.code === "ENOENT" ? "read current primary packet and record its application to exact final text" : error.message}`); }
   }
   const result = { state: issues.length ? "unresolved" : "passed", requestId: state.requestId, repairCount: state.repairs, issues, children: observed, exception, editorial: state.editorial,

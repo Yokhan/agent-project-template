@@ -84,9 +84,9 @@
       "trust": "primary",
       "title": "OpenAI Codex hooks",
       "url": "https://learn.chatgpt.com/docs/hooks",
-      "last_checked": "2026-10-18",
+      "last_checked": "2026-10-25",
       "requires_fresh_check": true,
-      "local_conclusion": "Native Node lifecycle hooks bind current logical requests and exact output evidence. Stop continuation creates a new prompt; preserve request identity with single-use continuation binding. exec_command matches Bash, including nested code-mode tool calls. Hook trust is explicit; workflow hooks are not a complete security boundary."
+      "local_conclusion": "Native Node lifecycle hooks bind current logical requests and exact output evidence. Stop continuation creates a new prompt; preserve request identity with single-use continuation binding. exec_command matches Bash, including nested code-mode tool calls. Hook trust is explicit; workflow hooks are not a complete security boundary. Keep lifecycle messages bounded and use local packet navigation for full source reading; output limits do not establish activation or workflow completion."
     },
     {
       "id": "openai-codex-subagents",

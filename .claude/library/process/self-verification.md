@@ -81,6 +81,25 @@ the key assumption, a simpler viable alternative, and the evidence that would
 falsify the chosen approach. Surface the result when it changes acceptance or
 residual risk; do not invent a weakness solely to satisfy a template.
 
+## Tie evidence to the promised outcome
+
+For product or release claims, name the original user scenario and expected
+after-state before choosing checks. Preserve the product facts and constraints
+that define the promise. Identify the exact surface and environment: a Storybook
+component check does not establish the served site, and a desktop browser check
+does not establish native-device behavior. Exercise first-time and repeat paths
+when they carry different state or expectations.
+
+Separate evidence for source, built files, rendered target, installed package,
+and active runtime. File fingerprints establish which bytes were inspected;
+they do not establish publication, activation, semantic quality or user success.
+Use fresh browser/device/native observations for the corresponding surface and
+record gaps as unknown or partial handoff when evidence is unavailable. The
+optional `codex-turn.js record-outcome` ledger can preserve those references and
+recompute stale fingerprints; it is not a universal approval gate. Tiny edits,
+no-change answers and narrow direct tasks still receive only proportionate
+checks.
+
 If evidence is missing, say exactly what was not verified and what check would
 close the gap. Do not present uncertain work as complete. Uncertainty alone is
 not a reason to stop safe, reversible work already inside the user's scope.

@@ -29,7 +29,7 @@ function prepareProfile(workspace, options) {
   for (const key of Object.keys(env)) if (["npm_config_cache", "node_compile_cache", "cargo_target_dir", "cargo_build_build_dir"].includes(key.toLowerCase())) delete env[key];
   Object.assign(env, {
     TEMP: workspace.temp, TMP: workspace.temp, TMPDIR: workspace.temp,
-    AGENT_MANAGED_TEMP: workspace.root, AGENT_RUN_OUTPUT: paths.build,
+    AGENT_MANAGED_TEMP: workspace.root, AGENT_MANAGED_RUN_BINDING: workspace.binding, AGENT_RUN_OUTPUT: paths.build,
     AGENT_RUN_BROWSER_DIR: paths.browser, AGENT_RUN_COPY_DIR: paths.copies,
     AGENT_RUN_ARCHIVE_DIR: paths.archives, AGENT_RUN_LOG_DIR: paths.logs,
     npm_config_cache: cache("npm-cache"), NODE_COMPILE_CACHE: cache("node-compile"),
