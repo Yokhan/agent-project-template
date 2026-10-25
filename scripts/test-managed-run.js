@@ -17,8 +17,10 @@ const managedCli = require("./managed-temp.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-run-accept-"));
+const previousCacheBase = process.env.APT_MANAGED_CACHE_BASE;
+process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "managed-cache");
 const projects = [];
-const evidence = { schemaVersion: 1, startedAt: new Date().toISOString(), mode: process.argv.includes("--playwright-only") ? "playwright-browser-delta" : process.argv.includes("--browser-only") ? "browser-cli-delta" : process.argv.includes("--real") ? "real" : "focused", cases: [] };
+const evidence = { schemaVersion: 1, startedAt: new Date().toISOString(), mode: process.argv.includes("--diagnostics-only") ? "diagnostics-delta" : process.argv.includes("--playwright-only") ? "playwright-browser-delta" : process.argv.includes("--browser-only") ? "browser-cli-delta" : process.argv.includes("--real") ? "real" : "focused", cases: [] };
 
 function project(name) {
   const root = path.join(fixture, name);
@@ -50,6 +52,19 @@ function record(name, result, detail = {}) {
 function reportFrom(result) {
   const match = result.stderr.match(/managed-run: (\{[^\r\n]+\})/u);
   return match ? JSON.parse(match[1]) : null;
+}
+function diagnosticFrom(stderr) {
+  const line = stderr.split(/\r?\n/u).find(item => item.startsWith("managed-run-diagnostic: "));
+  if (!line) return null;
+  assert(Buffer.byteLength(`${line}\n`) <= 4096, "managed-run failure diagnostic exceeded its output bound");
+  return JSON.parse(line.slice("managed-run-diagnostic: ".length));
+}
+async function captureStderr(operation) {
+  const originalWrite = process.stderr.write;
+  let output = "";
+  process.stderr.write = function(chunk) { output += String(chunk); return true; };
+  try { return { result: await operation(), output }; }
+  finally { process.stderr.write = originalWrite; }
 }
 function commandFor(options, command, args) { return ["run", ...options, "--", command, ...args]; }
 function cacheNamespace(root) {
@@ -176,43 +191,66 @@ async function focused() {
       };
       return workspace;
     };
-    const cleanupExit = await managedCli.run(ownCleanupRoot, process.execPath, [], { launcher: successLauncher });
+    const cleanupRun = await captureStderr(() => managedCli.run(ownCleanupRoot, process.execPath, [], { launcher: successLauncher }));
+    const cleanupExit = cleanupRun.result;
     const cleanupReport = reports.readReport(ownCleanupRoot);
     assert.strictEqual(cleanupExit, 1, "unrelated cache warning masked an owned scratch cleanup failure");
     assert.strictEqual(cleanupReport.scratchRemoved, false);
     assert.strictEqual(cleanupReport.diagnostics.cacheHousekeeping.blocking, true);
     assert.strictEqual(cleanupReport.cache.complete, false);
+    const cleanupDiagnostic = diagnosticFrom(cleanupRun.output);
+    assert(cleanupDiagnostic.failureKinds.includes("scratch-cleanup-incomplete"));
+    assert.strictEqual(cleanupDiagnostic.process.treeStopped, true);
+    assert.strictEqual(cleanupDiagnostic.cleanup.reason, "injected-own-cleanup-failure");
     record("owned-cleanup-failure-remains-blocking-with-cache-warning", { code: cleanupExit }, { scratchRemoved: false, cacheWarningBlocking: true });
   } finally { caches.pruneCaches = originalPruneCaches; managed.createRun = originalCreateRun; }
 
   const sharedCacheRoot = project("shared-cache-prune-remains-strict");
   try {
     caches.pruneCaches = () => ({ ...incompleteCacheReport });
-    const sharedExit = await managedCli.run(sharedCacheRoot, process.execPath, [], { cache: "shared", launcher: successLauncher });
+    const sharedRun = await captureStderr(() => managedCli.run(sharedCacheRoot, process.execPath, [], { cache: "shared", launcher: successLauncher }));
+    const sharedExit = sharedRun.result;
     const sharedReport = reports.readReport(sharedCacheRoot);
     assert.strictEqual(sharedExit, 1, "shared-cache run ignored an incomplete required cache prune");
     assert.strictEqual(sharedReport.scratchRemoved, true);
     assert.strictEqual(sharedReport.cache.complete, false);
     assert.strictEqual(sharedReport.diagnostics.cacheHousekeeping.blocking, true);
+    const sharedDiagnostic = diagnosticFrom(sharedRun.output);
+    assert(sharedDiagnostic.failureKinds.includes("blocking-cache-housekeeping"));
+    assert.strictEqual(sharedDiagnostic.scratchRemoved, true);
+    assert.strictEqual(sharedDiagnostic.cacheHousekeeping.blocking, true);
     record("shared-cache-prune-remains-blocking", { code: sharedExit }, { scratchRemoved: true, cacheWarningBlocking: true });
   } finally { caches.pruneCaches = originalPruneCaches; }
 
   const privateArg = "ARG_PRIVATE_SENTINEL_72d01";
   const privateEnv = "ENV_PRIVATE_SENTINEL_43bb9";
+  const privateErrorCode = "private-supervisor-code-6505";
   process.env.MANAGED_TEST_PRIVATE_SENTINEL = privateEnv;
   const originalStderrWrite = process.stderr.write;
   let emitted = "";
   process.stderr.write = function(chunk, ...rest) { emitted += String(chunk); return true; };
   try {
-    await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async () => { throw new Error(`prelaunch ${privateArg}`); } });
+    await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async () => {
+      const error = new Error(`prelaunch ${privateArg}`);
+      error.code = "PROFILE_REQUIRED";
+      throw error;
+    } });
     const prelaunchReport = reports.readReport(root);
     assert.strictEqual(prelaunchReport.diagnostics.phase, "prelaunch-failure");
     assert.strictEqual(prelaunchReport.scratchRemoved, true, "a proven prelaunch failure should clean its run");
+    const prelaunchDiagnostic = diagnosticFrom(emitted);
+    assert(prelaunchDiagnostic.failureKinds.includes("captured-run-failure"));
+    assert(!prelaunchDiagnostic.failureKinds.includes("process-termination-unconfirmed"), "prelaunch failure was reported as an unconfirmed process");
+    assert.strictEqual(prelaunchDiagnostic.failure.code, "profile-required");
+    assert.strictEqual(prelaunchDiagnostic.diagnostics.supervisorError.code, "profile-required");
+    assert(!emitted.includes(privateArg) && !emitted.includes(privateEnv), "prelaunch diagnostic exposed private input");
     assert(!JSON.stringify(prelaunchReport).includes(privateArg));
     emitted = "";
     await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async (_command, _args, launchOptions) => {
       await launchOptions.onLaunchAttempt();
-      throw new Error(`supervisor ${privateArg} ${privateEnv}`);
+      const error = new Error(`supervisor ${privateArg} ${privateEnv}`);
+      error.code = privateErrorCode;
+      throw error;
     } });
     const attemptedReport = reports.readReport(root);
     assert.strictEqual(attemptedReport.diagnostics.phase, "termination-unverified");
@@ -220,6 +258,14 @@ async function focused() {
     assert.strictEqual(attemptedReport.diagnostics.commandBasename, path.basename(process.execPath));
     assert.strictEqual(attemptedReport.diagnostics.argumentCount, 2);
     assert.match(attemptedReport.diagnostics.commandHash, /^[a-f0-9]{64}$/u);
+    const attemptedDiagnostic = diagnosticFrom(emitted);
+    assert(attemptedDiagnostic.failureKinds.includes("process-termination-unconfirmed"));
+    assert(attemptedDiagnostic.failureKinds.includes("captured-run-failure"));
+    assert.strictEqual(attemptedDiagnostic.scratchRemoved, false);
+    assert.strictEqual(attemptedDiagnostic.failure.code, "run-failure");
+    assert.strictEqual(attemptedDiagnostic.diagnostics.supervisorError.code, "run-failure");
+    assert.deepStrictEqual(Object.keys(attemptedDiagnostic.diagnostics.supervisorError).sort(), ["code", "length", "sha256"]);
+    assert(!emitted.includes(privateErrorCode), "diagnostic exposed an unrecognized error code");
     const attemptedOwner = managed.status(root).find(item => item.id === attemptedReport.runId);
     assert.strictEqual(attemptedOwner.retainedReason, "process-family-termination-unverified");
     assert(!JSON.stringify(attemptedReport).includes(privateArg) && !JSON.stringify(attemptedReport).includes(privateEnv));
@@ -237,18 +283,29 @@ async function focused() {
     emitted = "";
     await managedCli.run(root, process.execPath, ["-e", privateArg], { launcher: async (_command, _args, launchOptions) => {
       await launchOptions.onLaunchAttempt();
-      return { treeStopped: false, code: 0, proof: "supervisor-error", error: returnedSupervisorSecret };
+      const error = new Error(returnedSupervisorSecret);
+      error.code = privateErrorCode;
+      error.extra = privateEnv;
+      return { treeStopped: false, code: 0, proof: "supervisor-error", error };
     } });
     const returnedFailureReport = reports.readReport(root);
     assert.strictEqual(returnedFailureReport.scratchRemoved, false, "an unproven returned result must retain the run");
     assert.strictEqual(returnedFailureReport.diagnostics.phase, "termination-unverified");
     assert(returnedFailureReport.diagnostics.supervisorError?.sha256, "returned supervisor error fingerprint was not preserved");
     assert(!JSON.stringify(returnedFailureReport).includes(returnedSupervisorSecret) && !emitted.includes(returnedSupervisorSecret), "returned supervisor diagnostics exposed raw error text");
+    const returnedDiagnostic = diagnosticFrom(emitted);
+    assert.strictEqual(returnedDiagnostic.diagnostics.supervisorError.code, "run-failure");
+    assert.deepStrictEqual(Object.keys(returnedDiagnostic.diagnostics.supervisorError).sort(), ["code", "length", "sha256"]);
+    assert(!emitted.includes(privateErrorCode) && !emitted.includes(privateEnv), "returned diagnostic exposed error metadata");
     const returnedOwnerFile = path.join(managed.managedBase(root), returnedFailureReport.runId, managed.OWNER_FILE);
     const returnedOwner = JSON.parse(fs.readFileSync(returnedOwnerFile, "utf8"));
     returnedOwner.pid = 2147483647; returnedOwner.retainedReason = null; returnedOwner.launching = false;
     fs.writeFileSync(returnedOwnerFile, JSON.stringify(returnedOwner));
     assert(managed.sweep(root).removed.includes(returnedFailureReport.runId));
+    if (process.argv.includes("--diagnostics-only")) {
+      record("failure-diagnostic-privacy-and-classification", { code: 0 });
+      return;
+    }
   } finally {
     process.stderr.write = originalStderrWrite;
     delete process.env.MANAGED_TEST_PRIVATE_SENTINEL;
@@ -524,6 +581,10 @@ async function cleanup() {
   } catch (error) { primaryError = error; evidence.failure = error.stack || error.message; }
   try { await cleanup(); }
   catch (error) { primaryError ||= error; evidence.cleanupFailure = error.stack || error.message; }
+  finally {
+    if (previousCacheBase === undefined) delete process.env.APT_MANAGED_CACHE_BASE;
+    else process.env.APT_MANAGED_CACHE_BASE = previousCacheBase;
+  }
   const evidencePath = writeEvidence();
   if (primaryError) {
     process.stderr.write(`managed-run-acceptance: ${primaryError.stack || primaryError.message}\nevidence: ${evidencePath}\n`);

@@ -3,9 +3,9 @@
   "trigger": {
     "kind": "repeated-failure",
     "acceptance_id": "owned-coordination-concurrency-and-crash-recovery",
-    "summary": "Repeated volume and cache acceptance failures required diagnosis of intent, writer grant and crash-released coordinator ownership.",
+    "summary": "Repeated volume and cache acceptance failures required diagnosis of intent, writer grant and crash-released coordinator ownership. Clean-environment CI then required fixture canonicalization and failure-only terminal observability before further cleanup changes.",
     "root_cause": "Pre-admission intents were conflated with already-issued debt, and original/recovery paths granted writer independently. Cache identity was initially uncommitted across the held operation; later contention was treated as fatal before mutex acquisition, while the recovery fixture incorrectly expected one-shot admission.",
-    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6",
+    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6; GitHub Actions 40185804883 and 40191557990; canonical alias probe e50d28fb-a672-43a3-aaa8-4fe193882bef",
     "attempts": [
       {
         "hypothesis": "An externalreservation plus existinglocalclaimpath suffices.",
@@ -33,6 +33,20 @@
         "change": "Committed identity separately and added strict bounded recovery receipts.",
         "before": "First-owner crash and incomplete archive recovery were not safe enough.",
         "after": "A repeated real recovery/acquire fixture failed; child stderr had been discarded. Inspection found fatal pre-mutex identity contention and an asymmetric one-shot recovery fixture. The exact original child cause is unavailable.",
+        "result": "recurred"
+      },
+      {
+        "hypothesis": "Locally passing hook fixtures are independent of provisioned private sources.",
+        "change": "Required a complete primary packet in a hook fixture.",
+        "before": "Local machine had the private writing library.",
+        "after": "Preflight 40185804883 rejected missing-source fixtures; production correctly blocked absent sources.",
+        "result": "failed"
+      },
+      {
+        "hypothesis": "Empty-library and isolated-cache fixture checks establish standalone CI behavior.",
+        "change": "Added synthetic assembly, real missing-source enforcement and scoped cache state.",
+        "before": "The source-library dependency was repaired in 292be24.",
+        "after": "Preflight 40191557990 passed all 223 Linux checks but failed outer cleanup without a preserved diagnostic; Windows separately rejected a lexical versus canonical fixture path. A casing-only alias reproduces that containment mechanism, not the exact CI path spelling.",
         "result": "recurred"
       }
     ]

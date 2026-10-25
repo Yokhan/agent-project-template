@@ -8,6 +8,11 @@ const caches = require("./lib/managed-cache.js");
 const { launchOwned } = require("./lib/managed-process.js");
 const { prepareProfile, PROFILES } = require("./lib/managed-run-profiles.js");
 const reports = require("./lib/managed-run-report.js");
+const SAFE_DIAGNOSTIC_ERROR_CODES = new Set([
+  "PROFILE_REQUIRED", "RUN_FAILURE", "SUPERVISOR_ERROR", "EACCES", "EAGAIN", "EBUSY", "EEXIST", "EFAULT", "EINTR", "EINVAL", "EIO",
+  "EISDIR", "ELOOP", "EMFILE", "ENAMETOOLONG", "ENFILE", "ENOENT", "ENOSPC", "ENOTDIR", "ENOTEMPTY", "ENOTSUP", "ENXIO", "EOPNOTSUPP",
+  "EPIPE", "EPERM", "EROFS", "ETXTBSY", "EXDEV", "UNKNOWN",
+]);
 
 function print(value) { process.stdout.write(JSON.stringify(value, null, 2) + "\n"); }
 function resolveCommand(command) {
@@ -94,6 +99,129 @@ function cacheHousekeepingDiagnostics(cacheReport, cacheError, blocking) {
   }
   return diagnostic;
 }
+function safeDiagnosticCode(value) {
+  if (typeof value !== "string") return null;
+  const normalized = ["SIGINT", "SIGTERM", "SIGHUP"].includes(value) ? value.toLowerCase() : value;
+  if (/^[a-f0-9]{32,}$/iu.test(normalized) || /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/iu.test(normalized)) return null;
+  if (/^[A-Z][A-Z0-9_]{1,39}$/u.test(normalized)) {
+    return SAFE_DIAGNOSTIC_ERROR_CODES.has(normalized) ? normalized.toLowerCase().replaceAll("_", "-") : null;
+  }
+  return /^[a-z][a-z0-9-]{0,63}$/u.test(normalized) ? normalized : null;
+}
+function safeDiagnosticError(value) {
+  const code = typeof value?.code === "string" ? value.code.toUpperCase() : null;
+  return {
+    code: code && SAFE_DIAGNOSTIC_ERROR_CODES.has(code) ? code.toLowerCase().replaceAll("_", "-") : "run-failure",
+    length: Number.isSafeInteger(value?.length) && value.length >= 0 ? value.length : null,
+    sha256: typeof value?.sha256 === "string" && /^[a-f0-9]{64}$/iu.test(value.sha256) ? value.sha256.toLowerCase() : null,
+  };
+}
+function countDiagnosticReasons(items, selectReason, limit = 8) {
+  const counts = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const reason = safeDiagnosticCode(selectReason(item)) || "unclassified";
+    counts.set(reason, (counts.get(reason) || 0) + 1);
+  }
+  const sorted = [...counts].sort(([left], [right]) => left.localeCompare(right));
+  return {
+    counts: Object.fromEntries(sorted.slice(0, limit)),
+    omittedKinds: Math.max(0, sorted.length - limit),
+  };
+}
+function cleanupFailureDiagnostics(cleanup) {
+  const report = cleanup?.report || {};
+  const accounting = report.accounting || cleanup?.accounting || {};
+  const errors = Array.isArray(report.errors) ? report.errors : [];
+  return {
+    removed: cleanup?.removed === true,
+    reason: safeDiagnosticCode(cleanup?.reason || report.reason),
+    accounting: {
+      observedBytesRemoved: Number.isSafeInteger(accounting.observedBytesRemoved) ? accounting.observedBytesRemoved : null,
+      observedFilesRemoved: Number.isSafeInteger(accounting.observedFilesRemoved) ? accounting.observedFilesRemoved : null,
+      observedBytesRemaining: Number.isSafeInteger(accounting.observedBytesRemaining) ? accounting.observedBytesRemaining : null,
+      observedFilesRemaining: Number.isSafeInteger(accounting.observedFilesRemaining) ? accounting.observedFilesRemaining : null,
+      remainingComplete: accounting.remainingComplete === true,
+      reason: safeDiagnosticCode(accounting.reason),
+    },
+    counts: {
+      removed: Array.isArray(report.removed) ? report.removed.length : 0,
+      busy: Array.isArray(report.busy) ? report.busy.length : 0,
+      skipped: Array.isArray(report.skipped) ? report.skipped.length : 0,
+      pending: Array.isArray(report.pending) ? report.pending.length : 0,
+      errors: errors.length,
+    },
+    reasons: {
+      busy: countDiagnosticReasons(report.busy, item => item?.reason),
+      skipped: countDiagnosticReasons(report.skipped, item => item?.reason),
+      pending: countDiagnosticReasons(report.pending, item => item?.reason),
+      errors: countDiagnosticReasons(errors, item => {
+        const match = typeof item?.error === "string" ? item.error.match(/^([A-Z][A-Z0-9_]{1,39}):/u) : null;
+        return match && SAFE_DIAGNOSTIC_ERROR_CODES.has(match[1]) ? match[1].toLowerCase().replaceAll("_", "-") : null;
+      }),
+    },
+  };
+}
+function managedFailureDiagnostics({ exitCode, launchAttempted, stopped, result, stopReason, failure, cleanup, cacheHousekeeping, cachePruneFailure, nonblockingCacheHousekeeping, diagnostics }) {
+  const failureKinds = [];
+  if (launchAttempted && !stopped) failureKinds.push("process-termination-unconfirmed");
+  if (stopped && !cleanup?.removed) failureKinds.push("scratch-cleanup-incomplete");
+  if (cachePruneFailure && !nonblockingCacheHousekeeping) failureKinds.push("blocking-cache-housekeeping");
+  if (failure) failureKinds.push("captured-run-failure");
+  if (result && (result.code !== 0 || result.signal)) failureKinds.push("command-exit-nonzero");
+  if (!failureKinds.length && exitCode !== 0) failureKinds.push("unclassified-run-failure");
+  return {
+    exitCode,
+    failureKinds,
+    stopReason: safeDiagnosticCode(stopReason),
+    failure: failure ? safeDiagnosticError(safeError(failure)) : null,
+    process: result ? {
+      commandExitCode: Number.isSafeInteger(result.code) ? result.code : null,
+      treeStopped: result.treeStopped === true,
+      groupStopped: result.groupStopped === true,
+      cleanupBasis: safeDiagnosticCode(result.cleanupBasis),
+      supervision: safeDiagnosticCode(result.supervision),
+      rootInJob: typeof result.rootInJob === "boolean" ? result.rootInJob : null,
+      killOnClose: typeof result.killOnClose === "boolean" ? result.killOnClose : null,
+      proof: safeDiagnosticCode(result.proof),
+      aborted: result.aborted === true,
+    } : null,
+    diagnostics: {
+      phase: safeDiagnosticCode(diagnostics?.phase),
+      commandExitCode: Number.isSafeInteger(diagnostics?.commandExitCode) ? diagnostics.commandExitCode : null,
+      proof: safeDiagnosticCode(diagnostics?.proof),
+      supervisorError: diagnostics?.supervisorError ? safeDiagnosticError(diagnostics.supervisorError) : null,
+    },
+    scratchRemoved: cleanup?.removed === true,
+    cleanup: cleanupFailureDiagnostics(cleanup),
+    cacheHousekeeping: cacheHousekeeping ? {
+      blocking: cacheHousekeeping.blocking === true,
+      reason: safeDiagnosticCode(cacheHousekeeping.reason),
+      remainingBytes: Number.isSafeInteger(cacheHousekeeping.remainingBytes) ? cacheHousekeeping.remainingBytes : null,
+      remainingBytesComplete: cacheHousekeeping.remainingBytesComplete === true,
+    } : null,
+  };
+}
+function writeFailureDiagnostics(value) {
+  const serialized = JSON.stringify(value);
+  const omittedReasonKinds = Object.values(value.cleanup.reasons).reduce((sum, group) => sum + group.omittedKinds, 0);
+  const prefix = "managed-run-diagnostic: ";
+  const fits = candidate => Buffer.byteLength(`${prefix}${candidate}\n`) <= 4096;
+  let line = fits(serialized) ? serialized : JSON.stringify({
+    exitCode: value.exitCode,
+    failureKinds: value.failureKinds,
+    stopReason: value.stopReason,
+    failure: value.failure,
+    process: value.process,
+    scratchRemoved: value.scratchRemoved,
+    cleanup: { removed: value.cleanup.removed, reason: value.cleanup.reason, counts: value.cleanup.counts, omittedReasonKinds },
+    cacheHousekeeping: value.cacheHousekeeping,
+    truncated: true,
+  });
+  if (!fits(line)) {
+    line = JSON.stringify({ exitCode: value.exitCode, failureKinds: value.failureKinds, scratchRemoved: value.scratchRemoved, truncated: true });
+  }
+  process.stderr.write(`${prefix}${line}\n`);
+}
 async function run(root, command, args, options = {}) {
   command = resolveCommand(command);
   const limits = cacheOptions(options, root);
@@ -153,7 +281,7 @@ async function run(root, command, args, options = {}) {
     workspace.setChildPid(null);
     if (result.error) throw Object.assign(new Error("Process supervisor failed"), { code: "SUPERVISOR_ERROR", supervisorMessage: result.error });
     if (exitCode === 0 && options["keep-output"]) exported = exportBuild(prepared.paths.build, options["keep-output"], workspace.root);
-  } catch (error) { failure = error; process.stderr.write(`managed-temp: run failed (${safeError(error).code})\n`); }
+  } catch (error) { failure = error; process.stderr.write(`managed-temp: run failed (${safeDiagnosticError(safeError(error)).code})\n`); }
   finally {
     clearInterval(monitor); clearTimeout(timer);
     for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.removeListener(signal, forward);
@@ -187,6 +315,7 @@ async function run(root, command, args, options = {}) {
       process.stderr.write(`managed-run: ${JSON.stringify({ runId: workspace.id, exitCode, scratchRemoved: cleanup?.removed === true,
         observedBytesRemoved: cleanup?.report?.accounting?.observedBytesRemoved ?? null, cacheBytesFreed: cacheReport?.bytesFreed ?? null, cacheBytesRetained: cacheReport?.bytesRetained ?? null,
         cacheHousekeeping, report: reportFile })}\n`);
+      if (exitCode !== 0) writeFailureDiagnostics(managedFailureDiagnostics({ exitCode, launchAttempted, stopped, result, stopReason, failure, cleanup, cacheHousekeeping, cachePruneFailure, nonblockingCacheHousekeeping, diagnostics }));
     } catch (error) { process.stderr.write(`managed-temp: report failed: ${error.message}\n`); if (exitCode === 0) exitCode = 1; }
   }
   return exitCode;

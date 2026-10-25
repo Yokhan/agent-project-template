@@ -8,7 +8,7 @@ inventory: 90
 production: 0
 cleanup: 0
 tags: template,release,v620,outcomes,writing,delegation,storage
-next: Repair clean-environment CI fixtures and the observed writing-intent word-boundary error, then require green exact-commit CI before publishing and verifying v6.2.0
+next: Resolve Windows canonical fixture paths and expose the Linux failed cleanup report, then require green exact-commit CI before publishing and verifying v6.2.0
 -->
 
 # Current Task - Accepted Workflow Improvements And Conditional v6.2.0
@@ -77,6 +77,23 @@ diagnostic coverage; test cache state must be isolated from other chats.
 A fresh observed visual-feedback request also exposed an unbounded Russian
 article stem matching an unrelated word. Correct that lexical boundary while
 preserving genuine authored-text requests before rerunning exact-commit CI.
+
+The second preflight passed all 223 Linux checks but its managed outer run
+reported incomplete cleanup and exited 1; the detailed report was not preserved
+by CI, so the cause remains unverified. Windows failed a request-path containment
+fixture; a casing-only alias reproduces that mechanism locally, while the exact
+CI path spelling was not logged. Preserve the guard, canonicalize the fixture,
+and expose sanitized terminal diagnostics before attempting a cleanup repair.
+The corrected classifier also passed a fresh trusted native CLI session with
+SessionStart/UserPromptSubmit/Stop and a non-writing visual-feedback request.
+
+Failure-only diagnostic coverage now passes six isolated cases without changing
+cleanup authority. Other cache-writing test fixtures use their own cache base.
+Local full runner/temp checks reached later Windows child-start or timeout-marker
+failures; their changed assertions passed, but those complete runs did not.
+Require the next exact-commit CI result rather than treating partial checks as
+whole-tree acceptance. One task-created 12 KiB temporary SQLite file remains
+outside the wrapper after automatic deletion review refused both cleanup forms.
 
 ## Previous local repair baseline
 

@@ -38,7 +38,9 @@ async function main(argv) {
   const codex = get("--codex");
   if (!SCENARIOS[scenario] || !codex || !fs.existsSync(codex)) throw new Error("Valid scenario and existing native Codex executable required");
   const root = path.resolve(__dirname, "..");
+  const originalManagedCacheBase = process.env.APT_MANAGED_CACHE_BASE;
   const workspace = managedTemp.createRun(root, { label: "workflow-live-" + scenario });
+  process.env.APT_MANAGED_CACHE_BASE = path.join(workspace.temp, "managed-cache");
   const destination = path.join(workspace.temp, "snapshot");
   const reportFile = path.join(root, ".session-cache", "workflow-acceptance-" + workspace.id + ".json");
   try {
@@ -96,25 +98,30 @@ process.stdout.write(JSON.stringify(await engine.handle(input,root))+'\\n');};
     fs.writeFileSync(reportFile, JSON.stringify({ scenario, reportFile, error: error.message, completedAt: new Date().toISOString() }, null, 2));
     throw error;
   } finally {
-    if (fs.existsSync(destination)) {
-      try {
-        const candidateCache = managedCache.pruneCaches({ projectRoot: destination, maxAgeMs: 0, budgetMs: 5000 });
-        const candidateCleanup = managedTemp.sweep(destination, { budgetMs: 5000 });
-        const candidateRuns = managedTemp.status(destination);
-        if (!candidateCache.complete || candidateCache.retained.length || candidateCleanup.errors.length || candidateCleanup.pending.length || candidateRuns.length) {
-          // Its external namespace still needs this project root for safe discovery.
-          workspace.retain("Candidate scratch unresolved; preserve snapshot root for cleanup: " + destination);
-          console.error("Candidate scratch unresolved: " + JSON.stringify({ candidateCleanup, candidateRuns }));
+    try {
+      if (fs.existsSync(destination)) {
+        try {
+          const candidateCache = managedCache.pruneCaches({ projectRoot: destination, maxAgeMs: 0, budgetMs: 5000 });
+          const candidateCleanup = managedTemp.sweep(destination, { budgetMs: 5000 });
+          const candidateRuns = managedTemp.status(destination);
+          if (!candidateCache.complete || candidateCache.retained.length || candidateCleanup.errors.length || candidateCleanup.pending.length || candidateRuns.length) {
+            // Its external namespace still needs this project root for safe discovery.
+            workspace.retain("Candidate scratch unresolved; preserve snapshot root for cleanup: " + destination);
+            console.error("Candidate scratch unresolved: " + JSON.stringify({ candidateCleanup, candidateRuns }));
+            process.exitCode = 1;
+          }
+        } catch (error) {
+          workspace.retain("Candidate scratch could not be inspected; preserve snapshot: " + destination);
+          console.error("Candidate cleanup check failed: " + error.message);
           process.exitCode = 1;
         }
-      } catch (error) {
-        workspace.retain("Candidate scratch could not be inspected; preserve snapshot: " + destination);
-        console.error("Candidate cleanup check failed: " + error.message);
-        process.exitCode = 1;
       }
+      const cleanup = workspace.finish();
+      if (!cleanup.removed) { console.error("Live workflow scratch cleanup incomplete: " + JSON.stringify(cleanup)); process.exitCode = 1; }
+    } finally {
+      if (originalManagedCacheBase === undefined) delete process.env.APT_MANAGED_CACHE_BASE;
+      else process.env.APT_MANAGED_CACHE_BASE = originalManagedCacheBase;
     }
-    const cleanup = workspace.finish();
-    if (!cleanup.removed) { console.error("Live workflow scratch cleanup incomplete: " + JSON.stringify(cleanup)); process.exitCode = 1; }
   }
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });

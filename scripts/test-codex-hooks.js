@@ -12,7 +12,7 @@ const { sha256, libraryStatus } = require("./lib/writing-library-store.js");
 const { run } = require("./codex-turn.js");
 
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-native-hooks-"));
-const cleanupRoot = path.join(fixture, "cleanup hooks");
+let cleanupRoot = path.join(fixture, "cleanup hooks");
 const emptyWritingLibrary = path.join(fixture, "empty-writing-library");
 const originalManagedCacheBase = process.env.APT_MANAGED_CACHE_BASE;
 process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "managed-cache");
@@ -412,6 +412,7 @@ try {
   assert(JSON.parse(native.stdout).hookSpecificOutput.additionalContext.includes("Native template lifecycle"));
   // Exercise real handler entrypoints in separate processes, with abandoned owned scratch.
   fs.mkdirSync(cleanupRoot);
+  cleanupRoot = fs.realpathSync.native(cleanupRoot);
   const engine = path.join(__dirname, "codex-hooks.js");
   const manager = path.join(__dirname, "lib/managed-temp.js");
   const cacheManager = path.join(__dirname, "lib/managed-cache.js");

@@ -13,6 +13,8 @@ const ownershipApi = require("./lib/managed-run-ownership.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-temp-test-"));
+const originalManagedCacheBase = process.env.APT_MANAGED_CACHE_BASE;
+process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "managed-cache");
 const fixtureProjects = new Set();
 function project(name) {
   const root = path.join(fixture, name);
@@ -496,24 +498,29 @@ async function main() {
 }
 
 function cleanupFixtures() {
-  for (const root of fixtureProjects) {
-    const reportDirectory = reports.reportDirectory(root);
-    const expectedReport = path.join(os.homedir(), ".cache", "apt-r", crypto.createHash("sha256").update(fs.realpathSync(root), "utf8").digest("hex").slice(0, 32));
-    assert.strictEqual(path.resolve(reportDirectory), path.resolve(expectedReport), "fixture report cleanup must stay within its exact hashed namespace");
-    if (fs.existsSync(reportDirectory)) {
-      const reportStat = fs.lstatSync(reportDirectory);
-      if (!reportStat.isSymbolicLink()) managed.assertNoLinks(reportDirectory);
-      fs.rmSync(reportDirectory, { recursive: true, force: true });
+  try {
+    for (const root of fixtureProjects) {
+      const reportDirectory = reports.reportDirectory(root);
+      const expectedReport = path.join(os.homedir(), ".cache", "apt-r", crypto.createHash("sha256").update(fs.realpathSync(root), "utf8").digest("hex").slice(0, 32));
+      assert.strictEqual(path.resolve(reportDirectory), path.resolve(expectedReport), "fixture report cleanup must stay within its exact hashed namespace");
+      if (fs.existsSync(reportDirectory)) {
+        const reportStat = fs.lstatSync(reportDirectory);
+        if (!reportStat.isSymbolicLink()) managed.assertNoLinks(reportDirectory);
+        fs.rmSync(reportDirectory, { recursive: true, force: true });
+      }
+      const base = managed.managedBase(root);
+      const expected = path.join(os.homedir(), ".cache", "apt-t", crypto.createHash("sha256").update(fs.realpathSync(root), "utf8").digest("hex").slice(0, 32));
+      assert.strictEqual(path.resolve(base), path.resolve(expected), "fixture cleanup must stay within its exact hashed namespace");
+      if (fs.existsSync(base)) {
+        const stat = fs.lstatSync(base);
+        if (!stat.isSymbolicLink()) managed.assertNoLinks(base);
+        fs.rmSync(base, { recursive: true, force: true });
+      }
     }
-    const base = managed.managedBase(root);
-    const expected = path.join(os.homedir(), ".cache", "apt-t", crypto.createHash("sha256").update(fs.realpathSync(root), "utf8").digest("hex").slice(0, 32));
-    assert.strictEqual(path.resolve(base), path.resolve(expected), "fixture cleanup must stay within its exact hashed namespace");
-    if (fs.existsSync(base)) {
-      const stat = fs.lstatSync(base);
-      if (!stat.isSymbolicLink()) managed.assertNoLinks(base);
-      fs.rmSync(base, { recursive: true, force: true });
-    }
+    fs.rmSync(fixture, { recursive: true, force: true });
+  } finally {
+    if (originalManagedCacheBase === undefined) delete process.env.APT_MANAGED_CACHE_BASE;
+    else process.env.APT_MANAGED_CACHE_BASE = originalManagedCacheBase;
   }
-  fs.rmSync(fixture, { recursive: true, force: true });
 }
 main().catch(error => { process.stderr.write(`${error.stack || error.message}\n`); process.exitCode = 1; }).finally(cleanupFixtures);
