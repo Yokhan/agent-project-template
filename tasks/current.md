@@ -8,7 +8,7 @@ inventory: 90
 production: 0
 cleanup: 0
 tags: template,release,v620,outcomes,writing,delegation,storage
-next: Require exact-commit CI for local registry initialization and portable test teardown, then publish and verify v6.2.0
+next: Resolve restored Orca hook compatibility, validate the exact final commit, then publish and verify v6.2.0
 -->
 
 # Current Task - Accepted Workflow Improvements And Conditional v6.2.0
@@ -109,6 +109,14 @@ registry WAL initialization lock race. Teardown now unlinks the test link;
 project registry initialization configures busy handling before WAL, closes and
 reopens only on structured BUSY/LOCKED errors, and rereads transactional schema
 state. Five concurrent claim checks pass locally; exact-commit CI remains due.
+
+Preflight 40203132460 at commit07ebd4b passed all six Linux/Windows jobs,
+including the previously failing registry and link-cleanup checks. Restored
+Orca chats then exposed a separate PreToolUse runner failure on ordinary read
+commands and an authored-text false positive on a mechanical inbox notification.
+Keep these compatibility repairs bounded and preserve the safety checks. This
+new delta requires its own exact-commit acceptance before tagging; no v6.2.0
+tag or publication exists yet.
 
 ## Previous local repair baseline
 

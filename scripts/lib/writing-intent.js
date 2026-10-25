@@ -60,6 +60,9 @@ const OTHER_LANGUAGE_PATTERNS = [
 const CYRILLIC_PATTERN = /[А-Яа-яЁё]/;
 const DIAGNOSTIC_ONLY_PATTERN = /\b(?:investigate|find out|diagnose|identify the cause|why|what went wrong)\b|выясни|узнай|диагностир|найди\s+причин|в\s+чем\s+причин|почему/iu;
 
+const ORCA_MAILBOX_NOTIFICATION_PATTERN =
+  /^You have \d+ orchestration messages?\. Run `orca orchestration check(?: --run [^`\r\n]+)?`\.$/;
+
 function normalizeTask(task) {
   return String(task || "").replace(/ё/g, "е").trim();
 }
@@ -128,6 +131,7 @@ function resolveOutputLanguage(task) {
 
 function classifyWritingIntent(rawTask) {
   const task = normalizeTask(rawTask);
+  const isOrcaMailboxNotification = ORCA_MAILBOX_NOTIFICATION_PATTERN.test(task);
   const detectedAction = findAction(task);
   const externalTools = findExternalTools(task);
   let primaryMode = findPrimaryMode(task, externalTools);
@@ -140,7 +144,7 @@ function classifyWritingIntent(rawTask) {
   // A product plan is informational text even when planning owns execution.
   // Do not lose its mandatory primary-source grounding to route precedence.
   if (isProgressiveProductPlan) primaryMode = "informational";
-  const isWriting = Boolean(primaryMode && action &&
+  const isWriting = !isOrcaMailboxNotification && Boolean(primaryMode && action &&
     (hasArtifact || externalTools.length || action !== "review"));
   const language = isWriting ? resolveOutputLanguage(task) : { outputLanguage: null, languageResolution: null };
 

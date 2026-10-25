@@ -16,6 +16,30 @@ function expectIntent(task, expected) {
 }
 
 function main() {
+  for (const task of [
+    "You have 1 orchestration message. Run `orca orchestration check`.",
+    "You have 2 orchestration messages. Run `orca orchestration check`.",
+    "You have 17 orchestration messages. Run `orca orchestration check --run run_abc123`.",
+    "\nYou have 0 orchestration messages. Run `orca orchestration check`.\n",
+  ]) {
+    expectIntent(task, {
+      isWriting: false,
+      action: null,
+      primaryMode: null,
+      outputLanguage: null,
+    });
+  }
+  for (const task of [
+    "Please handle this: You have 1 orchestration message. Run `orca orchestration check`.",
+    "You have 1 orchestration message. Run `orca orchestration check`. Also write a status update.",
+    "'You have 1 orchestration message. Run `orca orchestration check`. '",
+    "User: You have 1 orchestration message. Run `orca orchestration check`.",
+  ]) {
+    expectIntent(task, {
+      isWriting: true,
+      primaryMode: "communication",
+    });
+  }
   expectIntent("Напиши сцену разговора героя с антагонистом", {
     isWriting: true,
     action: "create",
