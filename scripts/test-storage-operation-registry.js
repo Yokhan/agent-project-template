@@ -85,6 +85,7 @@ function opInput(project, suffix, target, reserveBytes = 1024) {
   return { source: project.source, digest: digest(suffix), purpose: "test-output", target, reserveBytes, session: `session-${suffix}`, request: `request-${suffix}` };
 }
 const testClaim = (root, input) => registry.claim(root, input, { availableBytes: Number.MAX_SAFE_INTEGER });
+const claimDiagnostics = results => results.map(({ token, ...result }) => result);
 
 async function main() {
   const absent = newProject("absent-status");
@@ -98,7 +99,7 @@ async function main() {
   const firstClaims = await Promise.all(Array.from({ length: 5 }, (_, index) => childClaim(firstClaimsProject.root,
     opInput(firstClaimsProject, `first-global-${index}`, path.join(firstClaimsProject.root, `out-${index}`)), `first-global-${index}`, Number.MAX_SAFE_INTEGER)));
   assert.equal(firstClaims.filter(item => item.state === "writer").length, 5,
-    `first-ever global registry initialization preserves unrelated concurrent claims; child results: ${JSON.stringify(firstClaims)}`);
+    `first-ever global registry initialization preserves unrelated concurrent claims; child results: ${JSON.stringify(claimDiagnostics(firstClaims))}`);
   assert.equal(registry.status(firstClaimsProject.root).volumeAdmission.reservations.length, 5,
     "all five first-use claims retain their committed global reservations");
   process.env.AGENT_STORAGE_COORDINATION_TEST_DB = sharedDatabase;
@@ -121,7 +122,7 @@ async function main() {
   const target = path.join(same.root, "output");
   const contenders = await Promise.all(Array.from({ length: 5 }, (_, index) => childClaim(same.root, opInput(same, "shared", target), `same-${index}`, Number.MAX_SAFE_INTEGER)));
   assert.equal(contenders.filter(item => item.state === "writer").length, 1, "one concurrent writer owns the resource");
-  assert.equal(contenders.filter(item => item.state === "busy").length, 4, `other clients observe the current writer: ${JSON.stringify(contenders)}`);
+  assert.equal(contenders.filter(item => item.state === "busy").length, 4, `other clients observe the current writer: ${JSON.stringify(claimDiagnostics(contenders))}`);
   const writer = contenders.find(item => item.state === "writer");
   assert.equal(registry.status(same.root).volumeAdmission.reservations[0].id, writer.id,
     "the external volume reservation is committed before a writer is returned");
@@ -155,7 +156,7 @@ async function main() {
   const independentClaims = await Promise.all(Array.from({ length: 5 }, (_, index) => childClaim(independent.root,
     opInput(independent, `independent-${index}`, path.join(independent.root, `out-${index}`)), `independent-${index}`, Number.MAX_SAFE_INTEGER)));
   assert.equal(independentClaims.filter(item => item.state === "writer").length, 5,
-    `unrelated concurrent claims are preserved; child results: ${JSON.stringify(independentClaims)}`);
+    `unrelated concurrent claims are preserved; child results: ${JSON.stringify(claimDiagnostics(independentClaims))}`);
   const scopedStatus = registry.status(independent.root, { owner: "session-independent-0", request: "request-independent-0" });
   assert.equal(scopedStatus.operations.length, 5, "status exposes bounded global resources to each caller");
   assert.equal(scopedStatus.unfinishedWrites.length, 1, "unfinished writes are scoped to the current owner and request");
@@ -366,7 +367,7 @@ async function main() {
   const reservation = 700;
   const admitted = await Promise.all(Array.from({ length: 5 }, (_, index) => childClaim(budget.root,
     opInput(budget, `budget-${index}`, path.join(budget.root, `budget-out-${index}`), reservation), `budget-${index}`, available)));
-  assert.equal(admitted.filter(item => item.state === "writer").length, 1, `concurrent reservations honor one shared available-space fixture: ${JSON.stringify(admitted)}`);
+  assert.equal(admitted.filter(item => item.state === "writer").length, 1, `concurrent reservations honor one shared available-space fixture: ${JSON.stringify(claimDiagnostics(admitted))}`);
   assert.equal(admitted.filter(item => item.state === "busy").length, 0);
   assert.equal(admitted.filter(item => item.error).length, 4);
   assert.equal(registry.status(budget.root).operations.length, 1);

@@ -12,6 +12,9 @@ const MAX_FILES = 20000;
 const MAX_MANIFEST_BYTES = 1024 * 1024;
 const MAX_DB_BYTES = 8 * 1024 * 1024;
 const MAX_TEXT = 2048;
+const REGISTRY_INIT_BUSY_RETRIES = 5;
+const REGISTRY_INIT_BUSY_TIMEOUT_MS = 5000;
+const REGISTRY_INIT_DEADLINE_MS = 15000;
 const DIGEST = /^[a-f0-9]{64}$/u;
 function projectRoot(root) {
   const absolute = managed.assertNoLinks(root);
@@ -69,20 +72,41 @@ function ensureRegistryDirectory(file) {
   fs.mkdirSync(directory, { recursive: true });
   managed.assertNoLinks(directory);
 }
+function isSqliteBusyOrLocked(error) {
+  const code = Number(error?.errcode ?? error?.sqliteErrorCode);
+  const primaryCode = Number.isInteger(code) ? code & 0xff : code;
+  return primaryCode === 5 || primaryCode === 6;
+}
+function waitForRegistryInitRetry(attempt, remainingMs) {
+  const delayMs = Math.min(25 * 2 ** attempt, 400, remainingMs);
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+}
+function registryInitTimeout(deadline) {
+  const remainingMs = deadline - Date.now();
+  if (remainingMs <= 0) throw new Error("Storage registry initialization deadline exceeded");
+  return Math.max(1, Math.min(REGISTRY_INIT_BUSY_TIMEOUT_MS, remainingMs));
+}
 function openRegistry(root) {
   const { DatabaseSync } = require("node:sqlite");
   const file = registryPath(root);
   ensureRegistryDirectory(file);
   managed.assertNoLinks(file, { allowMissing: true });
   if (fs.existsSync(file) && !fs.lstatSync(file).isFile()) throw new Error("Storage registry must be a regular file");
-  const db = new DatabaseSync(file, { timeout: 5000 });
-  try {
-    db.exec("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;");
-    const version = db.prepare("PRAGMA user_version").get().user_version;
-    if (version === 0) {
-      const existingTables = db.prepare("SELECT count(*) AS count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").get().count;
-      if (existingTables) throw new Error("Storage registry has unversioned tables; refusing to reinterpret its schema");
-      db.exec(`CREATE TABLE operations (
+  const deadline = Date.now() + REGISTRY_INIT_DEADLINE_MS;
+  for (let attempt = 0; ; attempt++) {
+    let db;
+    try {
+      const timeoutMs = registryInitTimeout(deadline);
+      db = new DatabaseSync(file, { timeout: timeoutMs });
+      db.exec(`PRAGMA busy_timeout=${timeoutMs}; PRAGMA journal_mode=WAL;`);
+      db.exec("PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;");
+      db.exec(`PRAGMA busy_timeout=${registryInitTimeout(deadline)};`);
+      db.exec("BEGIN IMMEDIATE;");
+      const version = db.prepare("PRAGMA user_version").get().user_version;
+      if (version === 0) {
+        const existingTables = db.prepare("SELECT count(*) AS count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").get().count;
+        if (existingTables) throw new Error("Storage registry has unversioned tables; refusing to reinterpret its schema");
+        db.exec(`CREATE TABLE operations (
     id TEXT PRIMARY KEY, source TEXT NOT NULL, source_key TEXT NOT NULL, digest TEXT NOT NULL, purpose TEXT NOT NULL,
     target TEXT NOT NULL, target_key TEXT NOT NULL, state TEXT NOT NULL CHECK(state IN ('writing','ready','abandoned')),
     session TEXT NOT NULL, request TEXT NOT NULL, token TEXT NOT NULL, generation INTEGER NOT NULL,
@@ -114,8 +138,8 @@ function openRegistry(root) {
     CREATE TRIGGER protections_insert_revision AFTER INSERT ON protections BEGIN UPDATE registry_meta SET revision=revision+1 WHERE id=1; END;
     CREATE TRIGGER protections_delete_revision AFTER DELETE ON protections BEGIN UPDATE registry_meta SET revision=revision+1 WHERE id=1; END;
     PRAGMA user_version=2;`);
-    } else if (version === 1) {
-      db.exec(`ALTER TABLE operations ADD COLUMN grant_unissued INTEGER NOT NULL DEFAULT 0;
+      } else if (version === 1) {
+        db.exec(`ALTER TABLE operations ADD COLUMN grant_unissued INTEGER NOT NULL DEFAULT 0;
         CREATE TABLE pending_claims (
         id TEXT PRIMARY KEY, source TEXT NOT NULL, source_key TEXT NOT NULL, digest TEXT NOT NULL, purpose TEXT NOT NULL,
         target TEXT NOT NULL, target_key TEXT NOT NULL, session TEXT NOT NULL, request TEXT NOT NULL, token TEXT NOT NULL,
@@ -124,13 +148,19 @@ function openRegistry(root) {
         CREATE TRIGGER pending_claims_insert_revision AFTER INSERT ON pending_claims BEGIN UPDATE registry_meta SET revision=revision+1 WHERE id=1; END;
         CREATE TRIGGER pending_claims_delete_revision AFTER DELETE ON pending_claims BEGIN UPDATE registry_meta SET revision=revision+1 WHERE id=1; END;
         PRAGMA user_version=2;`);
-    } else if (version !== 2) throw new Error(`Unsupported storage registry schema version: ${version}`);
-    db.exec("COMMIT");
-    return db;
-  } catch (error) {
-    try { db.exec("ROLLBACK"); } catch {}
-    db.close();
-    throw error;
+      } else if (version !== 2) throw new Error(`Unsupported storage registry schema version: ${version}`);
+      db.exec("COMMIT");
+      return db;
+    } catch (error) {
+      if (db) {
+        try { db.exec("ROLLBACK"); } catch {}
+        try { db.close(); } catch {}
+      }
+      const remainingMs = deadline - Date.now();
+      if (!isSqliteBusyOrLocked(error) || attempt >= REGISTRY_INIT_BUSY_RETRIES || remainingMs <= 0) throw error;
+      waitForRegistryInitRetry(attempt, remainingMs);
+      if (Date.now() >= deadline) throw error;
+    }
   }
 }
 function withTransaction(db, callback) {

@@ -45,6 +45,9 @@ remain unmeasured.
   per-user external volume ledger. Project manifests, protections and lifecycle
   ownership remain in their project registries. Uncertain reservations remain
   allocated until explicit owner-fenced reconciliation.
+- Project registry initialization handles bounded SQLite contention before WAL
+  and transaction setup, reopening failed handles and rereading schema state.
+  This does not retry an issued writer grant or relax capacity/ownership checks.
 
 ## Compatibility and limits
 

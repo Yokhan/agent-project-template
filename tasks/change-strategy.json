@@ -5,7 +5,7 @@
     "acceptance_id": "owned-coordination-and-no-follow-cleanup",
     "summary": "Repeated volume and cache acceptance failures required diagnosis of intent, writer grant and crash-released coordinator ownership. Clean-environment CI then required fixture canonicalization and failure-only terminal observability before further cleanup changes.",
     "root_cause": "Pre-admission intents were conflated with already-issued debt, and original/recovery paths granted writer independently. Cache identity was initially uncommitted across the held operation; later contention was treated as fatal before mutex acquisition, while the recovery fixture incorrectly expected one-shot admission. CI failure-only diagnostics then identified linked-entry cleanup refusal after confirmed termination. Intentional test links exposed blanket descendant-link rejection; keep-output export must remain strict while authorized cleanup removes only owned link entries.",
-    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6; GitHub Actions 40185804883 and 40191557990; canonical alias probe e50d28fb-a672-43a3-aaa8-4fe193882bef; Actions 40196036857 lines403/807; focused junction runs681c040a-c947-4739-8982-3ee971b25ed7 and a3852766-11a2-46c3-9029-1556e4a8fbc0",
+    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6; GitHub Actions 40185804883 and 40191557990; canonical alias probe e50d28fb-a672-43a3-aaa8-4fe193882bef; Actions 40196036857 lines403/807; focused junction runs681c040a-c947-4739-8982-3ee971b25ed7 and a3852766-11a2-46c3-9029-1556e4a8fbc0; Actions40200143129 job121189410217/121189410269; local registry focused7b10e2c5-a61f-45f8-bd33-e15ca1b29a0d",
     "attempts": [
       {
         "hypothesis": "An externalreservation plus existinglocalclaimpath suffices.",
@@ -54,6 +54,13 @@
         "change": "Added bounded safe diagnostics and isolated cache-writing fixtures.",
         "before": "Outer cleanup failed without its detailed report in CI.",
         "after": "CI exposed linked-entry after termination proof on both platforms, plus an existing uppercase error-code expectation. Preserve display compatibility; authorize only internal no-follow leaf cleanup after valid ownership/inactivity/claim guards.",
+        "result": "recurred"
+      },
+      {
+        "hypothesis": "Guarded leaf-link cleanup removes owned entries while preserving external targets and strict marker/export boundaries.",
+        "change": "Added authorized no-follow cleanup and guarded marker regressions.",
+        "before": "Confirmed termination still left linked-entry scratch refusal.",
+        "after": "Actions40200143129 confirmed scratchRemoved true on both OS; POSIX fixture teardown used rmdir on a symlink, and Windows exposed local registry WAL busy handling configured too late. Correct portable unlink and bounded fresh-handle SQLite initialization; no cleanup/capacity guard bypass.",
         "result": "recurred"
       }
     ]

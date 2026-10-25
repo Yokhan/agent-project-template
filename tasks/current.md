@@ -8,7 +8,7 @@ inventory: 90
 production: 0
 cleanup: 0
 tags: template,release,v620,outcomes,writing,delegation,storage
-next: Review guarded owned-link cleanup, require exact-commit Windows/Linux CI, then publish and verify v6.2.0
+next: Require exact-commit CI for local registry initialization and portable test teardown, then publish and verify v6.2.0
 -->
 
 # Current Task - Accepted Workflow Improvements And Conditional v6.2.0
@@ -102,6 +102,13 @@ remain. Windows junction cases, including a real child-created tree, passed.
 File symlink creation was denied locally and remains for Linux CI. The CLI's
 existing uppercase error-code spelling is preserved. Exact-commit acceptance
 and publication are still pending.
+
+The fourth preflight confirmed complete outer scratch cleanup on both systems.
+It found a POSIX test-link teardown using rmdir and a separate Windows local
+registry WAL initialization lock race. Teardown now unlinks the test link;
+project registry initialization configures busy handling before WAL, closes and
+reopens only on structured BUSY/LOCKED errors, and rereads transactional schema
+state. Five concurrent claim checks pass locally; exact-commit CI remains due.
 
 ## Previous local repair baseline
 

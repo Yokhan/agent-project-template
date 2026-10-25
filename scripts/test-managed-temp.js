@@ -205,7 +205,7 @@ async function testOwnedLinkCleanup() {
   assert(managed.sweep(markerRoot, { budgetMs: 1000 }).removed.includes(markerRun.id));
 
   const nestedMarkerCases = [
-    { name: "junction", create: markerPath => { fs.symlinkSync(outside, markerPath, "junction"); return true; }, remove: markerPath => fs.rmdirSync(markerPath) },
+    { name: "junction", create: markerPath => { fs.symlinkSync(outside, markerPath, "junction"); return true; }, remove: markerPath => fs.unlinkSync(markerPath) },
     { name: "dangling", create: markerPath => createFileLink(markerPath, path.join(outside, "missing-owner-marker.json"), skippedFileLinks), remove: markerPath => fs.unlinkSync(markerPath) },
     { name: "cyclic", create: markerPath => createFileLink(markerPath, path.basename(markerPath), skippedFileLinks), remove: markerPath => fs.unlinkSync(markerPath) },
   ];
