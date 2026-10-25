@@ -125,15 +125,8 @@ async function runSafetyOnly() {
           env: { ...process.env, TEST_MODE: "0", FILE_PATH: "", COMMAND: command, TOOL_NAME: "Bash" },
         });
         assert.equal(oldSafety.error, undefined, `baseline pre-bash-safety failed for ${JSON.stringify(command)}`);
-        const intentionalDockerDelta = command === "docker rm -f $(docker ps -aq)" && reason === "Docker mass cleanup";
-        if (intentionalDockerDelta) {
-          assert.equal(oldSafety.status, 0, "the historical escaped-dollar pattern did not enforce this intended Docker rule");
-          assert.equal(result.status, 2, "the repair explicitly enforces the intended Docker mass-cleanup rule");
-          assert(result.message.includes(reason));
-        } else {
-          assert.equal(oldSafety.status, result.status, `old/new decision differs for ${JSON.stringify(command)}; old=${JSON.stringify({ status: oldSafety.status, stderr: oldSafety.stderr })}, new=${JSON.stringify(result)}`);
-          if (reason) assert(oldSafety.stderr.includes(reason), `baseline denial reason differs for ${JSON.stringify(command)}`);
-        }
+        assert.equal(oldSafety.status, result.status, `old/new decision differs for ${JSON.stringify(command)}; old=${JSON.stringify({ status: oldSafety.status, stderr: oldSafety.stderr })}, new=${JSON.stringify(result)}`);
+        if (reason) assert(oldSafety.stderr.includes(reason), `baseline denial reason differs for ${JSON.stringify(command)}`);
       }
       checkedCases += 1;
     }

@@ -21,7 +21,9 @@ matches() {
       if [ "$nocasematch_was_set" = "1" ]; then shopt -s nocasematch; else shopt -u nocasematch; fi
       return 0
     fi
-  done <<< "$text"
+  done <<MATCH_INPUT
+${text}
+MATCH_INPUT
   if [ "$nocasematch_was_set" = "1" ]; then shopt -s nocasematch; else shopt -u nocasematch; fi
   return 1
 }

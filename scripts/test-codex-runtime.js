@@ -60,8 +60,18 @@ for (const event of ["SessionStart", "PreToolUse"]) {
     encoding: "utf8",
     env: { ...process.env },
   });
-  assert.equal(result.status, 2, `${event} must fail the hook process on unsupported runtime`);
-  assert.match(result.stderr, /simulated unsupported runtime/u);
+  if (event === "PreToolUse") {
+    assert.equal(result.status, 0, "PreToolUse must return the explicit deny protocol on unsupported runtime");
+    const output = JSON.parse(result.stdout);
+    assert.deepEqual(output.hookSpecificOutput, {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: "simulated unsupported runtime",
+    });
+  } else {
+    assert.equal(result.status, 2, `${event} must fail the hook process on unsupported runtime`);
+    assert.match(result.stderr, /simulated unsupported runtime/u);
+  }
 }
 const stop = spawnSync(process.execPath, ["-e", hookCode], {
   cwd: path.resolve(__dirname, ".."),
