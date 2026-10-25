@@ -70,6 +70,10 @@ that must survive consolidation. Neither command scans all project references;
 the consumer must identify its inputs. Use `status --root PROJECT` for public
 metadata, or add `--session ID --request ID` for scoped unfinished writes.
 
+These pins/protections constrain storage-operation admission. Managed-temp sweep
+and managed-cache eviction do not consult this registry; a storage pin does not
+hold a managed run or cache lease. Do not use it as a closed-run handoff API.
+
 On failure, invoke `abandon` with the writer's owner fields. Files and its space
 reservation remain. `release` removes only owned metadata and refuses a writer
 or abandoned operation while its target exists. It never removes files. Pins
@@ -77,6 +81,13 @@ and protections are released only with their own token and owner identifiers.
 No timestamp expires ownership, deletes data, or transfers a writer lease.
 Interrupted owners require explicit reconciliation; there is no automatic
 takeover or claim that an old directory is unused.
+
+Retained bytes already reduce measured free space, while an abandoned writer's
+future-write reservation remains conservative. Measurement or a dead PID alone
+does not close that producer. Do not zero reserved bytes or publish a partial
+output as ready to bypass admission. A measured sealed-retained terminal state
+would need its own producer fence and crash-safe cross-registry reconciliation;
+the current API does not provide it.
 
 Retry the exact matching `claim` after a crash before its one-time grant is
 consumed. It first checks for a committed reservation; if none exists, it must

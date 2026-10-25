@@ -287,7 +287,7 @@ function emptyAccounting(reason = null) {
   };
 }
 
-function inventoryBounded(directory, deadline, maxEntries) {
+function inventoryBounded(directory, deadline, maxEntries, { allowOwnedLinkEntries = false } = {}) {
   assertNoLinks(directory);
   const stack = [path.resolve(directory)];
   let entries = 0;
@@ -297,7 +297,11 @@ function inventoryBounded(directory, deadline, maxEntries) {
     if (Date.now() > deadline || entries >= maxEntries) return { complete: false, bytes: null, files: null, reason: "budget-exhausted" };
     const current = stack.pop();
     const stat = fs.lstatSync(current);
-    if (stat.isSymbolicLink()) return { complete: false, bytes: null, files: null, reason: "linked-entry" };
+    if (stat.isSymbolicLink()) {
+      if (!allowOwnedLinkEntries) return { complete: false, bytes: null, files: null, reason: "linked-entry" };
+      entries += 1;
+      continue;
+    }
     if (stat.isFile()) { bytes += stat.size; files += 1; entries += 1; continue; }
     if (!stat.isDirectory()) { entries += 1; continue; }
     const dir = fs.opendirSync(current);
@@ -397,9 +401,41 @@ function assertSafeMutation(base, target) {
   assertNoLinks(normalizedTarget);
 }
 
-function removeBounded(directory, deadline, maxEntries = 10000, owner = null, base = path.dirname(directory), accounting = emptyAccounting()) {
+function assertSafeLinkEntryMutation(base, parent, target) {
+  const normalizedBase = path.resolve(base);
+  const normalizedParent = path.resolve(parent);
+  const normalizedTarget = path.resolve(target);
+  const parentRelative = path.relative(normalizedBase, normalizedParent);
+  const targetRelative = path.relative(normalizedBase, normalizedTarget);
+  if (!parentRelative || parentRelative === ".." || parentRelative.startsWith(`..${path.sep}`) || path.isAbsolute(parentRelative) ||
+      !targetRelative || targetRelative === ".." || targetRelative.startsWith(`..${path.sep}`) || path.isAbsolute(targetRelative) ||
+      path.dirname(normalizedTarget) !== normalizedParent) {
+    throw new Error(`Refusing link entry outside owned cleanup root: ${target}`);
+  }
+  // Revalidate the owned root and direct parent before unlinking the leaf.
+  // Node has no dirfd-relative unlink, so a concurrent replacement after this
+  // check and before unlinkSync remains a platform race boundary.
+  assertNoLinks(normalizedBase);
+  assertNoLinks(normalizedParent);
+  const parentStat = fs.lstatSync(normalizedParent);
+  if (!parentStat.isDirectory() || parentStat.isSymbolicLink()) throw new Error(`Refusing linked cleanup parent: ${normalizedParent}`);
+  const leafStat = fs.lstatSync(normalizedTarget);
+  if (!leafStat.isSymbolicLink()) throw new Error(`Refusing changed link entry: ${normalizedTarget}`);
+}
+
+function removeBoundedInternal(directory, deadline, maxEntries, owner, base, accounting, allowOwnedLinkEntries) {
   const root = path.resolve(directory);
   const ownerPath = path.join(root, OWNER_FILE);
+  let ownedMarkerBytes = null;
+  if (allowOwnedLinkEntries) {
+    const validatedOwner = owner && readOwner(root, owner.root, owner.projectHash);
+    if (!validatedOwner || validatedOwner.id !== owner.id || validatedOwner.pid !== owner.pid) throw new Error("Owned cleanup owner changed before link cleanup");
+    assertNoLinks(root);
+    assertNoLinks(ownerPath);
+    const markerStat = fs.lstatSync(ownerPath);
+    if (!markerStat.isFile() || markerStat.isSymbolicLink()) throw new Error("Managed owner marker changed before link cleanup");
+    ownedMarkerBytes = fs.readFileSync(ownerPath);
+  }
   const stack = [];
   let entries = 0;
   const openDirectory = target => {
@@ -412,7 +448,7 @@ function removeBounded(directory, deadline, maxEntries = 10000, owner = null, ba
   try {
     while (stack.length) {
       if (Date.now() > deadline || entries >= maxEntries) {
-        const remaining = inventoryBounded(root, deadline, Math.max(0, maxEntries - entries));
+        const remaining = inventoryBounded(root, deadline, Math.max(0, maxEntries - entries), { allowOwnedLinkEntries });
         accounting.observedBytesRemaining = remaining.bytes;
         accounting.observedFilesRemaining = remaining.files;
         accounting.remainingComplete = remaining.complete;
@@ -426,14 +462,36 @@ function removeBounded(directory, deadline, maxEntries = 10000, owner = null, ba
         stack.pop();
         if (frame.root && owner) {
           // All other entries are gone. Remove ownership last; if the final
-          // rmdir fails, leave the empty directory unowned and report it.
+          // rmdir fails, restore the validated owner marker when the root is
+          // still safely reachable so incomplete cleanup remains owned.
           assertSafeMutation(base, ownerPath);
-          const markerBytes = fs.lstatSync(ownerPath).size;
+          const currentOwner = readOwner(root, owner.root, owner.projectHash);
+          const currentMarkerBytes = fs.readFileSync(ownerPath);
+          if (!currentOwner || currentOwner.id !== owner.id || currentOwner.pid !== owner.pid ||
+              ownedMarkerBytes && !currentMarkerBytes.equals(ownedMarkerBytes)) throw new Error("Managed owner marker changed during cleanup");
+          const markerBytes = currentMarkerBytes.length;
           fs.unlinkSync(ownerPath);
           accounting.observedBytesRemoved += markerBytes;
           accounting.observedFilesRemoved += 1;
-          assertSafeMutation(base, root);
-          fs.rmdirSync(root);
+          try {
+            assertSafeMutation(base, root);
+            fs.rmdirSync(root);
+          } catch (error) {
+            if (ownedMarkerBytes) {
+              try {
+                assertNoLinks(root);
+                const rootStat = fs.lstatSync(root);
+                if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error("Managed cleanup root changed before marker restore");
+                assertNoLinks(ownerPath, { allowMissing: true });
+                const fd = fs.openSync(ownerPath, "wx", 0o600);
+                try { fs.writeFileSync(fd, ownedMarkerBytes); fs.fsyncSync(fd); }
+                finally { fs.closeSync(fd); }
+                accounting.observedBytesRemoved -= markerBytes;
+                accounting.observedFilesRemoved -= 1;
+              } catch { /* preserve the original removal failure */ }
+            }
+            throw error;
+          }
         } else {
           assertSafeMutation(base, frame.target);
           fs.rmdirSync(frame.target);
@@ -443,12 +501,26 @@ function removeBounded(directory, deadline, maxEntries = 10000, owner = null, ba
       }
       if (frame.root && owner && entry.name === OWNER_FILE) continue;
       const child = path.join(frame.target, entry.name);
-      assertNoLinks(child);
+      assertNoLinks(frame.target);
       const stat = fs.lstatSync(child);
-      if (stat.isSymbolicLink()) throw new Error(`Refusing nested symlink or junction: ${child}`);
+      if (stat.isSymbolicLink()) {
+        if (!allowOwnedLinkEntries) throw new Error(`Refusing nested symlink or junction: ${child}`);
+        assertSafeLinkEntryMutation(base, frame.target, child);
+        fs.unlinkSync(child);
+        entries += 1;
+        continue;
+      }
       if (stat.isDirectory()) {
         const nestedMarker = path.join(child, OWNER_FILE);
-        if (owner && fs.existsSync(nestedMarker)) {
+        let nestedMarkerStat = null;
+        if (owner) {
+          try { nestedMarkerStat = fs.lstatSync(nestedMarker); }
+          catch (error) {
+            if (error.code !== "ENOENT") throw new Error(`Unable to inspect nested managed owner marker: ${child}`);
+          }
+        }
+        if (nestedMarkerStat) {
+          if (nestedMarkerStat.isSymbolicLink()) throw new Error(`Refusing nested managed workspace with linked owner marker: ${child}`);
           const nestedOwner = readOwner(child, owner.root);
           if (!nestedOwner) throw new Error(`Refusing nested managed workspace with invalid owner marker: ${child}`);
           if (leaseActive(nestedOwner)) throw new Error(`Refusing nested managed workspace with a live lease: ${child}`);
@@ -474,6 +546,16 @@ function removeBounded(directory, deadline, maxEntries = 10000, owner = null, ba
   accounting.remainingComplete = true;
   accounting.reason = null;
   return { removed: true, entries, accounting };
+}
+
+// The exported/default remover is intentionally link-strict. Only sweep calls
+// this private path after validating an inactive owner and acquiring its claim.
+function removeBounded(directory, deadline, maxEntries = 10000, owner = null, base = path.dirname(directory), accounting = emptyAccounting()) {
+  return removeBoundedInternal(directory, deadline, maxEntries, owner, base, accounting, false);
+}
+function removeOwnedBounded(directory, deadline, maxEntries, owner, base, accounting) {
+  if (!owner) throw new Error("Owned cleanup requires a validated owner");
+  return removeBoundedInternal(directory, deadline, maxEntries, owner, base, accounting, true);
 }
 
 function createRun(root, options = {}) {
@@ -706,7 +788,7 @@ function sweep(root, options = {}) {
         observeRemaining(name, directory, `dependent-resource-${dependencies.reason}`);
         continue;
       }
-      const result = removeBounded(directory, deadline, options.maxEntries || 10000, owner, roots.base, measured);
+      const result = removeOwnedBounded(directory, deadline, options.maxEntries || 10000, owner, roots.base, measured);
       report.observations.push({ path: name, ...measured });
       report.accounting.observedBytesRemoved += measured.observedBytesRemoved;
       report.accounting.observedFilesRemoved += measured.observedFilesRemoved;
@@ -719,7 +801,9 @@ function sweep(root, options = {}) {
       const observed = emptyAccounting(error.message.includes("symlink") || error.message.includes("linked") ? "linked-entry" : "observation-or-cleanup-error");
       observed.observedBytesRemoved = measured.observedBytesRemoved;
       observed.observedFilesRemoved = measured.observedFilesRemoved;
-      const remaining = inventoryBounded(directory, deadline, options.maxEntries || 10000);
+      let remaining;
+      try { remaining = inventoryBounded(directory, deadline, options.maxEntries || 10000, { allowOwnedLinkEntries: true }); }
+      catch { remaining = { bytes: null, files: null, complete: false, reason: "unsafe-or-unreadable-entry" }; }
       observed.observedBytesRemaining = remaining.bytes;
       observed.observedFilesRemaining = remaining.files;
       observed.remainingComplete = remaining.complete;

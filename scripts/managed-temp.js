@@ -281,7 +281,7 @@ async function run(root, command, args, options = {}) {
     workspace.setChildPid(null);
     if (result.error) throw Object.assign(new Error("Process supervisor failed"), { code: "SUPERVISOR_ERROR", supervisorMessage: result.error });
     if (exitCode === 0 && options["keep-output"]) exported = exportBuild(prepared.paths.build, options["keep-output"], workspace.root);
-  } catch (error) { failure = error; process.stderr.write(`managed-temp: run failed (${safeDiagnosticError(safeError(error)).code})\n`); }
+  } catch (error) { failure = error; process.stderr.write(`managed-temp: run failed (${safeDiagnosticError(safeError(error)).code.toUpperCase().replaceAll("-", "_")})\n`); }
   finally {
     clearInterval(monitor); clearTimeout(timer);
     for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.removeListener(signal, forward);

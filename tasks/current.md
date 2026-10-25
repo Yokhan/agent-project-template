@@ -8,7 +8,7 @@ inventory: 90
 production: 0
 cleanup: 0
 tags: template,release,v620,outcomes,writing,delegation,storage
-next: Resolve Windows canonical fixture paths and expose the Linux failed cleanup report, then require green exact-commit CI before publishing and verifying v6.2.0
+next: Review guarded owned-link cleanup, require exact-commit Windows/Linux CI, then publish and verify v6.2.0
 -->
 
 # Current Task - Accepted Workflow Improvements And Conditional v6.2.0
@@ -94,6 +94,14 @@ failures; their changed assertions passed, but those complete runs did not.
 Require the next exact-commit CI result rather than treating partial checks as
 whole-tree acceptance. One task-created 12 KiB temporary SQLite file remains
 outside the wrapper after automatic deletion review refused both cleanup forms.
+
+The third preflight identified `linked-entry` as the cleanup refusal after
+confirmed process termination on both systems. Owned cleanup now unlinks only
+descendant link entries with targets preserved; strict export/root/owner checks
+remain. Windows junction cases, including a real child-created tree, passed.
+File symlink creation was denied locally and remains for Linux CI. The CLI's
+existing uppercase error-code spelling is preserved. Exact-commit acceptance
+and publication are still pending.
 
 ## Previous local repair baseline
 

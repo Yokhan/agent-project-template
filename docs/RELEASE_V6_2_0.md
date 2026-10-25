@@ -52,6 +52,13 @@ No project-wide model, effort, approval or sandbox default is added. Books and
 text caches stay in the authorized private machine library and do not ship in
 the public release. Project-owned overlays and product files remain protected.
 
+Owned cleanup removes descendant link entries without following their targets;
+root, ancestor and ownership-marker checks remain strict. Linked output still
+fails the separate export check. Required artifacts must be exported or retained
+through their original run lifecycle. Storage-operation pins are not managed-run
+read leases, and closed-run adoption/handoff is not a supported API; resolve
+known consumers of such artifacts before activating new cleanup code there.
+
 Volume admission covers operations using the new cooperative protocol, not
 arbitrary filesystem writes, old clients, other users or every storage pool.
 Backfill never discovers and adopts unknown projects silently. No timestamp or
@@ -84,6 +91,11 @@ public payload.
 The final cache coordinator passed isolated real-process crash/contention
 checks and an injected filesystem-error check that confirmed the SQLite lock
 was released.
+
+Owned link cleanup passed real Windows junction cases for runs and caches,
+including a child-created tree. External target manifests stayed unchanged;
+linked nested ownership markers remained protected. Windows denied file-symlink
+creation locally, so Linux CI must establish the remaining link variants.
 
 A fresh native CLI session executed SessionStart, UserPromptSubmit and Stop with
 persisted trust and no one-off hook-trust bypass. Its handler fingerprint was

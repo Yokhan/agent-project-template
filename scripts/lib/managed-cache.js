@@ -496,10 +496,12 @@ function inventory(directory, deadline, maxEntries = 100000) {
   while (stack.length) {
     if (Date.now() > deadline || entries >= maxEntries) return { complete: false, bytes: null, files: null, reason: "budget-exhausted" };
     const current = stack.pop();
+    if (current !== directory) managedTemp.assertNoLinks(path.dirname(current));
     const stat = fs.lstatSync(current);
-    if (stat.isSymbolicLink()) return { complete: false, bytes: null, files: null, reason: "linked-cache-entry" };
+    if (stat.isSymbolicLink()) { entries += 1; continue; }
     if (stat.isFile()) { bytes += stat.size; files += 1; entries += 1; continue; }
     if (!stat.isDirectory()) return { complete: false, bytes: null, files: null, reason: "unsupported-cache-entry" };
+    managedTemp.assertNoLinks(current);
     const dir = fs.opendirSync(current);
     try {
       for (let entry = dir.readSync(); entry !== null; entry = dir.readSync()) {
@@ -511,9 +513,39 @@ function inventory(directory, deadline, maxEntries = 100000) {
   }
   return { complete: true, bytes, files, reason: null };
 }
-function removeCache(directory, deadline, maxEntries = 100000) {
+function assertSafeCacheMutation(root, parent, target, { linkLeaf = false } = {}) {
+  const normalizedRoot = path.resolve(root);
+  const normalizedParent = path.resolve(parent);
+  const normalizedTarget = path.resolve(target);
+  const parentRelative = path.relative(normalizedRoot, normalizedParent);
+  const targetRelative = path.relative(normalizedRoot, normalizedTarget);
+  if (parentRelative === ".." || parentRelative.startsWith(`..${path.sep}`) || path.isAbsolute(parentRelative) ||
+      !targetRelative || targetRelative === ".." || targetRelative.startsWith(`..${path.sep}`) || path.isAbsolute(targetRelative) ||
+      path.dirname(normalizedTarget) !== normalizedParent) {
+    throw new Error(`Refusing cache mutation outside owned cache root: ${target}`);
+  }
+  // Revalidate the authenticated cache root and direct parent before mutation.
+  // Node has no dirfd-relative unlink, so a concurrent replacement after this
+  // check and before unlinkSync remains a platform race boundary.
+  managedTemp.assertNoLinks(normalizedRoot);
+  managedTemp.assertNoLinks(normalizedParent);
+  const parentStat = fs.lstatSync(normalizedParent);
+  if (!parentStat.isDirectory() || parentStat.isSymbolicLink()) throw new Error(`Refusing linked cache parent: ${normalizedParent}`);
+  const leafStat = fs.lstatSync(normalizedTarget);
+  if (linkLeaf ? !leafStat.isSymbolicLink() : leafStat.isSymbolicLink()) {
+    throw new Error(linkLeaf ? `Refusing changed cache link entry: ${normalizedTarget}` : `Refusing linked cache entry: ${normalizedTarget}`);
+  }
+}
+function removeCache(directory, deadline, maxEntries = 100000, expectedCache) {
   const root = path.resolve(directory);
   const marker = path.join(root, CACHE_MARKER);
+  managedTemp.assertNoLinks(root);
+  const rootStat = fs.lstatSync(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error(`Refusing non-directory or linked cache path: ${root}`);
+  const initialMarker = expectedCache && readCache(root, expectedCache.projectRoot, expectedCache.projectHash, expectedCache.kind);
+  if (!initialMarker) throw new Error("cache owner changed before eviction");
+  managedTemp.assertNoLinks(marker);
+  const markerBytes = fs.readFileSync(marker);
   const stack = [{ target: root, root: true, dir: fs.opendirSync(root) }];
   let entries = 0, bytesFreed = 0, filesFreed = 0;
   try {
@@ -525,27 +557,55 @@ function removeCache(directory, deadline, maxEntries = 100000) {
         frame.dir.closeSync(); stack.pop();
         if (frame.root) {
           managedTemp.assertNoLinks(marker);
-          const markerBytes = fs.lstatSync(marker).size;
+          const currentMarker = expectedCache && readCache(root, expectedCache.projectRoot, expectedCache.projectHash, expectedCache.kind);
+          const currentBytes = fs.readFileSync(marker);
+          if (!currentMarker || !currentBytes.equals(markerBytes)) throw new Error("cache owner marker changed during eviction");
+          const markerSize = markerBytes.length;
           fs.unlinkSync(marker);
-          bytesFreed += markerBytes; filesFreed += 1;
-          managedTemp.assertNoLinks(root);
-          fs.rmdirSync(root);
+          bytesFreed += markerSize; filesFreed += 1;
+          try {
+            managedTemp.assertNoLinks(root);
+            fs.rmdirSync(root);
+          } catch (error) {
+            try {
+              managedTemp.assertNoLinks(root);
+              const currentRoot = fs.lstatSync(root);
+              if (!currentRoot.isDirectory() || currentRoot.isSymbolicLink()) throw new Error("Cache root changed before owner restore");
+              managedTemp.assertNoLinks(marker, { allowMissing: true });
+              const fd = fs.openSync(marker, "wx", 0o600);
+              try { fs.writeFileSync(fd, markerBytes); fs.fsyncSync(fd); }
+              finally { fs.closeSync(fd); }
+              bytesFreed -= markerSize;
+              filesFreed -= 1;
+            } catch { /* preserve the original removal failure */ }
+            throw error;
+          }
         } else { managedTemp.assertNoLinks(frame.target); fs.rmdirSync(frame.target); }
         entries += 1;
         continue;
       }
       if (frame.root && entry.name === CACHE_MARKER) continue;
       const child = path.join(frame.target, entry.name);
+      managedTemp.assertNoLinks(frame.target);
       const stat = fs.lstatSync(child);
-      if (stat.isSymbolicLink()) throw new Error("Refusing linked cache entry");
-      if (stat.isDirectory()) stack.push({ target: child, root: false, dir: fs.opendirSync(child) });
+      if (stat.isSymbolicLink()) {
+        assertSafeCacheMutation(root, frame.target, child, { linkLeaf: true });
+        fs.unlinkSync(child);
+        entries += 1;
+      }
+      else if (stat.isDirectory()) {
+        managedTemp.assertNoLinks(child);
+        stack.push({ target: child, root: false, dir: fs.opendirSync(child) });
+      }
       else {
         if (!stat.isFile()) throw new Error("Refusing unsupported cache entry");
-        managedTemp.assertNoLinks(child);
+        assertSafeCacheMutation(root, frame.target, child);
         fs.unlinkSync(child);
         bytesFreed += stat.size; filesFreed += 1; entries += 1;
       }
     }
+  } catch (error) {
+    return { removed: false, reason: error.message, bytesFreed, filesFreed };
   } finally { for (const frame of stack) { try { frame.dir.closeSync(); } catch { /* already closed */ } } }
   return { removed: true, bytesFreed, filesFreed };
 }
@@ -667,7 +727,7 @@ function pruneUnderGate(limits, projectFilter = null) {
         continue;
       }
       removeStaleLeases(item, deadline);
-      const result = removeCache(item.directory, deadline);
+      const result = removeCache(item.directory, deadline, 100000, item);
       report.bytesFreed += result.bytesFreed;
       report.filesFreed += result.filesFreed;
       if (result.removed) report.removed.push({ path: item.directory, bytesFreed: result.bytesFreed, filesFreed: result.filesFreed, reason: now - item.lastUsed >= limits.maxAgeMs ? "expired" : "byte-budget" });

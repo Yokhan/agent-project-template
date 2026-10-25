@@ -2,10 +2,10 @@
   "schema_version": 2,
   "trigger": {
     "kind": "repeated-failure",
-    "acceptance_id": "owned-coordination-concurrency-and-crash-recovery",
+    "acceptance_id": "owned-coordination-and-no-follow-cleanup",
     "summary": "Repeated volume and cache acceptance failures required diagnosis of intent, writer grant and crash-released coordinator ownership. Clean-environment CI then required fixture canonicalization and failure-only terminal observability before further cleanup changes.",
-    "root_cause": "Pre-admission intents were conflated with already-issued debt, and original/recovery paths granted writer independently. Cache identity was initially uncommitted across the held operation; later contention was treated as fatal before mutex acquisition, while the recovery fixture incorrectly expected one-shot admission.",
-    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6; GitHub Actions 40185804883 and 40191557990; canonical alias probe e50d28fb-a672-43a3-aaa8-4fe193882bef",
+    "root_cause": "Pre-admission intents were conflated with already-issued debt, and original/recovery paths granted writer independently. Cache identity was initially uncommitted across the held operation; later contention was treated as fatal before mutex acquisition, while the recovery fixture incorrectly expected one-shot admission. CI failure-only diagnostics then identified linked-entry cleanup refusal after confirmed termination. Intentional test links exposed blanket descendant-link rejection; keep-output export must remain strict while authorized cleanup removes only owned link entries.",
+    "evidence_ref": "scripts/lib/storage-operation-registry.js; static independent reviews for ecb2d2fa; scripts/test-storage-volume-live.js; scripts/test-managed-cache.js; managed run1f182b21-ddda-48ce-a1f2-1c125620eda6; GitHub Actions 40185804883 and 40191557990; canonical alias probe e50d28fb-a672-43a3-aaa8-4fe193882bef; Actions 40196036857 lines403/807; focused junction runs681c040a-c947-4739-8982-3ee971b25ed7 and a3852766-11a2-46c3-9029-1556e4a8fbc0",
     "attempts": [
       {
         "hypothesis": "An externalreservation plus existinglocalclaimpath suffices.",
@@ -47,6 +47,13 @@
         "change": "Added synthetic assembly, real missing-source enforcement and scoped cache state.",
         "before": "The source-library dependency was repaired in 292be24.",
         "after": "Preflight 40191557990 passed all 223 Linux checks but failed outer cleanup without a preserved diagnostic; Windows separately rejected a lexical versus canonical fixture path. A casing-only alias reproduces that containment mechanism, not the exact CI path spelling.",
+        "result": "recurred"
+      },
+      {
+        "hypothesis": "Failure-only diagnostics can expose cleanup refusal without weakening lifecycle checks.",
+        "change": "Added bounded safe diagnostics and isolated cache-writing fixtures.",
+        "before": "Outer cleanup failed without its detailed report in CI.",
+        "after": "CI exposed linked-entry after termination proof on both platforms, plus an existing uppercase error-code expectation. Preserve display compatibility; authorize only internal no-follow leaf cleanup after valid ownership/inactivity/claim guards.",
         "result": "recurred"
       }
     ]
@@ -98,7 +105,7 @@
   },
   "change": {
     "summary": "Complete the approved workflow repairs and conditional6.2.0release, with a seven-file PA localhotfix.",
-    "scope": "Canonical agent layer, metadata-only volume admission, acceptance/reporting/context helpers, scenariofixtures, release packaging; seven explicit PA runtime files and four matching test/documentation files. No otherconsumer or productchanges. Cache coordinator mutex only: SQLite serialization plus mandatory v1-compatible FS barrier, bounded full-byte quarantine of strictly known v2 dead mutex metadata; explicit expected-hash legacy recovery. Resource/process/lease markers remain untouched.",
+    "scope": "Canonical agent layer, metadata-only volume admission, acceptance/reporting/context helpers, scenariofixtures, release packaging; seven explicit PA runtime files and four matching test/documentation files. No otherconsumer or productchanges. Cache coordinator mutex only: SQLite serialization plus mandatory v1-compatible FS barrier, bounded full-byte quarantine of strictly known v2 dead mutex metadata; explicit expected-hash legacy recovery. Resource/process/lease markers remain untouched. Guarded descendant link-entry unlink only inside verified inactive owned runs/caches; preserve target contents, strict root/ancestor/owner-marker and export boundaries. No closed-run adoption or sealed-retained lifecycle is implemented.",
     "impacts": [],
     "reversible": true
   },

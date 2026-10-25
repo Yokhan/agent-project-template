@@ -10,6 +10,7 @@ const { spawn } = require("child_process");
 const managed = require("./lib/managed-temp.js");
 const reports = require("./lib/managed-run-report.js");
 const ownershipApi = require("./lib/managed-run-ownership.js");
+const { exportBuild } = require("./managed-temp.js");
 
 const cli = path.join(__dirname, "managed-temp.js");
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "managed-temp-test-"));
@@ -51,7 +52,230 @@ async function waitForPidsStopped(pids) {
   assert(pids.every(pid => !pidAlive(pid)), `fixture processes remained alive: ${pids.filter(pidAlive).join(",")}`);
 }
 
+function fileManifest(root) {
+  const files = [];
+  const stack = [root];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(target);
+      else if (entry.isFile()) files.push([path.relative(root, target), crypto.createHash("sha256").update(fs.readFileSync(target)).digest("hex")]);
+    }
+  }
+  return files.sort(([left], [right]) => left.localeCompare(right));
+}
+
+function createFileLink(linkPath, target, skipped) {
+  try { fs.symlinkSync(target, linkPath, "file"); return true; }
+  catch (error) {
+    if (process.platform === "win32" && ["EPERM", "EACCES", "UNKNOWN"].includes(error.code)) {
+      skipped.push(`${path.basename(linkPath)}:${error.code}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function testOwnedLinkCleanup() {
+  const outside = path.join(fixture, "link-target-manifest");
+  fs.mkdirSync(outside, { recursive: true });
+  fs.writeFileSync(path.join(outside, "manifest.json"), JSON.stringify({ keep: ["sentinel", "payload"] }) + "\n");
+  fs.writeFileSync(path.join(outside, "payload.txt"), "outside payload must not change\n");
+  const beforeManifest = fileManifest(outside);
+  const root = project("links-owned-cleanup");
+  const run = managed.createRun(root);
+  const junction = path.join(run.temp, "absolute-directory-junction");
+  fs.symlinkSync(outside, junction, process.platform === "win32" ? "junction" : "dir");
+  assert(fs.lstatSync(junction).isSymbolicLink(), "directory link fixture was not created");
+
+  const skippedFileLinks = [];
+  const absoluteFileLink = path.join(run.temp, "absolute-file-link");
+  const relativeFileLink = path.join(run.temp, "relative-file-link");
+  const danglingFileLink = path.join(run.temp, "dangling-file-link");
+  const cyclicFileLink = path.join(run.temp, "cyclic-file-link");
+  createFileLink(absoluteFileLink, path.join(outside, "payload.txt"), skippedFileLinks);
+  createFileLink(relativeFileLink, path.relative(run.temp, path.join(outside, "manifest.json")), skippedFileLinks);
+  createFileLink(danglingFileLink, path.join(outside, "missing.txt"), skippedFileLinks);
+  createFileLink(cyclicFileLink, path.basename(cyclicFileLink), skippedFileLinks);
+
+  const linkedObservation = managed.observeTree(run.root, { budgetMs: 1000 });
+  assert(!linkedObservation.complete && linkedObservation.reason === "linked-entry", "default observation must remain link-strict");
+  assert.throws(() => exportBuild(run.root, path.join(fixture, "linked-export"), run.root), /unverified output tree/u,
+    "keep-output export must reject descendant links");
+  assert(!fs.existsSync(path.join(fixture, "linked-export")));
+
+  const unowned = path.join(fixture, "unowned-link-cleanup");
+  fs.mkdirSync(unowned);
+  const unownedLink = path.join(unowned, "external");
+  fs.symlinkSync(outside, unownedLink, process.platform === "win32" ? "junction" : "dir");
+  assert.throws(() => managed.removeBounded(unowned, Date.now() + 1000), /Refusing nested symlink or junction/u,
+    "the exported owner-less remover must remain link-strict");
+  assert(fs.lstatSync(unownedLink).isSymbolicLink());
+  fs.unlinkSync(unownedLink);
+  fs.rmdirSync(unowned);
+
+  markStale(run);
+  const report = managed.sweep(root, { budgetMs: 1000 });
+  assert(report.removed.includes(run.id), `owned cleanup did not remove its run: ${JSON.stringify(report.errors)}`);
+  assert.strictEqual(report.errors.length, 0);
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest, "owned cleanup changed a link target");
+
+  const childRoot = project("links-real-child-process");
+  const childReceipt = path.join(childRoot, "created-links.json");
+  const childCode = `const fs=require("fs"),path=require("path");const root=process.env.AGENT_MANAGED_TEMP;if(!root)throw new Error("managed run root missing");const temp=path.join(root,"tmp"),outside=process.argv[1],receipt=process.argv[2],created=[],skipped=[];const junction=path.join(temp,"child-directory-junction");fs.symlinkSync(outside,junction,process.platform==="win32"?"junction":"dir");created.push(path.basename(junction));for(const [name,target] of [["absolute-file-link",path.join(outside,"payload.txt")],["relative-file-link",path.relative(temp,path.join(outside,"manifest.json"))],["dangling-file-link",path.join(outside,"missing.txt")],["cyclic-file-link","cyclic-file-link"]]){try{fs.symlinkSync(target,path.join(temp,name),"file");created.push(name)}catch(error){if(process.platform==="win32"&&["EPERM","EACCES","UNKNOWN"].includes(error.code))skipped.push(name+":"+error.code);else throw error}}fs.writeFileSync(receipt,JSON.stringify({created,skipped}));`;
+  const childRun = await runCli(childRoot, ["run", "--", process.execPath, "-e", childCode, outside, childReceipt]);
+  assert.strictEqual(childRun.code, 0, childRun.stderr);
+  const createdLinks = JSON.parse(fs.readFileSync(childReceipt, "utf8"));
+  assert(createdLinks.created.includes("child-directory-junction"), "real child did not create the required directory junction");
+  assert(managed.status(childRoot).length === 0, "real process run retained owned scratch containing links");
+  const runSummaryLine = childRun.stderr.split(/\r?\n/u).find(line => line.startsWith("managed-run: "));
+  assert(runSummaryLine, `managed run summary missing: ${childRun.stderr}`);
+  const runSummary = JSON.parse(runSummaryLine.slice("managed-run: ".length));
+  const runReport = reports.readReportPath(runSummary.report);
+  assert.strictEqual(runSummary.scratchRemoved, true, "real child run did not confirm scratch cleanup");
+  assert.strictEqual(runReport.process.commandExitCode, 0, "real child did not exit successfully");
+  assert(runReport.process.treeStopped === true || runReport.process.groupStopped === true, "real child process family lacked stop proof");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest, "real-process cleanup changed a link target");
+
+  const budgetRoot = project("links-budget");
+  const budgetRun = managed.createRun(budgetRoot);
+  fs.symlinkSync(outside, path.join(budgetRun.temp, "one-link-entry"), process.platform === "win32" ? "junction" : "dir");
+  markStale(budgetRun);
+  const limited = managed.sweep(budgetRoot, { budgetMs: 1000, maxEntries: 1 });
+  assert(limited.pending.some(item => item.path === budgetRun.id && item.reason === "budget-exhausted"));
+  assert(fs.existsSync(ownerPath(budgetRun)), "cleanup budget must retain the owner marker after partial work");
+  assert.strictEqual(limited.accounting.observedBytesRemoved, 0, "link targets and link metadata must not count as payload bytes");
+  assert(!limited.accounting.remainingComplete && limited.accounting.reason === "budget-exhausted");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  assert(managed.sweep(budgetRoot, { budgetMs: 1000 }).removed.includes(budgetRun.id), "cleanup retry did not finish the owned run");
+
+  const partialRoot = project("links-partial-accounting");
+  const partialRun = managed.createRun(partialRoot);
+  const partialPayload = Buffer.from("counted regular payload\n");
+  fs.writeFileSync(path.join(partialRun.temp, "payload.txt"), partialPayload);
+  markStale(partialRun);
+  const partial = managed.sweep(partialRoot, { budgetMs: 1000, maxEntries: 1 });
+  assert(partial.pending.some(item => item.path === partialRun.id && item.reason === "budget-exhausted"));
+  assert.strictEqual(partial.accounting.observedBytesRemoved, partialPayload.length);
+  assert.strictEqual(partial.accounting.observedFilesRemoved, 1);
+  assert(fs.existsSync(ownerPath(partialRun)), "partial cleanup removed its owner marker");
+  assert(!partial.accounting.remainingComplete && partial.accounting.reason === "budget-exhausted");
+  assert(managed.sweep(partialRoot, { budgetMs: 1000 }).removed.includes(partialRun.id));
+
+  const errorRoot = project("links-unlink-error");
+  const errorRun = managed.createRun(errorRoot);
+  const errorLink = path.join(errorRun.temp, "external");
+  fs.symlinkSync(outside, errorLink, process.platform === "win32" ? "junction" : "dir");
+  markStale(errorRun);
+  const originalUnlink = fs.unlinkSync;
+  let injectedUnlinkFailure = false;
+  fs.unlinkSync = function (target, ...args) {
+    if (!injectedUnlinkFailure && path.resolve(String(target)) === path.resolve(errorLink)) {
+      injectedUnlinkFailure = true;
+      const error = new Error("injected owned-link unlink failure");
+      error.code = "EACCES";
+      throw error;
+    }
+    return originalUnlink.call(this, target, ...args);
+  };
+  let unlinkFailureReport;
+  try { unlinkFailureReport = managed.sweep(errorRoot, { budgetMs: 1000 }); }
+  finally { fs.unlinkSync = originalUnlink; }
+  assert(injectedUnlinkFailure, "link unlink failure injection did not execute");
+  assert(unlinkFailureReport.errors.length > 0, "link unlink error was not reported");
+  assert(fs.existsSync(ownerPath(errorRun)), "unlink error removed its owner marker");
+  assert(fs.lstatSync(errorLink).isSymbolicLink(), "failed unlink changed the link entry");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  assert(managed.sweep(errorRoot, { budgetMs: 1000 }).removed.includes(errorRun.id), "owned cleanup retry did not remove the link");
+
+  const markerRoot = project("links-owner-marker");
+  const markerRun = managed.createRun(markerRoot);
+  markStale(markerRun);
+  const marker = ownerPath(markerRun);
+  const ownerBytes = fs.readFileSync(marker);
+  fs.unlinkSync(marker);
+  fs.symlinkSync(outside, marker, process.platform === "win32" ? "junction" : "dir");
+  const markerReport = managed.sweep(markerRoot, { budgetMs: 1000 });
+  assert(markerReport.skipped.some(item => item.path === markerRun.id && item.reason === "invalid-owner"), "owner-marker link was accepted");
+  assert(fs.existsSync(markerRun.root));
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  fs.unlinkSync(marker);
+  fs.writeFileSync(marker, ownerBytes);
+  assert(managed.sweep(markerRoot, { budgetMs: 1000 }).removed.includes(markerRun.id));
+
+  const nestedMarkerCases = [
+    { name: "junction", create: markerPath => { fs.symlinkSync(outside, markerPath, "junction"); return true; }, remove: markerPath => fs.rmdirSync(markerPath) },
+    { name: "dangling", create: markerPath => createFileLink(markerPath, path.join(outside, "missing-owner-marker.json"), skippedFileLinks), remove: markerPath => fs.unlinkSync(markerPath) },
+    { name: "cyclic", create: markerPath => createFileLink(markerPath, path.basename(markerPath), skippedFileLinks), remove: markerPath => fs.unlinkSync(markerPath) },
+  ];
+  for (const markerCase of nestedMarkerCases) {
+    const nestedMarkerRoot = project(`nested-owner-marker-${markerCase.name}`);
+    const nestedMarkerRun = managed.createRun(nestedMarkerRoot);
+    const nestedWorkspace = path.join(nestedMarkerRun.temp, "nested-workspace");
+    fs.mkdirSync(nestedWorkspace);
+    const nestedPayload = path.join(nestedWorkspace, "payload.txt");
+    fs.writeFileSync(nestedPayload, "nested workspace must remain owned\n");
+    const nestedMarker = path.join(nestedWorkspace, managed.OWNER_FILE);
+    const created = markerCase.create(nestedMarker);
+    if (!created) {
+      markStale(nestedMarkerRun);
+      assert(managed.sweep(nestedMarkerRoot, { budgetMs: 1000 }).removed.includes(nestedMarkerRun.id),
+        `${markerCase.name} unsupported marker fixture cleanup did not finish`);
+      continue;
+    }
+    assert(fs.lstatSync(nestedMarker).isSymbolicLink(), `${markerCase.name} nested owner marker fixture was not a link`);
+    markStale(nestedMarkerRun);
+    const nestedMarkerReport = managed.sweep(nestedMarkerRoot, { budgetMs: 1000 });
+    assert(nestedMarkerReport.errors.some(item => /linked owner marker/u.test(item.error)),
+      `${markerCase.name} nested owner marker was not rejected: ${JSON.stringify(nestedMarkerReport.errors)}`);
+    assert(fs.existsSync(ownerPath(nestedMarkerRun)), `${markerCase.name} nested marker rejection removed the outer owner`);
+    assert.strictEqual(fs.readFileSync(nestedPayload, "utf8"), "nested workspace must remain owned\n",
+      `${markerCase.name} nested marker rejection descended into the nested workspace`);
+    markerCase.remove(nestedMarker);
+    assert(managed.sweep(nestedMarkerRoot, { budgetMs: 1000 }).removed.includes(nestedMarkerRun.id),
+      `${markerCase.name} nested marker cleanup retry did not finish`);
+  }
+
+  const swapRoot = project("links-changed-parent");
+  const swapRun = managed.createRun(swapRoot);
+  const swapLink = path.join(swapRun.temp, "external");
+  fs.symlinkSync(outside, swapLink, process.platform === "win32" ? "junction" : "dir");
+  markStale(swapRun);
+  const originalLstat = fs.lstatSync;
+  let sawLinkLeaf = false, rejectedChangedParent = false;
+  fs.lstatSync = function (target, ...args) {
+    const absolute = path.resolve(String(target));
+    if (absolute === path.resolve(swapLink)) sawLinkLeaf = true;
+    if (sawLinkLeaf && !rejectedChangedParent && absolute === path.resolve(swapRun.root)) {
+      rejectedChangedParent = true;
+      const stat = originalLstat.call(this, target, ...args);
+      return new Proxy(stat, { get(value, property) {
+        if (property === "isSymbolicLink") return () => true;
+        const result = Reflect.get(value, property, value);
+        return typeof result === "function" ? result.bind(value) : result;
+      } });
+    }
+    return originalLstat.call(this, target, ...args);
+  };
+  let swapReport;
+  try { swapReport = managed.sweep(swapRoot, { budgetMs: 1000 }); }
+  finally { fs.lstatSync = originalLstat; }
+  assert(rejectedChangedParent, "changed-parent injection did not reach final ancestor validation");
+  assert(swapReport.errors.length > 0, "cleanup did not reject the changed parent");
+  assert(fs.existsSync(ownerPath(swapRun)), "changed-parent rejection removed the owner marker");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  assert(managed.sweep(swapRoot, { budgetMs: 1000 }).removed.includes(swapRun.id), "retry did not remove the unchanged fixture link");
+
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest, "a link cleanup case changed target bytes");
+  process.stdout.write(skippedFileLinks.length
+    ? `file-symlink subcases unavailable on this host: ${skippedFileLinks.join(", ")}\n`
+    : "file-symlink subcases: absolute, relative, dangling, and cyclic verified\n");
+  process.stdout.write("owned-link cleanup focused tests passed (directory junction required and verified)\n");
+}
+
 async function main() {
+  if (process.argv.includes("--links-only")) { await testOwnedLinkCleanup(); return; }
   const root = project("cli-success");
   const inheritedManagedTemp = process.env.AGENT_MANAGED_TEMP;
   const inheritedManagedBinding = process.env.AGENT_MANAGED_RUN_BINDING;
@@ -465,23 +689,7 @@ async function main() {
   assert(fs.existsSync(invalid.root));
   assert(fs.existsSync(path.join(managed.managedBase(invalidRoot), "unowned")));
 
-  const linkRoot = project("links");
-  const linkRun = managed.createRun(linkRoot);
-  const outside = path.join(fixture, "outside");
-  fs.mkdirSync(outside);
-  fs.writeFileSync(path.join(outside, "sentinel"), "keep");
-  try {
-    fs.symlinkSync(outside, path.join(linkRun.root, "external"), process.platform === "win32" ? "junction" : "dir");
-    const linkedObservation = managed.observeTree(linkRun.root, { budgetMs: 1000 });
-    assert(!linkedObservation.complete && linkedObservation.reason === "linked-entry", "usage observer followed or ignored a link");
-    markStale(linkRun);
-    const linkReport = managed.sweep(linkRoot);
-    assert(linkReport.errors.length > 0);
-    assert(fs.existsSync(path.join(outside, "sentinel")));
-    assert(fs.existsSync(linkRun.root));
-  } catch (error) {
-    if (error.code !== "EPERM" && error.code !== "EACCES" && error.code !== "UNKNOWN") throw error;
-  }
+  await testOwnedLinkCleanup();
 
   const parentLinkRoot = project("parent-link");
   const realCache = path.join(fixture, "redirected-cache");

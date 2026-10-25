@@ -62,6 +62,161 @@ function cleanup() {
   }
   fs.rmSync(fixture, { recursive: true, force: true });
 }
+
+function fileManifest(root) {
+  const files = [];
+  const stack = [root];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(target);
+      else if (entry.isFile()) files.push([path.relative(root, target), require("crypto").createHash("sha256").update(fs.readFileSync(target)).digest("hex")]);
+    }
+  }
+  return files.sort(([left], [right]) => left.localeCompare(right));
+}
+
+function createFileLink(linkPath, target, skipped) {
+  try { fs.symlinkSync(target, linkPath, "file"); return true; }
+  catch (error) {
+    if (process.platform === "win32" && ["EPERM", "EACCES", "UNKNOWN"].includes(error.code)) {
+      skipped.push(`${path.basename(linkPath)}:${error.code}`);
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function testOwnedCacheLinkEviction() {
+  const outside = path.join(fixture, "cache-link-targets");
+  fs.mkdirSync(outside, { recursive: true });
+  fs.writeFileSync(path.join(outside, "manifest.json"), JSON.stringify({ keep: ["cache-target", "payload"] }) + "\n");
+  fs.writeFileSync(path.join(outside, "payload.txt"), "outside cache target must not change\n");
+  const beforeManifest = fileManifest(outside);
+  const skippedFileLinks = [];
+
+  const root = project("links-owned-cache");
+  const run = managedTemp.createRun(root);
+  const ownedCache = await acquireCache(root, "npm", { runRoot: run.root });
+  const markerPath = path.join(ownedCache.path, cache.CACHE_MARKER);
+  const markerBytes = fs.readFileSync(markerPath);
+  const payload = Buffer.from("owned cache payload\n");
+  fs.writeFileSync(path.join(ownedCache.path, "payload.txt"), payload);
+  const junction = path.join(ownedCache.path, "absolute-directory-junction");
+  fs.symlinkSync(outside, junction, process.platform === "win32" ? "junction" : "dir");
+  assert(fs.lstatSync(junction).isSymbolicLink(), "cache directory link fixture was not created");
+  createFileLink(path.join(ownedCache.path, "absolute-file-link"), path.join(outside, "payload.txt"), skippedFileLinks);
+  createFileLink(path.join(ownedCache.path, "relative-file-link"), path.relative(ownedCache.path, path.join(outside, "manifest.json")), skippedFileLinks);
+  createFileLink(path.join(ownedCache.path, "dangling-file-link"), path.join(outside, "missing.txt"), skippedFileLinks);
+  createFileLink(path.join(ownedCache.path, "cyclic-file-link"), "cyclic-file-link", skippedFileLinks);
+
+  const active = await pruneCaches({ projectRoot: root, maxBytes: 0, budgetMs: 1000 });
+  assert(active.retained.some(item => item.path === ownedCache.path && item.reason === "active-lease"), "cache links bypassed the live lease barrier");
+  assert(fs.lstatSync(junction).isSymbolicLink(), "active cache link was removed despite its lease");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+
+  assert.deepStrictEqual(await releaseCache(ownedCache), { released: true });
+  const markerSize = fs.statSync(markerPath).size;
+  const evicted = await pruneCaches({ projectRoot: root, maxBytes: 0, budgetMs: 1000 });
+  assert(evicted.complete, `link-bearing owned cache eviction was incomplete: ${JSON.stringify(evicted.retained)}`);
+  assert(evicted.removed.some(item => item.path === ownedCache.path), "inactive owned cache with descendant links was not evicted");
+  assert.strictEqual(evicted.bytesObserved, markerSize + payload.length, "link targets or link metadata were counted as cache payload bytes");
+  assert.strictEqual(evicted.bytesFreed, markerSize + payload.length);
+  assert.strictEqual(evicted.filesFreed, 2, "only regular payload files and the cache marker should count as files");
+  assert(!fs.existsSync(ownedCache.path));
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest, "cache eviction changed a link target");
+  assert(run.finish().removed);
+
+  const markerRoot = project("linked-cache-owner-marker");
+  const markerRun = managedTemp.createRun(markerRoot);
+  const markerCache = await acquireCache(markerRoot, "npm", { runRoot: markerRun.root });
+  const ownedMarker = path.join(markerCache.path, cache.CACHE_MARKER);
+  const ownedMarkerBytes = fs.readFileSync(ownedMarker);
+  assert.deepStrictEqual(await releaseCache(markerCache), { released: true });
+  fs.unlinkSync(ownedMarker);
+  fs.symlinkSync(outside, ownedMarker, process.platform === "win32" ? "junction" : "dir");
+  const markerRejected = await pruneCaches({ projectRoot: markerRoot, maxBytes: 0, budgetMs: 1000 });
+  assert(!markerRejected.removed.some(item => item.path === markerCache.path), "cache owner marker link was accepted for eviction");
+  assert(fs.lstatSync(ownedMarker).isSymbolicLink());
+  assert(fs.existsSync(markerCache.path));
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  fs.unlinkSync(ownedMarker);
+  fs.writeFileSync(ownedMarker, ownedMarkerBytes);
+  const markerRetry = await pruneCaches({ projectRoot: markerRoot, maxBytes: 0, budgetMs: 1000 });
+  assert(markerRetry.removed.some(item => item.path === markerCache.path));
+  assert(markerRun.finish().removed);
+
+  const ancestorRoot = project("linked-cache-ancestor");
+  const namespace = path.dirname(cache.cachePath(ancestorRoot, "npm"));
+  fs.mkdirSync(cache.cacheBase(), { recursive: true });
+  const ancestorTarget = path.join(fixture, "cache-ancestor-target");
+  fs.mkdirSync(ancestorTarget, { recursive: true });
+  fs.writeFileSync(path.join(ancestorTarget, "manifest.json"), "ancestor target\n");
+  const beforeAncestor = fileManifest(ancestorTarget);
+  fs.symlinkSync(ancestorTarget, namespace, process.platform === "win32" ? "junction" : "dir");
+  try {
+    const ancestorReport = cache.pruneCaches({ projectRoot: ancestorRoot, maxBytes: 0, budgetMs: 1000 });
+    assert(!ancestorReport.removed.some(item => path.resolve(item.path) === path.resolve(cache.cachePath(ancestorRoot, "npm"))),
+      "cache namespace ancestor link was followed or accepted for eviction");
+    assert(fs.lstatSync(namespace).isSymbolicLink(), "cache namespace ancestor link was modified");
+    assert.deepStrictEqual(fileManifest(ancestorTarget), beforeAncestor);
+  } finally { fs.unlinkSync(namespace); }
+
+  const budgetRoot = project("linked-cache-budget");
+  const budgetRun = managedTemp.createRun(budgetRoot);
+  const budgetCache = await acquireCache(budgetRoot, "npm", { runRoot: budgetRun.root });
+  fs.symlinkSync(outside, path.join(budgetCache.path, "budget-link"), process.platform === "win32" ? "junction" : "dir");
+  assert.deepStrictEqual(await releaseCache(budgetCache), { released: true });
+  const budget = await pruneCaches({ projectRoot: budgetRoot, maxBytes: 0, budgetMs: 0 });
+  assert(!budget.complete && budget.reason === "budget-exhausted");
+  assert(fs.existsSync(budgetCache.path), "incomplete link-bearing inventory removed its authenticated cache marker");
+  assert(fs.existsSync(path.join(budgetCache.path, cache.CACHE_MARKER)));
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  const retry = await pruneCaches({ projectRoot: budgetRoot, maxBytes: 0, budgetMs: 1000 });
+  assert(retry.removed.some(item => item.path === budgetCache.path), "cache retry did not evict the owned link-bearing cache");
+  assert(budgetRun.finish().removed);
+
+  const errorRoot = project("linked-cache-unlink-error");
+  const errorRun = managedTemp.createRun(errorRoot);
+  const errorCache = await acquireCache(errorRoot, "npm", { runRoot: errorRun.root });
+  const errorPayloadPath = path.join(errorCache.path, "payload.txt");
+  const errorPayload = Buffer.from("cache partial accounting payload\n");
+  fs.writeFileSync(errorPayloadPath, errorPayload);
+  const errorLink = path.join(errorCache.path, "error-link");
+  fs.symlinkSync(outside, errorLink, process.platform === "win32" ? "junction" : "dir");
+  assert.deepStrictEqual(await releaseCache(errorCache), { released: true });
+  const originalUnlink = fs.unlinkSync;
+  let injectedUnlinkFailure = false;
+  fs.unlinkSync = function (target, ...args) {
+    if (!injectedUnlinkFailure && path.resolve(String(target)) === path.resolve(errorLink)) {
+      injectedUnlinkFailure = true;
+      const error = new Error("injected cache-link unlink failure");
+      error.code = "EACCES";
+      throw error;
+    }
+    return originalUnlink.call(this, target, ...args);
+  };
+  let unlinkFailure;
+  try { unlinkFailure = await pruneCaches({ projectRoot: errorRoot, maxBytes: 0, budgetMs: 1000 }); }
+  finally { fs.unlinkSync = originalUnlink; }
+  assert(injectedUnlinkFailure, "cache link unlink failure injection did not execute");
+  assert(!unlinkFailure.complete && unlinkFailure.retained.some(item => item.path === errorCache.path), "cache unlink error did not retain the cache");
+  assert(fs.existsSync(path.join(errorCache.path, cache.CACHE_MARKER)), "cache unlink error removed its owner marker");
+  assert(fs.lstatSync(errorLink).isSymbolicLink(), "failed cache unlink changed the link entry");
+  assert.strictEqual(unlinkFailure.bytesFreed, fs.existsSync(errorPayloadPath) ? 0 : errorPayload.length,
+    "cache failure accounting disagreed with regular payload entries already removed");
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest);
+  const errorRetry = await pruneCaches({ projectRoot: errorRoot, maxBytes: 0, budgetMs: 1000 });
+  assert(errorRetry.removed.some(item => item.path === errorCache.path), "cache retry did not evict the owned link-bearing cache");
+  assert(errorRun.finish().removed);
+
+  assert.deepStrictEqual(fileManifest(outside), beforeManifest, "a cache link case changed target bytes");
+  process.stdout.write(skippedFileLinks.length
+    ? `file-symlink subcases unavailable on this host: ${skippedFileLinks.join(", ")}\n`
+    : "file-symlink subcases: absolute, relative, dangling, and cyclic verified\n");
+  process.stdout.write("owned-cache link eviction focused tests passed (directory junction required and verified)\n");
+}
 function spawnObserved(args, env) {
   const child = spawn(process.execPath, args, { cwd: path.resolve(__dirname, ".."), env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   let stdout = "", stderr = "";
@@ -71,6 +226,7 @@ function spawnObserved(args, env) {
 }
 
 async function main() {
+  if (process.argv.includes("--links-only")) { await testOwnedCacheLinkEviction(); return; }
   const identityBusy = cache.__testing.readIdentityUnderMutex({ prepare: () => ({ get: () => { const error = new Error("database is locked"); error.code = "ERR_SQLITE_ERROR"; throw error; } }) });
   assert.deepStrictEqual(identityBusy, { busy: true, reason: "operation-in-progress" }, "SQLite BUSY during identity read must remain retryable");
 
@@ -403,24 +559,7 @@ async function main() {
   const unresolvedEviction = await pruneCaches({ projectRoot: unresolvedRoot, maxBytes: 0, budgetMs: 1000 });
   assert(unresolvedEviction.removed.some(item => item.path === unresolvedCache.path));
 
-  const linkRoot = project("linked-cache");
-  const linkRun = managedTemp.createRun(linkRoot);
-  const linkCache = await acquireCache(linkRoot, "npm", { runRoot: linkRun.root });
-  const outside = path.join(fixture, "outside");
-  fs.mkdirSync(outside);
-  fs.writeFileSync(path.join(outside, "keep.txt"), "keep");
-  try {
-    fs.symlinkSync(outside, path.join(linkCache.path, "linked"), process.platform === "win32" ? "junction" : "dir");
-    await releaseCache(linkCache);
-    const linkReport = await pruneCaches({ projectRoot: linkRoot, maxBytes: 0, budgetMs: 1000 });
-    assert(linkReport.retained.some(item => item.path === linkCache.path && item.reason === "linked-cache-entry"));
-    assert(fs.existsSync(path.join(outside, "keep.txt")));
-    assert(fs.existsSync(linkCache.path));
-    try { fs.rmSync(path.join(linkCache.path, "linked"), { force: true }); } catch { /* fixture teardown remains link-safe */ }
-  } catch (error) {
-    if (!["EPERM", "EACCES", "UNKNOWN"].includes(error.code)) throw error;
-  }
-  assert(linkRun.finish().removed);
+  await testOwnedCacheLinkEviction();
 
   const budgetRoot = project("budget");
   const budgetRun = managedTemp.createRun(budgetRoot);

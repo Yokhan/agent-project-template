@@ -242,6 +242,7 @@ async function focused() {
     assert(prelaunchDiagnostic.failureKinds.includes("captured-run-failure"));
     assert(!prelaunchDiagnostic.failureKinds.includes("process-termination-unconfirmed"), "prelaunch failure was reported as an unconfirmed process");
     assert.strictEqual(prelaunchDiagnostic.failure.code, "profile-required");
+    assert.match(emitted, /run failed \(PROFILE_REQUIRED\)/u, "the existing CLI error code remains compatible");
     assert.strictEqual(prelaunchDiagnostic.diagnostics.supervisorError.code, "profile-required");
     assert(!emitted.includes(privateArg) && !emitted.includes(privateEnv), "prelaunch diagnostic exposed private input");
     assert(!JSON.stringify(prelaunchReport).includes(privateArg));

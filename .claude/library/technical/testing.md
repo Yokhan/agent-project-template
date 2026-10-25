@@ -115,10 +115,23 @@ to measure every byte created during execution. Command failure codes survive.
 Read a saved immutable report after its project is removed with
 `node scripts/managed-temp.js report --report-path <absolute-report.json>`.
 
+Closed runs have no supported reopen, adoption or read-only handoff lease.
+`retain()` belongs to the original live run handle and changes its owner marker;
+`--keep-output` exports the current successful build before cleanup. Neither is
+permission to rewrite a closed marker or adopt selected old payloads. Storage
+operation pins do not establish managed-run leases. Known consumers of a closed
+run require an explicit retention/handoff decision before further cleanup.
+
 Existing trusted lifecycle hooks reclaim owned inactive remnants and idle owned
 caches after tools, at Stop and next SessionStart. Inspect
 `node scripts/managed-temp.js status`; retry
 `node scripts/managed-temp.js sweep --budget-ms 10000` for partial cleanup.
+After ownership, inactivity and cleanup claims are verified, cleanup can unlink
+descendant symbolic-link/junction entries without following their targets.
+Root/ancestor and ownership-marker links remain refusals; default inventory and
+build export checks stay strict. Link entries consume traversal budgets but do
+not count target bytes as removed payload. Rechecking parent paths narrows races;
+it is not atomic protection against hostile concurrent ancestor replacement.
 Preserve active leases and investigate refused paths; never erase markers to
 silence a warning. Stop blocks only for unresolved runs with validated exact
 ownership matching its session and request. Foreign, earlier, session-only and
