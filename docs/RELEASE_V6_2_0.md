@@ -48,6 +48,20 @@ remain unmeasured.
 - Project registry initialization handles bounded SQLite contention before WAL
   and transaction setup, reopening failed handles and rereading schema state.
   This does not retry an issued writer grant or relax capacity/ownership checks.
+- Shared shell/path safety guards use Bash builtins instead of repeated matching
+  subprocesses. Codex overrides inherited TEST_MODE for real guard calls. The
+  existing five-second deadline and shared policy ownership remain unchanged.
+- Valid PreToolUse failures return an explicit JSON denial. In the restored
+  Windows host, an stderr/exit-code denial was recorded as a hook failure and
+  the harmless negative canary still executed; the explicit denial stopped it.
+  The seven hook command definitions and their persisted trust are unchanged.
+  The intended Docker command-substitution cleanup rule now blocks its tested
+  mass-cleanup form; historical shell escaping had made that form ineffective.
+- A default Orca setup checks the runtime, required hook files and local router
+  dependencies, preserves customized setup configuration, and prepares only the
+  missing template-router dependencies/build. Temporary npm cache uses the
+  managed lifecycle with measured cleanup. It does not trust hooks or change
+  model, approval or sandbox defaults. See [Orca setup](ORCA_SETUP.md).
 
 ## Compatibility and limits
 
@@ -72,6 +86,8 @@ The seven-file PA Stop repair is a targeted local fix with its own backup and
 receipt. Its installation does not change the manifest version or establish a
 full v6.2.0 rollout. A subsequent exact-release preview/apply must preserve that
 repair and every project overlay.
+The later four-file Orca compatibility repair also has separate file-level
+backups and preserves the manifest and hook definitions.
 
 ## Acceptance record
 
@@ -118,3 +134,17 @@ private library. Hook assembly now has synthetic fixtures, the missing-library
 case exercises the real blocking path, and the exact-byte application/editor
 diagnostic remains covered independently. Native validation prints the failing
 leaf's output. Test-owned cache roots isolate these checks from other chats.
+
+The restored-host safety regression compared 56 command cases with the exact
+07ebd4b baseline, including one explicitly asserted Docker protection delta.
+Line/case/priority semantics, sensitive Windows paths, audit and inherited test
+mode checks passed. Three sequential benign samples, each with two Bash starts,
+measured 596–775 ms before and 95–184 ms after on this Windows machine; these
+samples do not establish a general benchmark. A current restored Orca call
+allowed the benign command and rejected the harmless negative canary before
+execution after the protocol repair.
+
+A new ordinary Orca PA chat also completed the benign call and rejected the
+harmless negative call. Its native transcript and lifecycle events
+were checked together without a one-off trust override. Separate CLI probes
+that stopped before tool events remain failed attempts, not activation proof.

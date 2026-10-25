@@ -153,7 +153,7 @@ function legacyCheck(root, name, input, blocking) {
   if (!bash) throw new Error("Git Bash/Bash unavailable: existing shared security checks cannot run; install/configure Bash without disabling checks");
   const tool = input.tool_input || {};
   const result = spawnSync(bash, [script], { cwd: root, encoding: "utf8", timeout: 5000, windowsHide: true,
-    input: "", env: { ...process.env, FILE_PATH: input.file_path || tool.file_path || tool.path || "",
+    input: "", env: { ...process.env, TEST_MODE: "0", FILE_PATH: input.file_path || tool.file_path || tool.path || "",
       COMMAND: tool.command || tool.cmd || (typeof tool.input === "string" ? tool.input : ""), TOOL_NAME: input.tool_name || "" } });
   if (result.error || result.status !== 0) {
     const message = result.error?.message || result.stderr?.trim() || `${name} exited ${result.status}`;
@@ -419,10 +419,17 @@ async function main() {
   for await (const chunk of process.stdin) { raw += chunk; if (raw.length > 2000000) throw new Error("Hook input exceeds bounded limit"); }
   let input;
   try { input = JSON.parse(raw); } catch { throw new Error("Native hook JSON input required"); }
-  try { process.stdout.write(JSON.stringify(await handle(input)) + "\n"); }
+  try {
+    process.stdout.write(JSON.stringify(await handle(input)) + "\n");
+  }
   catch (error) {
     if (input.hook_event_name === "Stop") process.stdout.write(JSON.stringify({ continue: false, stopReason: "Template hook failed closed", systemMessage: error.message }) + "\n");
-    else if (input.hook_event_name === "PreToolUse") { process.stderr.write(error.message); process.exitCode = 2; }
+    else if (input.hook_event_name === "PreToolUse") {
+      process.stdout.write(JSON.stringify({ hookSpecificOutput: {
+        hookEventName: "PreToolUse", permissionDecision: "deny",
+        permissionDecisionReason: String(error.message || error).slice(0, 2000),
+      } }) + "\n");
+    }
     else if (error.code === "ERR_UNSUPPORTED_CODEX_RUNTIME") { process.stderr.write(error.message); process.exitCode = 2; }
     else { process.stdout.write(JSON.stringify({ systemMessage: `Template lifecycle failure: ${error.message}. Do not claim workflow gates passed.` }) + "\n"); }
   }

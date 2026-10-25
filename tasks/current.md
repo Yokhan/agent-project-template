@@ -118,6 +118,62 @@ Keep these compatibility repairs bounded and preserve the safety checks. This
 new delta requires its own exact-commit acceptance before tagging; no v6.2.0
 tag or publication exists yet.
 
+## Restored-host guard repair decision
+
+Repeated native PreToolUse failures now have a captured leaf error: the existing
+5-second Git Bash guard process timed out on benign read commands. This is a
+production compatibility repair inside the approved agent-layer scope. Keep
+the shared Bash scripts as the policy SOT and use repair/direct-swap: replace
+fork-heavy command/path matching with Bash builtins. Preserve rule order,
+case and line semantics, exceptions, denial reason, audit behavior, guard order,
+the existing deadline, and fail-closed results. Codex must not inherit the
+scripts' TEST_MODE bypass from its environment. Host configuration and the
+pre-edit Git/file checks stay outside this performance delta.
+
+Batching guards would retain grep subprocesses and require isolating scripts
+that call exit. A Node policy migration would duplicate or move more authority
+than this fix needs. Builtins remove observed process creation while keeping
+one policy location; actual timing improvement remains to be measured rather
+than assumed. No security, data, public event/config or release gate is relaxed.
+The transition is a reviewed file-level swap with exact rollback hashes.
+
+Luna owns the two shared Bash scripts, the Codex environment override and
+focused guard tests. Acceptance compares old/new allow/deny code and reasons
+over every category, multiline/CRLF, quoting and near-match cases; verifies audit
+and inherited TEST_MODE behavior; compares bounded timings; then observes real
+Orca benign calls and a harmless denied canary. A remaining timeout requires
+separate empty-Bash startup measurement and a new diagnosis, not a larger
+deadline. Parent owns broad integration and exact-commit/tag release gates.
+
+The focused comparison passed 56 command cases against exact `07ebd4b`. One
+intentional security delta is explicit: the existing Docker mass-cleanup intent
+now covers the command-substitution form that historical quoting failed to
+match. Every other corpus decision/reason remains matched. Three same-command
+two-start Windows samples measured 596–775 ms before and 95–184 ms after; production
+deadlines remain unchanged. An actual restored-Orca canary then exposed exit-code
+denial being treated as a hook failure while execution continued. Valid
+PreToolUse errors now use the documented explicit JSON deny decision. A repeat
+in that same chat allowed benign execution and rejected the harmless negative
+canary. No hook command definitions or trust settings were changed. Exact final
+CI, targeted PA compatibility installation and release evidence remain due.
+
+The targeted PA compatibility patch is installed with exact backups; its syntax,
+classifier and structured-denial checks passed. A separate stable CLI probe
+stopped before tool events and remains an unverified attempt. A subsequent
+ordinary Orca PA chat passed both real tool scenarios: benign completion and
+explicit denial before execution, with native tool results and lifecycle
+events recorded. No one-off hook-trust override was used. Required hooks, trust
+definitions and manifest versions were preserved.
+
+The parallel setup owner supplied a frozen seven-file automatic Orca setup
+delta. Read-only review required the pre-edit guard, complete router dependency
+checks and managed temporary npm cache; the revised focused cases and measured
+cache cleanup passed. The installed Orca parser and resolved ready-router setup
+command were checked separately. Parent integrates the leaf and generated-copy
+smoke into the aggregate, then requires exact final CI/tag/archive verification.
+Operational consumer hotfixes and Orca settings remain with that separate owner;
+this release integration is not a full consumer version rollout.
+
 ## Previous local repair baseline
 
 ## Active repair

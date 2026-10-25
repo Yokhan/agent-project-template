@@ -3,13 +3,14 @@
 # Blocks Read/Edit/Write on files containing secrets, keys, credentials.
 # Inspired by dwarvesf/claude-guardrails deny rules.
 
-[ "${TEST_MODE:-}" = "1" ] && echo "deny-paths: OK (test mode)" && exit 0
+[ "${TEST_MODE:-}" = "1" ] && printf '%s\n' "deny-paths: OK (test mode)" && exit 0
 
 FILE="${FILE_PATH:-}"
 [ -z "$FILE" ] && exit 0
 
 # Normalize path for matching
-NORM=$(echo "$FILE" | tr '\\' '/')
+NORM=${FILE//\\//}
+while [[ $NORM == *$'\n' ]]; do NORM=${NORM%$'\n'}; done
 
 # === Sensitive path patterns ===
 BLOCKED=""
@@ -48,7 +49,7 @@ case "$NORM" in
 esac
 
 if [ -n "$BLOCKED" ]; then
-  echo "{\"block\":true,\"message\":\"🛡️ ACCESS DENIED: $BLOCKED — $NORM\"}" >&2
+  printf '%s\n' "{\"block\":true,\"message\":\"🛡️ ACCESS DENIED: $BLOCKED — $NORM\"}" >&2
   exit 2
 fi
 

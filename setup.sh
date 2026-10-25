@@ -39,7 +39,7 @@ copy_entry() {
 is_payload_path() {
   case "$1" in
     .agents/*|.claude/*|.codex/*|.github/*|.vscode/*|_reference/*|brain/*|docs/*|integrations/*|mcp-servers/*|scripts/*|tasks/*|tests/*) return 0 ;;
-    .editorconfig|.env.example|.gitattributes|.gitignore|.mcp.json|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|ecosystem.md|Makefile|PROJECT_SPEC.md|README.md|SECURITY.md|SETUP_GUIDE.md|upgrade-project.sh) return 0 ;;
+    .editorconfig|.env.example|.gitattributes|.gitignore|.mcp.json|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|ecosystem.md|orca.yaml|Makefile|PROJECT_SPEC.md|README.md|SECURITY.md|SETUP_GUIDE.md|upgrade-project.sh) return 0 ;;
     *) return 1 ;;
   esac
 }

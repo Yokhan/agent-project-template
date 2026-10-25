@@ -1,0 +1,3 @@
+setupAgentStartupPolicy: wait-for-setup
+scripts:
+  setup: node scripts/orca-setup.js --prepare-router

@@ -7,7 +7,7 @@ const ROOT_FILES = new Set([
   ".editorconfig", ".env.example", ".gitattributes", ".gitignore", ".mcp.json",
   "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "DESIGN.md", "Makefile",
   "PROJECT_SPEC.md", "README.md", "SECURITY.md", "SETUP_GUIDE.md",
-  "design-policy.ignore", "ecosystem.md", "upgrade-project.sh",
+  "design-policy.ignore", "ecosystem.md", "orca.yaml", "upgrade-project.sh",
 ]);
 
 function normalizeRelative(rawPath) {
@@ -52,7 +52,7 @@ function getCategory(relativePath) {
       relativePath === "ecosystem.md" || relativePath.startsWith("tasks/") ||
       relativePath.startsWith("brain/")) return "project";
   if (relativePath === ".gitignore" || relativePath === ".codex/config.toml" ||
-      relativePath === ".mcp.json" || relativePath.startsWith(".vscode/")) return "hybrid";
+      relativePath === ".mcp.json" || relativePath === "orca.yaml" || relativePath.startsWith(".vscode/")) return "hybrid";
   return "template";
 }
 

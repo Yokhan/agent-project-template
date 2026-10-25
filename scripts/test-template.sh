@@ -520,6 +520,7 @@ check "task-directed writing section map" node scripts/test-writing-reading-plan
 check "local literal contents and source examples" node scripts/test-writing-library-index.js
 check "exact-draft independent editorial contract" node scripts/test-writing-editorial-review.js
 check "native current-request workflow evidence" node scripts/test-codex-hooks.js
+check "Orca setup readiness and preserved custom setup" node scripts/test-orca-setup.js
 check "real-process request-scoped Stop cleanup" node scripts/test-managed-stop-scope-live.js
 check "measured Luna dispatch and integration coverage" node scripts/test-codex-delegation-report.js
 check "storage operation concurrency and preservation" node scripts/test-storage-operation-registry.js
@@ -685,6 +686,7 @@ if is_template_source_repo; then
 
     SMOKE_INDEX="$(_temp_file setup-smoke-index)"
     GIT_INDEX_FILE="$SMOKE_INDEX" git read-tree HEAD
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A orca.yaml scripts/orca-setup.js scripts/test-orca-setup.js docs/ORCA_SETUP.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A docs/LUNA_EXECUTION_POLICY.md scripts/lib/codex-request-context.js scripts/codex-delegation-report.js scripts/test-codex-delegation-report.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .agents .codex/agents .github/workflows/validate-template.yml _reference/agent-sot _reference/spec-kit integrations/spec-kit docs/AGENT_CONTEXT_SOT.md docs/AGENT_PIPELINES.md docs/CODEX_FANOUT_PATTERNS.md docs/CODEX_SKILLS_AUDIT.md docs/CODEX_SUBAGENTS_AUDIT.md docs/OPENAI_MODEL_GUIDANCE.md docs/TEMPLATE_RELEASES.md docs/WRITING_WORKFLOW.md docs/WRITING_REFERENCE_PROVENANCE.md .claude/agents/technical-writer.md .claude/skills/writing-workflow .claude/skills/technical-writing .claude/skills/technical-writing-review .claude/library/technical/writing.md .claude/library/technical/writing-mode-profiles.md .claude/library/technical/technical-writing-profile.md .claude/library/technical/writing-editorial-board.md .claude/library/technical/writing-reference-registry.json .claude/library/product/production-product-standard.md .claude/library/process/product-goal-loop.md .claude/library/process/client-executor-contract.md .claude/library/domain/domain-design-system.md .claude/library/domain/domain-design-pipeline.md templates/project-starter/DESIGN.md templates/project-starter/design-policy.ignore templates/project-starter/tasks/goal.md brain/03-knowledge/writing/reference-registry.json tests/fixtures/design-policy tests/fixtures/writing-tools scripts/lib/codex-route-intents.js scripts/lib/writing-intent.js scripts/lib/writing-route-policy.js scripts/lib/writing-reference-policy.js scripts/lib/writing-external-tool-policy.js scripts/lib/writing-path-policy.js scripts/lib/progressive-plan.js scripts/lib/subagent-trace.js scripts/codex-agent-policy.js scripts/codex-routing-cases-a.js scripts/codex-routing-cases-b.js scripts/codex-route-config.js scripts/codex-route-task.js scripts/test-writing-intent.js scripts/test-writing-references.js scripts/validate-writing-references.js scripts/test-codex-agent-policy.js scripts/test-codex-routing.js scripts/test-codex-subagents-live.sh scripts/test-progressive-plan.js scripts/test-subagent-trace.js scripts/init-spec-kit.sh scripts/sync-spec-kit.sh scripts/validate-agent-sot.js scripts/validate-spec-kit.js scripts/validate-text-policy.js scripts/progressive-status.js scripts/validate-progressive-plan.js scripts/validate-subagent-trace.js scripts/validate-codex-agents.js scripts/validate-codex-skills.js scripts/validate-production-standard.js scripts/validate-design-policy.js scripts/test-design-policy.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/russian-writing-profile.md .claude/library/technical/russian-business-correspondence.md .claude/library/technical/russian-explanation-and-persuasion.md
@@ -724,6 +726,11 @@ if is_template_source_repo; then
       [ -f "$project/_reference/writing-library-source.json" ] &&
       [ -f "$project/docs/WRITING_LIBRARY_SETUP.md" ] &&
       [ -f "$project/scripts/managed-temp.js" ] &&
+      [ -f "$project/orca.yaml" ] &&
+      [ -f "$project/scripts/orca-setup.js" ] &&
+      [ -f "$project/scripts/test-orca-setup.js" ] &&
+      [ -f "$project/docs/ORCA_SETUP.md" ] &&
+      node -e 'const assert=require("assert"),fs=require("fs"),p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8"));for(const f of ["orca.yaml","scripts/orca-setup.js","scripts/test-orca-setup.js","docs/ORCA_SETUP.md"])assert(m.files[f],f+" absent from generated manifest");assert.strictEqual(m.files["orca.yaml"].category,"hybrid");' "$project" &&
       node -e 'const fs=require("fs");const expected=fs.readFileSync("CLAUDE.md","utf8")+"\n"+fs.readFileSync("templates/orchestrator/CLAUDE.md","utf8");if(fs.readFileSync(process.argv[1],"utf8")!==expected)process.exit(1)' "$project/CLAUDE.md" &&
       [ -z "$(git -C "$project" status --porcelain)" ] &&
       node -e 'const fs=require("fs"),crypto=require("crypto");const p=process.argv[1],m=JSON.parse(fs.readFileSync(p+"/.template-manifest.json","utf8")),h=crypto.createHash("sha256").update(fs.readFileSync(p+"/AGENTS.md")).digest("hex"),source=crypto.createHash("sha256").update(fs.readFileSync("AGENTS.md")).digest("hex");if(m.files?.["AGENTS.md"]?.category!=="template"||m.files["AGENTS.md"].hash!==h||h!==source)process.exit(1)' "$project" &&
