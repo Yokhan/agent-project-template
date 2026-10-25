@@ -8,7 +8,7 @@ inventory: 90
 production: 0
 cleanup: 0
 tags: template,release,v620,outcomes,writing,delegation,storage
-next: Commit the verified scoped deltas, require exact-commit Linux/Windows CI, then publish and verify v6.2.0
+next: Repair clean-environment CI fixtures and the observed writing-intent word-boundary error, then require green exact-commit CI before publishing and verifying v6.2.0
 -->
 
 # Current Task - Accepted Workflow Improvements And Conditional v6.2.0
@@ -68,6 +68,15 @@ barriers, consistent read snapshots and v1 migration regressions. Real PA
 SessionStart/UserPromptSubmit/Stop events passed without hook-trust bypass; its
 manifest stays6.1.2 for the scoped hotfix. No v6.2.0 publication or fleet rollout
 has occurred.
+
+The first remote preflight rejected the candidate: a hook test assumed the
+machine already held the private primary-source library. Production correctly
+blocked missing sources. The repair separates deterministic synthetic hook
+assembly from actual missing-source enforcement and retains independent-review
+diagnostic coverage; test cache state must be isolated from other chats.
+A fresh observed visual-feedback request also exposed an unbounded Russian
+article stem matching an unrelated word. Correct that lexical boundary while
+preserving genuine authored-text requests before rerunning exact-commit CI.
 
 ## Previous local repair baseline
 

@@ -5,12 +5,12 @@ const { getIntentMatch, shouldSuppressRoute } = require("./codex-route-intents.j
 const ACTION_PATTERNS = [
   ["review", /\b(?:review|audit|critique|assess|check|score)\b|проверь|проверить|проверяй|проверим|аудитир|разбер|оцени|оценк[ауи]?|отрецензир/i],
   ["edit", /\b(?:rewrite|edit|revise|tighten|polish|improve)\b|перепиш|отредакт|доработ[а-яё]*\s+текст|улучш[а-яё]*\s+(?:этот\s+)?текст|поправ[а-яё]*\s+(?:этот\s+)?текст|сделай[а-яё]*\s+понятн/i],
-  ["plan", /\b(?:outline|plan|structure)\b|спланир|структур[а-яё]*\s+текст|план[а-яё]*\s+(?:стат|книг|письм|текст)/i],
-  ["create", /\b(?:write|draft|compose|document|explain|describe)\b|напиш|объясни|объяснить|(?<![А-Яа-яЁё])опиши|состав[а-яё]*\s+(?:письм|сообщен|текст|стат|объявлен)|создай[а-яё]*\s+(?:текст|стат|сцен|письм)/i],
+  ["plan", /\b(?:outline|plan|structure)\b|спланир|структур[а-яё]*\s+текст|план[а-яё]*\s+(?:стать(?:я|и|ю|е|ей|ям|ями|ях)|статей|книг|письм|текст)/i],
+  ["create", /\b(?:write|draft|compose|document|explain|describe)\b|напиш|объясни|объяснить|(?<![А-Яа-яЁё])опиши|состав[а-яё]*\s+(?:письм|сообщен|текст|стать(?:я|и|ю|е|ей|ям|ями|ях)|статей|объявлен)|создай[а-яё]*\s+(?:текст|стать(?:я|и|ю|е|ей|ям|ями|ях)|статей|сцен|письм)/i],
 ];
 
 const ARTIFACT_PATTERN =
-  /\b(?:copy|text|post|article|guide|how-to|manual|docs?|documentation|readme|runbook|troubleshooting|release notes?|architecture decision|adr|story|novel|chapter|scene|dialogue|screenplay|poem|email|letter|message|notification|announcement|support reply|incident update|client report|landing page|headline|ad|description|explain|describe|nonfiction book|business book|technical book)\b|текст|(?<![А-Яа-яЁё])пост(?:а|у|ом|е|ы|ов|ам|ами|ах)?(?![А-Яа-яЁё])|стат|гайд|руководств|инструкц|документац|рассказ|роман|глав[а-яё]*\s+(?:книг|роман)|сцен[а-яё]*|диалог|сценари|стих|письм|сообщен|уведомлен|объявлен|ответ[а-яё]*\s+поддерж|клиентск[а-яё]*\s+отч|лендинг|заголов|реклам[а-яё]*\s+объявлен|(?<![А-Яа-яЁё])описан|(?<![А-Яа-яЁё])опиши|объясни|лорн[а-яё]*\s+заметк/i;
+  /\b(?:copy|text|post|article|guide|how-to|manual|docs?|documentation|readme|runbook|troubleshooting|release notes?|architecture decision|adr|story|novel|chapter|scene|dialogue|screenplay|poem|email|letter|message|notification|announcement|support reply|incident update|client report|landing page|headline|ad|description|explain|describe|nonfiction book|business book|technical book)\b|текст|(?<![А-Яа-яЁё])пост(?:а|у|ом|е|ы|ов|ам|ами|ах)?(?![А-Яа-яЁё])|(?<![А-Яа-яЁё])стать(?:я|и|ю|е|ей|ям|ями|ях)(?![А-Яа-яЁё])|(?<![А-Яа-яЁё])статей(?![А-Яа-яЁё])|гайд|руководств|инструкц|документац|рассказ|роман|глав[а-яё]*\s+(?:книг|роман)|сцен[а-яё]*|диалог|сценари|стих|письм|сообщен|уведомлен|объявлен|ответ[а-яё]*\s+поддерж|клиентск[а-яё]*\s+отч|лендинг|заголов|реклам[а-яё]*\s+объявлен|(?<![А-Яа-яЁё])описан|(?<![А-Яа-яЁё])опиши|объясни|лорн[а-яё]*\s+заметк/i;
 
 const NONFICTION_BOOK_PATTERN = /\b(?:non-?fiction|business book|technical book|(?:book|chapter)\s+(?:about|on)\s+(?:business|game development|programming|software|technology))\b|(?:книг|глав)[а-яё]*[^.!?\n]{0,90}(?:бизнес|геймдев|разработк[а-яё]*\s+игр|программир|технолог|техническ)|(?:техническ|делов|нехудожественн)[а-яё]*\s+книг/iu;
 const NONFICTION_PLAN_PATTERN = /\b(?:business plan|production plan|project plan|release plan|plan\s+(?:commercial game|game production|game release|novel publication))\b|бизнес-план|(?:план|спланир)[а-яё]*[^.!?\n]{0,60}(?:коммерческ[а-яё]*\s+игр|производств[а-яё]*\s+игр|релиз[а-яё]*\s+игр|работ[а-яё]*\s+над\s+роман|выпуск[а-яё]*\s+роман)/iu;
@@ -21,7 +21,7 @@ const MODE_PATTERNS = {
   literary:
     /\b(?:fiction|story|novel|chapter|scene|dialogue|screenplay|narrative|poem|game lore|character description)\b|литератур|художественн|рассказ|роман|повест|сцен[а-яё]*|диалог|стих|игров[а-яё]*\s+лор|лорн[а-яё]*\s+заметк|описан[а-яё]*\s+персонаж|опиши[а-яё]*\s+персонаж|глав[а-яё]*\s+(?:книг|роман)/i,
   informational:
-    /\b(?:guide|how-to|manual|tutorial|article|docs?|documentation|readme|runbook|troubleshooting|knowledge base|explanation|report|release notes?|architecture decision|adr)\b|гайд|руководств|инструкц|стат|документац|справк|объяснен|отчет|отчёт|релизн[а-яё]*\s+замет/i,
+    /\b(?:guide|how-to|manual|tutorial|article|docs?|documentation|readme|runbook|troubleshooting|knowledge base|explanation|report|release notes?|architecture decision|adr)\b|гайд|руководств|инструкц|(?<![А-Яа-яЁё])стать(?:я|и|ю|е|ей|ям|ями|ях)(?![А-Яа-яЁё])|(?<![А-Яа-яЁё])статей(?![А-Яа-яЁё])|документац|справк|объяснен|отчет|отчёт|релизн[а-яё]*\s+замет/i,
   communication:
     /\b(?:email|letter|message|notification|announcement|support reply|incident update|pr response|client report)\b|письм|сообщен|уведомлен|объявлен|ответ[а-яё]*\s+поддерж|инцидент|клиентск[а-яё]*\s+отч/i,
 };
@@ -48,8 +48,8 @@ const EXTERNAL_TOOL_PATTERNS = {
   "glavred-api": /\bglavred\b|\bglvrd\b|главред/i,
 };
 
-const RUSSIAN_OUTPUT_PATTERN = /\b(?:in russian|russian-language|russian)\b|на\s+русском|по-русски|русскоязычн|русск[а-яё]*\s+(?:текст|документац|руководств|стат)/i;
-const ENGLISH_OUTPUT_PATTERN = /\b(?:in english|english-language|english)\b|на\s+английском|по-английски|англоязычн|английск[а-яё]*\s+(?:текст|документац|руководств|стат)/i;
+const RUSSIAN_OUTPUT_PATTERN = /\b(?:in russian|russian-language|russian)\b|на\s+русском|по-русски|русскоязычн|русск[а-яё]*\s+(?:текст|документац|руководств|(?<![А-Яа-яЁё])стать(?:я|и|ю|е|ей|ям|ями|ях)(?![А-Яа-яЁё])|(?<![А-Яа-яЁё])статей(?![А-Яа-яЁё]))/i;
+const ENGLISH_OUTPUT_PATTERN = /\b(?:in english|english-language|english)\b|на\s+английском|по-английски|англоязычн|английск[а-яё]*\s+(?:текст|документац|руководств|(?<![А-Яа-яЁё])стать(?:я|и|ю|е|ей|ям|ями|ях)(?![А-Яа-яЁё])|(?<![А-Яа-яЁё])статей(?![А-Яа-яЁё]))/i;
 const MIXED_OUTPUT_PATTERN = /\b(?:in russian\s+(?:and|\/)\s+english|russian\s*\/\s*english|russian\s+and\s+english\s+versions?)\b|на\s+русском\s+и\s+английском|по-русски\s+и\s+по-английски|русск(?:ая|ую|ие|их)\s+и\s+английск(?:ая|ую|ие|их)\s+верс(?:ия|ию|ии|ий)/i;
 const BILINGUAL_OUTPUT_PATTERN = /\bbilingual\b(?=[^\n]*(?:russian|русск))(?=[^\n]*(?:english|английск))/i;
 const OTHER_LANGUAGE_PATTERNS = [

@@ -4,8 +4,8 @@ Use this document when publishing or consuming `agent-project-template` releases
 
 Release snapshot: `v6.2.0` (prepared candidate). This source snapshot does not establish
 publication, exact-tag Linux/Windows CI, or downloadable assets. Verify those
-before rollout. The previous stable release is **6.1.1**; see its
-[publication record](RELEASE_V6_1_1.md).
+before rollout. The previous stable release is **6.1.2**; see its
+[release notes and publication evidence](RELEASE_V6_1_2.md).
 See [v6.2.0 candidate changes and acceptance](RELEASE_V6_2_0.md).
 See [v6.1.2 patch notes and current evidence](RELEASE_V6_1_2.md),
 [v6.1.1 patch notes and publication record](RELEASE_V6_1_1.md),

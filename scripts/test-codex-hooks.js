@@ -8,11 +8,82 @@ const { spawnSync } = require("child_process");
 const policy = require("./lib/codex-turn-policy.js");
 const requestContext = require("./lib/codex-request-context.js");
 const managedReports = require("./lib/managed-run-report.js");
-const { sha256 } = require("./lib/writing-library-store.js");
+const { sha256, libraryStatus } = require("./lib/writing-library-store.js");
 const { run } = require("./codex-turn.js");
 
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-native-hooks-"));
 const cleanupRoot = path.join(fixture, "cleanup hooks");
+const emptyWritingLibrary = path.join(fixture, "empty-writing-library");
+const originalManagedCacheBase = process.env.APT_MANAGED_CACHE_BASE;
+process.env.APT_MANAGED_CACHE_BASE = path.join(fixture, "managed-cache");
+fs.mkdirSync(emptyWritingLibrary);
+
+function syntheticPacket(record) {
+  const passageText = "Synthetic fixture passage; no licensed or private source content.";
+  const packet = {
+    passages: [{ sourceId: "fixture-source", locator: "Section fixture", text: passageText }],
+    readerPlan: { topics: [{ id: "fixture-topic", label: "Synthetic hook navigation fixture" }] },
+  };
+  policy.writeJson(path.join(record.directory, "packet.json"), packet);
+  return packet;
+}
+
+function assertMissingEditorAfterVerifiedApplication(expectedDraft) {
+  const retrievePath = require.resolve("./lib/writing-library-retrieve.js");
+  const policyPath = require.resolve("./lib/codex-turn-policy.js");
+  const originalRetrieveModule = require.cache[retrievePath];
+  const originalPolicyModule = require.cache[policyPath];
+  const retrieved = require(retrievePath);
+  const mockedRetrieveModule = new (require("module"))(retrievePath, module);
+  mockedRetrieveModule.filename = retrievePath;
+  mockedRetrieveModule.loaded = true;
+  mockedRetrieveModule.exports = {
+    ...retrieved,
+    retrievePlannedPacket(task, options = {}) {
+      const passageText = "Synthetic fixture passage for policy boundary testing.";
+      return {
+        requestId: options.requestId,
+        packetId: "a".repeat(64),
+        passages: [{ sourceId: "fixture-source", title: "Synthetic fixture", locator: "Section fixture",
+          passageSha256: sha256(passageText), text: passageText }],
+        coveredSourceIds: ["fixture-source"],
+        readerPlan: { planId: "synthetic-reading-map", targets: [] },
+      };
+    },
+    verifyApplication(task, packet, application, artifactBytes, options = {}) {
+      assert.equal(Buffer.from(artifactBytes).toString("utf8"), expectedDraft, "the application verifier receives the exact final draft bytes");
+      assert.equal(packet.requestId, options.requestId, "the packet is bound to the current request");
+      assert.equal(application.requestId, options.requestId, "the application is bound to the current request");
+      assert.equal(application.artifactSha256, sha256(artifactBytes), "the application is bound to the exact draft bytes");
+      return { state: "application-record-verified", requestId: options.requestId };
+    },
+  };
+  try {
+    require.cache[retrievePath] = mockedRetrieveModule;
+    delete require.cache[policyPath];
+    const testPolicy = require(policyPath);
+    const input = { session_id: "synthetic-application-editor", turn_id: "verified-application", prompt: "Напиши подробное руководство клиенту по восстановлению резервной копии." };
+    const record = testPolicy.startRequest(fixture, input, { workflowDepth: "direct" });
+    const packet = testPolicy.groundRequest(record);
+    const draftFile = path.join(fixture, "synthetic-application-draft.txt");
+    const notesFile = path.join(fixture, "synthetic-application-notes.json");
+    fs.writeFileSync(draftFile, expectedDraft, "utf8");
+    testPolicy.writeJson(notesFile, packet.passages.map(passage => ({ sourceId: passage.sourceId, passageSha256: passage.passageSha256,
+      principle: "Place recovery actions in dependency order.", effect: "The draft gives the customer a clear first action." })));
+    testPolicy.application(fixture, record.file, path.relative(fixture, draftFile), path.relative(fixture, notesFile));
+    const result = testPolicy.checkRequest(record, expectedDraft);
+    assert(result.issues.some(issue => issue.startsWith("independent-review-missing:")),
+      "a verified exact-byte application with no editor record reports independent review missing");
+    assert(!result.issues.some(issue => issue.startsWith("writing-application-missing:")),
+      "a verified exact-byte application is not mislabeled missing when only the editor is absent");
+  } finally {
+    if (originalRetrieveModule) require.cache[retrievePath] = originalRetrieveModule;
+    else delete require.cache[retrievePath];
+    if (originalPolicyModule) require.cache[policyPath] = originalPolicyModule;
+    else delete require.cache[policyPath];
+  }
+}
+
 (async () => {
 try {
   const clarification = "<send_user_message_question_reply>[{\"questionItemId\":\"q1\",\"question\":\"Напиши пояснение о росте, около 3%?\",\"answer\":\"Это рост, ну, около 3%, короче, очень мало.\"}]</send_user_message_question_reply>";
@@ -94,12 +165,22 @@ try {
   const realtimeWritingTask = "Напиши короткое письмо клиенту о переносе встречи.";
   const realtimeWritingPrompt = `<realtime_delegation>\n  <input>${realtimeWritingTask}</input>\n  <transcript_delta>assistant: Это обычная задача, не нужно писать.</transcript_delta>\n</realtime_delegation>`;
   const realtimeWritingInput = { hook_event_name: "UserPromptSubmit", session_id: "realtime-writing", turn_id: "voice-writing", prompt: realtimeWritingPrompt };
-  await hooksApi.handle(realtimeWritingInput, fixture);
+  const originalLibraryOverride = process.env.AGENT_WRITING_LIBRARY;
+  process.env.AGENT_WRITING_LIBRARY = emptyWritingLibrary;
+  let realtimeWritingContext;
+  try { realtimeWritingContext = await hooksApi.handle(realtimeWritingInput, fixture); }
+  finally {
+    if (originalLibraryOverride === undefined) delete process.env.AGENT_WRITING_LIBRARY;
+    else process.env.AGENT_WRITING_LIBRARY = originalLibraryOverride;
+  }
   const realtimeWritingRecord = policy.findState(fixture, realtimeWritingInput);
   assert.equal(realtimeWritingRecord.state.task, realtimeWritingTask);
   assert.equal(realtimeWritingRecord.state.writingRequested, true, "actual writing inside the authoritative input remains gated");
   assert.equal(realtimeWritingRecord.state.editorial.independentRequired, true, "actual authored text still requires independent review");
-  assert(fs.existsSync(path.join(realtimeWritingRecord.directory, "packet.json")), "authoritative writing input still receives the primary packet");
+  const realtimePacketFile = path.join(realtimeWritingRecord.directory, "packet.json");
+  assert.equal(fs.existsSync(realtimePacketFile), false, "an empty library cannot create a primary packet");
+  assert(realtimeWritingContext.hookSpecificOutput.additionalContext.includes("source-grounding-blocked:"),
+    "authoritative writing stays gated when verified primary sources are unavailable");
   assert(policy.checkRequest(realtimeWritingRecord, longStatusAcknowledgement).issues.some(issue => issue.startsWith("writing-application-missing:")),
     "a substantive status response still cannot bypass a genuine writing request");
 
@@ -126,7 +207,17 @@ try {
 
   const writingInput = { hook_event_name: "UserPromptSubmit", session_id: "compact-writing-packet", turn_id: "packet-turn",
     prompt: "Напиши понятное объяснение для нового клиента: как отправить заявку, что происходит дальше и когда запись считается подтвержденной. Сохрани факты из документа о продукте." };
-  const writingContext = await hooksApi.handle(writingInput, fixture);
+  const writingLibraryReady = libraryStatus().state === "ready";
+  const originalGroundRequest = policy.groundRequest;
+  let writingContext;
+  if (writingLibraryReady) {
+    writingContext = await hooksApi.handle(writingInput, fixture);
+  } else {
+    try {
+      policy.groundRequest = record => syntheticPacket(record);
+      writingContext = await hooksApi.handle(writingInput, fixture);
+    } finally { policy.groundRequest = originalGroundRequest; }
+  }
   const writingRecord = policy.findState(fixture, writingInput);
   assert.equal(writingRecord.state.writingRequested, true);
   const packetFile = path.join(writingRecord.directory, "packet.json");
@@ -140,7 +231,6 @@ try {
     "compact navigation keeps local contents and example commands");
   for (const passage of fullPacket.passages) assert(!compactPacketContext.includes(passage.text), "full primary text is not embedded into hook context");
   const packetBeforeLargeNavigation = JSON.stringify(policy.readJson(packetFile));
-  const originalGroundRequest = policy.groundRequest;
   let oversizedNavigation;
   const hugeLocators = Array.from({ length: 80 }, (_, index) => `Locator: source-${index}: section-${index}-${"locator".repeat(80)}`);
   const hugeChecks = Array.from({ length: 80 }, (_, index) => `Editorial check: topic-${index}-${"check".repeat(70)} (Review ${index} ${"detail".repeat(70)})`);
@@ -167,19 +257,27 @@ try {
   }
   assert.equal(JSON.stringify(policy.readJson(packetFile)), packetBeforeLargeNavigation, "compacting navigation never changes or truncates packet.json");
 
-  const exactDraft = longStatusAcknowledgement;
-  const exactDraftFile = path.join(fixture, "authored-draft.txt");
-  const exactNotesFile = path.join(fixture, "authored-notes.json");
-  fs.writeFileSync(exactDraftFile, exactDraft, "utf8");
-  policy.writeJson(exactNotesFile, fullPacket.passages.map(passage => ({ sourceId: passage.sourceId, passageSha256: passage.passageSha256,
-    principle: `Apply the reading at ${passage.locator}.`, effect: "The draft uses a concrete, reader-centered statement." })));
-  const exactApplication = policy.application(fixture, writingRecord.file, path.relative(fixture, exactDraftFile), path.relative(fixture, exactNotesFile));
-  assert.equal(exactApplication.artifactSha256, sha256(exactDraft), "the regression fixture binds the exact final acknowledgment bytes");
-  const missingEditorResult = policy.checkRequest(writingRecord, exactDraft);
-  assert(missingEditorResult.issues.some(issue => issue.startsWith("independent-review-missing:")),
-    "a missing hash-bound editor record is diagnosed as independent review missing");
-  assert(!missingEditorResult.issues.some(issue => issue.startsWith("writing-application-missing:")),
-    "a valid application is not mislabeled missing when only its independent review is absent");
+  if (!writingLibraryReady) {
+    assert.equal(fullPacket.passages[0].text, "Synthetic fixture passage; no licensed or private source content.",
+      "the hook assembly fixture contains no licensed or private source material");
+  }
+
+  if (writingLibraryReady) {
+    const exactDraft = longStatusAcknowledgement;
+    const exactDraftFile = path.join(fixture, "authored-draft.txt");
+    const exactNotesFile = path.join(fixture, "authored-notes.json");
+    fs.writeFileSync(exactDraftFile, exactDraft, "utf8");
+    policy.writeJson(exactNotesFile, fullPacket.passages.map(passage => ({ sourceId: passage.sourceId, passageSha256: passage.passageSha256,
+      principle: `Apply the reading at ${passage.locator}.`, effect: "The draft uses a concrete, reader-centered statement." })));
+    const exactApplication = policy.application(fixture, writingRecord.file, path.relative(fixture, exactDraftFile), path.relative(fixture, exactNotesFile));
+    assert.equal(exactApplication.artifactSha256, sha256(exactDraft), "the regression fixture binds the exact final acknowledgment bytes");
+    const missingEditorResult = policy.checkRequest(writingRecord, exactDraft);
+    assert(missingEditorResult.issues.some(issue => issue.startsWith("independent-review-missing:")),
+      "a missing hash-bound editor record is diagnosed as independent review missing");
+    assert(!missingEditorResult.issues.some(issue => issue.startsWith("writing-application-missing:")),
+      "a valid application is not mislabeled missing when only its independent review is absent");
+  }
+  assertMissingEditorAfterVerifiedApplication(longStatusAcknowledgement);
 
   const allWritingContext = writingContext.hookSpecificOutput.additionalContext;
   assert(allWritingContext.length <= 8000, "instructions and packet navigation stay bounded together");
@@ -368,6 +466,8 @@ try {
   assert.equal(fs.existsSync(exactRun.runRoot), true, "the exact-owned pending run marker remains until resolved");
   console.log("Native hooks: request isolation, continuation/replay, missing reading/delegation, exact cleanup ownership, nonblocking unknown cleanup and bounded failure checks passed");
 } finally {
+  if (originalManagedCacheBase === undefined) delete process.env.APT_MANAGED_CACHE_BASE;
+  else process.env.APT_MANAGED_CACHE_BASE = originalManagedCacheBase;
   // This test deliberately leaves malformed claims. Remove only its exact
   // randomly allocated namespace before deleting the fixture project root.
   if (fs.existsSync(cleanupRoot)) {

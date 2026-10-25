@@ -164,7 +164,7 @@ fi
 else
   echo "  OK: Shared writing library import/grounding/binding validate"
 fi
-if ! node scripts/test-codex-runtime.js >/dev/null 2>&1 || ! node scripts/test-codex-hooks.js >/dev/null 2>&1 || ! node scripts/test-codex-request-recovery.js >/dev/null 2>&1 || ! node scripts/test-codex-delegation-report.js >/dev/null 2>&1 || ! node scripts/test-codex-final-carrier.js >/dev/null 2>&1 || ! node scripts/test-lessons.js >/dev/null 2>&1 || ! node scripts/test-transfer-allowlist.js >/dev/null 2>&1; then
+if ! node scripts/test-codex-runtime.js || ! node scripts/test-codex-hooks.js || ! node scripts/test-codex-request-recovery.js || ! node scripts/test-codex-delegation-report.js || ! node scripts/test-codex-final-carrier.js || ! node scripts/test-lessons.js || ! node scripts/test-transfer-allowlist.js; then
   echo "  ERROR: Native workflow, lesson lifecycle or privacy acceptance checks failed"
   ERRORS=$((ERRORS + 1))
 else

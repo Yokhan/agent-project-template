@@ -30,6 +30,10 @@ remain unmeasured.
   diagnostic after successful application verification; it is not reported as
   unread or unapplied primary sources. Substantive prose keeps the same reading
   and review requirements.
+- Russian article detection uses article word forms rather than the fragment
+  `стат` inside unrelated words such as `достаточно`. Visual feedback no longer
+  becomes an authored article through that match; an explicit post or letter
+  request still enters its writing workflow.
 - Outcome evidence connects the original scenario, product facts and target
   surface to actual observations. Source, publication, installation and active
   execution require their own evidence; a filled receipt does not prove meaning
@@ -93,3 +97,9 @@ the state column. Current native hook and real-volume integration are checked
 separately after that delta. Exact-commit Linux/Windows preflight, exact-tag CI
 and downloaded archive verification remain mandatory before calling the release
 live. Historical v6.1.2 acceptance is not evidence for this version.
+
+The first remote preflight exposed a test's dependency on a locally provisioned
+private library. Hook assembly now has synthetic fixtures, the missing-library
+case exercises the real blocking path, and the exact-byte application/editor
+diagnostic remains covered independently. Native validation prints the failing
+leaf's output. Test-owned cache roots isolate these checks from other chats.

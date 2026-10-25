@@ -63,6 +63,34 @@ function main() {
   for (const task of ["Поставь пакет", "Исправь постоянное зависание", "Проверь PostgreSQL"] ) {
     expectIntent(task, { isWriting: false, action: null, primaryMode: null });
   }
+  for (const task of [
+    "Проверь, достаточно ли форма соответствует требованиям; статус и статистика проверки уже записаны.",
+    "Проверь статус и статистику формы.",
+    "Форма недостаточно простая, такую подвеску надо исправить.",
+  ]) {
+    expectIntent(task, {
+      isWriting: false,
+      action: null,
+      primaryMode: null,
+      outputLanguage: null,
+    });
+  }
+  expectIntent("Форма мерча выглядит слишком простой; напиши пост о новой подвеске.", {
+    isWriting: true,
+    action: "create",
+    primaryMode: "marketing",
+  });
+  for (const task of ["Напиши статью о мерче.", "Проверь эти статьи.", "Составь план статей."]) {
+    expectIntent(task, {
+      isWriting: true,
+      primaryMode: "informational",
+    });
+  }
+  expectIntent("Проверь формулировки статьи.", {
+    isWriting: true,
+    action: "review",
+    primaryMode: "informational",
+  });
   expectIntent("Напиши TypeScript-скрипт для проверки файла", {
     isWriting: false,
     action: null,
