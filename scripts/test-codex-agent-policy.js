@@ -363,6 +363,48 @@ function testValidatorRejections() {
   }, /contains user\/IDE-owned defaults/);
 }
 
+function testValidatorGlobalThreadCapacity() {
+  for (const key of ["max_threads", "max_concurrent_threads_per_session"]) {
+    for (const value of ["6", "1_000"]) {
+      const root = createValidatorFixture();
+      try {
+        const file = path.join(root, ".codex/config.toml");
+        const configured = fs.readFileSync(file, "utf8").replace(
+          /^max_concurrent_threads_per_session[ \t]*=[ \t]*3\r?$/m,
+          `${key} = ${value}`,
+        );
+        assert.notStrictEqual(configured, fs.readFileSync(file, "utf8"));
+        fs.writeFileSync(file, configured, "utf8");
+        const beforeValidation = fs.readFileSync(file);
+        const result = runValidator(root);
+        assert.strictEqual(result.status, 0, `${result.stdout}\n${result.stderr}`);
+        const count = Number(value.replaceAll("_", ""));
+        assert.match(result.stdout, new RegExp(`global concurrency capacity \\(${count}\\).*per-task fan-out ceiling \\(3\\)`));
+        assert.deepStrictEqual(fs.readFileSync(file), beforeValidation);
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    }
+  }
+
+  for (const [key, value] of [
+    ["max_concurrent_threads_per_session", "0"],
+    ["max_threads", "1__0"],
+    ["max_threads", "6.5"],
+    ["max_threads", "9007199254740992"],
+  ]) {
+    withValidatorFixture((root) => {
+      const file = path.join(root, ".codex/config.toml");
+      const content = fs.readFileSync(file, "utf8").replace(
+        /^max_concurrent_threads_per_session[ \t]*=[ \t]*3\r?$/m,
+        `${key} = ${value}`,
+      );
+      assert.notStrictEqual(content, fs.readFileSync(file, "utf8"));
+      fs.writeFileSync(file, content, "utf8");
+    }, /agents concurrency limit must be a positive safe integer/);
+  }
+}
+
 function testResourceSelection() {
   const bounded = { role: "implementer", scope: ["src/isolated.js"], acceptance: ["unit tests pass"] };
   assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6-luna");
@@ -432,6 +474,7 @@ function main() {
   testWriteScopeAliases();
   testCandidateRanking();
   testValidatorRejections();
+  testValidatorGlobalThreadCapacity();
   console.log("Codex agent policy tests passed");
 }
 

@@ -1,8 +1,8 @@
 # Agent Project Template v6
 
-[![Template Version](https://img.shields.io/badge/template-v6.3.1-blue)](.)
+[![Template Version](https://img.shields.io/badge/template-v6.3.2-blue)](.)
 
-Template version: **6.3.1**. Publication and installed/native activation require the evidence in [v6.3.1 release notes](docs/RELEASE_V6_3_1.md). The previous [stable v6.3.0 release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.3.0) is verified; use one exact verified tag for rollout.
+Template version: **6.3.2**. Publication and installed/native activation require the evidence in [v6.3.2 release notes](docs/RELEASE_V6_3_2.md). The previous [stable v6.3.1 release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.3.1) is verified; use one exact verified tag for rollout.
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -32,7 +32,9 @@ Follow [the canonical update protocol](docs/TEMPLATE_RELEASES.md#canonical-agent
 8. Run `node scripts/writing-library.js discover`. Reuse a valid shared store. For an authorized user of the private source repository, run `node scripts/writing-library.js provision` once; it imports the pinned six sources and builds the local contents/examples index. Otherwise import exact supplied files outside Git. See [library setup](docs/WRITING_LIBRARY_SETUP.md). Never create book symlinks/hardlinks inside a project or pretend memory is primary reading.
 9. Verify manifest version, diff, overlays, conflicts, runtime and source status before success. Report project readiness separately from `source-grounding-blocked`.
 
-Release snapshot: `v6.3.1`. This source snapshot does not prove publication; verify the exact release is non-draft and non-prerelease before rollout.
+Release snapshot: `v6.3.2`. This source snapshot does not prove publication; verify the exact release is non-draft and non-prerelease before rollout.
+All v6.3.2 commands below are post-publication procedures. Run them only after
+verifying that exact release and its assets.
 
 The v6 release adds native request-bound Luna dispatch, task-directed primary
 reading and lifecycle evidence. Review the exact host requirements and upgrade
@@ -41,7 +43,7 @@ steps in [the v6 release notes](docs/RELEASE_V6_0_0.md).
 Create a new project from the pinned tag:
 
 ```bash
-git clone --branch v6.3.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.3.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -50,9 +52,9 @@ Update an existing generated project using the verified exact-tag checkout
 (reuse it, or clone the tag above outside the project). Set these absolute paths:
 
 ```bash
-RELEASE_CHECKOUT=/absolute/verified-v6.3.1-checkout
+RELEASE_CHECKOUT=/absolute/verified-v6.3.2-checkout
 PROJECT=/absolute/project
-PLAN=/absolute/outside-project/agent-template-v6.3.1.plan.json
+PLAN=/absolute/outside-project/agent-template-v6.3.2.plan.json
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN"
 node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT" --plan-file "$PLAN" --apply
 ```
@@ -61,13 +63,13 @@ node "$RELEASE_CHECKOUT/scripts/sync-template.js" "$RELEASE_CHECKOUT" "$PROJECT"
 
 ## Quick Start
 
-The agent runs these commands after verifying release snapshot `v6.3.1` and
+The agent runs these commands after verifying release snapshot `v6.3.2` and
 confirming the destination is appropriate for a new project. On an existing
 machine, reuse the verified canonical checkout; do not clone a template or books
 per task. These are execution references, not steps the human must perform.
 
 ```bash
-git clone --branch v6.3.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.3.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 cd my-project
@@ -165,10 +167,10 @@ release tags for normal project rollout:
 # https://github.com/Yokhan/agent-project-template/releases/latest
 
 # Preview the pinned release
-node scripts/sync-template.js --from-git --ref v6.3.1 --plan-file ../agent-template-v6.3.1.plan.json
+node scripts/sync-template.js --from-git --ref v6.3.2 --plan-file ../agent-template-v6.3.2.plan.json
 
 # Apply the pinned release
-node scripts/sync-template.js --from-git --ref v6.3.1 --plan-file ../agent-template-v6.3.1.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.3.2 --plan-file ../agent-template-v6.3.2.plan.json --apply
 ```
 Projects created from a git-hosted template automatically have a `template` remote configured. The SessionStart hook reminds you when updates haven't been checked in 7+ days.
 
@@ -192,8 +194,8 @@ node /path/to/agent-project-template/scripts/sync-template.js /path/to/agent-pro
 
 # Optional: after verifying the installed updater, add remote for future updates
 git remote add template https://github.com/Yokhan/agent-project-template.git
-node scripts/sync-template.js --from-git --ref v6.3.1 --plan-file ../agent-template-v6.3.1.plan.json
-node scripts/sync-template.js --from-git --ref v6.3.1 --plan-file ../agent-template-v6.3.1.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.3.2 --plan-file ../agent-template-v6.3.2.plan.json
+node scripts/sync-template.js --from-git --ref v6.3.2 --plan-file ../agent-template-v6.3.2.plan.json --apply
 ```
 
 **What gets updated**: Manifest entries marked `template` or `hybrid`, including template infrastructure (`.agents/`, `.claude/`, `.codex/`, scripts, MCP helper sources, newly bootstrapped `AGENTS.md`, onboarding docs)
@@ -392,6 +394,7 @@ Sync detects files changed both locally and in the template. Preview reports tho
 
 | Version | Key Changes |
 |---------|------------|
+| **6.3.2** | Compatible validator fix: preserve user-owned session thread capacity independently from the per-task dispatch ceiling. No model/settings or runtime fan-out defaults change. See [behavior and limits](docs/RELEASE_V6_3_2.md). |
 | **6.3.1** | Compatible patch: evidence-based delivery observation, activity versus material progress, unchanged scheduled reports, and bounded same-session recovery policy. Existing UI workflow remains optional and evidence-bound. See [behavior and limits](docs/RELEASE_V6_3_1.md). |
 | **6.3.0** | Compatible minor version: proactive product waves, independently releasable units, truthful handoff validation, reusable UI recipes, portable test inputs and opt-in responsive work observation. See [behavior and limits](docs/RELEASE_V6_3_0.md). |
 | **6.2.0** | Compatible minor version: request-scoped Stop ownership, crash-safe cache coordination, physical-volume admission, completed useful Luna coverage, exact-target outcome evidence, bounded hook navigation and actual author/editor acceptance. See [behavior and evidence](docs/RELEASE_V6_2_0.md). |

@@ -256,15 +256,24 @@ function validateAgentConfig() {
     );
   }
   const agentsSection = content.split("[agents]")[1]?.split(/\r?\n\s*\[/)[0] || "";
-  const currentLimit = agentsSection.match(/^max_concurrent_threads_per_session\s*=\s*(\d+)/m);
-  const legacyLimit = agentsSection.match(/^max_threads\s*=\s*(\d+)/m);
+  const currentLimit = agentsSection.match(/^max_concurrent_threads_per_session[ \t]*=[ \t]*([^#\r\n]*)(?:#.*)?\r?$/m);
+  const legacyLimit = agentsSection.match(/^max_threads[ \t]*=[ \t]*([^#\r\n]*)(?:#.*)?\r?$/m);
   const maxThreads = currentLimit || legacyLimit;
   if (!maxThreads) {
     addError(`${CODEX_CONFIG}: missing agents concurrency limit`);
   } else {
-    const count = Number(maxThreads[1]);
-    if (count < 1 || count > AGENT_POLICY.fanout.maxChildren) {
-      addError(`${CODEX_CONFIG}: concurrency limit must stay between 1 and ${AGENT_POLICY.fanout.maxChildren}`);
+    const rawCount = maxThreads[1].trim();
+    if (!/^\+?(?:0|[1-9](?:_?\d)*)$/.test(rawCount)) {
+      addError(`${CODEX_CONFIG}: agents concurrency limit must be a positive safe integer`);
+    } else {
+      const count = Number(rawCount.replaceAll("_", ""));
+      if (!Number.isSafeInteger(count) || count < 1) {
+        addError(`${CODEX_CONFIG}: agents concurrency limit must be a positive safe integer`);
+      } else if (count > AGENT_POLICY.fanout.maxChildren) {
+        addWarning(
+          `${CODEX_CONFIG}: global concurrency capacity (${count}) exceeds the per-task fan-out ceiling (${AGENT_POLICY.fanout.maxChildren}); per-task dispatch remains capped separately`,
+        );
+      }
     }
   }
   if (currentLimit && legacyLimit) {

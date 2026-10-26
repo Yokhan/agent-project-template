@@ -2,18 +2,36 @@
 id: accepted-workflow-improvements-v620-20261025
 status: active
 updated: 2026-10-26
-readiness: 70
-plan: 100
-inventory: 90
-production: 0
-cleanup: 0
-tags: template,release,v631,progress,recovery,rollout
-next: Integrate progress/recovery rule, verify and replace the one owned watcher, publish v6.3.1, then canary and conflict-free consumer rollout
+tags: template,release,v632,progress,recovery,rollout
+next: Publish the preserved-capacity validator repair through exact v6.3.2 release gates, then continue reviewed consumer delta plans
 -->
 
-# Current Task - Proactive Progress, Owned Recovery And Authorized v6.3.1 Rollout
+# Current Task - Preserved Capacity Repair And Authorized Rollout
 
-## Current authorization and bounded strategy
+## Current v6.3.2 delta
+
+The v6.3.1 release at `a99ce19f834435460d772566758283f2dea9686a` is
+published and verified: exact-tag CI `40314003856`, downloaded checksums,
+metadata and canonical archive passed. The one owned coordinator watcher was
+activated separately, with singleton and actual report-delivery receipts.
+Consumer installation and runtime activation remain separate evidence.
+
+During reviewed AgentOS installation, the existing `max_threads = 6` was
+preserved but failed the validator's unrelated per-task ceiling. Root decision
+`msg_8b067fcb7e08` authorizes the narrow v6.3.2 repair, release and immediate
+delta rollout. Preserve the setting and the immutable v6.3.1 failure receipt.
+Only the validator and one existing-fixture regression change behavior;
+version/release metadata and the applicable official-source record follow.
+The frozen supervisor closure, all model/effort/permission settings, machine
+watchers and product sources remain outside this patch.
+
+The original rollout baseline is 51 existing consumer roots. Use actual
+installed and accepted counts from per-target receipts; do not derive delivery
+percentages from source or test counts. Complex project overlays retain their
+owners, exact conflict evidence and a scoped next action. The previous wave
+context below remains historical and does not establish current readiness.
+
+## Previous v6.3.1 authorization and bounded strategy
 
 The direct owner authorized the canonical progress/report/recovery rule first,
 the upgrade and controlled replacement of the existing machine coordinator
@@ -22,8 +40,8 @@ published v6.3.0 at `91248c6a1a0c54312ca58ef844324ef77d6eaeb7` is immutable;
 preflight `40304302367`, exact-tag release `40305180507` and downloaded archive
 verification passed. Its receipt remains under
 `.session-cache/release-evidence/v6.3.0-91248c6a1a0c/verification.json`.
-Earlier acceptance plans below are historical. The existing numeric header
-describes the earlier planning baseline, not current delivery percentages.
+Earlier acceptance plans below are historical and do not establish current
+delivery percentages.
 
 Production posture. Actual source evidence shows the existing watcher skips
 `active-*` assignments, lets stale completed metadata hide current work and
