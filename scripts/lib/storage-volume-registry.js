@@ -11,6 +11,9 @@ const managed = require("./managed-temp.js");
 const MAX_ROWS = 4000;
 const MAX_DB_BYTES = 8 * 1024 * 1024;
 const MIN_FREE_BYTES = 2 * 1024 ** 3;
+const INIT_BUSY_RETRIES = 5;
+const INIT_BUSY_TIMEOUT_MS = 5000;
+const INIT_DEADLINE_MS = 15000;
 const TOKEN_HASH = /^[a-f0-9]{64}$/u;
 const DEFAULT_DATABASE_PATH = path.join(os.homedir(), ".local", "share", "agent-project-template", "storage-coordination", "registry.sqlite");
 const WINDOWS_IDENTITY_HELPER = path.resolve(__dirname, "storage-volume-identity.ps1");
@@ -80,12 +83,38 @@ function ensureDatabaseDirectory(file) {
 function databasePath(options = {}) {
   return safeDatabasePath(options.databasePath || process.env.AGENT_STORAGE_COORDINATION_TEST_DB || DEFAULT_DATABASE_PATH);
 }
-function assertKnownSchema(file) {
+function isSqliteBusyOrLocked(error) {
+  const code = Number(error?.errcode ?? error?.sqliteErrorCode);
+  const primaryCode = Number.isInteger(code) ? code & 0xff : code;
+  return primaryCode === 5 || primaryCode === 6;
+}
+function initializationTimeout(deadline) {
+  const remainingMs = deadline - Date.now();
+  if (remainingMs <= 0) throw new Error("Volume registry initialization deadline exceeded");
+  return Math.max(1, Math.min(INIT_BUSY_TIMEOUT_MS, remainingMs));
+}
+function waitForInitializationRetry(attempt, remainingMs) {
+  const delayMs = Math.min(25 * 2 ** attempt, 400, remainingMs);
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+}
+function retryInitialization(operation) {
+  const deadline = Date.now() + INIT_DEADLINE_MS;
+  for (let attempt = 0; ; attempt += 1) {
+    try { return operation(deadline); }
+    catch (error) {
+      const remainingMs = deadline - Date.now();
+      if (!isSqliteBusyOrLocked(error) || attempt >= INIT_BUSY_RETRIES || remainingMs <= 0) throw error;
+      waitForInitializationRetry(attempt, remainingMs);
+      if (Date.now() >= deadline) throw error;
+    }
+  }
+}
+function assertKnownSchema(file, timeoutMs = INIT_BUSY_TIMEOUT_MS) {
   if (!fs.existsSync(file)) return null;
   const { DatabaseSync } = require("node:sqlite");
-  const db = new DatabaseSync(file, { readOnly: true, timeout: 5000 });
+  const db = new DatabaseSync(file, { readOnly: true, timeout: timeoutMs });
   try {
-    db.exec("PRAGMA busy_timeout=5000; BEGIN;");
+    db.exec(`PRAGMA busy_timeout=${timeoutMs}; BEGIN;`);
     const version = db.prepare("PRAGMA user_version").get().user_version;
     const objects = db.prepare("SELECT type,name,tbl_name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").all();
     if (version === 0) {
@@ -129,16 +158,19 @@ function assertKnownSchema(file) {
     throw error;
   } finally { db.close(); }
 }
-function openStore(file) {
+function openStoreAttempt(file, deadline) {
   const { DatabaseSync } = require("node:sqlite");
   ensureDatabaseDirectory(file);
   managed.assertNoLinks(file, { allowMissing: true });
   if (fs.existsSync(file) && !fs.lstatSync(file).isFile()) throw new Error("Volume registry must be a regular file");
-  assertKnownSchema(file);
-  const db = new DatabaseSync(file, { timeout: 5000 });
+  assertKnownSchema(file, initializationTimeout(deadline));
+  const db = new DatabaseSync(file, { timeout: initializationTimeout(deadline) });
   try {
-    db.exec("PRAGMA busy_timeout=5000;");
-    db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; BEGIN IMMEDIATE;");
+    db.exec(`PRAGMA busy_timeout=${initializationTimeout(deadline)};`);
+    db.exec("PRAGMA journal_mode=WAL;");
+    db.exec("PRAGMA synchronous=FULL;");
+    db.exec(`PRAGMA busy_timeout=${initializationTimeout(deadline)};`);
+    db.exec("BEGIN IMMEDIATE;");
     const version = db.prepare("PRAGMA user_version").get().user_version;
     if (version === 0) {
       const count = db.prepare("SELECT count(*) AS count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").get().count;
@@ -163,6 +195,7 @@ function openStore(file) {
       db.exec("UPDATE reservations SET state='reserved'; PRAGMA user_version=2;");
     } else if (version !== 2) throw new Error(`Unsupported volume registry schema version: ${version}`);
     db.exec("COMMIT");
+    db.exec(`PRAGMA busy_timeout=${INIT_BUSY_TIMEOUT_MS};`);
     if (process.platform !== "win32") fs.chmodSync(file, 0o600);
     return db;
   } catch (error) {
@@ -223,6 +256,9 @@ function hasReservation(input, options = {}) {
     }
     return true;
   } finally { db.close(); }
+}
+function openStore(file) {
+  return retryInitialization(deadline => openStoreAttempt(file, deadline));
 }
 function identityFor(target, options, { locked = false } = {}) {
   if (typeof options.measureVolume === "function") {
@@ -299,16 +335,19 @@ function reserve(input, options = {}) {
 }
 function initialize(options = {}) {
   const file = databasePath(options);
-  const version = assertKnownSchema(file);
-  if (version === 2) {
-    const { DatabaseSync } = require("node:sqlite");
-    const db = new DatabaseSync(file, { readOnly: true, timeout: 5000 });
-    try { db.exec("PRAGMA busy_timeout=5000;"); metadataBytes(db); return { registryPresent: true }; }
+  return retryInitialization(deadline => {
+    const version = assertKnownSchema(file, initializationTimeout(deadline));
+    if (version === 2) {
+      const { DatabaseSync } = require("node:sqlite");
+      const timeoutMs = initializationTimeout(deadline);
+      const db = new DatabaseSync(file, { readOnly: true, timeout: timeoutMs });
+      try { db.exec(`PRAGMA busy_timeout=${timeoutMs};`); metadataBytes(db); return { registryPresent: true }; }
+      finally { db.close(); }
+    }
+    const db = openStoreAttempt(file, deadline);
+    try { metadataBytes(db); return { registryPresent: true }; }
     finally { db.close(); }
-  }
-  const db = openStore(file);
-  try { metadataBytes(db); return { registryPresent: true }; }
-  finally { db.close(); }
+  });
 }
 function release(input, { databasePath: selectedPath, evidence } = {}) {
   const projectRoot = canonicalProject(input.projectRoot);

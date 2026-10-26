@@ -41,6 +41,18 @@ function childReserve(value, available, identityId) {
     child.on("close", code => code === 0 ? resolve(JSON.parse(stdout)) : reject(new Error(`reserve child exited ${code}: ${stderr}`)));
   });
 }
+function childInitialize(database, ready, start) {
+  const modulePath = path.resolve(__dirname, "lib/storage-volume-registry.js");
+  const script = `const fs=require('node:fs'),r=require(${JSON.stringify(modulePath)});fs.writeFileSync(process.argv[2],'ready');const until=Date.now()+10000;while(!fs.existsSync(process.argv[3])){if(Date.now()>until)throw Error('initializer start barrier timed out');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,2)}try{process.stdout.write(JSON.stringify(r.initialize({databasePath:process.argv[1]})))}catch(error){process.stdout.write(JSON.stringify({error:error.message,code:error.errcode??error.sqliteErrorCode}))}`;
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["-e", script, database, ready, start], { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = "";
+    child.stdout.setEncoding("utf8").on("data", chunk => stdout += chunk);
+    child.stderr.setEncoding("utf8").on("data", chunk => stderr += chunk);
+    child.on("error", reject);
+    child.on("close", code => code === 0 ? resolve(JSON.parse(stdout)) : reject(new Error(`initializer child exited ${code}: ${stderr}`)));
+  });
+}
 
 async function main() {
   const absent = project("absent-store");
@@ -100,6 +112,24 @@ async function main() {
   }).reserved, true, "the migrated legacy schema accepts a new reservation");
   assert.equal(volume.status(migrationProject, { databasePath: legacyWithoutStateDatabase }).reservations.length, 1);
   volume.release(migrationInput, { databasePath: legacyWithoutStateDatabase, evidence: "owner-released-absent-target" });
+
+  const concurrentInitDatabase = path.join(fixtureRoot, "concurrent-fresh-wal-init.sqlite");
+  const initStart = path.join(fixtureRoot, "concurrent-fresh-wal-init.start");
+  const initializerCount = 4;
+  const initializers = Array.from({ length: initializerCount }, (_, index) => {
+    const ready = path.join(fixtureRoot, `concurrent-fresh-wal-init-${index}.ready`);
+    return { ready, result: childInitialize(concurrentInitDatabase, ready, initStart) };
+  });
+  await Promise.all(initializers.map(({ ready }) => waitForFile(ready)));
+  fs.writeFileSync(initStart, "go");
+  const initResults = await Promise.all(initializers.map(({ result }) => result));
+  assert.deepEqual(initResults, Array.from({ length: initializerCount }, () => ({ registryPresent: true })),
+    `simultaneous initialization of a fresh WAL registry must serialize: ${JSON.stringify(initResults)}`);
+  const initialized = new DatabaseSync(concurrentInitDatabase, { readOnly: true });
+  try {
+    assert.equal(initialized.prepare("PRAGMA user_version").get().user_version, 2);
+    assert.equal(initialized.prepare("PRAGMA journal_mode").get().journal_mode, "wal");
+  } finally { initialized.close(); }
 
   const legacyWithStateDatabase = path.join(fixtureRoot, "legacy-v1-with-state.sqlite");
   const legacyWithState = new DatabaseSync(legacyWithStateDatabase);
