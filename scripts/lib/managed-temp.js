@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
+const { performance } = require("perf_hooks");
 const runOwnership = require("./managed-run-ownership.js");
 
 const OWNER_FILE = ".managed-temp-owner.json";
@@ -15,11 +16,16 @@ const DEPENDENT_SUFFIX = ".json";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const DEFAULT_BUDGET_MS = 1500;
 
-function assertNoLinks(target, { allowMissing = false } = {}) {
+function assertNoLinks(target, { allowMissing = false, shouldCancel = null } = {}) {
   const absolute = path.resolve(target);
   const parsed = path.parse(absolute);
   let current = parsed.root;
   for (const part of absolute.slice(parsed.root.length).split(path.sep).filter(Boolean)) {
+    if (typeof shouldCancel === "function" && shouldCancel()) {
+      const error = new Error("Managed path check cancelled");
+      error.code = "ECANCELED";
+      throw error;
+    }
     current = path.join(current, part);
     let stat;
     try { stat = fs.lstatSync(current); }
@@ -316,11 +322,239 @@ function inventoryBounded(directory, deadline, maxEntries, { allowOwnedLinkEntri
   return { complete: true, bytes, files, reason: null };
 }
 
+function observeTreeStable(start, deadline, maxEntries, shouldCancel = null) {
+  const root = path.resolve(start);
+  const startedAt = performance.now();
+  const counter = { entries: 0 };
+  const finish = result => ({
+    ...result,
+    elapsedMs: Math.max(0, performance.now() - startedAt),
+    entriesExamined: counter.entries,
+    exhaustedBy: result.exhaustedBy || null,
+  });
+  const cancelled = () => typeof shouldCancel === "function" && shouldCancel();
+  const exhaustionKind = () => Date.now() > deadline ? "time" : counter.entries >= maxEntries ? "entries" : null;
+  function scan(expected = null) {
+    let bytes = 0, files = 0;
+    const signatures = expected ? null : new Map();
+    const stack = [{ absolute: root, relative: "" }];
+    try {
+      assertNoLinks(root, { shouldCancel });
+      if (cancelled()) return { complete: false, bytes, files, reason: "cancelled" };
+      const rootStat = fs.lstatSync(root);
+      if (cancelled()) return { complete: false, bytes, files, reason: "cancelled" };
+      if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) return { complete: false, bytes, files, reason: "not-a-real-directory" };
+      const rootExhaustion = exhaustionKind();
+      if (rootExhaustion) return { complete: false, bytes, files, reason: "budget-exhausted", exhaustedBy: rootExhaustion };
+      counter.entries += 1;
+      while (stack.length) {
+        if (cancelled()) return { complete: false, bytes, files, reason: "cancelled" };
+        if (Date.now() > deadline) return { complete: false, bytes, files, reason: "budget-exhausted", exhaustedBy: "time" };
+        const current = stack.pop();
+        const stat = fs.lstatSync(current.absolute);
+        if (cancelled()) return { complete: false, bytes, files, reason: "cancelled" };
+        if (stat.isSymbolicLink()) return { complete: false, bytes, files, reason: "linked-entry" };
+        const type = stat.isDirectory() ? "directory" : stat.isFile() ? "file" : "unsupported";
+        if (type === "unsupported") return { complete: false, bytes, files, reason: "unsupported-entry" };
+        let signature = [type, stat.mode, stat.size, stat.mtimeMs, stat.ctimeMs, stat.birthtimeMs, stat.ino, stat.dev, stat.nlink].join(":");
+        if (type === "file") { bytes += stat.size; files += 1; }
+        else {
+          const names = [];
+          const dir = fs.opendirSync(current.absolute);
+          try {
+            for (let entry = dir.readSync(); entry !== null; entry = dir.readSync()) {
+              if (cancelled()) return { complete: false, bytes, files, reason: "cancelled" };
+              const scanExhaustion = exhaustionKind();
+              if (scanExhaustion) return { complete: false, bytes, files, reason: "budget-exhausted", exhaustedBy: scanExhaustion };
+              counter.entries += 1;
+              names.push(entry.name);
+              stack.push({ absolute: path.join(current.absolute, entry.name), relative: current.relative ? path.join(current.relative, entry.name) : entry.name });
+            }
+          } finally { dir.closeSync(); }
+          names.sort();
+          const membership = crypto.createHash("sha256").update(JSON.stringify(names)).digest("hex");
+          signature += `:${membership}`;
+        }
+        if (expected) {
+          if (expected.get(current.relative) !== signature) return { complete: false, bytes, files, reason: "tree-changed-during-observation" };
+        } else signatures.set(current.relative, signature);
+      }
+      return { complete: true, bytes, files, reason: null, signatures };
+    } catch (error) {
+      return { complete: false, bytes, files, reason: error.code === "ECANCELED" ? "cancelled" : error.code === "ENOENT" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry" };
+    }
+  }
+  const first = scan();
+  if (!first.complete) return finish({ bytes: first.bytes, files: first.files, complete: false, reason: first.reason, exhaustedBy: first.exhaustedBy });
+  const second = scan(first.signatures);
+  if (!second.complete) return finish({ bytes: second.bytes, files: second.files, complete: false, reason: second.reason, exhaustedBy: second.exhaustedBy });
+  return finish({ bytes: first.bytes, files: first.files, complete: true, reason: null });
+}
+
+function observeTreeLive(root, deadline, maxEntries, telemetry, shouldCancel = null) {
+  const start = path.resolve(root);
+  const startedAt = performance.now();
+  const counter = { entries: 0 };
+  telemetry.startedAt = startedAt;
+  telemetry.counter = counter;
+  let bytes = 0, files = 0, transientMissingEntries = 0;
+  const cancelled = () => typeof shouldCancel === "function" && shouldCancel();
+  const overBudget = () => Date.now() > deadline ? "time" : counter.entries >= maxEntries ? "entries" : null;
+  const finish = result => ({
+    ...result,
+    elapsedMs: Math.max(0, performance.now() - startedAt),
+    entriesExamined: counter.entries,
+    exhaustedBy: result.exhaustedBy || null,
+  });
+  let exhaustedBy = null;
+  const countEntry = () => {
+    if (cancelled()) return false;
+    exhaustedBy = overBudget();
+    if (exhaustedBy) return false;
+    counter.entries += 1;
+    return true;
+  };
+  const incomplete = (reason, exhaustion = null) => finish({ bytes, files, complete: false, reason, transientMissingEntries, exhaustedBy: exhaustion || (reason === "budget-exhausted" ? exhaustedBy || overBudget() || "time" : null) });
+  function verifyRootChain() {
+    const parsed = path.parse(start);
+    let current = parsed.root;
+    const parts = start.slice(parsed.root.length).split(path.sep).filter(Boolean);
+    let rootStat = null;
+    for (let index = 0; index < parts.length; index += 1) {
+      if (cancelled()) return { reason: "cancelled" };
+      if (!countEntry()) return { reason: cancelled() ? "cancelled" : "budget-exhausted" };
+      current = path.join(current, parts[index]);
+      let stat;
+      try { stat = fs.lstatSync(current); }
+      catch (error) { return { reason: error.code === "ENOENT" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry" }; }
+      if (cancelled()) return { reason: "cancelled" };
+      if (stat.isSymbolicLink()) return { reason: "linked-entry" };
+      if (!stat.isDirectory()) return { reason: "not-a-real-directory" };
+      if (index === parts.length - 1) rootStat = stat;
+    }
+    if (!rootStat) {
+      if (cancelled()) return { reason: "cancelled" };
+      if (!countEntry()) return { reason: cancelled() ? "cancelled" : "budget-exhausted" };
+      try { rootStat = fs.lstatSync(start); }
+      catch (error) { return { reason: error.code === "ENOENT" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry" }; }
+      if (cancelled()) return { reason: "cancelled" };
+      if (rootStat.isSymbolicLink()) return { reason: "linked-entry" };
+      if (!rootStat.isDirectory()) return { reason: "not-a-real-directory" };
+    }
+    return { rootStat };
+  }
+  function inspectContainedEntry(absolute) {
+    const relative = path.relative(start, absolute);
+    if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(`..${path.sep}`)) {
+      return { reason: "tree-changed-during-observation" };
+    }
+    if (cancelled()) return { reason: "cancelled" };
+    if (!countEntry()) return { reason: cancelled() ? "cancelled" : "budget-exhausted" };
+    let rootStat;
+    try { rootStat = fs.lstatSync(start); }
+    catch (error) { return { reason: error.code === "ENOENT" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry" }; }
+    if (cancelled()) return { reason: "cancelled" };
+    if (rootStat.isSymbolicLink()) return { reason: "linked-entry" };
+    if (!rootStat.isDirectory()) return { reason: "tree-changed-during-observation" };
+    if (!relative) return { stat: rootStat };
+    let current = start;
+    const parts = relative.split(path.sep).filter(Boolean);
+    for (let index = 0; index < parts.length; index += 1) {
+      if (cancelled()) return { reason: "cancelled" };
+      if (!countEntry()) return { reason: cancelled() ? "cancelled" : "budget-exhausted" };
+      current = path.join(current, parts[index]);
+      let stat;
+      try { stat = fs.lstatSync(current); }
+      catch (error) {
+        if (error.code === "ENOENT") return { missing: true };
+        return { reason: error.code === "ENOTDIR" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry" };
+      }
+      if (cancelled()) return { reason: "cancelled" };
+      if (stat.isSymbolicLink()) return { reason: "linked-entry" };
+      if (index < parts.length - 1 && !stat.isDirectory()) return { reason: "tree-changed-during-observation" };
+      if (index === parts.length - 1) return { stat };
+    }
+    return { reason: "tree-changed-during-observation" };
+  }
+
+  const rootCheck = verifyRootChain();
+  if (rootCheck.reason) return incomplete(rootCheck.reason);
+  const stack = [{ absolute: start, expectedType: "directory", isRoot: true }];
+  while (stack.length) {
+    if (cancelled()) return incomplete("cancelled");
+    const scanExhaustion = overBudget();
+    if (scanExhaustion) return incomplete("budget-exhausted", scanExhaustion);
+    const current = stack.pop();
+    const checked = inspectContainedEntry(current.absolute);
+    if (checked.reason) return incomplete(checked.reason);
+    if (checked.missing) {
+      if (!current.isRoot) { transientMissingEntries += 1; continue; }
+      return incomplete("tree-changed-during-observation");
+    }
+    const stat = checked.stat;
+    if (stat.isSymbolicLink()) return incomplete("linked-entry");
+    const type = stat.isDirectory() ? "directory" : stat.isFile() ? "file" : "unsupported";
+    if (type === "unsupported") return incomplete("unsupported-entry");
+    if (current.expectedType && current.expectedType !== "unknown" && current.expectedType !== type) return incomplete("tree-changed-during-observation");
+    if (type === "file") { bytes += stat.size; files += 1; continue; }
+
+    if (cancelled()) return incomplete("cancelled");
+    let dir;
+    try { dir = fs.opendirSync(current.absolute); }
+    catch (error) {
+      if (error.code === "ENOENT" && !current.isRoot) {
+        const missing = inspectContainedEntry(current.absolute);
+        if (missing.missing) { transientMissingEntries += 1; continue; }
+        return incomplete(missing.reason || "tree-changed-during-observation");
+      }
+      return incomplete(error.code === "ENOENT" || error.code === "ENOTDIR" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry");
+    }
+    let readError = null;
+    try {
+      for (;;) {
+        if (cancelled()) return incomplete("cancelled");
+        if (Date.now() > deadline) return incomplete("budget-exhausted", "time");
+        let entry;
+        try { entry = dir.readSync(); }
+        catch (error) { readError = error; break; }
+        if (entry === null) break;
+        if (!countEntry()) return incomplete(cancelled() ? "cancelled" : "budget-exhausted");
+        if (entry.isSymbolicLink()) return incomplete("linked-entry");
+        const expectedType = entry.isDirectory() ? "directory" : entry.isFile() ? "file" : "unknown";
+        stack.push({ absolute: path.join(current.absolute, entry.name), expectedType, isRoot: false });
+      }
+    } finally { try { dir.closeSync(); } catch (error) { readError ||= error; } }
+    if (readError) {
+      if (readError.code === "ENOENT" && !current.isRoot) {
+        const missing = inspectContainedEntry(current.absolute);
+        if (missing.missing) { transientMissingEntries += 1; continue; }
+        return incomplete(missing.reason || "tree-changed-during-observation");
+      }
+      return incomplete(readError.code === "ENOENT" || readError.code === "ENOTDIR" ? "tree-changed-during-observation" : "unsafe-or-unreadable-entry");
+    }
+  }
+  return finish({ bytes, files, complete: true, reason: null, transientMissingEntries });
+}
+
 function observeTree(root, options = {}) {
   const budgetMs = Number.isFinite(options.budgetMs) ? Math.max(0, options.budgetMs) : DEFAULT_BUDGET_MS;
   const maxEntries = Number.isInteger(options.maxEntries) ? Math.max(0, options.maxEntries) : 100000;
   const deadline = Date.now() + budgetMs;
   const start = path.resolve(root);
+  const shouldCancel = typeof options.shouldCancel === "function" ? options.shouldCancel : null;
+  if (options.verifyStable === true) return observeTreeStable(start, deadline, maxEntries, shouldCancel);
+  if (options.allowTransientMissing === true) {
+    const telemetry = {};
+    try { return observeTreeLive(start, deadline, maxEntries, telemetry, shouldCancel); }
+    catch (error) {
+      return { bytes: 0, files: 0, complete: false,
+        reason: error.code === "ECANCELED" ? "cancelled" : error.code === "ENOENT" || error.code === "ENOTDIR" ? "tree-changed-during-observation" : error.code === "ELOOP" ? "linked-entry" : "unsafe-or-unreadable-entry",
+        transientMissingEntries: 0,
+        elapsedMs: Math.max(0, performance.now() - (telemetry.startedAt ?? performance.now())),
+        entriesExamined: telemetry.counter?.entries ?? 0,
+        exhaustedBy: null };
+    }
+  }
   let bytes = 0, files = 0, entries = 0;
   try {
     assertNoLinks(start);

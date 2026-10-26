@@ -56,6 +56,36 @@ source_only_check() {
     skip "$description (template source repo only)"
   fi
 }
+# BEGIN template setup bootstrap order check
+validate_template_setup_bootstrap_order() {
+  node <<'NODE'
+const fs = require("node:fs");
+
+const shellPath = "setup.sh";
+const batchPath = "setup.bat";
+if (!fs.existsSync(shellPath) || !fs.existsSync(batchPath)) {
+  throw new Error("Template setup.sh and setup.bat are required");
+}
+
+const shell = fs.readFileSync(shellPath, "utf8");
+const shellGuard = shell.indexOf('node "$SCRIPT_DIR/scripts/lib/codex-runtime.js"');
+const shellPrompt = shell.indexOf("# Get project name");
+if (shellGuard < 0) throw new Error("setup.sh is missing its Codex runtime guard");
+if (shellPrompt < 0) throw new Error("setup.sh is missing its project-name prompt marker");
+if (shellGuard >= shellPrompt) throw new Error("setup.sh must check runtime before prompting");
+
+const batch = fs.readFileSync(batchPath, "utf8");
+const batchGuard = batch.indexOf(String.raw`node "%~dp0scripts\lib\codex-runtime.js"`);
+const batchPrompt = batch.indexOf(":: Ask for project name");
+const batchCreate = batch.indexOf('mkdir "%PROJECT_DIR%"');
+if (batchGuard < 0) throw new Error("setup.bat is missing its Codex runtime guard");
+if (batchPrompt < 0) throw new Error("setup.bat is missing its project-name prompt marker");
+if (batchCreate < 0) throw new Error("setup.bat is missing its project-directory creation marker");
+if (batchGuard >= batchPrompt) throw new Error("setup.bat must check runtime before prompting");
+if (batchPrompt >= batchCreate) throw new Error("setup.bat must prompt and validate before creating project files");
+NODE
+}
+# END template setup bootstrap order check
 validate_text_policy_rejects_mojibake() {
   local fixture
   fixture="$(_temp_file text-policy-fixture)"
@@ -452,6 +482,7 @@ check "sync excludes source-only payload" grep -q 'isSourceOnlyPath' scripts/lib
 check "integrations/spec-kit/README.md" test -f integrations/spec-kit/README.md
 source_only_check "setup.sh" test -f setup.sh
 source_only_check "setup.bat" test -f setup.bat
+source_only_check "setup bootstrap runtime guards and prompt order" validate_template_setup_bootstrap_order
 check ".codex/config.toml" test -f .codex/config.toml
 check ".codex/hooks.json" test -f .codex/hooks.json
 check ".codex/hooks.json valid JSON" node -e "const h=JSON.parse(require('fs').readFileSync('.codex/hooks.json','utf8')); if(!h.hooks?.PreToolUse?.[0]?.hooks?.[0]?.command) process.exit(1)"
@@ -528,6 +559,11 @@ check "storage operation native hook ownership" node scripts/test-storage-operat
 check "shared physical-volume admission" node scripts/test-storage-volume-registry.js
 check "real cross-project volume admission and crash recovery" node scripts/test-storage-volume-live.js
 check "request-bound outcome evidence" node scripts/test-outcome-acceptance.js
+check "bounded task-wave handoff contract" node scripts/test-outcome-acceptance.js --handoff-only
+check "task-wave closeout intent" node scripts/test-outcome-acceptance.js --handoff-intent-only
+check "task-wave handoff reference boundaries" node scripts/test-outcome-acceptance.js --handoff-boundary-only
+check "owned carryover without a delivery denominator" node scripts/test-outcome-acceptance.js --handoff-no-denominator-only
+check "Stop handoff diagnostics and mailbox proportionality" node scripts/test-codex-hooks.js --handoff-only
 check "bounded project lesson navigation" node scripts/test-lesson-index.js
 check "managed test scratch ownership and cleanup" node scripts/test-managed-temp.js
 check "owned process family supervisor" node scripts/test-managed-process.js
@@ -662,10 +698,10 @@ check "route-task fallback requires high-risk fan-out" bash -c 'bash scripts/rou
 check "route-task fallback honors fan-out opt-out" bash -c 'bash scripts/route-task.sh "template release without subagents" | grep -q "CODEX_FANOUT: skip"'
 check "route-task fallback honors alternate opt-out" bash -c 'bash scripts/route-task.sh "template release, no fan-out" | grep -q "CODEX_FANOUT: skip"'
 check "route-task fallback caps children at three" bash -c 'test "$(bash scripts/route-task.sh "template release" | sed -n "s/^CODEX_SUBAGENTS: //p" | wc -w | tr -d " ")" -le 3'
-check "Unix setup manages JavaScript helpers" grep -q 'scripts/lib/.*\.js' setup.sh
-check "Windows setup derives its payload from tracked scripts" grep -q "'scripts/'" setup.bat
-check "Windows setup derives its payload from tracked tests" grep -q "'tests/'" setup.bat
-check "Unix setup derives its payload from tracked tests" grep -Fq 'tests/*' setup.sh
+source_only_check "Unix setup manages JavaScript helpers" grep -q 'scripts/lib/.*\.js' setup.sh
+source_only_check "Windows setup derives its payload from tracked scripts" grep -q "'scripts/'" setup.bat
+source_only_check "Windows setup derives its payload from tracked tests" grep -q "'tests/'" setup.bat
+source_only_check "Unix setup derives its payload from tracked tests" grep -Fq 'tests/*' setup.sh
 
 echo ""
 echo "Bootstrap trust smoke:"
@@ -693,12 +729,13 @@ if is_template_source_repo; then
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-library-catalog.json .claude/library/technical/writing-source-grounding.md scripts/writing-library.js scripts/test-writing-library.js scripts/lib/writing-library-store.js scripts/lib/writing-library-policy.js scripts/lib/writing-library-retrieve.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A _reference/writing-library-source.json docs/WRITING_LIBRARY_SETUP.md scripts/lib/writing-library-provision.js scripts/lib/setup-manifest.js scripts/test-writing-library-provision.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .codex/hooks.json scripts/codex-hooks.js scripts/codex-turn.js scripts/lib/codex-turn-policy.js scripts/test-codex-hooks.js scripts/test-codex-workflows-live.js scripts/check-transfer-allowlist.js scripts/test-transfer-allowlist.js scripts/validate-lessons.js scripts/test-lessons.js .claude/library/process/privacy-transfer.md .claude/library/technical/preserve-product-value.md docs/NATIVE_WORKFLOW_GATES.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/task-wave-handoff.js .claude/library/process/task-wave-handoff.schema.json .claude/library/process/product-delivery-recipes.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A .claude/library/technical/writing-reading-map.json scripts/lib/writing-reading-plan.js scripts/lib/writing-editorial-review.js scripts/test-writing-reading-plan.js scripts/test-writing-editorial-review.js .codex/agents/writing-editor.toml
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/codex-request-recovery.js scripts/test-codex-request-recovery.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/test-codex-final-carrier.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/writing-library-index.js scripts/test-writing-library-index.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/codex-runtime.js scripts/test-codex-runtime.js
-    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-temp.js scripts/managed-temp.js scripts/test-managed-temp.js .claude/hooks/session-start.sh .claude/hooks/session-stop.sh .claude/library/technical/testing.md
+    GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-temp.js scripts/lib/managed-observation-worker.js scripts/managed-temp.js scripts/test-managed-temp.js .claude/hooks/session-start.sh .claude/hooks/session-stop.sh .claude/library/technical/testing.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/managed-process.js scripts/lib/managed-process.ps1 scripts/lib/managed-cache.js scripts/lib/managed-run-profiles.js scripts/lib/managed-run-report.js scripts/lib/managed-run-ownership.js scripts/test-managed-stop-scope-live.js scripts/test-managed-process.js scripts/test-managed-cache.js scripts/test-managed-run.js
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/storage-operation-registry.js scripts/lib/storage-operation-hooks.js scripts/storage-operation.js scripts/test-storage-operation-registry.js scripts/test-storage-operation-hooks.js docs/STORAGE_OPERATIONS.md
     GIT_INDEX_FILE="$SMOKE_INDEX" git add -A scripts/lib/storage-volume-registry.js scripts/lib/storage-volume-identity.ps1 scripts/test-storage-volume-registry.js scripts/test-storage-volume-live.js scripts/lib/outcome-acceptance.js scripts/test-outcome-acceptance.js scripts/lesson-index.js scripts/test-lesson-index.js .claude/library/process/context-first.md .claude/library/process/self-verification.md docs/RELEASE_V6_2_0.md

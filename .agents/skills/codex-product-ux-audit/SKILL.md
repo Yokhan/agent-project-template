@@ -30,6 +30,16 @@ Trace the user's path:
 
 Do not call a flow working from HTTP status alone. Use browser automation, screenshots, route checks, API contract checks, or deployment smoke appropriate to the surface.
 
+Reuse current project personas/jobs, the screen/transition map, findings and
+their actual evidence. AI personas are hypotheses, not user research. Trace an
+affected job through required loading, empty, error, return, auth, resume and
+mobile states as applicable; route existence does not close a finding. After
+a change, review its journey and dependencies as a delta unless the baseline's
+scope or assumptions changed. Keep stale or unproved findings open with their
+original owner. Feed them into the bounded next-wave decision in
+`.claude/library/process/product-goal-loop.md`; an audit does not create a
+competing product plan or authorize a release.
+
 ## Report
 
 Findings first, severity ordered. Include:

@@ -101,6 +101,79 @@ report rather than treating other incomplete cleanup as done.
 and disk space every five seconds and cancel the owned job on a breached limit;
 these are best-effort guards, not hard disk quotas. `--timeout-ms` bounds a run.
 
+For a workload that must fail when its owned work tree cannot be fully observed,
+opt in with `--work-observation strict`. It checks the whole owned run tree before
+launch, at the periodic interval, and after the owned process family has stopped.
+An incomplete scan, unsafe entry, or observed byte count at or above
+`--max-work-bytes` fails the run and prevents output export. Periodic scans use
+a live traversal: normal writes and file creation/removal do not require a
+quiescent tree. An entry observed to have vanished is accounted for explicitly;
+it does not excuse an unreadable or unfinished directory listing. Before launch,
+after process-family stop, and before export, scans additionally require stable
+metadata and directory membership. Strict mode requires a positive work-byte
+limit. Timeout still returns 124.
+
+Strict scans default to 1,000 ms and 100,000 entries. Set positive safe integers
+with `--work-observation-budget-ms` and `--work-observation-max-entries`; these
+are separate from cache housekeeping's `--budget-ms`. Stable scans use two
+metadata/membership passes sharing one scan's time and entry budgets; periodic
+live scans use one complete bounded traversal. The default
+`--work-observation best-effort` retains the existing 100 ms/10,000-entry scan
+and permits incomplete observations below the observed byte threshold.
+Reports record mode, scan bounds, complete/incomplete sample counts, the last,
+`lastPeriodic`, and final samples, and failure reason under `workObservation`. Each sample names
+its `scanKind` (`live`, `stable`, or `best-effort`) and counts safely observed
+vanished entries in `transientMissingEntries`. A strict export also checks the
+output tree and records `exportObservation`.
+
+Strict samples report `elapsedMs`, `entriesExamined`, and `exhaustedBy`
+(`time`, `entries`, or `null`). LIVE entry work includes enumeration and repeated
+ancestor checks; STABLE counts roots and enumeration across its two passes,
+without charging every filesystem call. These are implementation work counters,
+not unique-file or interchangeable OS-call counts. Use the measurements to distinguish
+an elapsed-time limit from an entry limit before changing a producer's admitted
+scan envelope. Cleanup duration includes deletion and is not a scan benchmark.
+A successful scan of immutable inputs does not establish coverage under an
+active producer's load. Unmeasured best-effort telemetry remains `null`.
+
+Worker-backed observation is an explicit opt-in with
+`--work-observation-executor worker --work-observation strict`; the default
+executor remains inline. Admission requires Windows contained Job supervision,
+`--work-observation-budget-ms 10000 --work-observation-max-age-ms 15000`,
+100,000 charged operations, a run timeout from 1 through 1,800,000 ms, an
+explicit positive sampled work limit no greater than 4 GiB, and a free-space
+threshold of at least 2 GiB. The reviewed VPN policy uses 4 GiB and 2 GiB;
+stricter byte limits remain valid. These time limits are an
+accepted workload policy, not measured completion guarantees or global defaults.
+
+One scanner thread handles one observation at a time. The parent starts its
+monotonic deadline at dispatch, including startup and message delay, and rejects
+late results. Five-second periodic ticks skip an occupied scanner without
+queuing another observation. Freshness is measured from the start of the last
+complete observation, seeded by prelaunch; pending, failed or cancelled work
+never refreshes it. A 15-second freshness limit may therefore reject a second
+observation before that observation's own 10-second deadline.
+
+The controller plans free-space probes at one-second intervals while retaining
+runtime and signal handling outside the scanner's synchronous traversal.
+Actual scheduling and filesystem latency must be measured; this is not a
+real-time guarantee. Observation error, unexpected worker exit, invalid identity,
+unsafe entry, deadline or freshness expiry remains terminal. Stop the producer
+promptly, then confirm scanner and process-family settlement before deleting
+owned scratch. Unknown settlement retains resources.
+
+On normal producer exit, explicitly cancel and settle any pending live scan
+before complete stable final/output validation. Cancellation acknowledgement
+must arrive within the pending observation's original deadline; shutdown has a
+separate bounded wait of at most 10 seconds. Cancelled work stays visible
+and cannot authorize export; earlier terminal failures remain failures. Confirm
+scanner shutdown before moving required output or cleaning scratch. Worker
+memory settings constrain its JS engine, not all external buffers or process RSS.
+
+This is sampled logical-byte observation of the owned run tree, not an atomic
+snapshot, an OS disk quota, or a security sandbox. Short-lived peaks between
+samples and writes outside the owned tree are not bounded by this guard.
+
 Successful output is discarded unless explicitly exported with
 `--keep-output NEW_DIRECTORY`; an existing destination is refused. Export is an
 atomic directory move on the same volume; cross-volume fallback copies are refused
@@ -112,6 +185,12 @@ immutable report under the external project report namespace's `runs/` directory
 fixture projects. Inspect `node scripts/managed-temp.js report`. It records observed bytes actually removed,
 retained cache bytes, process proof, and unresolved cleanup; it does not claim
 to measure every byte created during execution. Command failure codes survive.
+Forced process-family termination does not guarantee producer `catch` or
+`finally` blocks will archive logs. If abort diagnostics are required, declare
+an owned durable progress path before execution: retain only bounded,
+grant/run-bound, explicitly allowed phase/counter fields as work advances.
+Treat an interrupted write as uncommitted. Do not retain arbitrary stdout,
+environment values, credentials, source trees or whole scratch as diagnostics.
 Read a saved immutable report after its project is removed with
 `node scripts/managed-temp.js report --report-path <absolute-report.json>`.
 

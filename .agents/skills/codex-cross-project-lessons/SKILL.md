@@ -23,6 +23,12 @@ Read:
    - Docs: rollout or human decision guidance.
 4. Remove secrets, credentials, private customer data, and incidental domain noise.
 5. Add verification so the lesson does not remain only prose.
+6. Reuse the project's existing knowledge index and accepted examples before
+   adding a recipe. Keep source links, applicability, limits, owner and
+   supersession with the project evidence; promote only the reusable technique.
+   Shared examples and the small entry format live in
+   `.claude/library/process/product-delivery-recipes.md`. They supplement the
+   project SOT and never transfer private user evidence into the template.
 
 ## Promotion Gate
 

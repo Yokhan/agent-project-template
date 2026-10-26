@@ -51,6 +51,15 @@ reused baseline evidence from checks covering the final delta.
 5. For `required`, satisfy the required verification lanes. For `recommended`, delegate bounded implementation or useful independent work without asking again within approved scope. For `conditional`, prepare missing scope/acceptance or establish a useful independent lane before dispatch. For `skip`, do not spawn. A design route does not reserve all coding for Sol: settle visual decisions, then delegate component implementation to Luna.
 6. Notify the user which agents started and why. Ask for narrow outputs with file references and verification steps.
 7. Keep working on independent parent work, or wait when the next step needs the worker's result. Do not duplicate a sequential worker's implementation to avoid waiting.
+   For a genuinely blocked gate, use the shared **Useful work while a gate
+   waits** contract in `.claude/library/process/plan-first.md`: choose a concrete
+   independent result, preserve file/resource owners, and retain the original
+   gate. Idle capacity alone is not a reason to dispatch. At each boundary,
+   choose the next authorized useful action from the existing goal/task graph;
+   an acknowledgement, reminder, or timer is not a result. Check live owner
+   activity and current evidence instead of treating a stale turn/status as
+   liveness. Never duplicate a busy writer, shared graph, heavy build/install,
+   or server mutation to avoid waiting.
    In collaboration runtimes, `wait_agent` may wake for an intermediate message; that is not completion. Confirm a final answer or `list_agents` completed status, and keep required children alive until completion. Do not finalize merely because a child reported progress or a wait returned.
 8. Consolidate in the parent thread. Luna implements the assigned files; Sol owns decisions, integration and acceptance. If retaining nontrivial bounded implementation, briefly state the concrete reason (unsafe split, unavailable worker/tools, unresolved judgment, or coordination cost), not a generic preference for Sol.
 
@@ -61,6 +70,20 @@ integration with `scripts/codex-turn.js integrate` using the observed child ID.
 The hooks correlate completion and effective profile separately. Record concrete
 exceptions with `fallback`; this never counts as verified Luna execution. Do not
 clear the ledger or start another request to bypass an unresolved gate.
+
+## Worker closeout
+
+Workers report the bounded iteration result and evidence without implying
+release or final product acceptance. Include elapsed time when available, raw
+command result, and separate wrapper/cleanup status when those disagree. At
+wave closure or a newly material blocker, the parent reviews the existing goal,
+findings, persona/journey/state map, backlog, and opportunities, then records
+the selected and deferred next-wave work. Preserve carryover evidence, severity,
+and next-wave placement; report accepted and shipped counts separately against
+the declared baseline. For substantive durable closeout, use the shared
+task-wave handoff via `node scripts/codex-turn.js handoff`. Follow the closure,
+carryover, release, and next-wave contract in
+`.claude/library/process/product-goal-loop.md#closure-carryover-and-next-action`.
 
 ## Safe Prompt
 

@@ -49,6 +49,16 @@ Promoted entries name the destination rule. Do not use ad hoc statuses such as
 
 ## Entries
 
+### [2026-10-25] — Keep generator assertions out of installed runtime tests
+**Track**: BUG
+**Severity**: P2
+**Error**: Four installed runtime checks stopped on a literal template bootstrap assertion before reaching hook checks.
+**Root cause**: The runtime test treated any root `setup.sh` or `setup.bat` as a template generator file, although those entrypoints are excluded from sync and can belong to the project.
+**Rule**: Put generator bootstrap assertions in the existing template-source-only aggregate lane. Installed runtime tests must reach their Node/SQLite and hook gates regardless of project bootstrap filenames or contents; retain negative generator coverage separately.
+**Applies to**: template runtime tests and generated-project verification
+**Category**: testing
+**Status**: ACTIVE
+
 ### 2026-10-25 - Separate native writing application and editorial failures
 **Track**: BUG
 **Severity**: P2

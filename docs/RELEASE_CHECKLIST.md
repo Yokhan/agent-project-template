@@ -2,21 +2,21 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.2.0`. This checklist records required evidence, not a
+Release target: `v6.3.0`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.2.0 Candidate Acceptance
+## v6.3.0 Candidate Acceptance
 
 - [ ] Final scoped source commit and compatible version metadata verified.
-- [ ] Real installed-handler, cross-project volume and author/editor scenarios pass.
+- [ ] Changed handoff, portable-fixture, runtime-test and observation contracts retain their scoped evidence; native activation remains separately reported.
 - [ ] Focused deltas and final aggregate pass on the integrated tree.
 - [ ] Exact-commit Linux/Windows preflight and exact-tag release jobs pass.
 - [ ] Stable release, downloaded checksums, metadata and canonical archive match.
-- [ ] PA preview/apply and actual activation are reported separately; no other consumer rollout.
+- [ ] No consumer sync or runtime activation is inferred from publication.
 
 ## v6.1.2 Verified Publication And Scoped Rollout
 

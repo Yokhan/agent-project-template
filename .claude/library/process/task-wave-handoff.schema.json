@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-project-template.local/task-wave-handoff.schema.json",
+  "title": "Task and product-wave handoff",
+  "description": "Bounded closeout record for substantive work. Structural consistency does not establish product quality or live acceptance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "goal", "workPerformed", "acceptedOutcomes", "shippedUnits", "remaining", "nextWave"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "status": { "enum": ["ITERATION_CLOSED", "PARTIALLY_DELIVERED", "CLOSED_WITH_CARRYOVER", "SCOPED_RELEASE_ACCEPTED", "PRODUCT_GOAL_ACHIEVED"] },
+    "goal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["original", "owner", "scope", "baseline", "scopeOutcomeIds"],
+      "properties": {
+        "original": { "$ref": "#/$defs/text" },
+        "owner": { "$ref": "#/$defs/text" },
+        "scope": { "$ref": "#/$defs/text" },
+        "scopeOutcomeIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" } },
+        "baseline": {
+          "type": "object", "additionalProperties": false,
+          "required": ["revision", "outcomes"],
+          "properties": {
+            "revision": { "$ref": "#/$defs/text" },
+            "source": { "$ref": "#/$defs/referenceEvidence" },
+            "outcomes": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/outcome" } },
+            "denominatorUnavailableReason": { "$ref": "#/$defs/text" }
+          }
+        }
+      }
+    },
+    "workPerformed": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/work" } },
+    "acceptedOutcomes": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/accepted" } },
+    "shippedUnits": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/shipped" } },
+    "remaining": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/remaining" } },
+    "nextWave": {
+      "type": "object", "additionalProperties": false,
+      "required": ["selected", "deferred", "carryoverRefs", "why", "nextAction"],
+      "properties": {
+        "selected": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" } },
+        "deferred": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/deferred" } },
+        "carryoverRefs": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/carryover" } },
+        "why": { "$ref": "#/$defs/text" },
+        "nextAction": {
+          "type": "object", "additionalProperties": false,
+          "required": ["owner", "action"],
+          "properties": { "owner": { "$ref": "#/$defs/text" }, "action": { "$ref": "#/$defs/text" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": { "type": "string", "minLength": 1, "maxLength": 4000, "pattern": "\\S" },
+    "outcome": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "description", "surface", "environment"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+        "description": { "$ref": "#/$defs/text" },
+        "surface": { "$ref": "#/$defs/text" },
+        "environment": { "$ref": "#/$defs/text" },
+        "weight": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000000 },
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" } }
+      }
+    },
+    "work": {
+      "type": "object", "additionalProperties": false,
+      "required": ["description", "evidence"],
+      "properties": { "description": { "$ref": "#/$defs/text" }, "evidence": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/evidence" } } }
+    },
+    "accepted": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcomeId", "evidence"],
+      "properties": { "outcomeId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }, "evidence": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/evidence" } } }
+    },
+    "shipped": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "outcomeIds", "target", "urls", "version", "releaseReceipt", "dependencies"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+        "outcomeIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" } },
+        "target": { "$ref": "#/$defs/text" },
+        "urls": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/text" } },
+        "version": { "$ref": "#/$defs/text" },
+        "releaseReceipt": { "$ref": "#/$defs/releaseReceipt" },
+        "dependencies": { "type": "array", "maxItems": 25, "items": { "$ref": "#/$defs/shipmentDependency" } }
+      }
+    },
+    "shipmentDependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "status", "evidence"],
+      "properties": {
+        "kind": { "enum": ["api", "schema", "auth", "shared-config", "service"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+        "status": { "enum": ["compatible", "blocked", "unknown"] },
+        "evidence": { "$ref": "#/$defs/referenceEvidence" }
+      }
+    },
+    "releaseReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ref", "sha256"],
+      "properties": {
+        "ref": { "$ref": "#/$defs/text" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+      }
+    },
+    "remaining": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcomeId", "owner", "impact", "severity", "dependencies", "evidence"],
+      "properties": {
+        "outcomeId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+        "owner": { "$ref": "#/$defs/text" },
+        "impact": { "$ref": "#/$defs/text" },
+        "severity": { "enum": ["low", "medium", "high", "critical"] },
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" } },
+        "evidence": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/referenceEvidence" } }
+      }
+    },
+    "deferred": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcomeId", "reason"],
+      "properties": { "outcomeId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }, "reason": { "$ref": "#/$defs/text" } }
+    },
+    "carryover": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcomeId", "ref"],
+      "properties": { "outcomeId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }, "ref": { "$ref": "#/$defs/referenceEvidence" } }
+    },
+    "referenceEvidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ref", "sha256"],
+      "properties": {
+        "ref": { "$ref": "#/$defs/text" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ref", "sha256", "kind", "surface", "environment"],
+      "properties": {
+        "ref": { "$ref": "#/$defs/text" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "kind": { "enum": ["functional-observation", "release-observation", "user-acceptance", "test-result", "artifact"] },
+        "surface": { "$ref": "#/$defs/text" },
+        "environment": { "$ref": "#/$defs/text" }
+      }
+    }
+  }
+}

@@ -2,7 +2,6 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { inspectRuntime, assertSupportedRuntime } = require("./lib/codex-runtime.js");
@@ -30,23 +29,6 @@ assert.throws(() => assertSupportedRuntime({ version: "v22.0.0", loadSQLite: sql
   code: "ERR_UNSUPPORTED_CODEX_RUNTIME",
   message: /Install the current Node\.js 24 LTS/u,
 });
-
-const setupShellPath = path.resolve(__dirname, "../setup.sh");
-if (fs.existsSync(setupShellPath)) {
-  const setupShell = fs.readFileSync(setupShellPath, "utf8");
-  const guard = setupShell.indexOf('node "$SCRIPT_DIR/scripts/lib/codex-runtime.js"');
-  assert(guard >= 0 && guard < setupShell.indexOf("# Get project name"),
-    "setup.sh must check runtime before prompting");
-}
-const setupBatchPath = path.resolve(__dirname, "../setup.bat");
-if (fs.existsSync(setupBatchPath)) {
-  const setupBatch = fs.readFileSync(setupBatchPath, "utf8");
-  const guard = setupBatch.indexOf('node "%~dp0scripts\\lib\\codex-runtime.js"');
-  assert(guard >= 0 && guard < setupBatch.indexOf(":: Ask for project name"),
-    "setup.bat must check runtime before prompting");
-  assert(setupBatch.indexOf(":: Ask for project name") < setupBatch.indexOf('mkdir "%PROJECT_DIR%"'),
-    "setup.bat must prompt and validate before creating project files");
-}
 
 const hookCode = [
   'const runtime = require("./scripts/lib/codex-runtime.js");',

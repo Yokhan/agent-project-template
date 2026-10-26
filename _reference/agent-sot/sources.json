@@ -74,9 +74,9 @@
       "trust": "primary",
       "title": "OpenAI Codex skills",
       "url": "https://learn.chatgpt.com/docs/build-skills",
-      "last_checked": "2026-10-18",
+      "last_checked": "2026-10-26",
       "requires_fresh_check": true,
-      "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents."
+      "local_conclusion": "Repo skills live in .agents/skills; SKILL.md has name and description plus optional scripts, references, assets, and agents. Keep detailed UI acceptance in selected references/shared rules and short workflow pointers in skills; progressive disclosure is not permission to remove domain contracts."
     },
     {
       "id": "openai-codex-hooks",
@@ -94,9 +94,39 @@
       "trust": "primary",
       "title": "OpenAI Codex subagents",
       "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents",
-      "last_checked": "2026-10-18",
+      "last_checked": "2026-10-26",
       "requires_fresh_check": true,
-      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Current local Codex can delegate after a direct request or when applicable AGENTS.md or skill instructions request it, so project-authorized proactive delegation does not require a separate user request. Explicit opt-out wins; keep max_depth at 1, prefer independent read-only lanes, and verify real child activity instead of parent markers."
+      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Current local Codex can delegate after a direct request or when applicable AGENTS.md or skill instructions request it, so project-authorized proactive delegation does not require a separate user request. Explicit opt-out wins; keep max_depth at 1 and verify real child activity instead of parent markers. Independent bounded work can advance during a genuinely blocked gate when accepted file/resource ownership is preserved; this is a local coordination policy, not vendor proof of readiness or savings."
+    },
+    {
+      "id": "storybook-visual-tests",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Storybook visual tests",
+      "url": "https://storybook.js.org/docs/writing-tests/visual-testing",
+      "last_checked": "2026-10-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Visual snapshots compare stories with accepted baselines. Bind evidence to source and rendered surface; Storybook acceptance alone does not establish consumer or device readiness. Cloud visual testing is optional and does not authorize uploading private project material."
+    },
+    {
+      "id": "mdn-fontfaceset-ready",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "FontFaceSet ready",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/FontFaceSet/ready",
+      "last_checked": "2026-10-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "FontFaceSet.ready resolves after font loading and associated layout complete. It does not independently prove successful use of a requested face, image readiness or whole-document geometry; verify the relevant rendered state and loading conditions."
+    },
+    {
+      "id": "mdn-element-getanimations",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "Element getAnimations",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Element/getAnimations",
+      "last_checked": "2026-10-26",
+      "requires_fresh_check": true,
+      "local_conclusion": "Element.getAnimations can observe CSS animations, transitions and Web Animations, including descendants. Apply bounded waits to the intended finite transition; an infinite ambient loop needs separate motion evidence rather than an unbounded finished wait."
     },
     {
       "id": "openai-gpt-5-6-release",

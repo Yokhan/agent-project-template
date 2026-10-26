@@ -14,7 +14,35 @@ const managedReports = require("./lib/managed-run-report.js");
 const managedRunOwnership = require("./lib/managed-run-ownership.js");
 const storageOperations = require("./lib/storage-operation-hooks.js");
 const requestContext = require("./lib/codex-request-context.js");
+const taskHandoffs = require("./lib/task-wave-handoff.js");
 const LOADED_HANDLER_SHA256 = sha256(fs.readFileSync(__filename));
+
+function assessTaskHandoff(record, finalText) {
+  let checked;
+  try { checked = taskHandoffs.checkHandoff(record, finalText); }
+  catch (error) {
+    checked = { applicable: true, state: "unresolved", progress: null,
+      issues: [{ code: "task-handoff-validation", field: "handoff", message: String(error.message).slice(0, 1000) }] };
+  }
+  if (!checked.applicable || !checked.issues.length) return { ...checked, repeated: false };
+  // Remember feedback, not authority: the same invalid exact artifact remains
+  // unresolved, but cannot cause an unchanged automatic continuation loop.
+  const fingerprint = sha256(JSON.stringify({ requestId: record.state.requestId,
+    artifactSha256: sha256(String(finalText || "")), issues: checked.issues }));
+  const file = policy.localFile(record.state.root, path.join(record.directory, `task-wave-handoff-check-${fingerprint}.json`));
+  let repeated = false;
+  try {
+    if (!fs.lstatSync(file).isFile()) return { ...checked, repeated: true,
+      issues: [{ code: "task-handoff-feedback-path", field: "handoff", message: "Feedback marker is not a regular file; preserve it for owner recovery" }] };
+    repeated = true;
+  } catch (error) { if (error.code !== "ENOENT") throw error; }
+  const issues = checked.issues.slice(0, 8).map(item => ({ ...item, message: String(item.message).slice(0, 800) }));
+  if (checked.issues.length > issues.length) issues.push({ code: "task-handoff-additional-issues", field: "handoff",
+    message: `${checked.issues.length - issues.length} additional validation issues; inspect the preserved handoff input through the CLI` });
+  if (!repeated) policy.writeJson(file, { requestId: record.state.requestId, fingerprint,
+    artifactSha256: sha256(String(finalText || "")), state: "unresolved", observedIssueCount: checked.issues.length, issues });
+  return { ...checked, issues, repeated };
+}
 
 function currentTurnRecord(root, input, allowInitializing = true) {
   if (!input.turn_id) throw new Error("Native current turn_id is required");
@@ -356,6 +384,15 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       } catch { /* Normal exact-output checks retain missing/invalid evidence. */ }
     }
     const result = policy.checkRequest(record, deliveredMessage);
+    const handoff = assessTaskHandoff(record, deliveredMessage);
+    if (handoff.applicable) {
+      result.taskHandoff = { state: handoff.state, progress: handoff.progress, consistencyOnly: true };
+      if (handoff.issues.length) {
+        result.issues.push(...handoff.issues.map(({ code, field, message }) => `${code}: ${field}: ${message}`));
+        result.state = "unresolved";
+      }
+      policy.writeJson(path.join(record.directory, "result.json"), result);
+    }
     const unfinishedStorage = storageOperations.unfinished(root, input, record);
     if (unfinishedStorage) {
       result.issues.push("storage-operation-unfinished: " + unfinishedStorage);
@@ -370,9 +407,15 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       policy.writeJson(path.join(record.directory, "result.json"), result);
     }
     if (result.issues.length) {
+      const handoffOnly = result.issues.every(issue => issue.startsWith("task-handoff-"));
+      if (handoffOnly && handoff.repeated) return {
+        continue: false,
+        stopReason: "Task handoff remains unresolved; identical feedback was already reported",
+        systemMessage: result.issues.join("\n"),
+      };
       // If a direct task produced substantive prose, provide reading on repair.
       let primary = "";
-      if (!record.state.writingExempt && policy.substantive(input.last_assistant_message)) {
+      if (!handoffOnly && !record.state.writingExempt && policy.substantive(input.last_assistant_message)) {
         try { primary = "\n" + packetContext(record); } catch { /* original issue remains visible */ }
       }
       const repair = policy.continuation(record, result.issues);
@@ -387,6 +430,8 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       return repair;
     }
     let summary = cleanupState.diagnostics.length ? `Nonblocking project cleanup diagnostics (not attributed to this request): ${cleanupState.summary}` : null;
+    if (handoff.applicable && handoff.state === "passed") summary =
+      `Task handoff consistency checked; this is not product acceptance. ${taskHandoffs.formatProgress(handoff.progress)}` + (summary ? ` ${summary}` : "");
     let last = null;
     let reportReadFailure = null;
     try { last = managedReports.readReport(root); }

@@ -92,6 +92,65 @@ Use the active project task artifact if one exists. Do not create or update
 template when the project has no such workflow and the task does not need it.
 AgentOS or project-owned task graphs remain authoritative when present.
 
+## Useful work while a gate waits
+
+Record the blocked gate, concrete cause, owner and evidence needed to resume in
+the existing task or graph. Block only work that depends on that gate. A build
+slot, device, package or external response can be unavailable while a settled,
+independent source/test/review task remains useful.
+
+Before advancing another lane, identify its useful deliverable, exact inputs,
+write scope, acceptance and integration owner. It must stay inside approved
+scope and remain valid regardless of the unresolved decision. Use disjoint
+files or an authorized isolated checkout; never duplicate a busy writer,
+restart their task, or fan out into unresolved shared architecture. Do not
+create filler agents, new graphs/Runs, speculative features or a fixed team
+merely to occupy waiting time or satisfy a quota. Respect explicit opt-out and
+actual host capabilities.
+
+Preserve shared resource ownership: at most one heavy local build/install on a
+shared host, one writer for each shared file/artifact/server configuration, and
+the granted checkout/device owner. Light independent inspection/source work and
+focused checks can overlap only within those constraints. An occupied heavy
+slot does not authorize an install elsewhere, a duplicate snapshot or a second
+server writer. A denied permission or protective gate is not a route-around
+opportunity.
+
+At each blocked-gate boundary, choose one next action from the existing goal or
+task graph: continue the original gate when its evidence arrives, or advance a
+specific already-authorized independent result with named owner, disjoint write
+scope, inputs, acceptance, and integration owner. An acknowledgement, reminder,
+or timer is not a useful result. Do not wait on a stale turn/status when current
+activity or a completed tool result is available; check the live owner and
+evidence first. Keep the blocked dependency and its resume evidence explicit.
+Never duplicate a busy writer, shared graph, heavy build/install, or server
+mutation to make progress appear continuous.
+
+## Iteration closure and release decision
+
+Use `.claude/library/process/product-goal-loop.md#closure-carryover-and-next-action`
+for the distinction between iteration closure, release acceptance, and product
+goal achievement, plus carryover and release rules. At each wave closure or
+newly material blocker, review findings, personas/jobs, journeys, state maps,
+backlog, and opportunities; select the next wave and record deferrals and why.
+For substantive work that needs a durable handoff, use the task-wave schema via
+`node scripts/codex-turn.js handoff`; retain accepted and shipped counts against
+the declared baseline separately. The handoff does not replace evidence or
+release authority.
+
+Label AI-generated personas as hypotheses, retain unresolved findings, and
+prefer a delta audit unless the baseline was invalidated. For repeated
+infrastructure blockers, prepare measured alternatives and present the material
+cost/privacy/compatibility/rollback choice once; do not assume authority for
+paid use, uploads, deletes, or network changes.
+
+Return the result with its exact inputs and limits, integrate through the
+existing owner, and resume the original gate when its required evidence arrives.
+Source preparation or a worker completion does not pass a blocked build,
+consumer, device or release gate. Apply the verification cadence below; avoid
+unchanged retry/poll loops and duplicated broad suites. This policy grants no
+automatic release, deployment or downstream sync.
+
 ## Change-strategy decision
 
 Use `.claude/library/process/change-strategy-gate.md` before another patch when

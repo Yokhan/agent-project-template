@@ -181,6 +181,72 @@ Current steps must not pretend to be the whole product. Use these labels:
 
 Never call a partial step "done" just because the code compiles.
 
+## Closure, carryover, and next action
+
+At each wave closure or newly material blocker, run a bounded review against
+the existing goal or task graph. Reconcile completed and open findings with
+the persona/job, journey, state/transition map, backlog, and viable
+opportunities; then select the next wave, record what is deferred and why, and
+preserve the original goal. Keep the evidence chain inspectable: persona/job
+(AI-generated personas remain hypotheses) -> journey -> relevant states and
+transitions -> evidence-backed finding -> source change -> outcome proof ->
+release decision. Keep stale findings open until fresh evidence resolves them.
+Delta-audit the affected journey unless evidence invalidates the baseline.
+
+Distinguish three claims: **iteration closed** means the bounded task met its
+own acceptance; **release accepted** means the named release surface passed its
+dependency and rollback gates; **product goal achieved** means the agreed
+end-user outcome is verified at its stated scope. One claim does not imply
+another. `PARTIALLY_DELIVERED` means at least one, but fewer than all,
+predeclared baseline outcomes were actually shipped. Accepted source work that
+has not shipped is not delivery: close it as `ITERATION_CLOSED`, or
+`CLOSED_WITH_CARRYOVER` when an outcome remains open. `SCOPED_RELEASE_ACCEPTED`
+and `PRODUCT_GOAL_ACHIEVED` require their respective accepted-and-shipped
+outcomes. Preserve separate accepted and shipped counts against the declared
+baseline denominator and count basis; source acceptance or a percentage alone
+is never shipped evidence.
+
+For each carryover, retain its original owner, evidence, impact, severity,
+dependency, and next-wave placement. Keep unresolved assertions and their
+regression checks; never remove or weaken a failing assertion to make a
+carryover disappear. **Example:** 9 of 10 baseline outcomes may ship when each
+shipped outcome is independently deployable, accepted, and passes its API,
+schema, auth, shared-configuration, user-path, and rollback gates. The isolated
+tenth remains owned carryover for the next wave; isolation must be proven across
+dependencies, and it does not justify dropping its failing check. If a shared
+auth or migration gate affects the other nine, those dependent outcomes cannot
+ship yet.
+
+Release scope follows real dependency boundaries. Independently deployable,
+accepted units may ship while unrelated units remain open when each unit's API,
+schema, auth, shared configuration, user path, and rollback gates pass. A shared
+repository, host, queue, or server writer does not by itself make all units
+all-or-nothing. An unsafe shared auth or migration boundary blocks its dependent
+units; percentages and counts never grant release authority.
+When an independent unit has its required evidence and existing release
+authority, advance its scoped release at the next nonconflicting opportunity;
+do not wait for unrelated units. Serialize conflicting operations only.
+Freeze the scoped release candidate while the next wave proceeds in disjoint
+files/resources; do not let next-wave work mutate the candidate under review.
+
+Repeated capacity, storage, build, or deployment blockers require a decision
+based on measured alternatives and their benefit, cost, privacy, compatibility,
+and rollback; do not poll indefinitely. Compare practical options such as
+smaller units, incremental delivery, export-only or already-ready artifacts,
+the actual authorized CI/CD or remote path, and different slices or resources.
+Do not create duplicate copies or assume paid use, uploads, deletes, or network
+mutations are authorized. Ask once when a material decision is missing, with
+concrete prepared choices. Meanwhile, proceed only with an already authorized
+independent next action that preserves the blocked gate and shared owners.
+
+For substantive closeouts that need a durable machine handoff, use
+`.claude/library/process/task-wave-handoff.schema.json` through
+`node scripts/codex-turn.js handoff --state <request.json> --artifact <exact-final.txt> --result <handoff.json>`.
+The record carries baseline/count basis, accepted outcomes, shipped units,
+remaining severity/impact, and next-wave selection separately. Schema validity
+checks structure and evidence references; it does not itself accept a release
+or prove the user outcome. This handoff is not required for routine small work.
+
 ## Correction Loop
 
 After user correction:

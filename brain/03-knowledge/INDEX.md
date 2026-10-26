@@ -9,6 +9,7 @@ Auto-generated index of knowledge base contents. Update with /brain-sync.
 <!-- pattern notes -->
 - [Ilyakhov Planning And Client Communication Principles](communication/ilyakhov-planning-principles.md)
 - [Client Executor Anti-Sycophancy Research](communication/client-executor-anti-sycophancy-research.md)
+- [Product Delivery Recipes](../../.claude/library/process/product-delivery-recipes.md)
 
 ## Security
 <!-- security/ subdirectory entries -->

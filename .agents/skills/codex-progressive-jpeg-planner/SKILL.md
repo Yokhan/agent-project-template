@@ -62,6 +62,17 @@ whether a proposed technical slice is actually a product wave.
    or task actually calls for that machine-readable plan; it is not a universal
    prerequisite for all implementation. Its current structural checks do not
    establish same-product continuity: review that semantic link independently.
+10. At each wave closure or newly material blocker, review the task context
+    against the goal; distinguish iteration closure from release acceptance
+    and product-goal achievement. Follow the closure labels,
+    carryover fields, release boundaries, and next-action rules in
+    `.claude/library/process/product-goal-loop.md#closure-carryover-and-next-action`;
+    select the next authorized useful wave from the existing plan/graph.
+11. Keep the evidence chain concrete: persona/job -> journey -> states and
+    transitions -> finding -> source change -> outcome proof -> release decision.
+    Treat AI-generated personas as hypotheses, and keep stale findings open
+    until fresh evidence resolves them. Prefer a delta audit unless the baseline
+    was invalidated. Readiness percentages do not authorize shipping.
 
 ## Anti-falsification
 
@@ -82,4 +93,7 @@ For a progressive plan, return the agreed final outcome, current product version
 ordered versions of the same product with their resolution deltas and any
 separate enabling checkpoints, acceptance/falsification evidence, real
 dependencies, rough edges, and replan triggers. Include the validator result
-only when that plan was required and the validator was run.
+only when that plan was required and the validator was run. At closeout, also
+state separately whether the iteration closed, the scoped release was
+accepted, or the product goal was achieved; follow the product-goal-loop
+closeout contract for carryovers and the next action.

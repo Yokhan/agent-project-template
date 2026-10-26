@@ -2,6 +2,7 @@
 "use strict";
 const policy = require("./lib/codex-turn-policy.js");
 const outcomes = require("./lib/outcome-acceptance.js");
+const handoffs = require("./lib/task-wave-handoff.js");
 
 function run(argv, root = process.cwd()) {
   const [command = "help", ...args] = argv;
@@ -19,6 +20,7 @@ function run(argv, root = process.cwd()) {
     "node scripts/codex-turn.js integrate --state <request.json> --child <native-id> --assignment <contract.json> --result <integration evidence>",
     "node scripts/codex-turn.js record-outcome --state <request.json> --result <outcome-evidence.json>",
     "node scripts/codex-turn.js outcome-status --state <request.json>",
+    "node scripts/codex-turn.js handoff --state <request.json> --artifact <exact-final.txt> --result <handoff.json>",
     "node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable|unsafe-split|judgment|coordination-cost --reason <concrete reason>"],
     notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. Fallback is visible, never verified Luna execution." };
   if (!options["--state"]) throw new Error("--state is required from native hook context");
@@ -56,6 +58,10 @@ function run(argv, root = process.cwd()) {
     return outcomes.recordOutcome(root, options["--state"], options["--result"]);
   }
   if (command === "outcome-status") return outcomes.outcomeStatus(root, options["--state"]);
+  if (command === "handoff") {
+    if (!options["--artifact"] || !options["--result"]) throw new Error("handoff requires --artifact <exact-final.txt> and --result <handoff.json>");
+    return handoffs.recordHandoff(root, options["--state"], options["--artifact"], options["--result"]);
+  }
   throw new Error("Unknown command");
 }
 if (require.main === module) {

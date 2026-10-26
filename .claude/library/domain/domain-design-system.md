@@ -104,6 +104,32 @@ Catch at least:
 - Icon sizes drifting from token.
 - Loading/empty/error panels expanding beyond intended template constraints.
 
+## Consumer-bound handoff
+
+When UI source is assembled outside the consuming application, retain a small
+handoff against the consumer's accepted base:
+
+- Exact changed-file paths, content hashes, author/owner and dependencies;
+  preserve the frozen base, unrelated dirty work and project overlays.
+- Required public exports, stylesheet/asset entrypoints and package versions.
+  A component file alone may not be included or styled by the consumer.
+- Real controller/data contracts, authoritative effects and caller-owned
+  navigation. Source reviewers must not claim unexecuted backend/UI behavior.
+- Exact focused tests that the coherent candidate must include. Extend its
+  owned test selection explicitly; an old fixed test list does not exercise a
+  newly added test file. Keep authored-but-unrun tests labelled unrun.
+- The next integration owner, their acknowledgement of these exact inputs, and
+  remaining typing, test, render, device and production gates. Do not copy an
+  entire mutable design-system tree over an accepted consumer artifact.
+
+Independent authors can build components/styles/tests under settled contracts;
+peer review is useful when it can find a real cross-file error. The integrator
+owns shared entrypoints and acceptance. Source acceptance is not consumer
+acceptance. Follow `.claude/library/process/plan-first.md` for work during
+blocked gates and the design skill's `references/design-checks.md` for evidence
+limits. A narrowly accepted geometry region must not be reported as
+whole-document stability.
+
 ## Product UI Coverage
 
 When the system scope includes product UI, cover the relevant real product

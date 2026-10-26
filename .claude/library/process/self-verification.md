@@ -46,6 +46,11 @@ changes with that evidence's scope; no new ledger or whole-repository hashing
 ritual is required. A documentation-only edit unrelated to tested behavior
 does not invalidate every test. Report an earlier full pass as a baseline plus
 the checks covering the delta; never call it a full pass of the current tree.
+For supervised runs, include elapsed time when available and distinguish the
+child command's raw exit/result from wrapper, cleanup, or bookkeeping status.
+Inspect the immutable receipt when those statuses disagree; a wrapper error is
+not by itself proof that the command failed, and a successful child command is
+not by itself proof that cleanup or the broader gate passed.
 
 Repeat a broad check only after a concrete invalidation, and state the reason
 before launching it:
@@ -105,6 +110,14 @@ close the gap. Do not present uncertain work as complete. Uncertainty alone is
 not a reason to stop safe, reversible work already inside the user's scope.
 Ask only when the unresolved choice materially changes the outcome, permission,
 data, security, scope, or irreversible state.
+
+For closure labels, carryover fields, release boundaries, and next-wave
+selection, follow
+`.claude/library/process/product-goal-loop.md#closure-carryover-and-next-action`.
+When waiting on a blocked gate, select an authorized independent next action
+from the existing goal/task graph; an acknowledgement, timer, or stale turn
+state is not progress. Recheck current owner activity/evidence and preserve
+shared writers and heavy-resource ownership.
 
 ## Failed approaches
 

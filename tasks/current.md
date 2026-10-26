@@ -1,17 +1,17 @@
 <!-- PROGRESSIVE_STATUS
 id: accepted-workflow-improvements-v620-20261025
 status: active
-updated: 2026-10-25
+updated: 2026-10-26
 readiness: 70
 plan: 100
 inventory: 90
 production: 0
 cleanup: 0
-tags: template,release,v620,outcomes,writing,delegation,storage
-next: Resolve restored Orca hook compatibility, validate the exact final commit, then publish and verify v6.2.0
+tags: template,release,v630,outcomes,writing,delegation,storage
+next: Finish portable fixture review, freeze reviewed v6.3.0 source, run exact-commit and exact-tag CI, verify downloaded release assets
 -->
 
-# Current Task - Accepted Workflow Improvements And Conditional v6.2.0
+# Current Task - Reviewed Workflow Improvements And Authorized v6.3.0 Release
 
 ## Approved result and scope
 
@@ -32,6 +32,62 @@ external volume-admission ledger; never hold write transactions in both at once.
 `tasks/change-strategy.json` is validated and binds the approved envelope.
 
 ## Acceptance and release plan
+
+### Authorized v6.3.0 publication
+
+The owner explicitly authorized fixing the private fixture input, then proceeding
+through canonical release gates to actual publication. Include the accepted
+proactive product/handoff, UI workflow, bootstrap-test and observer candidates.
+Preserve the frozen20 runtime dependency bytes, unrelated dirty work and the
+immutable v6.2.0 release. No consumer sync is authorized in this release task.
+The full existing hosted CI provides the mandatory release integration while
+the local heavy slot belongs to product QA. Exact-commit preflight must pass
+before tagging; exact-tag platform CI precedes immutable packaging/publication.
+Downloaded metadata/checksum/canonical archive verification completes release
+acceptance; source acceptance alone does not close this task.
+
+
+### Post-release runtime-test boundary follow-up
+
+Release `v6.2.0` is published at `ccb29d129377a675bd2f3b4740b25c21928bb7ff`.
+Exact-commit preflight `40217234720` and exact-tag release `40217818631` passed.
+Downloaded assets matched their checksums and the canonical Git archive;
+the immutable receipt is `.session-cache/release-evidence/v6.2.0-ccb29d129377/verification.json`.
+The tag and assets stay frozen; earlier pending-release notes below are history.
+
+The coordinator requested a narrow source candidate after four installed runtime
+tests stopped at generator-specific assertions against project-owned `setup.sh`.
+The source-only payload policy excludes both bootstrap entrypoints, whereas the
+installed runtime test previously treated any same-named file as template-owned.
+The diagnostic is `runtime-failure-diagnostic.json` in the separate setup owner's
+`test-projectOrca/outputs/setup-hooks-20261025` evidence directory.
+
+Decision: production posture; repair/direct-swap inside test infrastructure.
+Move bootstrap-order assertions to the aggregate's existing template-source-only
+lane. Keep Node/SQLite and SessionStart, explicit PreToolUse deny, and Stop runtime
+checks unconditional. Do not edit project setup scripts, handlers, trust, config,
+versions, release artifacts, or consumers. A presence/name heuristic or editing
+project bootstrap scripts would preserve the ownership mistake; removing the
+assertions outright would lose generator coverage. The selected move retains
+that coverage at its actual source boundary without a new compatibility flag.
+
+Luna owns `scripts/test-codex-runtime.js` and `scripts/test-template.sh`, with
+focused canonical/broken-generator and arbitrary/absent-project-setup scenarios.
+Parent reviews the candidate and one structural integration check. No product
+build or full test cascade is needed. Return hashes and required consumer checks
+to the coordinator before any consumer write. Recovery is the exact two-file
+candidate diff against the immutable release, not a tag or asset replacement.
+
+The candidate was reviewed with unchanged installed runtime rejection gates.
+Managed runtime, six negative generator fixtures plus arbitrary/absent project
+setup scenarios, and Bash syntax passed with scratch removed. Structural
+validation passed every code/SOT/syntax check; its sole stale plan-header failure
+was corrected and the progressive-status leaf passed. This is baseline plus a
+documentation delta, not a repeated whole-tree pass. The hash-bound handoff is
+`.session-cache/runtime-bootstrap-candidate-review.json`. No consumer write or
+new release is included. The separate `test-orca-setup.js` source-bootstrap
+assertions remain outside this candidate and limit broader consumer-aggregate
+claims.
 
 1. PA targeted repair: preserve config/project guards, all dirty/product files,
    active/unknown markers; verify exact-own blocking versus nonblocking foreign

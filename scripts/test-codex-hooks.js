@@ -222,7 +222,84 @@ async function runSafetyOnly() {
   }
 }
 
-if (process.argv.includes("--safety-only")) {
+async function runHandoffOnly() {
+  const started = process.hrtime.bigint();
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-handoff-hooks-"));
+  const root = path.join(fixture, "project");
+  fs.mkdirSync(path.join(root, ".claude/library/process"), { recursive: true });
+  fs.copyFileSync(path.join(__dirname, "../.claude/library/process/task-wave-handoff.schema.json"),
+    path.join(root, ".claude/library/process/task-wave-handoff.schema.json"));
+  const api = require("./codex-hooks.js");
+  const handoffs = require("./lib/task-wave-handoff.js");
+  const originalCheck = policy.checkRequest;
+  // This selector isolates the new Stop integration. Existing reading,
+  // editorial, delegation and storage gates retain their separate fixtures;
+  // these synthetic records are not evidence of native app activation.
+  policy.checkRequest = record => {
+    const result = { state: "passed", issues: [], exception: null };
+    policy.writeJson(path.join(record.directory, "result.json"), result);
+    return result;
+  };
+  let sequence = 0;
+  const make = (prompt, direct = false) => {
+    const input = { session_id: "handoff-test", turn_id: `handoff-${++sequence}`, prompt };
+    const record = policy.startRequest(root, input, { workflowDepth: direct ? "direct" : "routed", delegationDecision: { required: false } });
+    return { input, record };
+  };
+  const stop = (item, text) => api.handle({ ...item.input, hook_event_name: "Stop", last_assistant_message: text }, root);
+  try {
+    for (const prompt of ["You have 1 orchestration message. Run `orca orchestration check`.", "Thanks"]) {
+      const item = make(prompt);
+      assert.notEqual((await stop(item, "Acknowledged.")).decision, "block");
+      assert.equal(fs.readdirSync(item.record.directory).some(name => name.startsWith("task-wave-handoff-check")), false);
+    }
+    const typo = make("Fix one typo in the comment.", true);
+    assert.notEqual((await stop(typo, "Fixed the typo.")).decision, "block", "tiny direct edit needs no broad handoff");
+    const task = make("Implement and close the product wave for an independently deployed booking service.");
+    const finalText = "Completed the product wave handoff; the source iteration is closed with release acceptance still separate.";
+    const first = await stop(task, finalText);
+    assert.equal(first.decision, "block");
+    assert(first.reason.includes("task-handoff-missing: handoff:"), first.reason);
+    assert(!first.reason.includes("writing-application-missing"));
+    assert(!first.reason.includes("PRIMARY"), "handoff diagnostics must not turn into a book-reading repair");
+    const repeated = await stop(task, finalText);
+    assert.equal(repeated.continue, false, "same invalid exact artifact does not cause another continuation");
+    assert(repeated.systemMessage.includes("task-handoff-missing"));
+    assert.equal(policy.readJson(path.join(task.record.directory, "result.json")).state, "unresolved", "dedupe never relabels failure as pass");
+
+    const complete = make("Implement and close the next source product wave with a concrete integration handoff.");
+    const text = "Completed the product wave handoff. Source work is ready for the integration owner; no product release was performed.";
+    const artifact = path.join(root, "final.txt"); fs.writeFileSync(artifact, text);
+    const evidence = path.join(root, "source-review.json"); fs.writeFileSync(evidence, '{"status":"source-reviewed"}');
+    const value = { schemaVersion: 1, status: "ITERATION_CLOSED",
+      goal: { original: "Improve useful product coordination", owner: "template owner", scope: "canonical source only",
+        scopeOutcomeIds: [], baseline: { revision: "source-scope-r1", outcomes: [], denominatorUnavailableReason: "No predeclared product outcome denominator exists for this bounded source integration." } },
+      workPerformed: [{ description: "Implemented the bounded source handoff checks", evidence: [{ ref: "source-review.json", sha256: sha256(fs.readFileSync(evidence)), kind: "artifact", surface: "template source", environment: "local source review" }] }],
+      acceptedOutcomes: [], shippedUnits: [], remaining: [],
+      nextWave: { selected: [], deferred: [], carryoverRefs: [], why: "The existing integration owner decides the next authorized release unit.", nextAction: { owner: "integration owner", action: "Review the exact source candidate before any separately authorized release." } } };
+    const source = path.join(root, "handoff.json"); fs.writeFileSync(source, JSON.stringify(value));
+    handoffs.recordHandoff(root, complete.record.file, artifact, source);
+    const passed = await stop(complete, text);
+    assert.notEqual(passed.decision, "block", JSON.stringify(passed));
+    assert.equal(policy.readJson(path.join(complete.record.directory, "result.json")).taskHandoff.state, "passed");
+    assert(passed.systemMessage.includes("not product acceptance"));
+    const changed = await stop(complete, text + " Changed final bytes.");
+    assert.equal(changed.decision, "block");
+    assert(changed.reason.includes("task-handoff-artifact-mismatch"));
+    console.log(JSON.stringify({ selector: "handoff-hooks-only", passed: true,
+      cases: ["mailbox-skip", "ack-skip", "tiny-edit-skip", "specific-missing-field", "deduped-unresolved", "valid-source-handoff", "changed-artifact-refusal"],
+      elapsedMs: Number(process.hrtime.bigint() - started) / 1e6,
+      limit: "Synthetic Stop integration with unrelated workflow checks stubbed; not native app activation or product acceptance" }));
+  } finally {
+    policy.checkRequest = originalCheck;
+    assert(path.resolve(fixture).startsWith(path.resolve(os.tmpdir()) + path.sep));
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+}
+
+if (process.argv.includes("--handoff-only")) {
+  runHandoffOnly().catch(error => { console.error(error); process.exitCode = 1; });
+} else if (process.argv.includes("--safety-only")) {
   runSafetyOnly().catch(error => { console.error(error); process.exitCode = 1; });
 } else {
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-native-hooks-"));

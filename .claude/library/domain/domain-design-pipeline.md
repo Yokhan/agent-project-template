@@ -20,6 +20,48 @@ changed surface; a small UI edit does not need a full design-process ritual.
   new design system. State assumptions only when they materially shape the
   outcome.
 
+## Source-to-consumer UI contract
+
+For a new or materially reworked screen/flow, discover the actual route,
+controller/data owner, approved visual examples, component exports, tokens,
+icons and assets before generating alternatives. Inspect the current source
+and the consuming package/build; a neighboring Storybook is a reference, not
+automatically the version the product loads. Resolve conflicting sources through
+the project SOT order. A small edit needs only the affected dependencies.
+If current source already meets the requested contract, record read-only
+satisfaction and obtain missing evidence instead of changing code for the
+report. An old unpinned render does not establish a current source defect.
+
+For substantial visual-direction uncertainty, optional bitmap prototypes can
+help compare a few concrete compositions before implementation. First inspect
+the project's approved visual direction, accepted screens, existing assets,
+logos, icons, tokens and components; use a relevant accepted reference to ground
+the prototype. Record the reference, prompt and generation settings when
+available, and retain accepted and rejected variants with the reason for each
+decision. Translate an accepted direction into the existing component, token
+and asset contract, then validate the implemented responsive, interactive UI.
+A generated bitmap is a direction aid, not implementation, live UX evidence,
+device acceptance or production proof. Skip this step for small edits,
+component-only changes, code-native or vector work, and cases where no visual
+direction decision is needed. See
+[`product-delivery-recipes.md`](../process/product-delivery-recipes.md).
+
+Describe the real user path: entry, action, authoritative effect, visible
+confirmation, and return or reopen where promised. UI callbacks and sample data
+do not establish the effect. Keep unknown quantities unknown, distinguish
+measured from elapsed values, and do not infer detailed records from aggregates.
+Check empty, pending, failed and repeated-action behavior where it affects that
+promise; reopening a result must not repeat a committed action.
+
+Reuse the approved DS/component/icon contract, including asset variants and
+licenses where relevant. When settled contracts allow independent source
+assembly, give each author exact inputs, non-overlapping files and acceptance
+criteria; the existing integrator alone owns shared exports, styles, adapters,
+controller wiring and the coherent candidate. Do not split an unresolved shared
+visual or data decision into competing implementations. Source assembly may
+proceed while a build gate waits under `.claude/library/process/plan-first.md`;
+it does not pass that gate or authorize publication.
+
 ## Durable design constraints
 
 ### Tokens and components
@@ -94,6 +136,15 @@ If rendered evidence is unavailable, say what could not be checked and the
 resulting limitation. Do not call a surface production-ready on the strength of
 a mockup or source inspection alone. Report confidence or the main uncertainty
 only when it would help the reader judge a material decision.
+
+Keep source review, semantic typing/tests, rendered visual acceptance, exact
+consumer integration, physical-device acceptance and production acceptance
+separate. Bind each result to its actual inputs and surface; a syntax transpile
+is not a typecheck, an unrun test is not a pass, and an emulator viewport is not
+a physical device. Use `domain-design-system.md`'s consumer-bound handoff and
+the design skill's `references/design-checks.md` for settled-motion/loading/
+scroll evidence. Local checks never authorize a release or downstream sync by
+themselves.
 
 ## Design-system work
 
