@@ -2,6 +2,11 @@
 id: accepted-workflow-improvements-v620-20261025
 status: active
 updated: 2026-10-26
+readiness: 0
+accepted_consumers: 0
+consumer_baseline: 51
+baseline_revision: human-v631-rollout-r1
+measurement: Fully accepted v6.3.2 consumer installations; source and CI work are not delivered installations
 tags: template,release,v632,progress,recovery,rollout
 next: Publish the preserved-capacity validator repair through exact v6.3.2 release gates, then continue reviewed consumer delta plans
 -->
@@ -30,6 +35,10 @@ installed and accepted counts from per-target receipts; do not derive delivery
 percentages from source or test counts. Complex project overlays retain their
 owners, exact conflict evidence and a scoped next action. The previous wave
 context below remains historical and does not establish current readiness.
+At this candidate snapshot, zero of those 51 roots has an accepted v6.3.2
+installation. That is the header's readiness measure; earlier v6.3.1 receipts
+remain valid separately. Later delivery counts belong to the live rollout
+receipts, not this immutable candidate snapshot.
 
 ## Previous v6.3.1 authorization and bounded strategy
 
