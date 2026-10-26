@@ -7,11 +7,56 @@ plan: 100
 inventory: 90
 production: 0
 cleanup: 0
-tags: template,release,v630,outcomes,writing,delegation,storage
-next: Finish portable fixture review, freeze reviewed v6.3.0 source, run exact-commit and exact-tag CI, verify downloaded release assets
+tags: template,release,v631,progress,recovery,rollout
+next: Integrate progress/recovery rule, verify and replace the one owned watcher, publish v6.3.1, then canary and conflict-free consumer rollout
 -->
 
-# Current Task - Reviewed Workflow Improvements And Authorized v6.3.0 Release
+# Current Task - Proactive Progress, Owned Recovery And Authorized v6.3.1 Rollout
+
+## Current authorization and bounded strategy
+
+The direct owner authorized the canonical progress/report/recovery rule first,
+the upgrade and controlled replacement of the existing machine coordinator
+watcher, then a new verified stable release and downstream rollout. The
+published v6.3.0 at `91248c6a1a0c54312ca58ef844324ef77d6eaeb7` is immutable;
+preflight `40304302367`, exact-tag release `40305180507` and downloaded archive
+verification passed. Its receipt remains under
+`.session-cache/release-evidence/v6.3.0-91248c6a1a0c/verification.json`.
+Earlier acceptance plans below are historical. The existing numeric header
+describes the earlier planning baseline, not current delivery percentages.
+
+Production posture. Actual source evidence shows the existing watcher skips
+`active-*` assignments, lets stale completed metadata hide current work and
+suppresses unchanged scheduled reports. Select bounded repair and staged swap:
+preserve its accepted pending send/state, test deterministic observation and
+delivery decisions, stop only its positively identified process by the existing
+stop marker, confirm exit and lock settlement, then launch exactly one successor.
+Replacing the whole orchestration/runtime system would widen ownership and
+privacy risk; another daemon would duplicate the broken ownership boundary.
+
+Luna A owns the shared product-goal rule, orchestration skill pointer and their
+existing validator/fixture. Luna B owns only the existing external coordinator
+watcher, focused tests, its own state/receipts and necessary startup/README
+support. Luna C inspects actual PA/DS UI provenance and existing rollout lists
+read-only. Parent owns integration, source/version/release metadata, activation,
+canary and downstream plans. The root alone owns its canonical global journal.
+AUTH/server/product owners, capacity watcher, old paused heartbeat, project
+plans, actual model/effort preferences and the frozen20 runtime files are protected.
+
+Unchanged time alone is only a stall suspicion. Require current owner/turn/fence,
+actual tool/artifact and runtime evidence; preserve declared long jobs, pauses,
+completed concepts and external waits. Unknown ownership is escalated, never
+converted into permission to kill an OS process. Recovery stays in the existing
+session/history through supported control, after actual settlement, with finite
+budgets and dedupe. A supported durable coordinator message is not proof that a
+busy coordinator has already shown a user-visible report.
+
+Acceptance: focused deterministic cases and independent review; one real report
+delivery and singleton process/start receipt; exact-commit and exact-tag platform
+CI plus downloaded checksum/metadata/canonical archive gates; one bounded canary,
+then exact-release updater previews and conflict-free digest-bound apply with
+rollback. Preserve and report dirty conflicts, project overlays, missing paths
+and legacy migration boundaries. No self-sync or project-specific timers.
 
 ## Approved result and scope
 

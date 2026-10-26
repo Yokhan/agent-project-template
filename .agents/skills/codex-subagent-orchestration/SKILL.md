@@ -85,6 +85,11 @@ task-wave handoff via `node scripts/codex-turn.js handoff`. Follow the closure,
 carryover, release, and next-wave contract in
 `.claude/library/process/product-goal-loop.md#closure-carryover-and-next-action`.
 
+For long-running work, use the shared current-turn evidence, all-project
+reporting, `STALL_SUSPECT`, and bounded recovery contract in
+`.claude/library/process/product-goal-loop.md#delivery-observation-and-recovery`;
+do not add project timers or treat a stale turn as proof that a worker is dead.
+
 ## Safe Prompt
 
 ```text

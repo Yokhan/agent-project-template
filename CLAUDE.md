@@ -1,5 +1,5 @@
 # Agent-Ready Project
-<!-- Template Version: 6.3.0 -->
+<!-- Template Version: 6.3.1 -->
 
 ## Status
 **NEW_PROJECT** — Run `/setup-project` or say "настрой проект" to configure for your stack.
@@ -280,7 +280,7 @@ This project supports both Claude Code and OpenAI Codex.
 Not configured yet.
 
 ## Template Version
-6.3.0 - Run `bash scripts/check-drift.sh` to verify health.
+6.3.1 - Run `bash scripts/check-drift.sh` to verify health.
 
 ## Compaction
 After compaction: `bash scripts/context-restore.sh` to recover mode + task + rules.

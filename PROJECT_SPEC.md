@@ -42,9 +42,9 @@
 - Codex MCP configuration from the managed block in .codex/config.toml; .mcp.json is Claude Code compatibility only
 
 ## Current State
-- Goal: Publish v6.3.0 with proactive product orchestration, truthful scoped delivery and reviewed runtime/test repairs.
-- Status: v6.3.0 candidate; v6.2.0 is published at ccb29d129377a675bd2f3b4740b25c21928bb7ff.
-- Next: Exact-commit Linux/Windows preflight, exact-tag release CI, then downloaded checksum/metadata/canonical archive verification. Consumer sync and native activation are separate and not included.
+- Goal: Publish v6.3.1 with proactive evidence-based progress/recovery rules, then activate the one owned watcher and apply reviewed consumer plans.
+- Status: v6.3.1 candidate; verified v6.3.0 is published at 91248c6a1a0c54312ca58ef844324ef77d6eaeb7.
+- Next: Exact-commit Linux/Windows preflight, exact-tag release CI, then downloaded checksum/metadata/canonical archive verification. The newly authorized watcher activation and exact-release consumer rollout follow their own ownership and verification gates.
 
 ## Last Scan
 2026-07-19

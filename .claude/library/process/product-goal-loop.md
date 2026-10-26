@@ -181,6 +181,60 @@ Current steps must not pretend to be the whole product. Use these labels:
 
 Never call a partial step "done" just because the code compiles.
 
+## Delivery observation and recovery
+
+For long-running work, review current evidence at the cadence configured by the
+shared runtime and report every tracked project at each scheduled report,
+including projects with no material change. The shared runtime's configured
+cadence is 10 minutes; keep it in machine configuration, not as a timer copied
+into any project or task. On material progress, a new blocker, or closure,
+report sooner.
+
+Signal material delivery changes promptly: a verified useful source/artifact
+change, accepted user-path behavior, resolved dependency, or outcome/release
+evidence that advances a required gate. Keep operational liveness and material
+progress separate. A fresh tool result, read, shell command, status ping, or
+runtime heartbeat proves activity only; it does not prove a useful change. A
+test result is verification evidence; it advances delivery only when it newly
+closes a required gate or changes the diagnosed next action. Do not reset the
+material-progress clock for activity-only signals. A repeated failed check
+follows the existing Correction Loop and its strategy breaker, not an indefinite
+retry. After two failed attempts, reassess the cause and boundary; repeating the
+same failed check is evidence, not progress.
+
+Before classifying a task, bind the observation to the current request/turn and
+owner fence; inspect the latest tool result and raw outcome, relevant artifact
+evidence, and the owned runtime/process state. Report operational activity
+separately from material progress, with the declared deadline and accepted
+deliverable. An explicit pause or choice, genuine external blocker, and
+completed accepted deliverable are distinct states; a completed conceptual
+deliverable needs no live process. If only elapsed time or stale status suggests
+inactivity, label liveness `STALL_SUSPECT`, then refresh current evidence. This
+label is not a claim that the process is dead. Fresh activity may defeat a stale
+stop/cancel decision, but does not prove delivery or reset the material-progress
+clock. A known long task still within its declared deadline is not stalled merely
+because it has produced no new output; preserve it unless fresh evidence proves
+a separate owned-runtime failure.
+
+Each report names the current owner and work, material signal since the last
+review (or "unchanged" with its evidence time), exact blocked layer and owner,
+and the nearest authorized next task or wave from the existing goal/task graph.
+Do not invent a competing plan. Follow `plan-first.md` for independent useful
+work while a gate waits and this file's closure rules for carryover and partial
+independent shipping. A capacity watcher reports resource pressure separately;
+capacity signals do not establish agent liveness or authorize a restart.
+
+Stop or restart a stuck worker only after fresh evidence confirms the current
+session/request ownership, the latest tool is settled, the owned runtime is
+stuck, and no competing writer or operation remains. Where the current host
+exposes a verified session-control API, use it for a bounded same-session
+stop/restart or resume with history; do not invent an RPC or kill a PID. If
+ownership or supported control is unknown, preserve the process and escalate
+to the root owner.
+Deduplicate reports by incident, use a finite backoff and restart budget, and do
+not poll or restart indefinitely. A user-authorized recovery within the same
+scope needs no second approval; ask only for a new material decision.
+
 ## Closure, carryover, and next action
 
 At each wave closure or newly material blocker, run a bounded review against

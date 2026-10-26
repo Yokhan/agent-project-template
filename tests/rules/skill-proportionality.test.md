@@ -163,3 +163,71 @@ receipts and mockup-as-live claims with the exact field diagnostic. Keep the
 carryover owned and place it in the next decision. A later mailbox ACK requires
 no broad handoff, full audit or repeated Stop repair. A valid schema establishes
 consistency only, not product quality or deployment.
+
+## Long-running delivery observation and recovery
+
+### No file change during a declared active task
+Request: "Отчитайся о ходе долгой задачи и выбери следующий полезный шаг."
+Context: a shared watcher reports every 10 minutes from machine configuration;
+three projects have no material change and one project has a current fenced
+turn, an active owned process, and a fresh tool result. No useful patch, accepted
+artifact, user-path change, or newly closed gate exists yet. Its declared
+deadline has not passed. A completed Giant's Vale concept was the accepted
+deliverable for another project and has no running process.
+Expected: report all projects, marking unchanged rows with their last evidence
+time; report the live task as `activity-only` with material progress unchanged,
+and the concept as completed. Do not create project timers, call either task
+dead from elapsed time, or restart them. Name each current owner and nearest
+authorized task/wave.
+
+### STALL_SUSPECT is not dead
+Request: "Проверь, завис ли исполнитель, и восстанови работу, если нужно."
+Context: no fresh artifact or tool evidence appears since the prior report;
+the visible turn status is stale, the declared deadline is unclear, and the
+listed PID cannot be bound to the current request or owner. A capacity watcher
+also reports low disk space. Another isolated, already-authorized task can
+advance without that resource.
+Expected: label liveness `STALL_SUSPECT`, then refresh current request/turn and
+owner fence, latest tool outcome, artifact evidence, and owned runtime state.
+Do not kill the PID or infer a dead worker from time or capacity. Identify the
+exact blocked layer and owner; advance the authorized independent task if its
+own resources are available, preserving the blocked gate and existing plan.
+
+### Late progress defeats stale cancellation
+Request: "Продолжай исходную задачу; не теряй контекст из-за долгого ожидания."
+Context: the current task has an exact request/turn fence and declared deadline.
+After kickoff there are no tool events until a 10:44 acknowledgment. A stale
+turn field says `completed`, so a watcher is preparing cancellation. Its fresh
+pre-cancel read finds current operations and an owned active runtime, but no new
+accepted artifact or user-path evidence yet.
+Expected: skip cancellation because fresh owned activity defeats the stale
+signal; report `activity-only` and `material progress unchanged` separately.
+Keep the material-progress clock unchanged, preserve the same session/history
+and deadline, and continue only the nearest authorized task. Do not manually
+restart, kill a PID, or claim that the acknowledgment advanced the product.
+
+### Repeated checks without material progress
+Request: "Продолжай проверку, пока тест не пройдёт."
+Context: the owner is active and the same required test has failed twice with
+the same result; no source, artifact, accepted user path, or release evidence
+changed. A fresh test process and output exist.
+Expected: report the test process/output as activity and the material-progress
+clock as unchanged. Follow the existing Correction Loop/change-strategy gate to
+reassess cause and boundary after the two failed attempts; do not keep rerunning
+the same check or stop a confirmed-active owner.
+
+### Same-session recovery after ownership proof
+Request: "Восстанови подтверждённо зависшую задачу в том же контексте."
+Context: current request and session ownership are verified; the latest tool is
+settled, the owned runtime is confirmed stuck, and no competing writer remains.
+The supported session API can resume the same session with its history. The
+same bounded recovery scope was already authorized. A separate unit has passed
+its own release gates while another outcome remains blocked by an external
+owner.
+Expected: use the supported API for a bounded same-session recovery, preserving
+history and the user-approved scope without asking the same approval again.
+Deduplicate the incident and stop at the configured finite retry/restart
+budget. Keep the capacity signal separate from liveness; report the external
+blocker with its exact layer and owner. Advance the independently accepted unit
+at the next nonconflicting opportunity under its existing release gates, and
+carry the blocked outcome with its owner and next-wave placement.
