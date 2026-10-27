@@ -362,13 +362,30 @@ function getRoute(task, options = {}) {
       (!implementationRequested || blockEdits || unresolvedArchitecture);
     const notSelected = decision.dispatch.owner === "worker" &&
       !fanout.candidates.some(({ name }) => name === decision.role);
+    const externalNotSelected = decision.externalExecution?.state === "external-fast-ready" &&
+      !fanout.candidates.some(({ name }) => name === decision.role);
+    const highRisk = ["HIGH", "CRITICAL"].includes(risk);
+    const externalBlocked = decision.externalExecution?.state === "external-fast-ready" &&
+      (fanout.status === "skip" || writeBlocked || unresolvedArchitecture || highRisk || externalNotSelected);
+    const routeReason = fanout.status === "skip" ? fanout.reason :
+      blockEdits ? "change-strategy-blocks-writes" :
+        unresolvedArchitecture ? "architecture-decision-required" :
+          writeBlocked ? "no-implementation-authority" :
+            highRisk ? "high-risk-work-requires-native-independent-verification" :
+              notSelected || externalNotSelected ? "role-not-selected-in-current-batch" : "route-policy-blocked";
+    const routedDecision = externalBlocked ? {
+      ...decision,
+      externalExecution: {
+        state: "native-luna-fallback", selectedModel: null,
+        reason: "route-policy-blocked-external-execution", fallbackReason: routeReason,
+        nativeFallbackProfile: decision.externalExecution.nativeFallbackProfile,
+      },
+    } : decision;
     return fanout.status === "skip" || writeBlocked || notSelected ? {
-      ...decision, dispatch: { ...decision.dispatch, ready: false, callContract: null,
-        policyStatus: "blocked", policyReason: fanout.status === "skip" ? fanout.reason :
-          blockEdits ? "change-strategy-blocks-writes" :
-            writeBlocked ? unresolvedArchitecture ? "architecture-decision-required" : "no-implementation-authority" :
-              "role-not-selected-in-current-batch" },
-    } : { ...decision, dispatch: { ...decision.dispatch, policyStatus: "allowed" } };
+      ...routedDecision,
+      dispatch: { ...decision.dispatch, ready: false, callContract: null,
+        policyStatus: "blocked", policyReason: routeReason },
+    } : { ...routedDecision, dispatch: { ...decision.dispatch, policyStatus: "allowed" } };
   };
   const resourceDecision = gateDispatch(getResourceRecommendation({
     ...contract, role: contract.role || (candidateSubagents.includes("architecture_consultant")
@@ -390,6 +407,12 @@ function getRoute(task, options = {}) {
     implementationCandidate, unresolvedArchitecture, blockEdits, risk, fanout,
     workerContracts, workerContract: contract,
   });
+  const preferredExternalWorker = workerContracts.find((worker) => worker.externalExecution?.state === "external-fast-ready");
+  if (preferredExternalWorker) {
+    const external = preferredExternalWorker.externalExecution;
+    const fallback = external.nativeFallbackProfile;
+    delegationDecision.nextAction = `Preferred external execution is available for ${preferredExternalWorker.role} via the observed host selection ${external.selectedModel}; effective provider/model remain unverified. Native fallback remains ${fallback.model}@${fallback.effort}. ${delegationDecision.nextAction}`;
+  }
   return {
     task,
     routedAt: new Date().toISOString(),

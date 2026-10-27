@@ -9,11 +9,11 @@ const policy = require("./lib/codex-turn-policy.js");
 const { sha256 } = require("./lib/writing-library-store.js");
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-delegation-report-"));
-function record(id, { required = true, delegationState = "required", reason = "bounded-contract", startedAt, child, profile, integration, fallback, result } = {}) {
+function record(id, { required = true, delegationState = "required", reason = "bounded-contract", startedAt, child, profile, integration, fallback, result, preferredProfile = { model: "gpt-6.1-terra", effort: "medium" } } = {}) {
   const directory = path.join(root, id);
   fs.mkdirSync(directory, { recursive: true });
   const state = { root: fs.realpathSync(root), sessionId: "native-session", requestId: id, startedAt: startedAt || "2026-10-24T10:00:00.000Z",
-    task: "PRIVATE TASK PROMPT MUST NEVER APPEAR", preferredWorkerProfile: { model: "gpt-6.1-terra", effort: "medium" }, delegation: { required, state: delegationState, reason } };
+    task: "PRIVATE TASK PROMPT MUST NEVER APPEAR", preferredWorkerProfile: preferredProfile, delegation: { required, state: delegationState, reason } };
   const children = child ? [child] : [];
   if (children.length) {
     fs.mkdirSync(path.join(directory, "children"), { recursive: true });
@@ -55,8 +55,10 @@ try {
   const snapshot = records.map(x => [x.directory, fs.readdirSync(x.directory).sort().join(","), fs.statSync(x.directory).mtimeMs]);
   const output = report.summarize(records.map(({ state, directory }) => ({ state, directory })), { limit: 20, totalInLedger: 7,
     observeProfile: child => observers.get(child.id) || { status: "model-unverified" } });
-  assert.equal(output.status, "under-target", "calls alone must not make the eligible useful-work target pass");
-  assert.deepEqual(output.target, { metric: "completed integrated useful Terra work per eligible task", minimumRate: 0.5 });
+  assert.equal(output.status, "no-data", "historical Terra requests are outside the current preferred cohort");
+  assert.equal(output.terraStatus, "under-target", "calls alone must not make the historical Terra target pass");
+  assert.deepEqual(output.target, { metric: "completed integrated useful native or externally offloaded work per current-preferred task", minimumRate: 0.5 });
+  assert.deepEqual(output.historicalTargets.terra, { metric: "completed integrated useful Terra work per Terra-preferred task", minimumRate: 0.5 });
   assert.equal(output.counts.requests.totalInLedger, 7);
   assert.equal(output.counts.eligibleTasks, 5, "fallback stays in the eligible denominator");
   assert.equal(output.counts.terraCalledRequests, 4, "started runtime-correlated Terra call counts as dispatch");
@@ -74,7 +76,8 @@ try {
   assert.equal(output.counts.exclusions.skip, 1);
   const startedOnly = report.summarize([{ state: started.state, directory: started.directory }], { limit: 20,
     observeProfile: child => observers.get(child.id) });
-  assert.equal(startedOnly.status, "under-target");
+  assert.equal(startedOnly.status, "no-data");
+  assert.equal(startedOnly.terraStatus, "under-target");
   assert.equal(startedOnly.counts.eligibleTerraCalledTasks, 1, "a correlated start remains visible as a call");
   assert.equal(startedOnly.counts.eligibleCompletedIntegratedUsefulTerraTasks, 0);
   const completedWithoutIntegrationChild = { id: "child-completed-without-integration", completedAt: "later" };
@@ -84,10 +87,12 @@ try {
   assert.equal(completedOnly.counts.eligibleTerraCalledTasks, 1);
   assert.equal(completedOnly.counts.eligibleCompletedIntegratedUsefulTerraTasks, 0,
     "completion without exact integration evidence cannot pass the useful-work target");
-  assert.equal(completedOnly.status, "under-target");
+  assert.equal(completedOnly.status, "no-data");
+  assert.equal(completedOnly.terraStatus, "under-target");
   const acceptedEvidence = report.summarize([{ state: useful.state, directory: useful.directory }], { limit: 20,
     observeProfile: child => observers.get(child.id) });
-  assert.equal(acceptedEvidence.status, "pass", "a correlated completed child with exact integration evidence passes the measured target");
+  assert.equal(acceptedEvidence.status, "no-data");
+  assert.equal(acceptedEvidence.terraStatus, "pass", "a correlated completed child with exact integration evidence passes the historical Terra target");
   assert.equal(acceptedEvidence.counts.eligibleTerraCalledTasks, 1);
   assert.equal(acceptedEvidence.counts.eligibleCompletedIntegratedUsefulTerraTasks, 1);
   assert.deepEqual(snapshot, records.map(x => [x.directory, fs.readdirSync(x.directory).sort().join(","), fs.statSync(x.directory).mtimeMs]), "report must not modify ledger files");
@@ -135,10 +140,75 @@ try {
   assert.equal(oldAndNew.counts.eligibleLegacyLunaTasks, 1);
   assert.equal(oldAndNew.counts.eligibleTerraTasks, 1);
   assert.equal(oldAndNew.coverage.eligibleTerraCalled.denominator, 1);
-  assert.equal(oldAndNew.status, "under-target", "new Terra request routed to Luna must remain in denominator");
+  assert.equal(oldAndNew.status, "pass", "current-preferred Luna work uses its own denominator");
+  assert.equal(oldAndNew.terraStatus, "under-target", "Terra history remains gated by Terra-preferred request snapshots");
   const oldOnly = report.summarize([{ state: legacyState, directory: useful.directory }], { limit: 20, observeProfile: () => ({ status: "runtime-correlated", model: "gpt-6-luna", effort: "high" }) });
-  assert.equal(oldOnly.status, "no-data");
+  assert.equal(oldOnly.status, "pass");
   assert.equal(oldOnly.counts.completedIntegratedUsefulLunaRequests, 1);
+  assert.equal(oldOnly.counts.eligiblePreferredNativeCompletedIntegratedUsefulTasks, 1);
+  assert.equal(oldOnly.counts.eligibleOffloadedWorkTasks, 1);
+
+  const externalCompleted = record("external-completed", { preferredProfile: { model: "gpt-6-luna", effort: "high" },
+    fallback: { requestId: "external-completed", category: "external-host" } });
+  const externalSubmitted = record("external-submitted", { preferredProfile: { model: "gpt-6-luna", effort: "high" },
+    fallback: { requestId: "external-submitted", category: "external-host" } });
+  const externalUnverified = record("external-unverified", { preferredProfile: { model: "gpt-6-luna", effort: "high" },
+    fallback: { requestId: "external-unverified", category: "external-host" } });
+  const externalEvidence = new Map([
+    ["external-completed", { requestId: "external-completed", state: "reported-completed-integrated", completedWorkCredit: true, providerVerification: "parent-inspected-host-response-claims", verifiedLuna: false, effectiveModel: null }],
+    ["external-submitted", { requestId: "external-submitted", state: "submitted", completedWorkCredit: false, verifiedLuna: false, effectiveModel: null }],
+    ["external-unverified", { requestId: "external-unverified", state: "unverified", completedWorkCredit: false, verifiedLuna: false, effectiveModel: null }],
+  ]);
+  const externalInspector = ({ state }) => externalEvidence.get(state.requestId);
+  const externalAccepted = report.summarize([{ state: externalCompleted.state, directory: externalCompleted.directory }], {
+    limit: 20, observeProfile: () => ({ status: "model-unverified" }), inspectExternalExecution: externalInspector,
+  });
+  assert.equal(externalAccepted.status, "pass", "inspected external completion can satisfy the current preferred-work target without filler Luna execution");
+  assert.equal(externalAccepted.counts.eligibleExternalHostObservedTasks, 1);
+  assert.equal(externalAccepted.counts.eligiblePreferredNativeCorrelatedTasks, 0);
+  assert.equal(externalAccepted.counts.eligiblePreferredNativeCompletedIntegratedUsefulTasks, 0);
+  assert.equal(externalAccepted.counts.eligibleOffloadedWorkTasks, 1, "a completed request receives one union credit");
+  assert.equal(externalAccepted.counts.lunaCalledRequests, 0, "external execution never receives Luna credit");
+  const dual = record("external-and-native", { preferredProfile: { model: "gpt-6-luna", effort: "high" },
+    child: { id: "external-and-native-child", completedAt: "later" },
+    integration: { requestId: "external-and-native", childId: "external-and-native-child", assignment: { scope: ["one bounded file"], acceptance: ["result passes criterion"] }, result: "Integrated the native child result against its exact assignment and acceptance." },
+    fallback: { requestId: "external-and-native", category: "external-host" } });
+  const dualEvidence = new Map(externalEvidence);
+  dualEvidence.set("external-and-native", { requestId: "external-and-native", state: "reported-completed-integrated", completedWorkCredit: true, providerVerification: "parent-inspected-host-response-claims", verifiedLuna: false, effectiveModel: null });
+  const dualReport = report.summarize([{ state: dual.state, directory: dual.directory }], {
+    limit: 20, observeProfile: () => ({ status: "runtime-correlated", model: "gpt-6-luna", effort: "high" }),
+    inspectExternalExecution: ({ state }) => dualEvidence.get(state.requestId),
+  });
+  assert.equal(dualReport.counts.eligiblePreferredNativeCompletedIntegratedUsefulTasks, 1);
+  assert.equal(dualReport.counts.eligibleExternalHostObservedTasks, 1);
+  assert.equal(dualReport.counts.eligibleOffloadedWorkTasks, 1, "native and external success on one request must not double-count the target");
+  const externalPending = report.summarize([{ state: externalSubmitted.state, directory: externalSubmitted.directory }], {
+    limit: 20, observeProfile: () => ({ status: "model-unverified" }), inspectExternalExecution: externalInspector,
+  });
+  assert.equal(externalPending.status, "under-target", "submission without completed integration receives no work credit");
+  assert.equal(externalPending.counts.eligibleExternalHostSubmittedTasks, 1);
+  assert.equal(externalPending.counts.eligibleOffloadedWorkTasks, 0);
+  const externalUnknown = report.summarize([{ state: externalUnverified.state, directory: externalUnverified.directory }], {
+    limit: 20, observeProfile: () => ({ status: "model-unverified" }), inspectExternalExecution: externalInspector,
+  });
+  assert.equal(externalUnknown.counts.eligibleExternalHostUnverifiedTasks, 1);
+  assert.equal(externalUnknown.counts.eligibleOffloadUnverifiedTasks, 1);
+  assert.equal(externalUnknown.counts.eligibleOffloadedWorkTasks, 0);
+  assert.equal(externalUnknown.counts.runtimeUnverifiedRequests, 0, "unknown external provider evidence is not mislabeled as native runtime evidence");
+
+  const invalidLuna = report.summarize([{ state: legacyState, directory: useful.directory }], { limit: 20,
+    observeProfile: () => ({ status: "runtime-correlated", model: "gpt-6-luna", effort: "medium" }) });
+  assert.equal(invalidLuna.counts.lunaCalledRequests, 1, "historical Luna call totals retain their serialized behavior");
+  assert.equal(invalidLuna.counts.eligiblePreferredNativeCorrelatedTasks, 0, "a mismatched current Luna effort is rejected for preferred credit");
+  assert.equal(invalidLuna.counts.eligiblePreferredNativeCompletedIntegratedUsefulTasks, 0);
+  assert.equal(invalidLuna.counts.eligibleOffloadUnverifiedTasks, 1);
+  const missingPreferredEffortState = { ...legacyState, preferredWorkerProfile: { model: "gpt-6-luna" } };
+  const missingPreferredEffort = report.summarize([{ state: missingPreferredEffortState, directory: useful.directory }], { limit: 20,
+    observeProfile: () => ({ status: "runtime-correlated", model: "gpt-6-luna", effort: "high" }) });
+  assert.equal(missingPreferredEffort.status, "incomplete", "missing effort for the current preferred model is an unknown eligibility cohort");
+  assert.equal(missingPreferredEffort.counts.eligibilityUnverifiedTasks, 1);
+  assert.equal(missingPreferredEffort.counts.eligiblePreferredTasks, 0);
+  assert.equal(missingPreferredEffort.counts.eligibleLegacyLunaTasks, 1, "the historical Luna cohort count remains intact");
   const unknownState = { ...useful.state };
   delete unknownState.preferredWorkerProfile;
   const unknownCohort = report.summarize([{ state: unknownState, directory: useful.directory }], { limit: 20, observeProfile: child => observers.get(child.id) });

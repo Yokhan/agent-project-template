@@ -8,7 +8,7 @@ function run(argv, root = process.cwd()) {
   const [command = "help", ...args] = argv;
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
-    if (!["--state", "--artifact", "--notes", "--target", "--category", "--reason", "--child", "--assignment", "--result", "--query"].includes(args[i]) || !args[i + 1] || options[args[i]]) throw new Error("Unknown, missing or duplicate option");
+    if (!["--state", "--artifact", "--notes", "--target", "--category", "--reason", "--child", "--assignment", "--result", "--query", "--evidence"].includes(args[i]) || !args[i + 1] || options[args[i]]) throw new Error("Unknown, missing or duplicate option");
     options[args[i]] = args[i + 1];
   }
   if (command === "help") return { usage: [
@@ -21,8 +21,9 @@ function run(argv, root = process.cwd()) {
     "node scripts/codex-turn.js record-outcome --state <request.json> --result <outcome-evidence.json>",
     "node scripts/codex-turn.js outcome-status --state <request.json>",
     "node scripts/codex-turn.js handoff --state <request.json> --artifact <exact-final.txt> --result <handoff.json>",
-    "node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable|unsafe-split|judgment|coordination-cost --reason <concrete reason>"],
-    notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. Fallback is visible, never verified preferred-worker execution." };
+    "node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable|unsafe-split|judgment|coordination-cost --reason <concrete reason>",
+    "node scripts/codex-turn.js fallback --state <request.json> --category external-host --reason <concrete reason> --evidence <bounded local JSON>"],
+    notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. External host evidence records parent-inspected host-response claims; it is not native provider/runtime proof." };
   if (!options["--state"]) throw new Error("--state is required from native hook context");
   if (command === "status") {
     const record = policy.loadState(root, options["--state"]);
@@ -43,7 +44,7 @@ function run(argv, root = process.cwd()) {
     if (!options["--artifact"] || !options["--notes"] || ![undefined, "final", "file"].includes(options["--target"])) throw new Error("apply requires artifact, notes and valid target");
     return policy.application(root, options["--state"], options["--artifact"], options["--notes"], options["--target"]);
   }
-  if (command === "fallback") return policy.fallback(root, options["--state"], options["--category"], options["--reason"]);
+  if (command === "fallback") return policy.fallback(root, options["--state"], options["--category"], options["--reason"], options["--evidence"]);
   if (command === "integrate") {
     const record = policy.loadState(root, options["--state"]);
     if (!options["--child"] || !options["--assignment"] || String(options["--result"] || "").length < 20) throw new Error("integrate requires native child id, bounded assignment JSON and concrete result reference");

@@ -1,7 +1,7 @@
 name = "writing_editor"
 description = "Independent read-only editor for substantive prose: meaning, structure, evidence, natural language, tone, and rhythm."
-model = "gpt-6.1-terra"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Editor", "Clarity", "Cadence"]
 developer_instructions = """

@@ -108,7 +108,6 @@ const REQUIRED_TEXT = [
   { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "Do not fabricate" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-6.1-sol" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-6.1-terra" },
-  { file: "scripts/codex-agent-policy.js", text: "gpt-6-astra" },
   { file: "CLAUDE.md", text: "Production Product Standard" },
   { file: "CLAUDE.md", text: "language of the user's request" },
   { file: "CLAUDE.md", text: "app-specific business outcomes first" },
@@ -566,9 +565,9 @@ function assertProactiveDelegationContract() {
       acceptance: ["focused component test passes"], hostDispatchCapabilities: ["explicit-model-contract"] },
   });
   if (sequential.subagents[0] !== "implementer" ||
-      sequential.resourceDecision.recommendedModel !== "gpt-6.1-terra" ||
+      sequential.resourceDecision.recommendedModel !== "gpt-6-luna" ||
       !sequential.resourceDecision.dispatch.ready) {
-    addError("bounded implementation must support a single Terra worker without parallel work");
+    addError("bounded implementation must support a single Luna worker without parallel work");
   }
   if (!/a\s+separate user request is not required/iu.test(combined)) {
     addError("agent SOT must distinguish project authorization from direct user prompting");

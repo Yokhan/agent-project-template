@@ -11,6 +11,8 @@ const { sha256 } = require("./writing-library-store.js");
 
 const CACHE = ".session-cache/codex-turns";
 const MAX_REPAIRS = 2;
+const FALLBACK_CATEGORIES = new Set(["host-unavailable", "unsafe-split", "judgment", "coordination-cost", "external-host"]);
+const EXTERNAL_EVIDENCE_LIMIT = 32768;
 
 function localFile(root, file) {
   const base = path.resolve(root);
@@ -245,13 +247,98 @@ function application(root, file, artifact, notes, target = "final") {
   writeJson(path.join(record.directory, destination), item);
   return { state: "application-recorded", target, artifactSha256: value.artifactSha256, semanticReview: "required; notes are not proof of comprehension" };
 }
-function fallback(root, file, category, reason) {
+function nonempty(value, max = 2000) { return typeof value === "string" && value.trim().length > 0 && value.length <= max; }
+function stringList(value, label) {
+  if (!Array.isArray(value) || !value.length || value.some(item => !nonempty(item, 500))) throw new Error(`External evidence requires nonempty ${label}`);
+  return value.map(item => item.trim());
+}
+function boundedFile(root, reference, label, limit = 2 * 1024 * 1024) {
+  if (!nonempty(reference, 1000)) throw new Error(`External evidence requires ${label} reference`);
+  const file = localFile(root, reference);
+  const bytes = fs.readFileSync(file);
+  if (bytes.length > limit) throw new Error(`External evidence ${label} exceeds ${limit} bytes`);
+  return { file, relative: path.relative(root, file), bytes, sha256: sha256(bytes) };
+}
+function boundedJson(root, reference, label) {
+  const item = boundedFile(root, reference, label, EXTERNAL_EVIDENCE_LIMIT);
+  const bytes = item.bytes;
+  const value = JSON.parse(bytes.toString("utf8"));
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`External evidence ${label} must be a JSON object`);
+  return { ...item, value };
+}
+function validateExternalExecution(record, evidenceReference, snapshot = null) {
+  const { state, directory } = record;
+  const evidence = boundedJson(state.root, evidenceReference, "envelope");
+  const value = evidence.value;
+  if (value.schemaVersion !== 1 || value.requestId !== state.requestId) throw new Error("External evidence is not bound to the current request");
+  for (const field of ["actualHost", "sessionRef", "fenceRef", "operation", "submissionRef", "completionRef", "outputRef", "parentIntegrationRef"]) {
+    if (!nonempty(value[field], 2000)) throw new Error(`External evidence requires ${field}`);
+  }
+  if (!/^[a-f0-9]{64}$/u.test(value.outputSha256 || "")) throw new Error("External evidence requires a SHA-256 outputSha256");
+  const assignment = { scope: stringList(value.assignment?.scope, "assignment.scope"), acceptance: stringList(value.assignment?.acceptance, "assignment.acceptance") };
+  const refs = { envelope: evidence };
+  for (const field of ["submissionRef", "completionRef", "parentIntegrationRef"]) refs[field] = boundedJson(state.root, value[field], field);
+  refs.outputRef = boundedFile(state.root, value.outputRef, "output");
+  const submission = refs.submissionRef.value;
+  const completion = refs.completionRef.value;
+  const integration = refs.parentIntegrationRef.value;
+  for (const [label, item] of [["submission", submission], ["completion", completion], ["parent integration", integration]]) {
+    if (item.requestId !== state.requestId) throw new Error(`External ${label} is not bound to the current request`);
+  }
+  const sameList = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  const sameAssignment = item => item.assignment && sameList(item.assignment.scope, assignment.scope) && sameList(item.assignment.acceptance, assignment.acceptance);
+  if (!sameAssignment(submission) || !sameAssignment(integration)) throw new Error("External submission or integration assignment does not match the recorded scope and acceptance");
+  if (sha256(refs.outputRef.bytes) !== value.outputSha256) throw new Error("External output hash does not match outputSha256");
+  if (completion.outputSha256 !== value.outputSha256 || integration.outputSha256 !== value.outputSha256) throw new Error("External completion or integration does not bind the exact output hash");
+  if (!nonempty(integration.result, 4000)) throw new Error("External parent integration requires a concrete result");
+  if (!nonempty(completion.rawHostResponseRef, 1000) || !/^[a-f0-9]{64}$/u.test(completion.rawHostResponseSha256 || "")) {
+    throw new Error("External completion wrapper requires a local raw host-response reference and SHA-256");
+  }
+  refs.rawHostResponse = boundedFile(state.root, completion.rawHostResponseRef, "raw host response");
+  if (refs.rawHostResponse.sha256 !== completion.rawHostResponseSha256) throw new Error("Raw host-response hash mismatch");
+  if (completion.operation !== undefined && completion.operation !== value.operation) throw new Error("Observed host operation does not match the assigned operation");
+  if (completion.fenceRef !== undefined && completion.fenceRef !== value.fenceRef) throw new Error("Observed host fence does not match the recorded fence");
+  const status = completion.status;
+  if (!["completed", "submitted", "pending"].includes(status)) throw new Error("External completion status must be completed, submitted, or pending");
+  const limitations = stringList(value.limitations, "limitations");
+  const files = Object.fromEntries(Object.entries(refs).map(([key, item]) => [key, { path: item.relative, sha256: item.sha256 }]));
+  if (snapshot && (snapshot.requestId !== state.requestId || snapshot.evidenceSha256 !== evidence.sha256 || JSON.stringify(snapshot.files) !== JSON.stringify(files))) {
+    throw new Error("External evidence or a referenced file changed after it was recorded");
+  }
+  return { requestId: state.requestId, actualHost: value.actualHost.trim(), sessionRef: value.sessionRef.trim(), fenceRef: value.fenceRef.trim(),
+    operation: value.operation.trim(), assignment, files, outputSha256: value.outputSha256, completionStatus: status, limitations,
+    providerVerification: "parent-inspected-host-response-claims", verifiedLuna: false, effectiveModel: null,
+    completedWorkCredit: status === "completed", state: status === "completed" ? "reported-completed-integrated" : status === "pending" ? "unverified" : "submitted" };
+}
+function inspectExternalExecution(record) {
+  const file = path.join(record.directory, "external-execution.json");
+  if (!fs.existsSync(file)) return { state: "unverified", requestId: record.state.requestId, completedWorkCredit: false, reason: "external-execution-not-recorded" };
+  try {
+    const fallbackFile = path.join(record.directory, "fallback.json");
+    if (!fs.existsSync(fallbackFile)) throw new Error("external-host fallback binding is missing");
+    const fallback = readJson(fallbackFile);
+    if (fallback.category !== "external-host" || fallback.requestId !== record.state.requestId) throw new Error("external-host fallback belongs to another category or request");
+    const snapshot = readJson(file);
+    return validateExternalExecution(record, snapshot.files.envelope.path, snapshot);
+  } catch (error) {
+    return { state: "unverified", requestId: record.state.requestId, completedWorkCredit: false, verifiedLuna: false,
+      providerVerification: "parent-inspected-host-response-claims", reason: error.message };
+  }
+}
+function fallback(root, file, category, reason, evidenceReference) {
   const record = loadState(root, file);
-  if (!["host-unavailable", "unsafe-split", "judgment", "coordination-cost"].includes(category) || String(reason || "").trim().length < 40) {
+  if (!FALLBACK_CATEGORIES.has(category) || String(reason || "").trim().length < 40) {
     throw new Error("A concrete fallback category and reason (at least 40 characters) are required");
   }
+  if (category === "external-host") {
+    if (!evidenceReference) throw new Error("external-host fallback requires --evidence with bounded request-bound references");
+    const external = validateExternalExecution(record, evidenceReference);
+    const evidence = boundedJson(record.state.root, evidenceReference, "envelope");
+    writeJson(path.join(record.directory, "external-execution.json"), { ...external, evidenceSha256: evidence.sha256 });
+  } else if (evidenceReference) throw new Error("--evidence is only valid for external-host fallback");
   writeJson(path.join(record.directory, "fallback.json"), { category, reason, requestId: record.state.requestId });
-  return { state: "delegation-exception", category, reason, verifiedLuna: false };
+  return { state: "delegation-exception", category, reason, verifiedLuna: false,
+    ...(category === "external-host" ? { externalExecution: inspectExternalExecution(record) } : {}) };
 }
 function childEvent(record, input) {
   if (!input.agent_id) throw new Error("Native agent_id required");
@@ -309,7 +396,7 @@ function checkRequest(record, finalMessage) {
   const children = fs.existsSync(path.join(directory, "children")) ? fs.readdirSync(path.join(directory, "children")).filter(f => f.endsWith(".json")).map(f => readJson(path.join(directory, "children", f))) : [];
   const observed = children.map(child => ({ ...child, profile: observeProfile(child, state), durationMs: child.completedAt ? Date.parse(child.completedAt) - Date.parse(child.startedAt) : null }));
   const candidateException = fs.existsSync(path.join(directory, "fallback.json")) ? readJson(path.join(directory, "fallback.json")) : null;
-  const exception = candidateException?.requestId === state.requestId ? candidateException : null;
+  const exception = candidateException?.requestId === state.requestId && FALLBACK_CATEGORIES.has(candidateException.category) ? candidateException : null;
   const integrated = child => {
     const file = path.join(directory, `integration-${sha256(child.id)}.json`);
     if (!fs.existsSync(file)) return false;
@@ -369,6 +456,6 @@ function continuation(record, issues) {
   return { decision: "block", reason };
 }
 
-module.exports = { localFile, readJson, writeJson, loadState, findState, startRequest, groundRequest, application, fallback,
+module.exports = { localFile, readJson, writeJson, loadState, findState, startRequest, groundRequest, application, fallback, inspectExternalExecution,
   childEvent, childRecord, checkRequest, continuation, substantive, sessionRoot, editorialAssignment, acceptEditorialReview, assertCurrentEditorialProfile,
   deliveryAcknowledgement, observeProfile };

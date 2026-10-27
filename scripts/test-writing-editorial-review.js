@@ -166,7 +166,7 @@ assert.throws(() => verifyEditorialReview(task, passed, {
   requestId, artifactBytes: artifact, packet, readingMap, reviewerEvidence: fakeEvidence,
 }), /resultMatchesReview/);
 
-for (const [model, effort] of [["gpt-6.1-sol", "high"], ["gpt-6-luna", "high"], ["gpt-6.1-terra", "high"], ["unverified", "high"]]) {
+for (const [model, effort] of [["gpt-6.1-sol", "high"], ["gpt-6-luna", "medium"], ["gpt-6.1-terra", "high"], ["unverified", "high"]]) {
   const wrongProfile = evidenceFor(passed);
   wrongProfile.model = model;
   wrongProfile.effort = effort;

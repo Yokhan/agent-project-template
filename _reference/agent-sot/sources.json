@@ -15,7 +15,7 @@
       "url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
       "last_checked": "2026-10-27",
       "requires_fresh_check": true,
-      "local_conclusion": "User-selected future light/bounded worker profile is gpt-6.1-terra medium. Official API supports medium; account/client/runtime availability and effective effort require correlated observations. Preserve busy workers and user-owned parent settings. No workload benchmark or savings claim follows from model pricing."
+      "local_conclusion": "Historical Terra card. The current user-selected future light/bounded worker profile is gpt-6-luna high. Account/client/runtime availability and effective effort require correlated observations. Preserve busy workers and user-owned parent settings; no workload benchmark or savings claim follows from model pricing."
     },
     {
       "id": "deepseek-flash-api",
@@ -25,17 +25,7 @@
       "url": "https://api-docs.deepseek.com/quick_start/pricing",
       "last_checked": "2026-10-27",
       "requires_fresh_check": true,
-      "local_conclusion": "The official API names deepseek-flash and supports OpenAI/Anthropic-compatible clients and OpenCode. Host aliases and selected model are not effective provider proof. Use available authorized access only for bounded privacy-reviewed coordinator advice; no hook-time network call, key acquisition or automatic provider fallback."
-    },
-    {
-      "id": "openai-gpt-6-lean-skills",
-      "kind": "official-docs",
-      "trust": "primary",
-      "title": "Rethinking skills and prompts for GPT-6 Astra",
-      "url": "https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra",
-      "last_checked": "2026-10-07",
-      "requires_fresh_check": true,
-      "local_conclusion": "Use precise triggers, progressive disclosure and outcome-level contracts instead of universal recipes. Preserve specialist knowledge, permissions and user requirements. Astra observations require workload validation before transfer to Sol or Luna; no measured savings are claimed."
+      "local_conclusion": "The official API names deepseek-flash and supports OpenAI/Anthropic-compatible clients and OpenCode. An observed Orca alias or selected model is not proof of effective provider identity; require a correlated receipt. Authorized host tools may also expose optional fast execution for bounded, low-uncertainty tasks; require a reviewable host response and exact output for parent integration. This does not earn Luna worker credit or bypass security/editorial review. No hook-time network call, key acquisition or automatic provider fallback."
     },
     {
       "id": "openai-gpt-6-sol",
@@ -53,19 +43,9 @@
       "trust": "primary",
       "title": "GPT-6 Luna model capabilities",
       "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
-      "last_checked": "2026-10-06",
+      "last_checked": "2026-10-27",
       "requires_fresh_check": true,
-      "local_conclusion": "Historical routing used Luna high for bounded discovery, test/docs generation and implementation. Direct user policy on 2026-10-27 supersedes future light-worker routing with Terra6.1 medium; preserve historical receipts and already-running Luna workers."
-    },
-    {
-      "id": "openai-gpt-6-astra",
-      "kind": "official-docs",
-      "trust": "primary",
-      "title": "GPT-6 Astra model capabilities",
-      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
-      "last_checked": "2026-10-06",
-      "requires_fresh_check": true,
-      "local_conclusion": "Bounded architecture consultation uses medium or high for deep risk; the parent remains the orchestrator. This role choice is a budget policy, not a claim Astra cannot implement."
+      "local_conclusion": "Official model documentation was rechecked on 2026-10-27. The current owner-selected future light and bounded worker profile is GPT-6 Luna High; preserve historical receipts and already-running workers. Runtime availability and effective model/effort require correlated evidence; no savings or quality benchmark is implied."
     },
     {
       "id": "local-ai-agent-spec-v3",

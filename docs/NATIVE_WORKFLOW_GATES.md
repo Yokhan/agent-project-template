@@ -2,7 +2,7 @@
 
 This source candidate changes local template behavior. It does not publish a
 release or update consumer projects. Sol owns decisions and acceptance; useful
-bounded execution goes to GPT-6.1 Terra Medium, sequentially or in independent parallel
+bounded execution goes to GPT-6 Luna High, sequentially or in independent parallel
 lanes. Tiny work stays direct and explicit user opt-out wins.
 
 ## Activation
@@ -109,7 +109,7 @@ artifact equals the authoritative current-turn native final. It then checks the
 original full bytes. Missing evidence, changed text/footer/newlines still block.
 Stop diagnostics record only final hashes, lengths and metadata-presence flags.
 Authored nonfiction and material rewrites also require the distinct read-only
-`writing_editor` (GPT-6.1 Terra Medium). Its exact native JSON final assesses meaning,
+`writing_editor` (GPT-6 Luna High). Its exact native JSON final assesses meaning,
 structure, claims/value, natural language and tone/rhythm, with draft excerpts,
 specific corrections and book-derived decisions for selected topics. The gate
 correlates child completion/model/effort and matches that actual result, never a
@@ -118,7 +118,7 @@ bytes or a refreshed packet invalidate the old review. Brief status/explanation,
 literal typos and explicit user opt-out may self-check; a short ad/letter still
 needs the editor. Required review unavailable is an acceptance gap, not a pass.
 Mandatory editor acceptance requires both an observed `writing_editor` child
-and the correlated configured Terra Medium model/effort; an implementer result, a role label
+and the correlated configured GPT-6 Luna High model/effort; an implementer result, a role label
 alone or another correlated profile cannot satisfy that requirement. A host
 without that observed role has an explicit review acceptance gap.
 Read-only behavior is the requested role contract, not inferred sandbox proof.
@@ -137,8 +137,33 @@ unresolved or coordination would exceed useful work, record the concrete reason:
 node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable --reason <specific constraint and its impact>
 ```
 
-An exception is visible and does not count as Terra success. Historical Luna
-receipts remain historical evidence and do not become Terra calls. A profile name alone
+When an observed external host performs a complete, bounded assignment, record
+it separately from the native-child fallback:
+
+```text
+node scripts/codex-turn.js fallback --state <request.json> --category external-host --reason <why this host was used> --evidence <project-relative evidence.json>
+```
+
+The bounded JSON envelope requires `schemaVersion: 1`, the current `requestId`,
+`actualHost`, `sessionRef`, `fenceRef`, `operation`, `assignment.scope`,
+`assignment.acceptance`, `submissionRef`, `completionRef`, `outputRef`,
+`outputSha256`, `parentIntegrationRef` and `limitations`. Each reference points
+to a local project file. Submission, completion and integration wrappers carry
+the current request ID; completion also references the captured raw host
+response and its SHA-256. The raw host history need not invent a native
+request/child ID. The parent verifies the exact output hash, assignment and
+integration bindings and that referenced bytes have not changed.
+
+Only a `completed` response with matching output and parent integration is
+reported as `reported-completed-integrated`. This is a parent-inspected host
+response claim, not native provider/runtime proof. Submitted or pending work
+gets no completed-work credit; changed, unrelated or malformed evidence is
+unverified. This route makes no Stop-time network call, does not acquire API
+keys or change global model settings, and does not waive writing-editor,
+security or other independent acceptance gates.
+
+An exception is visible and does not count as Luna success. Historical Terra
+receipts remain historical evidence and do not become Luna calls. A profile name alone
 is unverified. Native child IDs are correlated with parent-linked runtime
 metadata for model/effort; missing metadata stays unverified. Timings describe
 observed execution only, not savings. Evaluate total duration, available usage

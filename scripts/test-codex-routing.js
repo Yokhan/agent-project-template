@@ -8,7 +8,7 @@ const { formatSummary, getRoute: getProductionRoute } = require("./codex-route-t
 const { runRouteCli } = require("./lib/codex-route-cli.js");
 const { evaluateDiscoveryReroute, getDecisionBinding } =
   require("./lib/codex-discovery-reroute.js");
-const { AGENT_POLICY, getAgentProfiles } = require("./codex-agent-policy.js");
+const { AGENT_POLICY, getAgentProfiles, getResourceRecommendation } = require("./codex-agent-policy.js");
 const { runRouteCasesA } = require("./codex-routing-cases-a.js");
 const { runRouteCasesB } = require("./codex-routing-cases-b.js");
 const { makeArchitectureDecision, makeDecision } = require("./test-change-strategy.js");
@@ -159,6 +159,61 @@ function main() {
   assert.strictEqual(direct.resourceDecision.recommendedModel, "gpt-6.1-sol");
   const readyWorker = { role: "implementer", scope: ["src/a.js"], acceptance: ["tests pass"],
     hostDispatchCapabilities: ["explicit-model-contract"] };
+  const fastWorker = { needSpeed: true, role: "implementer", risk: "LOW",
+    assignment: { scope: ["src/a.js"], acceptance: ["tests pass"], uncertainty: "low", operation: "write" },
+    requiredCapabilities: ["write"], observedHost: { available: true, authorized: true, transport: "Orca/OpenCode",
+      observedAt: new Date().toISOString(), selectedModel: "opencode-go/deepseek-v4.1-flash", toolCapabilities: ["write"] } };
+  const fastWorkerContract = { ...readyWorker, fastWorker };
+  const fastReadyRoute = getRoute("Implement the approved isolated module", { workerContract: fastWorkerContract });
+  assert.strictEqual(fastReadyRoute.resourceDecision.recommendedModel, "gpt-6-luna");
+  assert.strictEqual(fastReadyRoute.resourceDecision.externalExecution.state, "external-fast-ready");
+  assert.strictEqual(fastReadyRoute.resourceDecision.externalExecution.effectiveModel, null);
+  assert.strictEqual(fastReadyRoute.resourceDecision.dispatch.callContract.model, "gpt-6-luna",
+    "external execution selection must remain separate from the native Luna dispatch contract");
+  assert.match(fastReadyRoute.delegationDecision.nextAction, /Preferred external execution is available/u);
+  assert.match(fastReadyRoute.delegationDecision.nextAction, /effective provider\/model remain unverified/u);
+  const fastOptOut = getRoute("Implement the approved isolated module without subagents", { workerContract: fastWorkerContract });
+  assert.strictEqual(fastOptOut.resourceDecision.dispatch.ready, false);
+  assert.strictEqual(fastOptOut.resourceDecision.externalExecution.state, "native-luna-fallback");
+  assert.strictEqual(fastOptOut.resourceDecision.externalExecution.selectedModel, null,
+    "an explicit opt-out must not expose a fast-ready external model");
+  assert.doesNotMatch(fastOptOut.delegationDecision.nextAction, /Preferred external execution/u);
+  const fastUnresolved = getRoute("Implement a module with unresolved architecture", { workerContract: fastWorkerContract });
+  assert.strictEqual(fastUnresolved.resourceDecision.dispatch.ready, false);
+  assert.strictEqual(fastUnresolved.resourceDecision.externalExecution.state, "native-luna-fallback");
+  assert.match(fastUnresolved.resourceDecision.externalExecution.fallbackReason, /architecture-decision-required/u);
+  const fastHighRisk = getRoute("Implement approved security-sensitive authentication module", { workerContract: fastWorkerContract });
+  assert.strictEqual(fastHighRisk.resourceDecision.externalExecution.state, "native-luna-fallback",
+    "high-risk routes do not expose the external fast worker");
+  const readOnlyFast = getRoute("Review the implementation across modules", { workerContract: { assignments: {
+    scout: { scope: ["src/"], acceptance: ["return evidence-backed findings"], fastWorker: {
+      ...fastWorker, role: "scout", assignment: { scope: ["src/"], acceptance: ["return evidence-backed findings"], uncertainty: "low", operation: "read" },
+      requiredCapabilities: ["read"], observedHost: { ...fastWorker.observedHost, toolCapabilities: ["read"] },
+    } },
+  }, hostDispatchCapabilities: ["explicit-model-contract"] } });
+  assert.strictEqual(readOnlyFast.delegationDecision.state, "ready");
+  assert.strictEqual(readOnlyFast.workerContracts.find((worker) => worker.role === "scout").externalExecution.state, "external-fast-ready",
+    "bounded read-only work can use an authorized compatible fast executor");
+  const canonicalAssignment = getResourceRecommendation({ role: "implementer", scope: ["src/owned.js"],
+    acceptance: ["the focused implementation check passes"], hostDispatchCapabilities: ["explicit-model-contract"],
+    fastWorker: { ...fastWorker, role: "scout",
+      assignment: { scope: ["../outside.js"], acceptance: ["different acceptance"], uncertainty: "low", operation: "read" },
+      requiredCapabilities: ["read"], observedHost: { ...fastWorker.observedHost, toolCapabilities: ["read", "write"] } } });
+  assert.strictEqual(canonicalAssignment.externalExecution.state, "external-fast-ready");
+  assert.deepStrictEqual(canonicalAssignment.externalExecution.assignment.scope, ["src/owned.js"]);
+  assert.deepStrictEqual(canonicalAssignment.externalExecution.assignment.acceptance, ["the focused implementation check passes"]);
+  assert.strictEqual(canonicalAssignment.externalExecution.assignment.operation, "write",
+    "nested fast-worker metadata cannot replace the assigned role's required operation");
+  const shadowedReview = getRoute("Review the implementation across modules", { availableSlots: 1, workerContract: {
+    role: "reviewer", scope: ["src/"], acceptance: ["review the assigned implementation"],
+    fastWorker: { ...fastWorker, role: "scout",
+      assignment: { scope: ["src/"], acceptance: ["review the assigned implementation"], uncertainty: "low", operation: "read" },
+      requiredCapabilities: ["read"], observedHost: { ...fastWorker.observedHost, toolCapabilities: ["read"] } },
+  } });
+  assert.strictEqual(shadowedReview.resourceDecision.externalExecution.state, "native-luna-fallback",
+    "nested scout metadata cannot downgrade an assigned reviewer into an external-eligible role");
+  assert.match(shadowedReview.resourceDecision.externalExecution.reason, /judgment/u);
+  assert.doesNotMatch(shadowedReview.delegationDecision.nextAction, /Preferred external execution/u);
   for (const [task, options, reason] of [
     ["Implement approved isolated module without subagents", { availableSlots: 0 }, "explicit-user-opt-out"],
     ["Implement approved isolated module", { availableSlots: 0 }, "host-has-no-child-slots"],
@@ -192,7 +247,7 @@ function main() {
     assert(routed.sharedRules.length > 0, task);
   }
   for (const task of ["Разреши неоднозначную архитектуру", "Разбери конфликтующие требования", "Разбери системный тупик"]) {
-    assert.strictEqual(getRoute(task).resourceDecision.recommendedModel, "gpt-6-astra", task);
+    assert.strictEqual(getRoute(task).resourceDecision.recommendedModel, "gpt-6.1-sol", task);
   }
   const assigned = getRoute("Comprehensive template audit across modules", {
     workerContract: { evidenceRefs: ["parent-report"], assignments: {
@@ -203,7 +258,7 @@ function main() {
   const bounded = getRoute("Implement isolated module according to approved contract", {
     workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit contract passes"] },
   });
-  assert.strictEqual(bounded.resourceDecision.recommendedModel, "gpt-6.1-terra");
+  assert.strictEqual(bounded.resourceDecision.recommendedModel, "gpt-6-luna");
   assert.strictEqual(bounded.resourceDecision.dispatch.customRole, null);
   assert.strictEqual(bounded.resourceDecision.dispatch.strategy, "explicit-model-contract");
   assert.strictEqual(bounded.resourceDecision.dispatch.ready, false);
@@ -233,7 +288,7 @@ function main() {
   assert.strictEqual(sequential.fanout.reason, "bounded-implementation-delegation");
   assert.strictEqual(sequential.resourceDecision.dispatch.ready, true);
   assert.strictEqual(sequential.workerContracts[0].dispatch.ready, true);
-  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6.1-terra");
+  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6-luna");
   assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.fork_turns, "none");
   assert.strictEqual(sequential.delegationDecision.state, "ready");
   assert(sequential.delegationDecision.required);
@@ -313,7 +368,7 @@ function main() {
   for (const task of ["Implement approved homepage component design", "Implement the approved feature"]) {
     const planned = getRoute(task, { workerContract: readyWorker });
     assert(planned.subagents.includes("implementer"), task);
-    assert.strictEqual(planned.resourceDecision.recommendedModel, "gpt-6.1-terra", task);
+    assert.strictEqual(planned.resourceDecision.recommendedModel, "gpt-6-luna", task);
     assert.strictEqual(planned.resourceDecision.dispatch.ready, true, task);
     const unbounded = getRoute(task);
     assert(unbounded.subagents.includes("implementer"), task);
@@ -376,20 +431,20 @@ function main() {
   const maxContract = getRoute("Implement the approved isolated module", {
     workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit tests"],
       requestedEffort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 },
-      hostCapabilities: { "gpt-6.1-terra": ["medium", "max"] }, hostDispatchCapabilities: ["explicit-model-contract"] },
+      hostCapabilities: { "gpt-6-luna": ["high", "max"] }, hostDispatchCapabilities: ["explicit-model-contract"] },
   });
   assert.strictEqual(maxContract.resourceDecision.recommendedEffort, "max");
   assert.strictEqual(maxContract.resourceDecision.dispatch.customRole, null);
   assert.strictEqual(maxContract.resourceDecision.dispatch.ready, true);
   const ambiguous = getRoute("Resolve ambiguous architecture with conflicting requirements");
-  assert.strictEqual(ambiguous.resourceDecision.recommendedModel, "gpt-6-astra");
-  assert.strictEqual(ambiguous.resourceDecision.recommendedEffort, "medium");
+  assert.strictEqual(ambiguous.resourceDecision.recommendedModel, "gpt-6.1-sol");
+  assert.strictEqual(ambiguous.resourceDecision.recommendedEffort, "high");
   assert(ambiguous.subagents.includes("architecture_consultant"));
   assert.strictEqual(AGENT_POLICY.parent.modelSource, "user-or-ide");
   assert.strictEqual(AGENT_POLICY.parent.baselineEffort, "high");
   assert.deepStrictEqual(
     new Set(getAgentProfiles().map(({ model }) => model)),
-    new Set(["gpt-6.1-sol", "gpt-6-astra", "gpt-6.1-terra"]),
+    new Set(["gpt-6.1-sol", "gpt-6-luna"]),
   );
   const symbolRoute = getRoute("rename the authentication symbol");
   assert.deepStrictEqual(symbolRoute.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);

@@ -6,6 +6,8 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 const policy = require("./lib/codex-turn-policy.js");
+const externalWorker = require("./lib/external-worker-policy.js");
+const { getAgentProfile } = require("./codex-agent-policy.js");
 const requestContext = require("./lib/codex-request-context.js");
 const managedReports = require("./lib/managed-run-report.js");
 const { sha256, libraryStatus } = require("./lib/writing-library-store.js");
@@ -297,7 +299,122 @@ async function runHandoffOnly() {
   }
 }
 
-if (process.argv.includes("--handoff-only")) {
+function runExternalHostCases(fixture) {
+  const external = policy.startRequest(fixture, { session_id: "external-host", turn_id: "flash-turn", prompt: "Inspect bounded files and return a focused extraction" }, { delegationDecision: { required: true } });
+  external.state.writingExempt = true;
+  policy.writeJson(external.file, external.state);
+  const evidenceRoot = path.join(fixture, ".session-cache", "external-host");
+  fs.mkdirSync(evidenceRoot, { recursive: true });
+  const assignment = { scope: ["scripts/sample.js"], acceptance: ["Identify the affected function and report the focused evidence."] };
+  const outputFile = path.join(evidenceRoot, "output.txt");
+  const outputBytes = Buffer.from("Read-only extraction: scripts/sample.js exports the bounded parser.\n", "utf8");
+  fs.writeFileSync(outputFile, outputBytes);
+  const outputSha256 = sha256(outputBytes);
+  const submissionFile = path.join(evidenceRoot, "submission.json");
+  const completionFile = path.join(evidenceRoot, "completion.json");
+  const integrationFile = path.join(evidenceRoot, "integration.json");
+  policy.writeJson(submissionFile, { requestId: external.state.requestId, assignment });
+  const rawHostResponseFile = path.join(evidenceRoot, "raw-host-response.txt");
+  fs.writeFileSync(rawHostResponseFile, "Parent-captured external host response history.\n", "utf8");
+  policy.writeJson(completionFile, { requestId: external.state.requestId, status: "completed", outputSha256,
+    rawHostResponseRef: path.relative(fixture, rawHostResponseFile), rawHostResponseSha256: sha256(fs.readFileSync(rawHostResponseFile)),
+    operation: "bounded read-only extraction", fenceRef: "turn:flash-turn" });
+  policy.writeJson(integrationFile, { requestId: external.state.requestId, assignment, outputSha256, result: "Parent inspected the response and integrated its bounded extraction into the current analysis." });
+  const envelopeFile = path.join(evidenceRoot, "envelope.json");
+  policy.writeJson(envelopeFile, { schemaVersion: 1, requestId: external.state.requestId, actualHost: "DeepSeek Flash via available external host",
+    sessionRef: "session:flash-test-1", fenceRef: "turn:flash-turn", operation: "bounded read-only extraction", assignment,
+    submissionRef: path.relative(fixture, submissionFile), completionRef: path.relative(fixture, completionFile), outputRef: path.relative(fixture, outputFile),
+    outputSha256, parentIntegrationRef: path.relative(fixture, integrationFile), limitations: ["Host identity and completion are parent-inspected claims, not native runtime proof."] });
+  assert.throws(() => run(["fallback", "--state", external.file, "--category", "external-host", "--reason", "The selected host completed the bounded extraction under the stated read-only fence.", "--evidence", "../escape.json"], fixture));
+  const externalFallback = run(["fallback", "--state", external.file, "--category", "external-host", "--reason", "The selected host completed the bounded extraction under the stated read-only fence.", "--evidence", path.relative(fixture, envelopeFile)], fixture);
+  assert.equal(externalFallback.externalExecution.state, "reported-completed-integrated");
+  assert.equal(externalFallback.externalExecution.providerVerification, "parent-inspected-host-response-claims");
+  assert.equal(externalFallback.externalExecution.verifiedLuna, false);
+  assert.equal(externalFallback.externalExecution.effectiveModel, null);
+  assert.equal(policy.inspectExternalExecution(external).completedWorkCredit, true);
+  assert.equal(policy.checkRequest(external, "Done").state, "passed", "valid external-host evidence avoids a filler native-worker requirement");
+  const fallbackRecordFile = path.join(external.directory, "fallback.json");
+  const validFallbackRecord = policy.readJson(fallbackRecordFile);
+  policy.writeJson(fallbackRecordFile, { ...validFallbackRecord, requestId: "unrelated-request" });
+  assert.equal(policy.inspectExternalExecution(external).completedWorkCredit, false, "external evidence without its current-request fallback binding receives no completion credit");
+  policy.writeJson(fallbackRecordFile, validFallbackRecord);
+  fs.writeFileSync(outputFile, Buffer.from("changed after record"));
+  assert.equal(policy.inspectExternalExecution(external).completedWorkCredit, false, "changed output receives no completed-work credit");
+  assert.equal(policy.inspectExternalExecution(external).state, "unverified");
+
+  const pendingExternal = policy.startRequest(fixture, { session_id: "external-host-pending", turn_id: "flash-pending", prompt: "Inspect bounded files" }, { delegationDecision: { required: true } });
+  pendingExternal.state.writingExempt = true;
+  policy.writeJson(pendingExternal.file, pendingExternal.state);
+  const pendingRoot = path.join(fixture, ".session-cache", "external-host-pending");
+  fs.mkdirSync(pendingRoot, { recursive: true });
+  const pendingAssignment = { scope: ["scripts/sample.js"], acceptance: ["Return a bounded finding."] };
+  const pendingOutput = path.join(pendingRoot, "output.txt");
+  fs.writeFileSync(pendingOutput, "Submitted only.\n");
+  const pendingHash = sha256(fs.readFileSync(pendingOutput));
+  const pendingSubmission = path.join(pendingRoot, "submission.json");
+  const pendingCompletion = path.join(pendingRoot, "completion.json");
+  const pendingIntegration = path.join(pendingRoot, "integration.json");
+  policy.writeJson(pendingSubmission, { requestId: pendingExternal.state.requestId, assignment: pendingAssignment });
+  const pendingRawResponse = path.join(pendingRoot, "raw-host-response.txt");
+  fs.writeFileSync(pendingRawResponse, "Pending host response record.\n", "utf8");
+  policy.writeJson(pendingCompletion, { requestId: pendingExternal.state.requestId, status: "pending", outputSha256: pendingHash,
+    rawHostResponseRef: path.relative(fixture, pendingRawResponse), rawHostResponseSha256: sha256(fs.readFileSync(pendingRawResponse)),
+    operation: "bounded read-only extraction", fenceRef: "turn:pending" });
+  policy.writeJson(pendingIntegration, { requestId: pendingExternal.state.requestId, assignment: pendingAssignment, outputSha256: pendingHash, result: "Parent reviewed the submission, which does not include a completed response." });
+  const pendingEnvelope = path.join(pendingRoot, "envelope.json");
+  policy.writeJson(pendingEnvelope, { schemaVersion: 1, requestId: pendingExternal.state.requestId, actualHost: "external host", sessionRef: "session:pending", fenceRef: "turn:pending",
+    operation: "bounded read-only extraction", assignment: pendingAssignment, submissionRef: path.relative(fixture, pendingSubmission), completionRef: path.relative(fixture, pendingCompletion),
+    outputRef: path.relative(fixture, pendingOutput), outputSha256: pendingHash, parentIntegrationRef: path.relative(fixture, pendingIntegration), limitations: ["No completed host response observed."] });
+  run(["fallback", "--state", pendingExternal.file, "--category", "external-host", "--reason", "The external host accepted the bounded assignment but has not completed it.", "--evidence", path.relative(fixture, pendingEnvelope)], fixture);
+  assert.equal(policy.inspectExternalExecution(pendingExternal).state, "unverified");
+  assert.equal(policy.inspectExternalExecution(pendingExternal).completedWorkCredit, false, "pending external work receives no completion credit");
+
+  const wrongRequestEvidence = JSON.parse(fs.readFileSync(pendingEnvelope, "utf8"));
+  wrongRequestEvidence.requestId = "unrelated-request";
+  policy.writeJson(pendingEnvelope, wrongRequestEvidence);
+  assert.throws(() => run(["fallback", "--state", pendingExternal.file, "--category", "external-host", "--reason", "Reject evidence that belongs to an unrelated current request.", "--evidence", path.relative(fixture, pendingEnvelope)], fixture), /current request/);
+  const invalidFallbackRequest = policy.startRequest(fixture, { session_id: "bad-fallback", turn_id: "bad", prompt: "Inspect bounded files" }, { delegationDecision: { required: true } });
+  invalidFallbackRequest.state.writingExempt = true;
+  policy.writeJson(invalidFallbackRequest.file, invalidFallbackRequest.state);
+  policy.writeJson(path.join(invalidFallbackRequest.directory, "fallback.json"), { requestId: invalidFallbackRequest.state.requestId, category: "unknown" });
+  assert(policy.checkRequest(invalidFallbackRequest, "Done").issues.some(issue => issue.startsWith("delegation-missing:")), "unknown fallback categories cannot satisfy request gates");
+  policy.writeJson(path.join(invalidFallbackRequest.directory, "fallback.json"), { requestId: "other-request", category: "host-unavailable" });
+  assert(policy.checkRequest(invalidFallbackRequest, "Done").issues.some(issue => issue.startsWith("delegation-missing:")), "fallbacks from another request cannot satisfy request gates");
+
+  const fastAssignment = { scope: ["src/parser.js"], acceptance: ["Return the matched validation branch and evidence."], uncertainty: "low", operation: "read-only-extraction" };
+  const fastHost = { available: true, authorized: true, transport: "observed DeepSeek API transport", observedAt: new Date().toISOString(),
+    selectedModel: "deepseek-flash", toolCapabilities: ["read-files"] };
+  const fastDecision = externalWorker.getFastWorkerDecision({ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: fastHost });
+  assert.equal(fastDecision.state, "external-fast-ready");
+  assert.equal(fastDecision.selectedModel, "deepseek-flash");
+  const orcaAliasDecision = externalWorker.getFastWorkerDecision({ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files"],
+    observedHost: { ...fastHost, transport: "observed Orca/OpenCode session", selectedModel: "opencode-go/deepseek-v4.1-flash" } });
+  assert.equal(orcaAliasDecision.state, "external-fast-ready");
+  assert.equal(orcaAliasDecision.selectedModel, "opencode-go/deepseek-v4.1-flash", "the observed OpenCode alias is preserved exactly");
+  assert.equal(orcaAliasDecision.aliasSource, "observed-Orca-session-readback20261027");
+  assert.equal(orcaAliasDecision.effectiveModel, null);
+  for (const [input, expected] of [
+    [{ needSpeed: false, assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: fastHost }, "faster execution was not requested"],
+    [{ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: { ...fastHost, observedAt: "2000-01-01T00:00:00.000Z" } }, "stale"],
+    [{ needSpeed: true, role: "security_reviewer", assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: fastHost }, "security"],
+    [{ needSpeed: true, role: "systems_reviewer", assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: fastHost }, "judgment"],
+    [{ needSpeed: true, role: "unknown_future_role", assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: fastHost }, "judgment"],
+    [{ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files", "run-tests"], observedHost: fastHost }, "capabilit"],
+    [{ needSpeed: true, assignment: { ...fastAssignment, uncertainty: "medium" }, requiredCapabilities: ["read-files"], observedHost: fastHost }, "uncertainty"],
+    [{ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: { ...fastHost, selectedModel: "deepseek-v4-pro" } }, "Flash"],
+    [{ needSpeed: true, assignment: fastAssignment, requiredCapabilities: ["read-files"], observedHost: { ...fastHost, transport: "observed Orca/OpenCode session", selectedModel: "vendor/deepseek-flash" } }, "allowed Flash ID"],
+  ]) {
+    const decision = externalWorker.getFastWorkerDecision(input);
+    assert.equal(decision.state, "native-luna-fallback");
+    assert.match(decision.fallbackReason, new RegExp(expected, "iu"));
+  }
+}
+
+if (process.argv.includes("--external-host-only")) {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-external-host-"));
+  try { runExternalHostCases(fixture); console.log("External-host focused policy cases passed"); }
+  finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+} else if (process.argv.includes("--handoff-only")) {
   runHandoffOnly().catch(error => { console.error(error); process.exitCode = 1; });
 } else if (process.argv.includes("--safety-only")) {
   runSafetyOnly().catch(error => { console.error(error); process.exitCode = 1; });
@@ -381,8 +498,9 @@ try {
   const clarification = "<send_user_message_question_reply>[{\"questionItemId\":\"q1\",\"question\":\"Напиши пояснение о росте, около 3%?\",\"answer\":\"Это рост, ну, около 3%, короче, очень мало.\"}]</send_user_message_question_reply>";
   assert(requestContext.isOrchestrationNotice("You have 2 orchestration messages. Run `orca orchestration check`."));
   assert(!requestContext.isOrchestrationNotice("Please check: You have 2 orchestration messages. Run `orca orchestration check`."));
-  assert.doesNotThrow(() => policy.assertCurrentEditorialProfile({ model: "gpt-6.1-terra", effort: "medium" }));
-  assert.throws(() => policy.assertCurrentEditorialProfile({ model: "gpt-6-luna", effort: "high" }), error => error.code === "EDITORIAL_PROFILE_MISMATCH" && /fresh independent review/u.test(error.message));
+  const currentEditorProfile = getAgentProfile("writing_editor");
+  assert.doesNotThrow(() => policy.assertCurrentEditorialProfile({ model: currentEditorProfile.model, effort: currentEditorProfile.effort }));
+  assert.throws(() => policy.assertCurrentEditorialProfile({ model: "gpt-6.1-terra", effort: "medium" }), error => error.code === "EDITORIAL_PROFILE_MISMATCH" && /fresh independent review/u.test(error.message));
   assert(!policy.substantive("Done.<oai-mem-citation>" + "citation ".repeat(40) + "</oai-mem-citation>"));
   assert(policy.substantive("Meaningful explanation ".repeat(15) + "<oai-mem-citation>x</oai-mem-citation>"));
   const clarificationContext = requestContext.resolveRequestContext(clarification);
@@ -489,7 +607,8 @@ try {
   const lifecycle = fs.readFileSync(path.join(policy.sessionRoot(fixture, routedInput.session_id), "lifecycle.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
   assert.equal(lifecycle.at(-1).handlerSha256, sha256(fs.readFileSync(require.resolve("./codex-hooks.js"))),
     "native lifecycle records fingerprint the hook code loaded for this event");
-  assert.deepEqual(routedRecord.state.preferredWorkerProfile, { model: "gpt-6.1-terra", effort: "medium" }, "new request captures preferred worker profile");
+  const currentImplementerProfile = getAgentProfile("implementer");
+  assert.deepEqual(routedRecord.state.preferredWorkerProfile, { model: currentImplementerProfile.model, effort: currentImplementerProfile.effort }, "new request captures the current preferred worker profile");
   assert.equal(routedRecord.state.delegation.required, true, "nontrivial execution request is routed to prepare-contract");
   const noticeInput = { ...routedInput, turn_id: "mailbox-notice", prompt: "You have 2 orchestration messages. Run `orca orchestration check`." };
   await hooksApi.handle(noticeInput, fixture);
@@ -727,6 +846,7 @@ try {
   const result = policy.checkRequest(required, "Done");
   assert(result.exception && !result.children.some(x => x.profile.status === "runtime-correlated"));
   assert.throws(() => run(["integrate", "--state", required.file, "--child", "x"], fixture));
+  runExternalHostCases(fixture);
   const writing = policy.startRequest(fixture, { session_id: "writing", turn_id: "w", prompt: "Объяснить причину ошибки" }, {});
   assert(policy.checkRequest(writing, "Это содержательный ответ с объяснением причины ошибки, результатами проверки и конкретным следующим действием для пользователя. Проверка должна обнаружить отсутствие чтения.").issues.some(x => x.includes("writing-application-missing")));
   policy.continuation(writing, ["missing"]);

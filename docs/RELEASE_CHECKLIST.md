@@ -2,18 +2,19 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.4.0`. This checklist records required evidence, not a
+Release target: `v6.4.1`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.4.0 Candidate Acceptance
+## v6.4.1 Candidate Acceptance
 
 - [ ] Final scoped source commit and compatible version metadata verified.
-- [ ] Terra profiles, runtime-only coverage, historical Luna compatibility and request-start cohorts pass focused checks; parent settings and busy workers remain preserved.
+- [ ] Luna High worker profiles and request-start cohorts pass focused checks; parent settings and busy workers remain preserved. Sol 6.1 High retains material architecture consultation; runtime-only coverage must use correlated evidence.
 - [ ] Control-notice continuity, scoped wave execution references and truthful handoff reports pass focused checks. Source tests do not establish native host activation.
+- [ ] Authorized DeepSeek advice or optional bounded execution retains separate provider, reviewable-response, exact-output, Luna-credit and parent-integration evidence; security and editorial review remain required.
 - [ ] One relevant integration aggregate plus diagnosed focused deltas are recorded honestly; mandatory exact-state hosted integration remains required.
 - [ ] Local singleton watcher activation and actual report enqueue retain separate receipts; visible assistant reporting is claimed only by its real rendering owner.
 - [ ] Exact-commit Linux/Windows preflight and exact-tag release jobs pass.

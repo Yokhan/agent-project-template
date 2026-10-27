@@ -24,7 +24,7 @@ const readyImplementation = routeKeywords("Implement the approved homepage compo
 });
 assert.equal(readyImplementation.delegationDecision.state, "ready");
 assert.equal(readyImplementation.workerContracts[0]?.dispatch.ready, true);
-assert.equal(readyImplementation.workerContracts[0]?.dispatch.callContract?.model, "gpt-6.1-terra");
+assert.equal(readyImplementation.workerContracts[0]?.dispatch.callContract?.model, "gpt-6-luna");
 const readOnlyContractRoute = routeKeywords("Review the implementation across modules", {
   workerContract: {
     assignments: { scout: { scope: ["src/"], acceptance: ["return findings"] } },

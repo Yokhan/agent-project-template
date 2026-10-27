@@ -1,75 +1,88 @@
 <!-- PROGRESSIVE_STATUS
-id: terra-coordination-20261027
+id: luna-coordination-20261027
 status: active
 updated: 2026-10-27
 readiness: 0
 accepted_outcomes: 3
 shipped_outcomes: 0
 outcome_baseline: 4
-baseline_revision: terra-coordination-r1
-measurement: readiness measures shipped outcomes; accepted_outcomes separately measures integrated source contracts from the four declared criteria; source checks are not delivery
-tags: template,terra,orchestration,progress,recovery
-next: Integrate reviewed source lanes and actual periodic-report delivery before exact release gates
+baseline_revision: luna-coordination-r2
+measurement: four equally weighted outcomes remain the denominator after the owner changed the future bounded-worker profile from Terra to Luna; accepted_outcomes measures integrated source contracts, while readiness measures shipped outcomes
+tags: template,luna,orchestration,progress,recovery
+next: pass exact-state release gates; carry visible report rendering with its original owner
 -->
 
-# Current Task - Terra Workers And Reliable Coordinator Delivery
+# Current Task - Luna Workers And Reliable Coordinator Delivery
 
 ## Active wave, 2026-10-27
 
-The direct owner requests future light workers on GPT-6.1 Terra Medium,
-available DeepSeek Flash advice for coordinator consistency, meaningful product
-waves and reports, and actual 45-minute coordinator reports with evidence-based
-stall analysis. The already-published v6.3.2 and completed authorized 36-target
-rollout are historical delivery, not pending work. Its receipt is
-`.session-cache/v632-fleet-current-20261026T155848Z.json` in the canonical owner
-workspace. Do not repeat that rollout or change busy workers' models.
+The owner changed the future light-worker profile to GPT-6 Luna High. The
+published v6.3.2 release and completed authorized 36-target rollout remain
+historical delivery; do not repeat them or change busy workers. DeepSeek Flash
+is the intended bounded coordinator advisor and may optionally execute bounded,
+low-uncertainty tasks when authorized host tools are available. An observed Orca
+alias alone does not prove the effective provider or model.
 
-Nearest-wave scope baseline `terra-coordination-r1` has four equally weighted
-acceptance outcomes, declared before measurement:
+The nearest-wave baseline is `luna-coordination-r2`. It explicitly revises the
+former Terra-based `terra-coordination-r1` after the owner changed the model
+choice; four equally weighted acceptance outcomes remain the denominator:
 
-1. Future bounded workers route to Terra Medium; historical evidence remains
+1. Future bounded workers route to Luna High; historical evidence remains
    readable, actual model/effort is reported separately, and parent settings stay
    user-owned.
 2. Substantial product work retains its approved goal, usable-wave/nearest-plan
    references, planned versus actual owners and truthful accepted/shipped reports;
    control notices and tiny acknowledgements do not create repair rituals.
-3. An available, privacy-bounded DeepSeek Flash advisor checks material plans,
-   pipeline decisions and reports without becoming release authority.
-4. The existing single coordinator monitor delivers scheduled 45-minute reports
-   and evidence-based progress/stall signals; actual delivery and singleton
-   activation have receipts. Time alone is not a dead process verdict.
+3. An authorized, privacy-bounded DeepSeek Flash session provides read-only advice
+   on material plans, pipeline decisions and reports without release authority;
+   where authorized host tools are available, it may also execute bounded,
+   low-uncertainty tasks. Execution needs a reviewable host response and exact
+   output for parent integration; it does not earn Luna worker credit or bypass
+   security/editorial review. Provider/model identity needs a separate receipt.
+4. The existing coordinator monitor produces 45-minute reports with a separate
+   five-minute analysis loop and evidence-based progress/stall signals. Activation,
+   durable enqueue and visible assistant rendering have separate receipts.
 
-Current integration acceptance: 3/4; shipped: 0/4. These are outcome counts,
-not token, test or file percentages. Model/routing, request/handoff and advisor
-source contracts have reviewed focused evidence. One parent aggregate exposed
-two stale consumers; diagnosed fixture/validator deltas passed without another
-local aggregate. The existing watcher was replaced with positive exit,
-singleton and new status-enqueue receipts; the old unknown receipt is preserved.
-The remaining acceptance boundary is the coordinator's actual visible rendering
-of the report. An inbox enqueue does not establish that. Exact-commit and tag CI,
-publication and new consumer installations remain pending separately.
+Current integration acceptance is 3/4; shipped outcomes are 0/4. These are
+outcome counts, not token, test or file percentages. Focused source evidence
+supports the model/routing, request/handoff and advisor contracts. Sol 6.1 High
+retains material architecture consultation, with the parent remaining the
+decision owner.
 
-Ownership: Terra model lane owns profiles/router/report and direct consumers;
-Terra contract lane owns existing plan/product/orchestration rules and native
-lifecycle delta; Terra monitor lane owns only the existing external coordinator
-watcher and its tests. Parent integrates, updates official-source records and
-release metadata, reviews actual advisor output and controls activation/release.
-Three independent lanes are planned; live counts come from current worker
-receipts, never this document. Root alone owns its global project journal.
+The existing local watcher has a separate singleton activation receipt. Durable
+report enqueue receipts do not prove visible assistant rendering. A
+30-minute no-change heuristic is `STALL_SUSPECT`, never a kill decision. The
+remaining acceptance boundary is actual visible rendering by its real owner.
+
+The `v6.4.0` tag at `08ebc055` is immutable; exact-tag CI run `40475986739` was
+cancelled before publication. Do not move or delete that tag. The unpublished
+`v6.4.1` candidate supersedes it; no new consumer update is authorized before a
+verified release. Parent integrates the scoped lanes and controls activation
+and release. Root alone owns its global project journal.
 
 All canonical edits use the claimed isolated Git worktree
 `.session-cache/worktrees/terra-orchestration-20261027`; live supervisor pins,
 product sources, capacity watcher, user plans and unrelated dirty work remain
 protected. Focused checks run through the live request-bound managed-temp
 wrapper. Parent owns one coherent integration aggregate, then exact-commit and
-exact-tag cross-platform CI, checksum and canonical archive gates. No consumer
-sync before the new verified release; no self-sync or blanket overwrite.
+exact-tag cross-platform CI, checksum and canonical archive gates. No self-sync
+or blanket overwrite.
 
-Next: integrate the three source lanes, obtain the existing DeepSeek session's
-bounded advisory review, settle supported periodic report delivery, and review
-the exact candidate. Any host limitation stays explicit instead of being
-relabelled as activation. BUFF IT's separate product release proceeds under its
-original APP/server owners and is not gated on this template wave.
+Next: pass the exact candidate's release gates and carry visible periodic-report
+delivery with the original coordinator owner. Any host limitation stays explicit instead of being relabelled as
+activation. BUFF IT's separate product release proceeds under its original
+APP/server owners and is not gated on this template wave.
+
+
+## Carried follow-up after this wave
+
+A storage-retention settlement API defect remains in the original template
+worktree. After host reboot, retained claims need an owner-fenced settlement
+transition into a retained nonwriting/nonreusable state with durable protection;
+the reservation backfill must not re-reserve that settled state. Releasing volume alone is insufficient. This
+follow-up is explicitly outside v6.4.1 and does not hold its release. Preserve
+the existing claim and worktree; perform no code change, runtime operation or
+deletion in this wave. Plan the bounded repair after the current release.
 
 ## Historical v6.3.2 work
 

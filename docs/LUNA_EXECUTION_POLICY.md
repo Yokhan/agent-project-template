@@ -1,26 +1,26 @@
-# Terra execution and measured delegation
+# Luna execution and measured delegation
 
-The filename remains for existing links. Historical Luna traces remain readable and are counted separately; they do not contribute to the Terra target.
+The filename remains for existing links. Historical Terra traces remain readable and are counted separately; they do not contribute to the Luna target.
 
 Sol defines scope, resolves material product/architecture decisions, integrates
-results and accepts the outcome. Terra Medium performs bounded execution: inspect
-the assigned sources, make the change, and run focused checks. A read-only Terra
+results and accepts the outcome. Luna High performs bounded execution: inspect
+the assigned sources, make the change, and run focused checks. A read-only Luna
 can gather evidence before an unresolved decision; that does not authorize edits.
-The existing `writing_editor` profile is Terra Medium. Product, security and visual
+The existing `writing_editor` profile is Luna High. Product, security and visual
 acceptance retain their existing judgment profiles.
 
 ## Select by uncertainty and output work
 
 | Work shape | Execution choice | Parent responsibility |
 | --- | --- | --- |
-| Broad context with conflicting requirements or a consequential unresolved decision | Sol synthesizes and decides; Terra may extract specified facts | State the decision and constraints before assigning changes |
-| Many sources but a precise extraction, comparison or inventory question | Bounded Terra reading, split only when the source boundaries are independent | Resolve conflicting evidence and inspect provenance |
-| A precise contract, limited source scope and substantial code or text output | Terra performs the complete inspect/change/focused-check cycle | Integrate and accept without repeating execution |
-| A finished nonfiction draft needing editorial judgment against supplied facts and books | Independent Terra `writing_editor` | Resolve findings and preserve the fresh reading/review gate |
+| Broad context with conflicting requirements or a consequential unresolved decision | Sol synthesizes and decides; Luna may extract specified facts | State the decision and constraints before assigning changes |
+| Many sources but a precise extraction, comparison or inventory question | Bounded Luna reading, split only when the source boundaries are independent | Resolve conflicting evidence and inspect provenance |
+| A precise contract, limited source scope and substantial code or text output | Luna performs the complete inspect/change/focused-check cycle | Integrate and accept without repeating execution |
+| A finished nonfiction draft needing editorial judgment against supplied facts and books | Independent Luna `writing_editor` | Resolve findings and preserve the fresh reading/review gate |
 | Broad, unreproduced terminal failure or architecture problem | Sol diagnoses and bounds the next experiment | Hand off a reproducible file-scoped repair once the uncertainty is resolved |
 
 Input size alone does not select Sol. A large document with a precise extraction
-question can suit Terra; a short question with a costly unresolved decision can
+question can suit Luna; a short question with a costly unresolved decision can
 require Sol. Give workers the necessary context and exact source references,
 not the full chat history. Do not strip acceptance criteria or source material
 to make a contract look small. A large output is useful only if it is required
@@ -31,15 +31,35 @@ only for independent results. Escalate after diagnosed failures or demonstrated
 quality gaps, not just because a weaker model is available. Numeric input/output
 thresholds remain uncalibrated until measured on comparable local tasks.
 
+## Optional observed fast host
+
+An accepted worker contract may include `fastWorker` with `needSpeed: true`,
+`observedHost` availability/authorization, transport, selected model, observation
+time and tool capabilities, plus required capabilities. `getFastWorkerDecision`
+in `scripts/lib/external-worker-policy.js` permits only bounded, explicitly low-
+uncertainty work for execution roles (`implementer`, `tester`, `docs_researcher`,
+`scout`, `log_analyst`, `summarizer`, `pr_explorer`). Host evidence must be under
+15 minutes old and cover the assigned read/write operation. Unavailable, stale
+or unsupported observations return a reasoned native Luna fallback. Judgment,
+integration, strategy, security, editorial and high/critical-risk work stay on
+their required native route. The exact observed OpenCode alias is preserved as
+a host label: `opencode-go/deepseek-v4.1-flash`; API transport accepts the
+documented IDs `deepseek-flash`, `deepseek-v4-flash` and
+`deepseek-v4-flash-vision-exp`. These labels do not verify provider identity or
+effective model. This is an optional contract choice, not a global model
+setting, automatic API purchase or background network call.
+
 ## Coverage target
 
-The minimum target is completed, integrated useful Terra work in 50% of eligible
-execution/research requests in a bounded session window. The default policy
-still requires useful Terra work on every supported, nontrivial bounded execution
-route. Fifty percent is a floor for detecting regressions, not a reason to
-retain half of suitable work in Sol. The report keeps runtime-correlated Terra
-calls as a separate measure; a started call alone cannot pass the useful-work
-target.
+The minimum target is completed, integrated useful work on 50% of eligible
+current-preferred execution/research requests in a bounded session window.
+Useful work can be native Luna execution or a qualifying request-bound external
+host response with parent integration. The default execution route still
+requests Luna; the optional fast-host path does not create a Luna call. Fifty
+percent is a regression floor, not a reason to retain half of suitable work in
+Sol. The report keeps runtime-correlated native Luna calls and external-host
+observations separate; a started call or a submitted response alone cannot pass
+the useful-work target.
 
 Run:
 
@@ -47,13 +67,19 @@ Run:
 node scripts/codex-delegation-report.js --session <native-session-id> --limit 20
 ```
 
-Read both denominators: all requests, and Terra-preferred requests whose native delegation gate
-requires work. The request-start preferred profile determines the cohort; legacy Luna requests are reported separately. Required requests without a recognized snapshot make coverage incomplete rather than passing or failing the target. Required requests with a recorded fallback remain in the eligible
+Read native Luna coverage separately from `eligibleExternalHostObserved`,
+`eligibleExternalHostSubmitted` and `eligibleExternalHostUnverified`. An inspected
+completed external response plus current-request integration can count once in
+`eligibleOffloadedWork`; it never counts as a Luna call or native Luna result.
+Pending, changed or mismatched evidence receives no completed-work credit.
+
+Read both denominators: all requests, and Luna-preferred requests whose native delegation gate
+requires work. The request-start preferred profile determines the cohort; legacy Terra requests are reported separately. Required requests without a recognized snapshot make coverage incomplete rather than passing or failing the target. Required requests with a recorded fallback remain in the eligible
 denominator. Report pending requests, excluded routes, errors and unverified
 profiles separately. An incorrectly skipped route can artificially improve the
 eligible rate; replay realistic conversation inputs as a separate routing check.
 
-A correlated started Terra with verified model and effort counts as a call. Completed, integrated useful work
+A correlated started Luna with verified model and effort counts as a call. Completed, integrated useful work
 also requires a completion event and a current-request integration record with
 scope, acceptance and a concrete result. A role name, requested model, prepared
 contract, fallback or test double does not count as actual execution. The
@@ -91,7 +117,7 @@ contracts without evidence. Recovery is reverting this bounded source change;
 no migration or historical-ledger rewrite is required.
 
 Acceptance combines focused regression checks, replay of real conversation
-inputs, observed Terra execution with correlated runtime profiles, and aggregate
+inputs, observed Luna execution with correlated runtime profiles, and aggregate
 template validation. Replay establishes routing, not model calls. A current
 template fix does not update other projects or prove that every desktop host
 has reloaded changed hook commands. Release and consumer rollout follow the

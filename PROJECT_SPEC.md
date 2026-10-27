@@ -42,9 +42,9 @@
 - Codex MCP configuration from the managed block in .codex/config.toml; .mcp.json is Claude Code compatibility only
 
 ## Current State
-- Goal: Future bounded Terra6.1 Medium workers, meaningful product-wave plans and reports, available Flash advice, and reliable 45-minute coordinator delivery with evidence-based stall analysis.
-- Status: v6.3.2 is verified and published at 9b52ed7e8e318c5ce738860e7d3f832ef81ee615; its authorized 36-target rollout is complete. The new isolated candidate is not published or installed. Existing monitor delivery has an unresolved sender-identity receipt; source tests do not establish timed chat visibility.
-- Next: Integrate the scoped model/lifecycle/monitor lanes, review the existing Flash consultation and actual delivery, then exact-commit and exact-tag platform CI plus downloaded checksum/metadata/canonical archive gates before any new rollout. Product release owners continue independently.
+- Goal: Future bounded Luna6 High workers, meaningful product-wave plans and reports, available Flash advice and optional bounded execution, and reliable 45-minute coordinator delivery with evidence-based stall analysis.
+- Status: v6.3.2 is verified and published at 9b52ed7e8e318c5ce738860e7d3f832ef81ee615; its authorized 36-target rollout is complete. The immutable v6.4.0 tag at 08ebc055 had exact-tag CI 40475986739 cancelled before publication. v6.4.1 is the next isolated candidate and is not published or installed. The active watcher and durable report enqueues have receipts; visible assistant rendering remains unverified. Sol 6.1 High retains material architecture consultation, with the parent as decision owner.
+- Next: Integrate the scoped model/lifecycle/monitor lanes, review the authorized Flash session receipt and actual report rendering, then pass exact-commit Linux/Windows CI plus downloaded checksum, metadata and canonical archive gates before any new rollout. Product release owners continue independently.
 
 ## Last Scan
 2026-07-19

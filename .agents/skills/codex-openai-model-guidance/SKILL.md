@@ -12,7 +12,7 @@ volatile details before relying on them.
 
 - Keep parent model, effort, approval, and sandbox settings user/IDE-owned; do
   not write project-wide model or permission defaults.
-- Treat the documented Sol/Terra/Astra profiles as recommendations, not proof of
+- Treat the documented Sol/Luna profiles as recommendations, not proof of
   availability. Check the actual Codex/AgentOS host and report unsupported or
   unknown effective model/effort as `unverified`.
 - Distinguish API parameters from Codex custom-agent configuration. Do not copy

@@ -12,7 +12,7 @@ Use only when the user asks for autonomous work.
 1. Pick one approved task.
 2. Research and plan.
 3. Implement the smallest valuable slice. For well-scoped, nontrivial work,
-   prefer GPT-6.1 Terra `medium` as implementer when delegation is useful and the
+   prefer GPT-6 Luna `high` as implementer when delegation is useful and the
    host allows it; this can be a sequential handoff. Sol retains the contract,
    material decisions, integration, and acceptance. Keep tiny edits direct. If
    suitable nontrivial work stays with the parent, briefly state why; do not

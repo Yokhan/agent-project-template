@@ -1,5 +1,5 @@
 # Agent Instructions — Codex
-<!-- Template Version: 6.4.0 -->
+<!-- Template Version: 6.4.1 -->
 
 Codex project guidance. Claude Code reads `CLAUDE.md`; cross-agent rules live in
 `.claude/library/`. Load only the rules and skills relevant to the current task.
@@ -96,17 +96,21 @@ diagnosis or approach; simply increasing effort is not a fix.
 
 For material coordinator plans, pipeline decisions and answers, use an available
 authorized DeepSeek Flash advisor under the bounded review contract in
-`.claude/library/process/product-goal-loop.md`; tiny acknowledgements are exempt.
+`.claude/library/process/product-goal-loop.md`. Where an authorized host exposes
+its tools, DeepSeek Flash may also be an optional fast executor for bounded,
+low-uncertainty tasks. Require a reviewable host response and exact output, then
+integrate as parent; this does not prove Luna worker credit or provider identity,
+and does not bypass security or editorial review. Tiny acknowledgements are exempt.
 
-Use GPT-6.1 Sol `high` as the recommended orchestrator and integrator. GPT-6.1
-Terra `medium` fits bounded discovery, tests, documentation, and implementation
-against an explicit contract. GPT-6 Astra `medium` is an architecture
-consultant for material unresolved decisions; Astra `high` is reserved for
-deep, consequential risk. These are recommendations, not benchmark claims.
-Terra `max` and Sol `xhigh` are optional only when the actual host supports them
+Use GPT-6.1 Sol `high` as the recommended orchestrator and integrator. GPT-6
+Luna `high` fits bounded discovery, tests, documentation, and implementation
+against an explicit contract. For material unresolved architecture decisions or
+deep consequential risk, use a read-only Sol `high` consultation; the parent
+remains the decision owner. These are recommendations, not benchmark claims.
+Luna `max` and Sol `xhigh` are optional only when the actual host supports them
 and the task justifies them. See `docs/OPENAI_MODEL_GUIDANCE.md`.
 
-For well-scoped, nontrivial implementation, use GPT-6.1 Terra `medium` as the
+For well-scoped, nontrivial implementation, use GPT-6 Luna `high` as the
 default implementer when delegation is supported and useful; this may be a
 sequential handoff, not only parallel fan-out. Sol defines or confirms the
 contract and decisions, then owns integration and acceptance. Keep tiny edits
@@ -115,7 +119,7 @@ the concrete reason; do not add this explanation ritual to tiny edits.
 
 This is an execution instruction, not only a model recommendation. When the
 route says `prepare-contract`, derive bounded scope and acceptance from the
-actual source, reroute with the observed host capabilities, and dispatch Terra;
+actual source, reroute with the observed host capabilities, and dispatch Luna;
 do not treat an initially unready contract as permission to keep all work.
 Native hooks bind dispatch, reading and output application to the current
 logical request. Follow their evidence path and `scripts/codex-turn.js help`;
@@ -125,13 +129,13 @@ record actual child integration or a concrete visible fallback. See
 Delegate the complete bounded execution cycle (inspect assigned sources, change,
 run focused checks) instead of retaining that cycle in Sol after a token scout
 call. Do not repeat the worker's implementation or unchanged focused checks.
-Track a minimum 50% Terra coverage for execution/research tasks using actual
+Track a minimum 50% Luna coverage for execution/research tasks using actual
 correlated calls and completed integration, separately from the share of all
 requests and from spending. Missing coverage requires diagnosis and useful
 handoffs, never filler agents. See `docs/LUNA_EXECUTION_POLICY.md`.
 Choose by decision uncertainty and required output: broad synthesis and material
 decisions belong to Sol; precise extraction and contract-bound generation belong
-to Terra, even when the source is large. Input length alone is not a Sol trigger.
+to Luna, even when the source is large. Input length alone is not a Sol trigger.
 
 For parallel work, delegate only independent lanes with material parallel
 value, exact acceptance criteria, and non-overlapping write scopes. Start with
@@ -148,7 +152,7 @@ screen contracts with non-overlapping ownership. See
 A requested model/effort does not prove the effective runtime configuration.
 Custom-agent role settings can override an explicit spawn model, so verify the
 effective model and effort from correlated runtime metadata; otherwise report
-them as `unverified`. A child role name (including `terra`), prompt, or
+them as `unverified`. A child role name (including `luna`), prompt, or
 successful spawn is not proof.
 
 ## Code and product quality
@@ -194,4 +198,4 @@ for UTF-8/no-BOM and text validation when editing tracked text.
 
 Shared rules: `.claude/library/`; Codex-only skills: `.agents/skills/`; Claude
 settings/hooks: `.claude/`. Keep both instruction entrypoints compatible with
-the shared rules. Template version: 6.4.0.
+the shared rules. Template version: 6.4.1.

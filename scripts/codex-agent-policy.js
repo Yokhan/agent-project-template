@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("path");
+const { getFastWorkerDecision } = require("./lib/external-worker-policy.js");
 
 // Capabilities are not defaults or permission to spend an unbounded budget.
 const EFFORT_LEVELS = Object.freeze(["low", "medium", "high", "xhigh", "max"]);
@@ -8,7 +9,6 @@ const MODEL_CAPABILITIES = Object.freeze({
   "gpt-6.1-sol": Object.freeze({ efforts: EFFORT_LEVELS }),
   "gpt-6.1-terra": Object.freeze({ efforts: Object.freeze(["none", ...EFFORT_LEVELS]) }),
   "gpt-6-luna": Object.freeze({ efforts: Object.freeze(["none", ...EFFORT_LEVELS]) }),
-  "gpt-6-astra": Object.freeze({ efforts: EFFORT_LEVELS }),
 });
 
 const AGENT_POLICY = Object.freeze({
@@ -32,50 +32,50 @@ const AGENT_POLICY = Object.freeze({
   profiles: Object.freeze({
     scout: Object.freeze({
       file: "scout.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     log_analyst: Object.freeze({
       file: "log-analyst.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     summarizer: Object.freeze({
       file: "summarizer.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     pr_explorer: Object.freeze({
       file: "pr-explorer.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     docs_researcher: Object.freeze({
       file: "docs-researcher.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     tester: Object.freeze({
       file: "tester.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     writing_editor: Object.freeze({
       file: "writing-editor.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "read-only",
     }),
     implementer: Object.freeze({
       file: "implementer.toml",
-      model: "gpt-6.1-terra",
-      effort: "medium",
+      model: "gpt-6-luna",
+      effort: "high",
       sandboxMode: "workspace-write",
     }),
     reviewer: Object.freeze({
@@ -110,8 +110,8 @@ const AGENT_POLICY = Object.freeze({
     }),
     architecture_consultant: Object.freeze({
       file: "architecture-consultant.toml",
-      model: "gpt-6-astra",
-      effort: "medium",
+      model: "gpt-6.1-sol",
+      effort: "high",
       sandboxMode: "read-only",
     }),
   }),
@@ -303,6 +303,27 @@ function getResourceRecommendation(input = {}) {
     model: recommendedModel, effort: recommendedEffort, reason: options.reason,
     budget: options.budget, hostCapabilities: options.hostCapabilities,
   });
+  const externalWorkerDecision = options.fastWorker === undefined ? null : (() => {
+    const fastWorker = options.fastWorker && typeof options.fastWorker === "object" && !Array.isArray(options.fastWorker)
+      ? options.fastWorker : {};
+    const assignment = fastWorker.assignment && typeof fastWorker.assignment === "object" && !Array.isArray(fastWorker.assignment)
+      ? fastWorker.assignment : {};
+    const operation = profile?.sandboxMode === "workspace-write" ? "write" : "read";
+    const requestedCapabilities = fastWorker.requiredCapabilities;
+    const requiredCapabilities = requestedCapabilities === undefined ? [operation] :
+      Array.isArray(requestedCapabilities) ? Array.from(new Set([...requestedCapabilities, operation])) : requestedCapabilities;
+    return getFastWorkerDecision({
+      ...fastWorker,
+      role,
+      risk: options.risk || fastWorker.risk,
+      integration: options.integration === true || fastWorker.integration === true,
+      strategy: options.strategy === true || options.unresolvedArchitecture === true || options.writeBlocked === true || fastWorker.strategy === true,
+      security: options.security === true || fastWorker.security === true,
+      editorial: options.editorial === true || fastWorker.editorial === true,
+      assignment: { ...assignment, scope: options.scope, acceptance: options.acceptance, operation },
+      requiredCapabilities,
+    });
+  })();
   const nativeRole = options.hostDispatchCapabilities?.includes("native-custom-role") &&
     profile?.model === recommendedModel && profile?.effort === recommendedEffort;
   const dispatchStrategy = requiresJudgment || !profile ? "parent-owned-work" :
@@ -313,12 +334,17 @@ function getResourceRecommendation(input = {}) {
   const instructionsSource = profile ? `.codex/agents/${profile.file}` : null;
   return {
     role, recommendedModel, recommendedEffort,
+    externalExecution: externalWorkerDecision ? {
+      ...externalWorkerDecision,
+      nativeFallbackProfile: { model: recommendedModel, effort: recommendedEffort },
+      effectiveModel: externalWorkerDecision.effectiveModel ?? null,
+    } : null,
     resourceRequest,
     reason: requiresJudgment ? "integration-strategy-or-unbounded-work" :
       role === "architecture_consultant" ? "bounded-architecture-decision" : "role-default",
     scope: options.scope || [], acceptance: options.acceptance || [],
     evidenceRefs: options.evidenceRefs || [],
-    escalationCondition: "after-two-failed-attempts-reassess-cause-and-scope; architecture-conflict-consult-astra",
+    escalationCondition: "after-two-failed-attempts-reassess-cause-and-scope; architecture-conflict-consult-sol",
     orchestrator: options.orchestrator || "codex-parent",
     dispatch: {
       owner: requiresJudgment || !profile ? "orchestrator" : "worker",
@@ -451,11 +477,11 @@ function getDelegationDecision({
     candidateRoles = fanout.candidates
       .filter(({ name }) => {
         const profile = getAgentProfile(name);
-        return profile?.model === "gpt-6.1-terra" && profile.sandboxMode === "read-only";
+        return profile?.model === "gpt-6-luna" && profile.sandboxMode === "read-only";
       })
       .map(({ name }) => name);
     if (!candidateRoles.length) {
-      return { required: false, state: "parent-owned", reason: "no-viable-terra-research-role", nextAction: "Keep research with the parent because no suitable read-only Terra role is available.", candidateRoles: [] };
+      return { required: false, state: "parent-owned", reason: "no-viable-luna-research-role", nextAction: "Keep research with the parent because no suitable read-only Luna role is available.", candidateRoles: [] };
     }
   }
 
@@ -471,7 +497,7 @@ function getDelegationDecision({
       worker.role === role && worker.dispatch.ready));
     if (readyRoles.length) {
       return { required: true, state: "ready", reason: "bounded-worker-contract-and-host-capability-verified", nextAction: writingAuthoringRequested
-        ? "Dispatch the Terra Medium implementer to write the scoped draft artifact; the parent integrates it, obtains the distinct writing_editor review, and routes required revisions back through the artifact."
+        ? "Dispatch the Luna High implementer to write the scoped draft artifact; the parent integrates it, obtains the distinct writing_editor review, and routes required revisions back through the artifact."
         : "Dispatch a candidate using its returned call contract; keep integration and acceptance with the parent.", candidateRoles: readyRoles };
     }
   }
@@ -487,7 +513,7 @@ function getDelegationDecision({
     state: "prepare-contract",
     reason: "worker-scope-acceptance-or-host-capability-missing",
     nextAction: writingAuthoringRequested
-      ? "Derive the exact request-scoped draft artifact, source/fact inputs and acceptance; reroute for the Terra Medium implementer to author it, then send that exact artifact to the distinct writing_editor and route revisions back through the artifact."
+      ? "Derive the exact request-scoped draft artifact, source/fact inputs and acceptance; reroute for the Luna High implementer to author it, then send that exact artifact to the distinct writing_editor and route revisions back through the artifact."
       : "Derive exact scope and acceptance from the task and repository, add evidence references and supported host dispatch capabilities, then reroute. Do not guess the worker scope.",
     candidateRoles,
   };

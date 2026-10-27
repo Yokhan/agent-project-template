@@ -21,7 +21,7 @@ Use `docs/AGENT_PIPELINES.md` as the source of truth.
 ## Codex Adaptation
 
 Do not reuse Claude model routing. Follow `scripts/codex-agent-policy.js` and
-`codex-subagent-orchestration`: Terra Medium executes nontrivial bounded changes,
+`codex-subagent-orchestration`: GPT-6 Luna High executes nontrivial bounded changes,
 including sequential work. Sol 6.1 High defines contracts, resolves uncertainty,
 integrates and accepts. Parallel lanes need independent ownership; delegation
 itself does not require parallelism. Keep tiny edits direct and respect opt-out,

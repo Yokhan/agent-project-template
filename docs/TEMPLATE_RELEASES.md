@@ -2,13 +2,16 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release snapshot: `v6.4.0` (prepared candidate). This source snapshot does not
+Release snapshot: `v6.4.1` (prepared candidate). This source snapshot does not
 establish publication, exact-tag Linux/Windows CI or downloadable assets. Verify
 those before rollout. The previous stable release is **6.3.2**, published at
 `9b52ed7e8e318c5ce738860e7d3f832ef81ee615`; exact-tag CI
 [40326038901](https://github.com/Yokhan/agent-project-template/actions/runs/40326038901)
-passed. Downloaded checksum, metadata and canonical archive matched.
-See [v6.4.0 changes](RELEASE_V6_4_0.md), [v6.3.1 delivery observation and recovery](RELEASE_V6_3_1.md)
+passed, and downloaded checksum, metadata and canonical archive matched. The
+immutable `v6.4.0` tag points to `08ebc055`; exact-tag CI run
+[40475986739](https://github.com/Yokhan/agent-project-template/actions/runs/40475986739)
+was cancelled before publication. Do not move or delete that tag; `v6.4.1`
+supersedes it as the next candidate. See [v6.4.1 changes](RELEASE_V6_4_1.md), [v6.3.1 delivery observation and recovery](RELEASE_V6_3_1.md)
 and [v6.3.0 product workflow](RELEASE_V6_3_0.md). The
 [v6.1.2](RELEASE_V6_1_2.md), [v6.1.1](RELEASE_V6_1_1.md),
 [v6.1.0](RELEASE_V6_1_0.md) and [v6.0.0](RELEASE_V6_0_0.md) records remain historical.
@@ -38,8 +41,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v6.4.0
-git push origin v6.4.0
+git tag v6.4.1
+git push origin v6.4.1
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -128,15 +131,15 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v6.4.0` (prepared candidate). This source snapshot does not assert GitHub
-publication. Verify that the exact `v6.4.0` release exists and is non-draft and
+Release snapshot: `v6.4.1` (prepared candidate). This source snapshot does not assert GitHub
+publication. Verify that the exact `v6.4.1` release exists and is non-draft and
 non-prerelease before rollout. `/releases/latest` selects a target only when no explicit tag
 was chosen; an already approved pinned tag does not need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v6.4.0 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -147,8 +150,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v6.4.0 --plan-file ../agent-template-v6.4.0.plan.json
-node scripts/sync-template.js --from-git --ref v6.4.0 --plan-file ../agent-template-v6.4.0.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.4.1 --plan-file ../agent-template-v6.4.1.plan.json
+node scripts/sync-template.js --from-git --ref v6.4.1 --plan-file ../agent-template-v6.4.1.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.
@@ -156,8 +159,9 @@ Use `main` only for template development, explicit canary rollout, or when the p
 ## Historical v6.1 Operating Contract
 
 This section records the v6.1 baseline. Current worker routing is in
-`OPENAI_MODEL_GUIDANCE.md`; v6.4.0 replaces future bounded Luna workers with
-Terra6.1 Medium while preserving busy workers and historical evidence.
+`OPENAI_MODEL_GUIDANCE.md`; v6.4.1 restores future bounded workers to Luna 6 High
+under the owner decision, preserving busy workers and historical evidence. Sol
+6.1 High retains material architecture consultation; the parent owns decisions.
 
 The minimum runtime is Node 24+ with working `node:sqlite`. Eligible bounded
 work uses native request-bound dispatch and completion evidence; parent scope,
@@ -188,8 +192,13 @@ remaining waves together; material changes need approval. Ordinary internal
 steps remain autonomous. The source of truth is
 `.claude/library/process/plan-first.md#product-wave-semantics--source-of-truth`.
 
-Role-aware routing uses Sol 6.1 High integration, Luna 6 High bounded work and
-conditional Astra 6 Medium/High consultancy, without overriding user defaults.
+Role-aware routing uses Sol 6.1 High for integration and material architecture
+consultation, with Luna 6 High for bounded work. The parent remains decision
+owner; user defaults are not overridden. An authorized DeepSeek Flash session
+may provide bounded coordinator advice and may optionally execute bounded,
+low-uncertainty work when host tools are available. Execution requires a
+reviewable host response and exact output; provider identity and Luna worker
+credit remain separate evidence.
 Runtime capability/profile evidence is distinct from static configuration.
 For well-scoped, nontrivial implementation, Luna High is the recommended
 bounded implementer when delegation is supported and useful, including

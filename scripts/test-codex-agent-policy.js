@@ -18,20 +18,20 @@ const {
 } = require("./codex-agent-policy.js");
 
 const EXPECTED_PROFILES = {
-  scout: ["gpt-6.1-terra", "medium", "read-only"],
-  log_analyst: ["gpt-6.1-terra", "medium", "read-only"],
-  summarizer: ["gpt-6.1-terra", "medium", "read-only"],
-  pr_explorer: ["gpt-6.1-terra", "medium", "read-only"],
-  docs_researcher: ["gpt-6.1-terra", "medium", "read-only"],
-  tester: ["gpt-6.1-terra", "medium", "read-only"],
-  writing_editor: ["gpt-6.1-terra", "medium", "read-only"],
-  implementer: ["gpt-6.1-terra", "medium", "workspace-write"],
+  scout: ["gpt-6-luna", "high", "read-only"],
+  log_analyst: ["gpt-6-luna", "high", "read-only"],
+  summarizer: ["gpt-6-luna", "high", "read-only"],
+  pr_explorer: ["gpt-6-luna", "high", "read-only"],
+  docs_researcher: ["gpt-6-luna", "high", "read-only"],
+  tester: ["gpt-6-luna", "high", "read-only"],
+  writing_editor: ["gpt-6-luna", "high", "read-only"],
+  implementer: ["gpt-6-luna", "high", "workspace-write"],
   reviewer: ["gpt-6.1-sol", "high", "read-only"],
   design_reviewer: ["gpt-6.1-sol", "high", "read-only"],
   product_reviewer: ["gpt-6.1-sol", "high", "read-only"],
   security_reviewer: ["gpt-6.1-sol", "high", "read-only"],
   systems_reviewer: ["gpt-6.1-sol", "high", "read-only"],
-  architecture_consultant: ["gpt-6-astra", "medium", "read-only"],
+  architecture_consultant: ["gpt-6.1-sol", "high", "read-only"],
 };
 
 function getProfileSnapshot() {
@@ -336,20 +336,20 @@ function testValidatorRejections() {
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/scout.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model = "gpt-6.1-terra"',
+      'model = "gpt-6-luna"',
       'model = "gpt-6.1-sol"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /scout must use gpt-6.1-terra/);
+  }, /scout must use gpt-6-luna/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/pr-explorer.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model_reasoning_effort = "medium"',
+      'model_reasoning_effort = "high"',
       'model_reasoning_effort = "max"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /must use medium effort/);
+  }, /must use high effort/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/config.toml");
@@ -407,18 +407,44 @@ function testValidatorGlobalThreadCapacity() {
 
 function testResourceSelection() {
   const bounded = { role: "implementer", scope: ["src/isolated.js"], acceptance: ["unit tests pass"] };
-  assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6.1-terra");
-  assert.strictEqual(getResourceRecommendation(bounded).recommendedEffort, "medium");
-  const integration = getResourceRecommendation({ ...bounded, integration: true });
-  assert.strictEqual(integration.recommendedModel, "gpt-6.1-sol");
-  assert.strictEqual(integration.dispatch.customRole, null);
-  assert.strictEqual(integration.dispatch.owner, "orchestrator");
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6-luna");
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedEffort, "high");
+  const fastWorker = {
+    needSpeed: true,
+    role: "implementer",
+    risk: "LOW",
+    assignment: { scope: bounded.scope, acceptance: bounded.acceptance, uncertainty: "low", operation: "write" },
+    requiredCapabilities: ["write"],
+    observedHost: { available: true, authorized: true, transport: "Orca/OpenCode", observedAt: new Date().toISOString(),
+      selectedModel: "opencode-go/deepseek-v4.1-flash", toolCapabilities: ["write"] },
+  };
+  const fastReady = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["explicit-model-contract"], fastWorker });
+  assert.strictEqual(fastReady.recommendedModel, "gpt-6-luna", "native profile remains separate from optional external execution");
+  assert.strictEqual(fastReady.recommendedEffort, "high");
+  assert.strictEqual(fastReady.dispatch.callContract.model, "gpt-6-luna");
+  assert.strictEqual(fastReady.externalExecution.state, "external-fast-ready");
+  assert.strictEqual(fastReady.externalExecution.selectedModel, "opencode-go/deepseek-v4.1-flash");
+  assert.strictEqual(fastReady.externalExecution.aliasIsOfficialApiId, false);
+  assert.strictEqual(fastReady.externalExecution.effectiveModel, null);
+  assert.deepStrictEqual(fastReady.externalExecution.nativeFallbackProfile, { model: "gpt-6-luna", effort: "high" });
+  const noSpeed = getResourceRecommendation({ ...bounded, fastWorker: { ...fastWorker, needSpeed: false } });
+  assert.strictEqual(noSpeed.externalExecution.state, "native-luna-fallback");
+  assert.strictEqual(noSpeed.recommendedModel, "gpt-6-luna");
+  const highRisk = getResourceRecommendation({ ...bounded, fastWorker: { ...fastWorker, risk: "HIGH" } });
+  assert.strictEqual(highRisk.externalExecution.state, "native-luna-fallback", "high-risk work stays on its native gated route");
+  assert.strictEqual(highRisk.recommendedModel, "gpt-6-luna");
+  const integration = getResourceRecommendation({ ...bounded, integration: true, fastWorker });
+  assert.strictEqual(integration.externalExecution.state, "native-luna-fallback", "integration stays with the parent rather than the fast executor");
+  const parentIntegration = getResourceRecommendation({ ...bounded, integration: true });
+  assert.strictEqual(parentIntegration.recommendedModel, "gpt-6.1-sol");
+  assert.strictEqual(parentIntegration.dispatch.customRole, null);
+  assert.strictEqual(parentIntegration.dispatch.owner, "orchestrator");
   assert.strictEqual(getResourceRecommendation({ role: "implementer" }).dispatch.ready, false);
   const unreadyContract = getResourceRecommendation(bounded);
   assert.strictEqual(unreadyContract.dispatch.ready, false);
   assert.strictEqual(unreadyContract.dispatch.callContract, null);
   const consultant = getResourceRecommendation({ ...bounded, role: "architecture_consultant", strategy: true, deepRisk: true });
-  assert.strictEqual(consultant.recommendedModel, "gpt-6-astra");
+  assert.strictEqual(consultant.recommendedModel, "gpt-6.1-sol");
   assert.strictEqual(consultant.recommendedEffort, "high");
   assert.strictEqual(consultant.dispatch.customRole, null);
   assert.strictEqual(consultant.effectiveModel, null);
@@ -430,16 +456,16 @@ function testResourceSelection() {
   assert.strictEqual(validateResourceRequest({ ...elevated, hostCapabilities: { "gpt-6.1-terra": ["medium"] } }).isValid, false);
   assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-sol", effort: "none" }).isValid, false);
   assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-terra", effort: "none" }).isValid, true);
-  const terraMax = getResourceRecommendation({ ...bounded, requestedEffort: "max",
+  const lunaMax = getResourceRecommendation({ ...bounded, requestedEffort: "max",
     reason: "hard bounded task", budget: { maxTokens: 5000, maxAttempts: 2 },
-    hostCapabilities: { "gpt-6.1-terra": ["medium", "max"] } });
-  assert.strictEqual(terraMax.recommendedEffort, "max");
-  assert.strictEqual(terraMax.dispatch.customRole, null);
-  assert.strictEqual(terraMax.dispatch.strategy, "explicit-model-contract");
-  assert.strictEqual(terraMax.dispatch.ready, false);
+    hostCapabilities: { "gpt-6-luna": ["high", "max"] } });
+  assert.strictEqual(lunaMax.recommendedEffort, "max");
+  assert.strictEqual(lunaMax.dispatch.customRole, null);
+  assert.strictEqual(lunaMax.dispatch.strategy, "explicit-model-contract");
+  assert.strictEqual(lunaMax.dispatch.ready, false);
   const explicit = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["explicit-model-contract"] });
   assert.strictEqual(explicit.dispatch.ready, true);
-  assert.strictEqual(explicit.dispatch.callContract.model, "gpt-6.1-terra");
+  assert.strictEqual(explicit.dispatch.callContract.model, "gpt-6-luna");
   assert.strictEqual(explicit.dispatch.callContract.fork_turns, "none");
   const native = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["native-custom-role"] });
   assert.strictEqual(native.dispatch.customRole, "implementer");
