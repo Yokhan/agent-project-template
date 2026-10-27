@@ -184,7 +184,10 @@ Never call a partial step "done" just because the code compiles.
 ## Delivery observation and recovery
 
 For long-running work, the requested shared machine report cadence is 45 minutes;
-review analytical evidence independently every 5 minutes. Report every tracked
+review analytical evidence independently every 5 minutes. The five-minute loop is
+machine-only and must not start a model turn. Only the 45-minute report or a
+material delta may invoke a model; routine reports use the cheapest authorized
+profile and never wake Sol for unchanged state. Report every tracked
 project at each scheduled report, including projects with no material change.
 Keep scheduling in the shared machine configuration, not in project or task
 timers. Verify activation and retain a delivery receipt before claiming reports

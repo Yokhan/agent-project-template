@@ -20,6 +20,7 @@ Sources:
 |---|---|---|
 | Orchestration, contract preparation, integration, product/design/correctness decisions, final verification | GPT-6.1 Sol, `high` | Default parent profile; direct implementation for tiny edits or a concrete scope, judgment, host or coordination-cost reason; user/IDE owns parent settings |
 | Well-scoped nontrivial implementation, bounded discovery, log/source extraction, test generation or execution, docs against an explicit contract | GPT-6 Luna, `high` | Exact deliverable and file/write boundary; Sol owns contract/architecture decisions, integration, and acceptance |
+| Periodic monitoring, unchanged-state summaries, routine scheduled reports | GPT-6 Luna, `high`, or an authorized DeepSeek Flash summarizer | Machine-first observation; no Sol wake for unchanged state; coalesce reports; visible rendering remains separate |
 | Architecture consultation for real uncertainty, conflicting constraints, complex migration, or a repeated systemic failure | GPT-6.1 Sol, `high` | Read-only consultant returns a decision, rationale, risks, and boundaries; the parent retains decision ownership |
 | Deep security/systems review with material threat or systemic risk | GPT-6.1 Sol, `high` | Exceptional, evidence-backed review; routine review remains Sol `high` |
 

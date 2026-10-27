@@ -49,6 +49,18 @@ documented IDs `deepseek-flash`, `deepseek-v4-flash` and
 effective model. This is an optional contract choice, not a global model
 setting, automatic API purchase or background network call.
 
+## Periodic and reporting work
+
+Routine periodic monitoring, unchanged-state summaries and scheduled status
+assembly are machine-first. The five-minute analytical loop must not start a
+model turn; it reads machine state and writes local receipts. Only the 45-minute
+report or a material delta may invoke a model. Use Luna `high` or an authorized
+DeepSeek Flash summarizer for routine periodic reports, never Sol `high` for
+unchanged state. Coalesce duplicate or periodic reports, skip while the
+coordinator is busy, and keep visible rendering separate from enqueue. If no
+cheap profile is available, keep observation machine-only and report the
+limitation; do not fall back to Sol.
+
 ## Coverage target
 
 The minimum target is completed, integrated useful work on 50% of eligible

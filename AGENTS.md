@@ -108,7 +108,12 @@ against an explicit contract. For material unresolved architecture decisions or
 deep consequential risk, use a read-only Sol `high` consultation; the parent
 remains the decision owner. These are recommendations, not benchmark claims.
 Luna `max` and Sol `xhigh` are optional only when the actual host supports them
-and the task justifies them. See `docs/OPENAI_MODEL_GUIDANCE.md`.
+and the task justifies them. Routine periodic monitoring and scheduled status
+assembly are machine-first: the five-minute analysis loop must not wake a model;
+only the 45-minute report or a material delta may. Use Luna `high` or an
+authorized DeepSeek Flash summarizer for routine periodic reports; do not spend
+Sol on unchanged state. If no cheap profile is available, keep observation
+machine-only and report the gap. See `docs/OPENAI_MODEL_GUIDANCE.md`.
 
 For well-scoped, nontrivial implementation, use GPT-6 Luna `high` as the
 default implementer when delegation is supported and useful; this may be a

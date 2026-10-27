@@ -28,10 +28,11 @@ complete.
   security/editorial review. The canonical API model name is `deepseek-flash`;
   an observed Orca alias alone does not prove effective provider identity.
 - Coordinator reporting uses a 45-minute cadence and a separate five-minute
-  analysis loop. Watcher activation, durable report enqueue and visible assistant
-  rendering require separate evidence. Enqueue does not prove rendering, and a
-  30-minute no-change heuristic marks `STALL_SUSPECT`; it does not authorize
-  termination.
+  analysis loop. The five-minute loop is machine-only and must not wake Sol;
+  routine scheduled reports use Luna High or an authorized cheap summarizer.
+  Watcher activation, durable report enqueue and visible assistant rendering
+  require separate evidence. Enqueue does not prove rendering, and a 30-minute
+  no-change heuristic marks `STALL_SUSPECT`; it does not authorize termination.
 
 ## Wave evidence and remaining gates
 

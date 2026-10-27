@@ -16,7 +16,7 @@ consumes quota; static markers never count as runtime proof.
 - [ ] Control-notice continuity, scoped wave execution references and truthful handoff reports pass focused checks. Source tests do not establish native host activation.
 - [ ] Authorized DeepSeek advice or optional bounded execution retains separate provider, reviewable-response, exact-output, Luna-credit and parent-integration evidence; security and editorial review remain required.
 - [ ] One relevant integration aggregate plus diagnosed focused deltas are recorded honestly; mandatory exact-state hosted integration remains required.
-- [ ] Local singleton watcher activation and actual report enqueue retain separate receipts; visible assistant reporting is claimed only by its real rendering owner.
+- [ ] Periodic observation is machine-only; the 45-minute report uses a cheap profile and does not wake Sol for unchanged state. Singleton activation, report enqueue and visible assistant rendering retain separate receipts.
 - [ ] Exact-commit Linux/Windows preflight and exact-tag release jobs pass.
 - [ ] Stable release, downloaded checksums, metadata and canonical archive match.
 - [ ] Consumer rollout uses the verified new exact release and reviewed plans; publication alone does not establish installation or runtime activation.
