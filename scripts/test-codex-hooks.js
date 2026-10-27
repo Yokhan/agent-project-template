@@ -379,6 +379,12 @@ function assertMissingEditorAfterVerifiedApplication(expectedDraft) {
 try {
   await runSafetyOnly();
   const clarification = "<send_user_message_question_reply>[{\"questionItemId\":\"q1\",\"question\":\"Напиши пояснение о росте, около 3%?\",\"answer\":\"Это рост, ну, около 3%, короче, очень мало.\"}]</send_user_message_question_reply>";
+  assert(requestContext.isOrchestrationNotice("You have 2 orchestration messages. Run `orca orchestration check`."));
+  assert(!requestContext.isOrchestrationNotice("Please check: You have 2 orchestration messages. Run `orca orchestration check`."));
+  assert.doesNotThrow(() => policy.assertCurrentEditorialProfile({ model: "gpt-6.1-terra", effort: "medium" }));
+  assert.throws(() => policy.assertCurrentEditorialProfile({ model: "gpt-6-luna", effort: "high" }), error => error.code === "EDITORIAL_PROFILE_MISMATCH" && /fresh independent review/u.test(error.message));
+  assert(!policy.substantive("Done.<oai-mem-citation>" + "citation ".repeat(40) + "</oai-mem-citation>"));
+  assert(policy.substantive("Meaningful explanation ".repeat(15) + "<oai-mem-citation>x</oai-mem-citation>"));
   const clarificationContext = requestContext.resolveRequestContext(clarification);
   assert.equal(clarificationContext.task, "Это рост, ну, около 3%, короче, очень мало.", "only the actual answer enters classification");
   assert.equal(clarificationContext.kind, "question-reply");
@@ -483,7 +489,20 @@ try {
   const lifecycle = fs.readFileSync(path.join(policy.sessionRoot(fixture, routedInput.session_id), "lifecycle.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
   assert.equal(lifecycle.at(-1).handlerSha256, sha256(fs.readFileSync(require.resolve("./codex-hooks.js"))),
     "native lifecycle records fingerprint the hook code loaded for this event");
+  assert.deepEqual(routedRecord.state.preferredWorkerProfile, { model: "gpt-6.1-terra", effort: "medium" }, "new request captures preferred worker profile");
   assert.equal(routedRecord.state.delegation.required, true, "nontrivial execution request is routed to prepare-contract");
+  const noticeInput = { ...routedInput, turn_id: "mailbox-notice", prompt: "You have 2 orchestration messages. Run `orca orchestration check`." };
+  await hooksApi.handle(noticeInput, fixture);
+  assert.equal(policy.findState(fixture, noticeInput).state.requestId, routedRecord.state.requestId, "notice preserves current unresolved request");
+  const noticeMapping = policy.readJson(path.join(policy.sessionRoot(fixture, routedInput.session_id), "turns", sha256(noticeInput.turn_id) + ".json"));
+  assert.equal(noticeMapping.controlNoticeSha256, sha256(noticeInput.prompt));
+  policy.writeJson(path.join(routedRecord.directory, "result.json"), { state: "passed" });
+  const closedNotice = { ...noticeInput, turn_id: "closed-notice" };
+  await hooksApi.handle(closedNotice, fixture);
+  assert.notEqual(policy.findState(fixture, closedNotice).state.requestId, routedRecord.state.requestId, "notice must not revive a closed request");
+  // Restore active pointer to exercise explicit user continuation independently.
+  policy.writeJson(path.join(policy.sessionRoot(fixture, routedInput.session_id), "current.json"), { file: routedRecord.file });
+  policy.writeJson(path.join(policy.sessionRoot(fixture, routedInput.session_id), "accepted-execution.json"), { file: routedRecord.file });
   const continuationInput = { ...routedInput, turn_id: "execution-followup", prompt: "делай дальше" };
   const continuationContext = await hooksApi.handle(continuationInput, fixture);
   const continuedRecord = policy.findState(fixture, continuationInput);
@@ -651,6 +670,10 @@ try {
   ]) assert.equal(policy.deliveryAcknowledgement(message, [...registeredArtifact, ...registeredSpacedArtifact, ...registeredParenthesizedArtifact], fixture), false, `unverified delivery wording must stay on the writing gate: ${message}`);
   assert.equal(policy.deliveryAcknowledgement("Готово: [report.md](report.md)", [], fixture), false, "an acknowledgement without registered files cannot bypass the writing gate");
   assert.equal(policy.checkRequest(record, "Пожалуйста.").state, "passed");
+  const waveRequest = policy.startRequest(fixture, { session_id: "wave-contract", turn_id: "wave", prompt: "Plan and deliver product versions" }, { planContract: { required: true }, modes: ["product-goal"] });
+  assert.equal(waveRequest.state.waveHandoffContractVersion, 2);
+  const technicalRequest = policy.startRequest(fixture, { session_id: "technical-contract", turn_id: "technical", prompt: "Repair a security boundary" }, { planContract: { required: true }, modes: ["security"] });
+  assert.equal(technicalRequest.state.waveHandoffContractVersion, undefined, "technical plans do not manufacture product waves");
   const typo = policy.startRequest(fixture, { session_id: "typo", turn_id: "typo", prompt: "Исправь опечатку в README.md" }, { workflowDepth: "direct", delegationDecision: { required: false } });
   assert.equal(policy.checkRequest(typo, "В README.md исправлено Teh на The.").state, "passed", "a direct typo confirmation needs no writing ceremony");
   assert(policy.checkRequest(typo, "Содержательное объяснение ".repeat(12)).issues.some(x => x.includes("writing-application-missing")), "direct tasks do not exempt substantive explanations");
@@ -664,6 +687,29 @@ try {
   const next = policy.startRequest(fixture, { ...input, turn_id: "turn-four", prompt: "Спасибо" }, { workflowDepth: "direct" });
   assert.notEqual(next.state.requestId, record.state.requestId, "ordinary user request cannot inherit prior evidence");
   assert(policy.checkRequest(next, null).issues.some(x => x.includes("unavailable")));
+  // Simulate a policy change after request start with actual correlated runtime metadata.
+  const savedCodexHome = process.env.CODEX_HOME;
+  const profileHome = path.join(fixture, "profile-home"); fs.mkdirSync(profileHome);
+  process.env.CODEX_HOME = profileHome;
+  try {
+    const { DatabaseSync } = require("node:sqlite");
+    const db = new DatabaseSync(path.join(profileHome, "state_5.sqlite"));
+    db.exec("create table threads (id text, model text, reasoning_effort text, rollout_path text)");
+    const childId = "12345678-1234-4234-8234-123456789abc";
+    const rollout = path.join(profileHome, "child.jsonl");
+    fs.writeFileSync(rollout, JSON.stringify({ type: "session_meta", payload: { id: childId, source: { subagent: { thread_spawn: { parent_thread_id: "snapshot-session" } } } } }) + "\n");
+    db.prepare("insert into threads values (?, ?, ?, ?)").run(childId, "gpt-6-luna", "high", rollout); db.close();
+    const oldRequest = policy.startRequest(fixture, { session_id: "snapshot-session", turn_id: "old", prompt: "Inspect bounded modules" }, { delegationDecision: { required: true } });
+    oldRequest.state.preferredWorkerProfile = { model: "gpt-6-luna", effort: "high" }; oldRequest.state.writingExempt = true; policy.writeJson(oldRequest.file, oldRequest.state);
+    policy.childEvent(oldRequest, { agent_id: childId, agent_type: "implementer", hook_event_name: "SubagentStart" });
+    policy.childEvent(oldRequest, { agent_id: childId, agent_type: "implementer", hook_event_name: "SubagentStop", last_assistant_message: "Completed bounded work" });
+    policy.writeJson(path.join(oldRequest.directory, `integration-${sha256(childId)}.json`), { requestId: oldRequest.state.requestId, childId, assignment: { scope: "owned file", acceptance: "focused check" }, result: "Integrated and checked bounded work." });
+    assert.equal(policy.checkRequest(oldRequest, "Done").state, "passed", "original snapshot accepts correlated old-profile worker after policy migration");
+    oldRequest.state.preferredWorkerProfile = { model: "gpt-6.1-terra", effort: "medium" };
+    assert(policy.checkRequest(oldRequest, "Done").issues.some(x => x.includes("delegation-missing")), "new profile cannot count a mismatched old worker");
+    delete oldRequest.state.preferredWorkerProfile;
+    assert.equal(policy.checkRequest(oldRequest, "Done").preferredProfileSource, "current-policy-fallback-snapshot-unavailable");
+  } finally { if (savedCodexHome === undefined) delete process.env.CODEX_HOME; else process.env.CODEX_HOME = savedCodexHome; }
   const required = policy.startRequest(fixture, { session_id: "other", turn_id: "t", prompt: "Inspect independent code modules" }, { delegationDecision: { required: true } });
   required.state.writingExempt = true;
   policy.writeJson(required.file, required.state);

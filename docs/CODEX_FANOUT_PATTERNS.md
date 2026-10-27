@@ -1,6 +1,6 @@
 # Codex Fan-Out Patterns
 
-Use Luna workers for useful bounded implementation, sequentially or in
+Use Terra workers for useful bounded implementation, sequentially or in
 parallel. Parallel lanes must be independent and worth their coordination
 cost. Tiny edits do not need workers. Parent Codex remains responsible for
 scope, decisions, integration, and acceptance.
@@ -9,10 +9,10 @@ scope, decisions, integration, and acceptance.
 
 - Default orchestrator: GPT-6.1 Sol, `high`.
 - Bounded discovery, tests, documentation, and contract-scoped implementation:
-  GPT-6 Luna, `high`.
+  GPT-6.1 Terra, `medium`.
 - Architecture consultation for a genuine unresolved decision: GPT-6 Astra,
   `medium`; use `high` only for unusually deep or consequential risk.
-- Luna `max` and Sol `xhigh` are optional, host-supported escalations with a
+- Terra `max` and Sol `xhigh` are optional, host-supported escalations with a
   concrete reason, not baseline settings. Astra is not a required step for a
   new project.
 - Start with at most three child agents per task, subject to the actual host's
@@ -26,7 +26,7 @@ label, spawn success, prompt, or plausible output is not runtime proof.
 ## Delegate bounded work; split only independent lanes
 
 Delegation can be sequential as well as parallel. For a well-scoped,
-nontrivial implementation against a settled contract, GPT-6 Luna `high` is the
+nontrivial implementation against a settled contract, GPT-6.1 Terra `medium` is the
 default implementer recommendation when the host supports delegation and the
 handoff is useful. Sol retains contract and product/architecture decisions,
 integration, and acceptance. Keep tiny edits direct. When suitable nontrivial
@@ -82,9 +82,9 @@ Suggested routing:
 
 | Work | Worker profile | Parent retains |
 |---|---|---|
-| Repository map, focused log/source extraction | Luna `high`, read-only | Synthesis and conflicting evidence resolution |
-| Test cases or a targeted test run | Luna `high` | Choosing adequate coverage and accepting result |
-| Well-scoped nontrivial documentation or implementation to a settled contract (sequential or parallel) | Luna `high` | Product/architecture decisions, integration, final verification |
+| Repository map, focused log/source extraction | Terra `medium`, read-only | Synthesis and conflicting evidence resolution |
+| Test cases or a targeted test run | Terra `medium` | Choosing adequate coverage and accepting result |
+| Well-scoped nontrivial documentation or implementation to a settled contract (sequential or parallel) | Terra `medium` | Product/architecture decisions, integration, final verification |
 | Architecture options under real uncertainty | Astra `medium` consultant | Decision ownership, implementation, reconciliation |
 | Deep threat/system review | Astra `high` only when risk justifies it | Scope, remediation, proof and release decisions |
 | Ordinary correctness, design, or product review | Sol `high` | Final disposition and acceptance |

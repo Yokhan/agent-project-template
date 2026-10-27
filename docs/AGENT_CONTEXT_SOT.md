@@ -85,7 +85,7 @@ When maintaining skills, remove obsolete/conflicting instructions at their
 source rather than adding overrides to every caller. Do not infer that a
 stronger model makes permissions, user-owned product waves, source grounding
 or quality gates unnecessary. Astra-specific prompting observations are not
-proof of Sol/Luna behavior. Validate realistic positive and negative scenarios
+proof of Sol/Terra behavior. Validate realistic positive and negative scenarios
 on the worker models actually used, and separate static checks from observed
 decisions and end-to-end execution. Do not promise token savings without a
 controlled workload comparison.
@@ -111,7 +111,7 @@ Refresh it with `scripts/sync-spec-kit.sh --latest-tag` after checking upstream.
 Use hooks for deterministic checks that must run every time.
 Use skills for reusable workflows, domain knowledge, and long references loaded
 only when relevant.
-Use Luna High for bounded implementation with explicit file scope, including
+Use GPT-6.1 Terra Medium for bounded implementation with explicit file scope, including
 sequential execution, and subagents for useful read-only exploration/review.
 Sol 6.1 High retains contract preparation, decisions, integration and acceptance.
 Parallelism needs independent ownership; it is not a prerequisite for delegation.
@@ -142,10 +142,18 @@ Run `node scripts/validate-agent-sot.js` after any agent infrastructure change.
 If a source in `_reference/agent-sot/sources.json` is stale or marked
 `requires_fresh_check`, browse the canonical URL before editing behavior.
 
-Current official-doc check: 2026-10-06 for GPT-6 model selection and Codex
-subagent behavior. Historical GPT-5.6 source cards remain historical evidence,
+Current official-doc check: 2026-10-27 for GPT-6.1 Terra model selection and Codex
+subagent behavior. The user selected Terra Medium for future light and bounded
+workers; preserve already-running workers and parent model/effort preferences.
+Historical Luna and GPT-5.6 source cards remain historical evidence,
 not the active policy. Requested model/effort must be distinguished from child
 runtime metadata; custom role TOML may override explicit spawn settings.
+
+Use an available DeepSeek Flash integration for bounded read-only advice on
+coordinator plans, pipeline consistency and material reports. Availability and
+requested/effective model are separate observations. This is advisory review,
+not release authority or permission to transfer private evidence; do not add
+network calls to lifecycle hooks or buy access when unavailable.
 
 Skill maintenance guidance refreshed 2026-10-07: [Rethinking skills and prompts
 for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra)

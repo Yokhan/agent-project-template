@@ -203,7 +203,7 @@ function main() {
   const bounded = getRoute("Implement isolated module according to approved contract", {
     workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit contract passes"] },
   });
-  assert.strictEqual(bounded.resourceDecision.recommendedModel, "gpt-6-luna");
+  assert.strictEqual(bounded.resourceDecision.recommendedModel, "gpt-6.1-terra");
   assert.strictEqual(bounded.resourceDecision.dispatch.customRole, null);
   assert.strictEqual(bounded.resourceDecision.dispatch.strategy, "explicit-model-contract");
   assert.strictEqual(bounded.resourceDecision.dispatch.ready, false);
@@ -233,7 +233,7 @@ function main() {
   assert.strictEqual(sequential.fanout.reason, "bounded-implementation-delegation");
   assert.strictEqual(sequential.resourceDecision.dispatch.ready, true);
   assert.strictEqual(sequential.workerContracts[0].dispatch.ready, true);
-  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6-luna");
+  assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.model, "gpt-6.1-terra");
   assert.strictEqual(sequential.workerContracts[0].dispatch.callContract.fork_turns, "none");
   assert.strictEqual(sequential.delegationDecision.state, "ready");
   assert(sequential.delegationDecision.required);
@@ -313,7 +313,7 @@ function main() {
   for (const task of ["Implement approved homepage component design", "Implement the approved feature"]) {
     const planned = getRoute(task, { workerContract: readyWorker });
     assert(planned.subagents.includes("implementer"), task);
-    assert.strictEqual(planned.resourceDecision.recommendedModel, "gpt-6-luna", task);
+    assert.strictEqual(planned.resourceDecision.recommendedModel, "gpt-6.1-terra", task);
     assert.strictEqual(planned.resourceDecision.dispatch.ready, true, task);
     const unbounded = getRoute(task);
     assert(unbounded.subagents.includes("implementer"), task);
@@ -376,7 +376,7 @@ function main() {
   const maxContract = getRoute("Implement the approved isolated module", {
     workerContract: { role: "implementer", scope: ["src/module.js"], acceptance: ["unit tests"],
       requestedEffort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 },
-      hostCapabilities: { "gpt-6-luna": ["high", "max"] }, hostDispatchCapabilities: ["explicit-model-contract"] },
+      hostCapabilities: { "gpt-6.1-terra": ["medium", "max"] }, hostDispatchCapabilities: ["explicit-model-contract"] },
   });
   assert.strictEqual(maxContract.resourceDecision.recommendedEffort, "max");
   assert.strictEqual(maxContract.resourceDecision.dispatch.customRole, null);
@@ -389,7 +389,7 @@ function main() {
   assert.strictEqual(AGENT_POLICY.parent.baselineEffort, "high");
   assert.deepStrictEqual(
     new Set(getAgentProfiles().map(({ model }) => model)),
-    new Set(["gpt-6.1-sol", "gpt-6-astra", "gpt-6-luna"]),
+    new Set(["gpt-6.1-sol", "gpt-6-astra", "gpt-6.1-terra"]),
   );
   const symbolRoute = getRoute("rename the authentication symbol");
   assert.deepStrictEqual(symbolRoute.codeIntelligence.tools, ["codebase-memory", "serena", "ripgrep"]);

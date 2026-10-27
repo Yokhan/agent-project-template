@@ -2,6 +2,7 @@
 
 const assert = require("assert");
 const { buildEditorialAssignment, verifyEditorialReview, editorialPolicy, sha256, stableJson } = require("./lib/writing-editorial-review.js");
+const { getAgentProfile } = require("./codex-agent-policy.js");
 
 const task = "Write a substantive Russian informational guide explaining the backup recovery procedure.";
 const requestId = "editorial-request-1";
@@ -69,8 +70,8 @@ function evidenceFor(review, authorId = "writer-parent", reviewerId = "child-wri
     reviewerId,
     reviewerRole: "writing_editor",
     authorId,
-    model: "gpt-6-luna",
-    effort: "high",
+    model: getAgentProfile("writing_editor").model,
+    effort: getAgentProfile("writing_editor").effort,
     requestId,
     artifactSha256: review.artifactSha256,
     readingBindingSha256: review.readingBindingSha256,
@@ -165,7 +166,7 @@ assert.throws(() => verifyEditorialReview(task, passed, {
   requestId, artifactBytes: artifact, packet, readingMap, reviewerEvidence: fakeEvidence,
 }), /resultMatchesReview/);
 
-for (const [model, effort] of [["gpt-6.1-sol", "high"], ["gpt-6-luna", "medium"], ["unverified", "high"]]) {
+for (const [model, effort] of [["gpt-6.1-sol", "high"], ["gpt-6-luna", "high"], ["gpt-6.1-terra", "high"], ["unverified", "high"]]) {
   const wrongProfile = evidenceFor(passed);
   wrongProfile.model = model;
   wrongProfile.effort = effort;

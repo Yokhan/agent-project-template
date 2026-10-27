@@ -5,7 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { retrievePlannedPacket, verifyApplication } = require("./writing-library-retrieve.js");
 const editorial = require("./writing-editorial-review.js");
-const { getFanoutDecision } = require("../codex-agent-policy.js");
+const { getFanoutDecision, getAgentProfile, MODEL_CAPABILITIES } = require("../codex-agent-policy.js");
 const { classifyWritingIntent } = require("./writing-intent.js");
 const { sha256 } = require("./writing-library-store.js");
 
@@ -53,7 +53,7 @@ function isSmall(task) {
   return /^(?:спасибо|понятно|ок(?:ей)?|хорошо|thanks|ok|done)[.!\s]*$/iu.test(task.trim());
 }
 function substantive(message) {
-  const prose = String(message || "").replace(/```[\s\S]*?```/gu, "").trim();
+  const prose = String(message || "").replace(/<oai-mem-citation>[\s\S]*?<\/oai-mem-citation>/gu, "").replace(/```[\s\S]*?```/gu, "").trim();
   return prose.length >= 120 || prose.split(/\s+/u).length >= 20;
 }
 function actualNarrative(task, intent) {
@@ -90,11 +90,13 @@ function startRequest(root, input, route, provenance = null) {
   const materialWriting = editorial.editorialPolicy(classificationTask).independentRequired;
   const state = { schemaVersion: 1, root: fs.realpathSync(root), sessionId: input.session_id,
     rootTurnId: input.turn_id, requestId, startedAt: new Date().toISOString(), promptSha256: provenance?.rawPromptSha256 || sha256(input.prompt),
+    preferredWorkerProfile: (({ model, effort }) => ({ model, effort }))(getAgentProfile("implementer")),
     task: input.prompt, routeSha256: sha256(JSON.stringify(route)), delegation: route.delegationDecision || { required: false, state: "skip", reason: "no-execution-lane" },
     writingExempt: isSmall(classificationTask) || actualNarrative(classificationTask, intent),
     writingRequested: intent.isWriting || /\bexplain\b|объясн|почему/iu.test(classificationTask),
     editorial: editorial.editorialPolicy(classificationTask, { optOut: getFanoutDecision({ task: classificationTask, candidates: [] }).reason === "explicit-user-opt-out" }),
     direct: route.workflowDepth === "direct" && !materialWriting, repairs: 0 };
+  if (route.planContract?.required && route.modes?.some(mode => ["product-goal", "progressive-planning"].includes(mode))) state.waveHandoffContractVersion = 2;
   if (provenance?.rawPromptSha256) state.rawPromptSha256 = provenance.rawPromptSha256;
   if (typeof provenance?.rawPrompt === "string" && provenance.rawPrompt !== input.prompt) state.rawPrompt = provenance.rawPrompt;
   if (provenance?.contextResolution) state.contextResolution = provenance.contextResolution;
@@ -126,7 +128,7 @@ function editorialAssignment(root, file, artifact) {
   const assignmentFile = path.join(record.directory, `editorial-assignment-${sha256(bytes)}.json`);
   writeJson(assignmentFile, assignment);
   return { state: "editorial-assignment-ready", assignmentFile, artifactSha256: assignment.artifactSha256,
-    criteria: assignment.criteria, instruction: "Give this file and relevant project facts/approved samples to a distinct read-only writing_editor (Luna High). Read its exact JSON final, fix findings and obtain a new review after changing the artifact. Accept via codex-turn.js review-accept using the observed native child ID." };
+    criteria: assignment.criteria, instruction: "Give this file and relevant project facts/approved samples to a distinct read-only writing_editor (see current agent profile). Read its exact JSON final, fix findings and obtain a new review after changing the artifact. Accept via codex-turn.js review-accept using the observed native child ID." };
 }
 function reviewEvidence(record, childId, artifactBytes, review) {
   if (!/^[a-f0-9-]{36}$/iu.test(childId || "")) throw new Error("Use the native child UUID from codex-turn status, not its /root/role name");
@@ -156,6 +158,14 @@ function acceptEditorialReview(root, file, artifact, childId) {
   writeJson(output, { childId, review, result });
   return result;
 }
+function assertCurrentEditorialProfile(evidence) {
+  const preferred = getAgentProfile("writing_editor");
+  if (evidence.model !== preferred.model || evidence.effort !== preferred.effort) {
+    const error = new Error(`Observed editor profile ${evidence.model}/${evidence.effort} differs from current ${preferred.model}/${preferred.effort}; obtain a fresh independent review for these exact bytes`);
+    error.code = "EDITORIAL_PROFILE_MISMATCH";
+    throw error;
+  }
+}
 function checkEditorial(record, bytes) {
   if (!record.state.editorial?.independentRequired) return null;
   const reviewFile = path.join(record.directory, `editorial-${sha256(bytes)}.json`);
@@ -166,8 +176,10 @@ function checkEditorial(record, bytes) {
   }
   const item = readJson(reviewFile);
   const packet = readJson(path.join(record.directory, "packet.json"));
+  const evidence = reviewEvidence(record, item.childId, bytes, item.review);
+  assertCurrentEditorialProfile(evidence);
   const result = editorial.verifyEditorialReview(record.state.task, item.review, { requestId: record.state.requestId,
-    artifactBytes: bytes, packet, readingMap: packet.readerPlan, reviewerEvidence: reviewEvidence(record, item.childId, bytes, item.review) });
+    artifactBytes: bytes, packet, readingMap: packet.readerPlan, reviewerEvidence: evidence });
   if (result.state !== "independent-review-passed") throw new Error(`Editor requires correction: ${result.state}`);
   return result;
 }
@@ -304,7 +316,11 @@ function checkRequest(record, finalMessage) {
     const item = readJson(file);
     return item.requestId === state.requestId && item.childId === child.id && item.assignment?.scope?.length && item.assignment?.acceptance?.length && item.result?.length >= 20;
   };
-  if (state.delegation.required && !exception && !observed.some(child => child.completedAt && child.profile.model === "gpt-6-luna" && child.profile.effort === "high" && integrated(child))) issues.push("delegation-missing: complete bounded Luna High work and record assignment/result integration, or record a concrete fallback");
+  const snapshot = state.preferredWorkerProfile;
+  const validSnapshot = snapshot && typeof snapshot === "object" && MODEL_CAPABILITIES[snapshot.model]?.efforts.includes(snapshot.effort);
+  const preferred = validSnapshot ? snapshot : getAgentProfile("implementer");
+  const preferredProfileSource = validSnapshot ? "request-snapshot" : "current-policy-fallback-snapshot-unavailable";
+  if (state.delegation.required && !exception && !observed.some(child => child.completedAt && child.profile.model === preferred.model && child.profile.effort === preferred.effort && integrated(child))) issues.push(`delegation-missing: complete bounded ${preferred.model} ${preferred.effort} work and record assignment/result integration, or record a concrete fallback (${preferredProfileSource})`);
   const registeredArtifacts = [];
   for (const name of fs.readdirSync(directory).filter(f => /^file-.*\.json$/u.test(f))) {
     try {
@@ -315,7 +331,8 @@ function checkRequest(record, finalMessage) {
       checkEditorial(record, bytes);
       registeredArtifacts.push({ app, artifact, bytes });
     } catch (error) {
-      if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
+      if (error.code === "EDITORIAL_PROFILE_MISMATCH") issues.push(`editorial-profile-mismatch: ${error.message}`);
+      else if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
       else issues.push(`changed-file-artifact: ${error.message}`);
     }
   }
@@ -331,12 +348,13 @@ function checkRequest(record, finalMessage) {
       verifyApplication(state.task, packet, app, Buffer.from(finalMessage, "utf8"), { requestId: state.requestId, requestStartedAt: state.startedAt, kind: "nonfiction" });
       try { checkEditorial(record, Buffer.from(finalMessage, "utf8")); }
       catch (error) {
-        if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
+        if (error.code === "EDITORIAL_PROFILE_MISMATCH") issues.push(`editorial-profile-mismatch: ${error.message}`);
+        else if (error.code === "INDEPENDENT_REVIEW_MISSING") issues.push(`independent-review-missing: ${error.message}`);
         else issues.push(`independent-review-invalid: ${error.message}`);
       }
     } catch (error) { issues.push(`writing-application-missing: ${error.code === "ENOENT" ? "read current primary packet and record its application to exact final text" : error.message}`); }
   }
-  const result = { state: issues.length ? "unresolved" : "passed", requestId: state.requestId, repairCount: state.repairs, issues, children: observed, exception, editorial: state.editorial,
+  const result = { state: issues.length ? "unresolved" : "passed", requestId: state.requestId, repairCount: state.repairs, issues, children: observed, exception, editorial: state.editorial, preferredProfileSource,
     evidenceLimits: "Native events and correlated profiles establish execution; usefulness and semantic application require review. Durations are observed, not comparative savings." };
   writeJson(path.join(directory, "result.json"), result);
   return result;
@@ -352,5 +370,5 @@ function continuation(record, issues) {
 }
 
 module.exports = { localFile, readJson, writeJson, loadState, findState, startRequest, groundRequest, application, fallback,
-  childEvent, childRecord, checkRequest, continuation, substantive, sessionRoot, editorialAssignment, acceptEditorialReview,
+  childEvent, childRecord, checkRequest, continuation, substantive, sessionRoot, editorialAssignment, acceptEditorialReview, assertCurrentEditorialProfile,
   deliveryAcknowledgement, observeProfile };

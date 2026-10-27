@@ -231,7 +231,7 @@ source-derived decisions for the selected topics, with actionable corrections.
 Do not invent defects for appearances or approve by default.
 
 In native Codex, create the editor assignment with `codex-turn editorial-assignment`
-and use the distinct read-only `writing_editor` role (Luna High). Wait for its
+and use the distinct read-only `writing_editor` role (Terra Medium). Wait for its
 actual JSON result. `codex-turn review-accept` binds that native child result,
 parent-correlated runtime, current reading and exact draft. An outstanding finding
 blocks acceptance. A changed draft requires a fresh editorial pass. Writer-created

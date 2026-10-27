@@ -1,7 +1,7 @@
 name = "log_analyst"
 description = "Low-cost read-only agent for bounded log, trace, and test-output extraction."
-model = "gpt-6-luna"
-model_reasoning_effort = "high"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Log", "Trace", "Pulse"]
 developer_instructions = """

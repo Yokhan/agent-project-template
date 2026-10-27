@@ -183,12 +183,13 @@ Never call a partial step "done" just because the code compiles.
 
 ## Delivery observation and recovery
 
-For long-running work, review current evidence at the cadence configured by the
-shared runtime and report every tracked project at each scheduled report,
-including projects with no material change. The shared runtime's configured
-cadence is 10 minutes; keep it in machine configuration, not as a timer copied
-into any project or task. On material progress, a new blocker, or closure,
-report sooner.
+For long-running work, the requested shared machine report cadence is 45 minutes;
+review analytical evidence independently every 5 minutes. Report every tracked
+project at each scheduled report, including projects with no material change.
+Keep scheduling in the shared machine configuration, not in project or task
+timers. Verify activation and retain a delivery receipt before claiming reports
+are running or delivered; this rule alone does not activate a runtime monitor.
+On material progress, a new blocker, or closure, report sooner.
 
 Signal material delivery changes promptly: a verified useful source/artifact
 change, accepted user-path behavior, resolved dependency, or outcome/release
@@ -234,6 +235,13 @@ to the root owner.
 Deduplicate reports by incident, use a finite backoff and restart budget, and do
 not poll or restart indefinitely. A user-authorized recovery within the same
 scope needs no second approval; ask only for a new material decision.
+
+Status and closeout identify the original goal, existing plan and nearest wave;
+separate planned from actual agents and concurrent independent lanes. Report
+product-wave readiness separately from local, tested, staged, accepted and
+actually shipped results. Use observable baseline criteria and declared weights;
+unknown evidence is unknown, not a fabricated percentage. Small acknowledgements
+and mailbox notices need no wave report or handoff ceremony.
 
 ## Closure, carryover, and next action
 

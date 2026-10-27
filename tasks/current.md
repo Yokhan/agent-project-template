@@ -1,17 +1,77 @@
 <!-- PROGRESSIVE_STATUS
-id: accepted-workflow-improvements-v620-20261025
+id: terra-coordination-20261027
 status: active
-updated: 2026-10-26
+updated: 2026-10-27
 readiness: 0
-accepted_consumers: 0
-consumer_baseline: 51
-baseline_revision: human-v631-rollout-r1
-measurement: Fully accepted v6.3.2 consumer installations; source and CI work are not delivered installations
-tags: template,release,v632,progress,recovery,rollout
-next: Publish the preserved-capacity validator repair through exact v6.3.2 release gates, then continue reviewed consumer delta plans
+accepted_outcomes: 3
+shipped_outcomes: 0
+outcome_baseline: 4
+baseline_revision: terra-coordination-r1
+measurement: readiness measures shipped outcomes; accepted_outcomes separately measures integrated source contracts from the four declared criteria; source checks are not delivery
+tags: template,terra,orchestration,progress,recovery
+next: Integrate reviewed source lanes and actual periodic-report delivery before exact release gates
 -->
 
-# Current Task - Preserved Capacity Repair And Authorized Rollout
+# Current Task - Terra Workers And Reliable Coordinator Delivery
+
+## Active wave, 2026-10-27
+
+The direct owner requests future light workers on GPT-6.1 Terra Medium,
+available DeepSeek Flash advice for coordinator consistency, meaningful product
+waves and reports, and actual 45-minute coordinator reports with evidence-based
+stall analysis. The already-published v6.3.2 and completed authorized 36-target
+rollout are historical delivery, not pending work. Its receipt is
+`.session-cache/v632-fleet-current-20261026T155848Z.json` in the canonical owner
+workspace. Do not repeat that rollout or change busy workers' models.
+
+Nearest-wave scope baseline `terra-coordination-r1` has four equally weighted
+acceptance outcomes, declared before measurement:
+
+1. Future bounded workers route to Terra Medium; historical evidence remains
+   readable, actual model/effort is reported separately, and parent settings stay
+   user-owned.
+2. Substantial product work retains its approved goal, usable-wave/nearest-plan
+   references, planned versus actual owners and truthful accepted/shipped reports;
+   control notices and tiny acknowledgements do not create repair rituals.
+3. An available, privacy-bounded DeepSeek Flash advisor checks material plans,
+   pipeline decisions and reports without becoming release authority.
+4. The existing single coordinator monitor delivers scheduled 45-minute reports
+   and evidence-based progress/stall signals; actual delivery and singleton
+   activation have receipts. Time alone is not a dead process verdict.
+
+Current integration acceptance: 3/4; shipped: 0/4. These are outcome counts,
+not token, test or file percentages. Model/routing, request/handoff and advisor
+source contracts have reviewed focused evidence. One parent aggregate exposed
+two stale consumers; diagnosed fixture/validator deltas passed without another
+local aggregate. The existing watcher was replaced with positive exit,
+singleton and new status-enqueue receipts; the old unknown receipt is preserved.
+The remaining acceptance boundary is the coordinator's actual visible rendering
+of the report. An inbox enqueue does not establish that. Exact-commit and tag CI,
+publication and new consumer installations remain pending separately.
+
+Ownership: Terra model lane owns profiles/router/report and direct consumers;
+Terra contract lane owns existing plan/product/orchestration rules and native
+lifecycle delta; Terra monitor lane owns only the existing external coordinator
+watcher and its tests. Parent integrates, updates official-source records and
+release metadata, reviews actual advisor output and controls activation/release.
+Three independent lanes are planned; live counts come from current worker
+receipts, never this document. Root alone owns its global project journal.
+
+All canonical edits use the claimed isolated Git worktree
+`.session-cache/worktrees/terra-orchestration-20261027`; live supervisor pins,
+product sources, capacity watcher, user plans and unrelated dirty work remain
+protected. Focused checks run through the live request-bound managed-temp
+wrapper. Parent owns one coherent integration aggregate, then exact-commit and
+exact-tag cross-platform CI, checksum and canonical archive gates. No consumer
+sync before the new verified release; no self-sync or blanket overwrite.
+
+Next: integrate the three source lanes, obtain the existing DeepSeek session's
+bounded advisory review, settle supported periodic report delivery, and review
+the exact candidate. Any host limitation stays explicit instead of being
+relabelled as activation. BUFF IT's separate product release proceeds under its
+original APP/server owners and is not gated on this template wave.
+
+## Historical v6.3.2 work
 
 ## Current v6.3.2 delta
 

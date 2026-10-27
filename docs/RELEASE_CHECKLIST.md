@@ -2,18 +2,20 @@
 
 Use this checklist before calling the template production-ready or cutting a release tag.
 
-Release target: `v6.3.2`. This checklist records required evidence, not a
+Release target: `v6.4.0`. This checklist records required evidence, not a
 publication claim. Record the exact commit and workflow run after validation;
 call the release live only after the GitHub Release is non-draft,
 non-prerelease, its tag resolves to that commit, and its assets pass checksum
 verification. The live Codex subagent probe is reported separately because it
 consumes quota; static markers never count as runtime proof.
 
-## v6.3.2 Candidate Acceptance
+## v6.4.0 Candidate Acceptance
 
 - [ ] Final scoped source commit and compatible version metadata verified.
-- [ ] Preserved session-capacity regression passes for both supported keys; invalid values still fail and per-task dispatch policy remains unchanged. Local watcher activation and consumer transactions retain separate evidence.
-- [ ] Focused deltas and final aggregate pass on the integrated tree.
+- [ ] Terra profiles, runtime-only coverage, historical Luna compatibility and request-start cohorts pass focused checks; parent settings and busy workers remain preserved.
+- [ ] Control-notice continuity, scoped wave execution references and truthful handoff reports pass focused checks. Source tests do not establish native host activation.
+- [ ] One relevant integration aggregate plus diagnosed focused deltas are recorded honestly; mandatory exact-state hosted integration remains required.
+- [ ] Local singleton watcher activation and actual report enqueue retain separate receipts; visible assistant reporting is claimed only by its real rendering owner.
 - [ ] Exact-commit Linux/Windows preflight and exact-tag release jobs pass.
 - [ ] Stable release, downloaded checksums, metadata and canonical archive match.
 - [ ] Consumer rollout uses the verified new exact release and reviewed plans; publication alone does not establish installation or runtime activation.

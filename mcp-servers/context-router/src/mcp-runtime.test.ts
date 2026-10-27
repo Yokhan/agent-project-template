@@ -67,7 +67,7 @@ try {
     .join("\n");
   assert.match(boundedOutput, /DELEGATION_DECISION:.*"state":"ready"/u);
   assert.match(boundedOutput, /EXECUTION_NEXT_ACTION: Dispatch a candidate/u);
-  assert.match(boundedOutput, /"model":"gpt-6-luna"/u);
+  assert.match(boundedOutput, /"model":"gpt-6.1-terra"/u);
   assert.match(boundedOutput, /"fork_turns":"none"/u);
 
   const inside = await client.callTool({ name: "research", arguments: { target: "inside.txt" } });

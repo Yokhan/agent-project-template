@@ -107,7 +107,7 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/process/plan-first.md", text: "active project task artifact" },
   { file: ".agents/skills/codex-progressive-jpeg-planner/SKILL.md", text: "Do not fabricate" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-6.1-sol" },
-  { file: "scripts/codex-agent-policy.js", text: "gpt-6-luna" },
+  { file: "scripts/codex-agent-policy.js", text: "gpt-6.1-terra" },
   { file: "scripts/codex-agent-policy.js", text: "gpt-6-astra" },
   { file: "CLAUDE.md", text: "Production Product Standard" },
   { file: "CLAUDE.md", text: "language of the user's request" },
@@ -121,7 +121,7 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/process/product-goal-loop.md", text: "current request/turn" },
   { file: ".claude/library/process/product-goal-loop.md", text: "owner fence" },
   { file: ".claude/library/process/product-goal-loop.md", text: "`STALL_SUSPECT`" },
-  { file: ".claude/library/process/product-goal-loop.md", text: "cadence is 10 minutes" },
+  { file: ".claude/library/process/product-goal-loop.md", text: "cadence is 45 minutes" },
   { file: ".claude/library/process/product-goal-loop.md", text: "Signal material delivery changes promptly" },
   { file: ".claude/library/process/product-goal-loop.md", text: "status ping" },
   { file: ".claude/library/process/product-goal-loop.md", text: "test result is verification evidence" },
@@ -129,7 +129,8 @@ const REQUIRED_TEXT = [
   { file: ".claude/library/process/product-goal-loop.md", text: "material-progress clock for activity-only signals" },
   { file: ".claude/library/process/product-goal-loop.md", text: "After two failed attempts" },
   { file: ".claude/library/process/product-goal-loop.md", text: "label is not a claim that the process is dead" },
-  { file: ".claude/library/process/product-goal-loop.md", text: "every tracked project" },
+  { file: ".claude/library/process/product-goal-loop.md", text: "evidence independently every 5 minutes" },
+  { file: ".claude/library/process/product-goal-loop.md", text: "project at each scheduled report, including projects with no material change" },
   { file: ".claude/library/process/product-goal-loop.md", text: "Where the current host" },
   { file: ".claude/library/process/product-goal-loop.md", text: "do not invent an RPC or kill a PID" },
   { file: ".claude/library/process/product-goal-loop.md", text: "finite backoff and restart budget" },
@@ -565,9 +566,9 @@ function assertProactiveDelegationContract() {
       acceptance: ["focused component test passes"], hostDispatchCapabilities: ["explicit-model-contract"] },
   });
   if (sequential.subagents[0] !== "implementer" ||
-      sequential.resourceDecision.recommendedModel !== "gpt-6-luna" ||
+      sequential.resourceDecision.recommendedModel !== "gpt-6.1-terra" ||
       !sequential.resourceDecision.dispatch.ready) {
-    addError("bounded implementation must support a single Luna worker without parallel work");
+    addError("bounded implementation must support a single Terra worker without parallel work");
   }
   if (!/a\s+separate user request is not required/iu.test(combined)) {
     addError("agent SOT must distinguish project authorization from direct user prompting");

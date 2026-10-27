@@ -29,6 +29,27 @@
         }
       }
     },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planRef", "waveRef", "integrationOwner", "lanes"],
+      "properties": {
+        "planRef": { "$ref": "#/$defs/referenceEvidence" },
+        "waveRef": { "$ref": "#/$defs/referenceEvidence" },
+        "integrationOwner": { "$ref": "#/$defs/text" },
+        "requestedScale": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "placementReason": { "$ref": "#/$defs/text" },
+        "lanes": { "type": "array", "maxItems": 100, "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "owner", "scope", "status"],
+          "properties": {
+            "id": { "$ref": "#/$defs/text" }, "owner": { "$ref": "#/$defs/text" },
+            "scope": { "$ref": "#/$defs/text" },
+            "status": { "enum": ["planned", "accepted", "live", "settled", "blocked", "unverified"] },
+            "handle": { "$ref": "#/$defs/text" }, "evidence": { "$ref": "#/$defs/referenceEvidence" }
+          }
+        } }
+      }
+    },
     "workPerformed": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/work" } },
     "acceptedOutcomes": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/accepted" } },
     "shippedUnits": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/shipped" } },

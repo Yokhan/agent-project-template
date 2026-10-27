@@ -30,7 +30,7 @@ continue with a proportionate approach.
 ## Model and delegation policy
 
 - Sol 6.1 `high` is the default orchestrator and integrator.
-- Luna 6 `high` is the default implementer for useful, well-scoped nontrivial
+- Terra 6.1 `medium` is the default implementer for useful, well-scoped nontrivial
   implementation, documentation, tests, or discovery against an explicit
   contract and exact scope. Delegation may be sequential; parallel fan-out
   still requires independent lanes with material parallel value. Sol retains
@@ -40,7 +40,7 @@ continue with a proportionate approach.
 - Astra 6 `medium` is an architecture consultant for genuine decision
   uncertainty; `high` is reserved for deep risk review. Consultation returns a
   recommendation to Sol; it does not replace the orchestrator.
-- Luna `max` or Sol `xhigh` are optional only when host-supported and justified;
+- Terra `max` or Sol `xhigh` are optional only when host-supported and justified;
   they are not defaults. Never claim a requested profile is effective without
   runtime evidence. Unknown model or effort is `unverified`.
 - Spawn no more than three children for a task, and fewer when host slots,
@@ -54,12 +54,12 @@ continue with a proportionate approach.
   contract when ownership and visual integration are clear.
 - A requested model is not runtime evidence. Custom-agent TOML can override an
   explicit spawn model; verify effective metadata or report it as `unverified`.
-  Never infer Luna from a worker-role label.
+  Never infer Terra from a worker-role label.
 
 `delegationDecision.nextAction` is an execution obligation. `prepare-contract`
 means the coordinator prepares scope/acceptance from source inspection and
 reroutes with the actual host dispatch capabilities; it is not a parent-only
-fallback. For useful nontrivial execution, complete bounded Luna work and
+fallback. For useful nontrivial execution, complete bounded Terra work and
 integrate its result, or record a concrete exception through the current native
 request ledger. Native event/profile evidence and useful integration are
 separate checks; neither candidate names nor a started irrelevant agent suffice.

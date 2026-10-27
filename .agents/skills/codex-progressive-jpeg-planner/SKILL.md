@@ -92,7 +92,11 @@ whether a proposed technical slice is actually a product wave.
 For a progressive plan, return the agreed final outcome, current product version,
 ordered versions of the same product with their resolution deltas and any
 separate enabling checkpoints, acceptance/falsification evidence, real
-dependencies, rough edges, and replan triggers. Include the validator result
+dependencies, rough edges, and replan triggers. The nearest-wave execution table
+records planned and actual agent counts, named owners, tasks/scopes, genuinely
+concurrent lanes, dependencies, limits and integration owner as specified in
+`plan-first.md`. Review every wave semantically; structural validation does not
+prove product usefulness. Include the validator result
 only when that plan was required and the validator was run. At closeout, also
 state separately whether the iteration closed, the scoped release was
 accepted, or the product goal was achieved; follow the product-goal-loop

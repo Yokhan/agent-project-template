@@ -2,7 +2,7 @@
 
 This source candidate changes local template behavior. It does not publish a
 release or update consumer projects. Sol owns decisions and acceptance; useful
-bounded execution goes to Luna High, sequentially or in independent parallel
+bounded execution goes to GPT-6.1 Terra Medium, sequentially or in independent parallel
 lanes. Tiny work stays direct and explicit user opt-out wins.
 
 ## Activation
@@ -109,7 +109,7 @@ artifact equals the authoritative current-turn native final. It then checks the
 original full bytes. Missing evidence, changed text/footer/newlines still block.
 Stop diagnostics record only final hashes, lengths and metadata-presence flags.
 Authored nonfiction and material rewrites also require the distinct read-only
-`writing_editor` (Luna High). Its exact native JSON final assesses meaning,
+`writing_editor` (GPT-6.1 Terra Medium). Its exact native JSON final assesses meaning,
 structure, claims/value, natural language and tone/rhythm, with draft excerpts,
 specific corrections and book-derived decisions for selected topics. The gate
 correlates child completion/model/effort and matches that actual result, never a
@@ -118,7 +118,7 @@ bytes or a refreshed packet invalidate the old review. Brief status/explanation,
 literal typos and explicit user opt-out may self-check; a short ad/letter still
 needs the editor. Required review unavailable is an acceptance gap, not a pass.
 Mandatory editor acceptance requires both an observed `writing_editor` child
-and the correlated Luna High model/effort; an implementer result, a role label
+and the correlated configured Terra Medium model/effort; an implementer result, a role label
 alone or another correlated profile cannot satisfy that requirement. A host
 without that observed role has an explicit review acceptance gap.
 Read-only behavior is the requested role contract, not inferred sandbox proof.
@@ -137,7 +137,8 @@ unresolved or coordination would exceed useful work, record the concrete reason:
 node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable --reason <specific constraint and its impact>
 ```
 
-An exception is visible and does not count as Luna success. A profile name alone
+An exception is visible and does not count as Terra success. Historical Luna
+receipts remain historical evidence and do not become Terra calls. A profile name alone
 is unverified. Native child IDs are correlated with parent-linked runtime
 metadata for model/effort; missing metadata stays unverified. Timings describe
 observed execution only, not savings. Evaluate total duration, available usage

@@ -97,8 +97,10 @@ function validateShape(value, schema, field, issues) {
     if (schema.pattern && !(new RegExp(schema.pattern, "u")).test(value)) issues.push(issue("schema", field, "has an invalid format"));
     return;
   }
-  if (schema.type === "number") {
+  if (schema.type === "number" || schema.type === "integer") {
     if (typeof value !== "number" || !Number.isFinite(value)) { issues.push(issue("schema", field, "must be a finite number")); return; }
+    if (schema.type === "integer" && !Number.isInteger(value)) issues.push(issue("schema", field, "must be an integer"));
+    if (schema.minimum !== undefined && value < schema.minimum) issues.push(issue("schema", field, `must be at least ${schema.minimum}`));
     if (schema.exclusiveMinimum !== undefined && value <= schema.exclusiveMinimum) issues.push(issue("schema", field, `must be greater than ${schema.exclusiveMinimum}`));
     if (schema.maximum !== undefined && value > schema.maximum) issues.push(issue("schema", field, `must be at most ${schema.maximum}`));
   }
@@ -178,6 +180,28 @@ function validateHandoff(value, context = {}) {
   validateShape.rootSchema = null;
   if (issues.length) return { valid: false, issues, progress: null, evidenceHashes };
 
+  if (context.requireExecution && !value.execution) issues.push(issue("execution-required", "execution", "a wave contract requires the existing plan, wave and execution lanes"));
+  let executionCounts = null;
+  if (value.execution) {
+    executionCounts = { plannedTotal: value.execution.lanes.length, ...(value.execution.requestedScale ? { requestedScale: value.execution.requestedScale } : {}), planned: 0, accepted: 0, live: 0, settled: 0, blocked: 0, unverified: 0 };
+    const seenLanes = new Set();
+    for (const key of ["planRef", "waveRef"]) {
+      const ref = value.execution[key];
+      try {
+        if (!localReferencePath(root, ref.ref)) issues.push(issue("execution-reference-local", `execution.${key}`, "must refer to an existing local plan or graph"));
+        else verifyHashReference(root, ref, `execution.${key}`, issues, evidenceHashes, referenceBudget);
+      } catch (error) { issues.push(issue("execution-reference", `execution.${key}`, error.message)); }
+    }
+    for (const [index, lane] of value.execution.lanes.entries()) {
+      const at = `execution.lanes[${index}]`;
+      if (seenLanes.has(lane.id)) issues.push(issue("execution-duplicate-lane", `${at}.id`, "lane ID must be unique"));
+      seenLanes.add(lane.id);
+      executionCounts[lane.status]++;
+      if (["accepted", "live", "settled"].includes(lane.status) && (!lane.handle || !lane.evidence)) issues.push(issue("execution-dispatch-evidence", at, "accepted, live and settled lanes require a handle and hash-bound dispatch evidence; otherwise use unverified"));
+      if (lane.evidence) verifyHashReference(root, lane.evidence, `${at}.evidence`, issues, evidenceHashes, referenceBudget);
+    }
+    if (value.execution.requestedScale && value.execution.requestedScale > value.execution.lanes.length && !value.execution.placementReason) issues.push(issue("execution-placement", "execution.placementReason", "explain placement when fewer lanes are listed than requested"));
+  }
   const outcomes = value.goal.baseline.outcomes;
   const outcomeById = new Map();
   outcomes.forEach((outcome, index) => {
@@ -353,18 +377,21 @@ function validateHandoff(value, context = {}) {
     progress.status = value.status;
   }
 
-  return { valid: issues.length === 0, issues, progress, evidenceHashes };
+  if (executionCounts) progress.executionCounts = executionCounts;
+  return { valid: issues.length === 0, issues, progress, evidenceHashes, executionCounts };
 }
 
 function formatProgress(result) {
-  if (!result?.available) return `Progress unavailable: no meaningful outcome denominator was declared. Known remaining work: ${result?.knownRemaining ?? 0} item(s); status: ${result?.status || "unavailable"}.`;
+  const counts = result?.executionCounts;
+  const allocation = counts ? `\nLanes: planned total ${counts.plannedTotal}${counts.requestedScale ? `; requested ${counts.requestedScale}` : ""}; planned ${counts.planned}, accepted ${counts.accepted}, live ${counts.live}, settled ${counts.settled}, blocked ${counts.blocked}, unverified ${counts.unverified}. Statuses are recorded claims, not independently verified runtime activity.` : "";
+  if (!result?.available) return `Progress unavailable: no meaningful outcome denominator was declared. Known remaining work: ${result?.knownRemaining ?? 0} item(s); status: ${result?.status || "unavailable"}.` + allocation;
   const bar = (percent) => {
     const filled = Math.max(0, Math.min(10, Math.round(percent / 10)));
     return `[${"#".repeat(filled)}${".".repeat(10 - filled)}]`;
   };
   const accepted = result.weighted ? `${result.accepted}/${result.total} outcomes; weight ${result.acceptedWeight}/${result.totalWeight} (${result.acceptedPercent}%)` : `${result.accepted}/${result.total} outcomes (${result.acceptedPercent}%)`;
   const shipped = result.weighted ? `${result.shipped}/${result.total} outcomes; weight ${result.shippedWeight}/${result.totalWeight} (${result.shippedPercent}%)` : `${result.shipped}/${result.total} outcomes (${result.shippedPercent}%)`;
-  return `Accepted ${bar(result.acceptedPercent)} ${accepted}.\nShipped ${bar(result.shippedPercent)} ${shipped}.\nBasis: ${result.basis}; baseline revision: ${result.baselineRevision}.`;
+  return `Accepted ${bar(result.acceptedPercent)} ${accepted}.\nShipped ${bar(result.shippedPercent)} ${shipped}.\nBasis: ${result.basis}; baseline revision: ${result.baselineRevision}.` + allocation;
 }
 
 function russianToken(text, stems) {
@@ -520,12 +547,12 @@ function checkHandoff(record, finalText) {
   if (stored.requestTaskSha256 !== sha256(String(task))) issues.push(issue("task-mismatch", "binding.requestTaskSha256", "handoff belongs to a different original task"));
   if (stored.artifactSha256 !== sha256(artifactBytes)) issues.push(issue("artifact-mismatch", "binding.artifactSha256", "handoff is not bound to these exact final bytes"));
   if (stored.handoffCanonicalSha256 !== sha256(Buffer.from(JSON.stringify(stored.handoff), "utf8"))) issues.push(issue("handoff-record-changed", "binding.handoffCanonicalSha256", "stored handoff content changed after recording"));
-  const validation = validateHandoff(stored.handoff, { root });
+  const validation = validateHandoff(stored.handoff, { root, requireExecution: record?.state?.waveHandoffContractVersion === 2 });
   issues.push(...validation.issues);
   for (const [reference, recordedHash] of Object.entries(stored.evidenceHashes || {})) {
     if (validation.evidenceHashes.get(reference) !== recordedHash) issues.push(issue("evidence-stale", `evidence.${reference}`, "changed after handoff was recorded"));
   }
-  return { applicable: true, state: issues.length ? "unresolved" : "passed", issues, repeated: false, progress: validation.progress };
+  return { applicable: true, state: issues.length ? "unresolved" : "passed", issues, repeated: false, progress: validation.progress, executionCounts: validation.executionCounts };
 }
 
 function recordHandoff(root, requestPath, artifactPath, handoffPath) {
@@ -538,7 +565,7 @@ function recordHandoff(root, requestPath, artifactPath, handoffPath) {
   const inputFile = safeFile(root, handoffPath);
   const inputBytes = readBounded(inputFile, MAX_HANDOFF_BYTES);
   const handoff = JSON.parse(inputBytes.toString("utf8"));
-  const validation = validateHandoff(handoff, { root });
+  const validation = validateHandoff(handoff, { root, requireExecution: request.waveHandoffContractVersion === 2 });
   if (!validation.valid) throw new Error(validation.issues.map((item) => `${item.code} ${item.field}: ${item.message}`).join("\n"));
   const directory = path.dirname(requestFile);
   const receiptPath = safeFile(root, path.join(directory, HANDOFF_FILE));
@@ -567,13 +594,14 @@ function recordHandoff(root, requestPath, artifactPath, handoffPath) {
     handoff,
     evidenceHashes: Object.fromEntries(validation.evidenceHashes),
     progress: validation.progress,
+    executionCounts: validation.executionCounts,
     structuralConsistencyOnly: true,
   };
   fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
   const temporary = `${receiptPath}.${crypto.randomUUID()}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(receipt, null, 2)}\n`, { encoding: "utf8", flag: "wx", mode: 0o600 });
   fs.renameSync(temporary, receiptPath);
-  return { state: "recorded", requestId, artifactSha256, receipt: path.relative(root, receiptPath).split(path.sep).join("/"), repeated, progress: validation.progress, note: "Structural consistency only; this record does not establish product quality or live acceptance." };
+  return { state: "recorded", requestId, artifactSha256, receipt: path.relative(root, receiptPath).split(path.sep).join("/"), repeated, progress: validation.progress, executionCounts: validation.executionCounts, note: "Structural consistency only; this record does not establish product quality or live acceptance." };
 }
 
 module.exports = { recordHandoff, checkHandoff, validateHandoff, formatProgress, taskIsSubstantive, closesWork, readBounded };

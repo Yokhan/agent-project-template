@@ -118,7 +118,19 @@ function startRequestFromPrompt(root, input, prompt, provenance = {}) {
       if (candidate.state.sessionId === input.session_id && candidate.state.delegation?.required === true) accepted = candidate;
     }
   }
-  const resolved = requestContext.resolveRequestContext(prompt, previous, accepted);
+  // An exact host mailbox notice is a control signal, not a new user goal.
+  // Only the current same-session unresolved ledger can retain its intent.
+  if (requestContext.isOrchestrationNotice(prompt) && previous) {
+    const resultFile = path.join(previous.directory, "result.json");
+    const result = fs.existsSync(resultFile) ? policy.readJson(resultFile) : null;
+    if (!result || result.state === "unresolved") {
+      policy.writeJson(path.join(session, "turns", sha256(input.turn_id) + ".json"), { file: previous.file, controlNoticeSha256: sha256(prompt) });
+      return { record: previous, resolved: { kind: "orchestration-control-notice" }, route: null };
+    }
+  }
+  const resolved = requestContext.isOrchestrationNotice(prompt)
+    ? { task: prompt, routeTask: "", classificationTask: "", rawPromptSha256: sha256(prompt), kind: "orchestration-control-notice" }
+    : requestContext.resolveRequestContext(prompt, previous, accepted);
   const route = getRoute(resolved.routeTask, { cwd: root });
   const continuationSource = resolved.kind === "accepted-task-continuation"
     ? [previous, accepted].find(candidate => candidate?.state.requestId === resolved.continuationOf) : null;
@@ -430,6 +442,7 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       return repair;
     }
     let summary = cleanupState.diagnostics.length ? `Nonblocking project cleanup diagnostics (not attributed to this request): ${cleanupState.summary}` : null;
+    if (record.state.delegation?.required && result.preferredProfileSource === "current-policy-fallback-snapshot-unavailable") summary = `${summary ? summary + " " : ""}Preferred worker snapshot unavailable; this request was checked against the current policy profile.`;
     if (handoff.applicable && handoff.state === "passed") summary =
       `Task handoff consistency checked; this is not product acceptance. ${taskHandoffs.formatProgress(handoff.progress)}` + (summary ? ` ${summary}` : "");
     let last = null;
@@ -455,7 +468,7 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
       summary = `${summary ? summary + " " : ""}Latest project report is diagnostic only (ownership=${reportOwnership}, runId=${report?.runId || "unknown"}, path=${immutableReportPath || "unavailable"}); it is not evidence for this request.`;
     }
     if (cleanup?.cache) summary = `${summary ? summary + " " : ""}Project cache observation: ${JSON.stringify({ bytesRetained: cleanup.cache.bytesRetained ?? null, activeOverBudget: cleanup.cache.activeOverBudget || false, complete: cleanup.cache.complete !== false })}.`;
-    return result.exception ? { systemMessage: `Delegation exception: ${result.exception.category}: ${result.exception.reason}. Luna execution is not claimed. ${summary || ""}` } : summary ? { systemMessage: summary } : {};
+    return result.exception ? { systemMessage: `Delegation exception: ${result.exception.category}: ${result.exception.reason}. Preferred-worker execution is not claimed. ${summary || ""}` } : summary ? { systemMessage: summary } : {};
   }
   throw new Error(`Unsupported native hook event: ${event}`);
 }

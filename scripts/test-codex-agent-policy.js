@@ -18,14 +18,14 @@ const {
 } = require("./codex-agent-policy.js");
 
 const EXPECTED_PROFILES = {
-  scout: ["gpt-6-luna", "high", "read-only"],
-  log_analyst: ["gpt-6-luna", "high", "read-only"],
-  summarizer: ["gpt-6-luna", "high", "read-only"],
-  pr_explorer: ["gpt-6-luna", "high", "read-only"],
-  docs_researcher: ["gpt-6-luna", "high", "read-only"],
-  tester: ["gpt-6-luna", "high", "read-only"],
-  writing_editor: ["gpt-6-luna", "high", "read-only"],
-  implementer: ["gpt-6-luna", "high", "workspace-write"],
+  scout: ["gpt-6.1-terra", "medium", "read-only"],
+  log_analyst: ["gpt-6.1-terra", "medium", "read-only"],
+  summarizer: ["gpt-6.1-terra", "medium", "read-only"],
+  pr_explorer: ["gpt-6.1-terra", "medium", "read-only"],
+  docs_researcher: ["gpt-6.1-terra", "medium", "read-only"],
+  tester: ["gpt-6.1-terra", "medium", "read-only"],
+  writing_editor: ["gpt-6.1-terra", "medium", "read-only"],
+  implementer: ["gpt-6.1-terra", "medium", "workspace-write"],
   reviewer: ["gpt-6.1-sol", "high", "read-only"],
   design_reviewer: ["gpt-6.1-sol", "high", "read-only"],
   product_reviewer: ["gpt-6.1-sol", "high", "read-only"],
@@ -307,15 +307,15 @@ function testCandidateRanking() {
 function createValidatorFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-agent-policy-"));
   fs.mkdirSync(path.join(root, ".codex"), { recursive: true });
-  fs.cpSync(".codex/agents", path.join(root, ".codex/agents"), { recursive: true });
-  fs.copyFileSync(".codex/config.toml", path.join(root, ".codex/config.toml"));
+  fs.cpSync(path.join(__dirname, "../.codex/agents"), path.join(root, ".codex/agents"), { recursive: true });
+  fs.copyFileSync(path.join(__dirname, "../.codex/config.toml"), path.join(root, ".codex/config.toml"));
   return root;
 }
 
 function runValidator(root) {
   return spawnSync(
     process.execPath,
-    [path.resolve("scripts/validate-codex-agents.js")],
+    [path.join(__dirname, "validate-codex-agents.js")],
     { cwd: root, encoding: "utf8" },
   );
 }
@@ -336,20 +336,20 @@ function testValidatorRejections() {
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/scout.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model = "gpt-6-luna"',
+      'model = "gpt-6.1-terra"',
       'model = "gpt-6.1-sol"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /scout must use gpt-6-luna/);
+  }, /scout must use gpt-6.1-terra/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/agents/pr-explorer.toml");
     const content = fs.readFileSync(file, "utf8").replace(
-      'model_reasoning_effort = "high"',
+      'model_reasoning_effort = "medium"',
       'model_reasoning_effort = "max"',
     );
     fs.writeFileSync(file, content, "utf8");
-  }, /must use high effort/);
+  }, /must use medium effort/);
 
   withValidatorFixture((root) => {
     const file = path.join(root, ".codex/config.toml");
@@ -407,8 +407,8 @@ function testValidatorGlobalThreadCapacity() {
 
 function testResourceSelection() {
   const bounded = { role: "implementer", scope: ["src/isolated.js"], acceptance: ["unit tests pass"] };
-  assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6-luna");
-  assert.strictEqual(getResourceRecommendation(bounded).recommendedEffort, "high");
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedModel, "gpt-6.1-terra");
+  assert.strictEqual(getResourceRecommendation(bounded).recommendedEffort, "medium");
   const integration = getResourceRecommendation({ ...bounded, integration: true });
   assert.strictEqual(integration.recommendedModel, "gpt-6.1-sol");
   assert.strictEqual(integration.dispatch.customRole, null);
@@ -423,22 +423,23 @@ function testResourceSelection() {
   assert.strictEqual(consultant.dispatch.customRole, null);
   assert.strictEqual(consultant.effectiveModel, null);
   assert.strictEqual(consultant.runtimeStatus, "recommendation-only");
-  assert.strictEqual(validateResourceRequest({ model: "gpt-6-luna", effort: "max" }).isValid, false);
-  const elevated = { model: "gpt-6-luna", effort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 } };
+  assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-terra", effort: "max" }).isValid, false);
+  const elevated = { model: "gpt-6.1-terra", effort: "max", reason: "hard bounded module", budget: { maxTokens: 5000, maxAttempts: 2 } };
   assert.strictEqual(validateResourceRequest(elevated).isValid, true);
   assert.strictEqual(validateResourceRequest(elevated).hostStatus, "unverified");
-  assert.strictEqual(validateResourceRequest({ ...elevated, hostCapabilities: { "gpt-6-luna": ["high"] } }).isValid, false);
+  assert.strictEqual(validateResourceRequest({ ...elevated, hostCapabilities: { "gpt-6.1-terra": ["medium"] } }).isValid, false);
   assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-sol", effort: "none" }).isValid, false);
-  const lunaMax = getResourceRecommendation({ ...bounded, requestedEffort: "max",
+  assert.strictEqual(validateResourceRequest({ model: "gpt-6.1-terra", effort: "none" }).isValid, true);
+  const terraMax = getResourceRecommendation({ ...bounded, requestedEffort: "max",
     reason: "hard bounded task", budget: { maxTokens: 5000, maxAttempts: 2 },
-    hostCapabilities: { "gpt-6-luna": ["high", "max"] } });
-  assert.strictEqual(lunaMax.recommendedEffort, "max");
-  assert.strictEqual(lunaMax.dispatch.customRole, null);
-  assert.strictEqual(lunaMax.dispatch.strategy, "explicit-model-contract");
-  assert.strictEqual(lunaMax.dispatch.ready, false);
+    hostCapabilities: { "gpt-6.1-terra": ["medium", "max"] } });
+  assert.strictEqual(terraMax.recommendedEffort, "max");
+  assert.strictEqual(terraMax.dispatch.customRole, null);
+  assert.strictEqual(terraMax.dispatch.strategy, "explicit-model-contract");
+  assert.strictEqual(terraMax.dispatch.ready, false);
   const explicit = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["explicit-model-contract"] });
   assert.strictEqual(explicit.dispatch.ready, true);
-  assert.strictEqual(explicit.dispatch.callContract.model, "gpt-6-luna");
+  assert.strictEqual(explicit.dispatch.callContract.model, "gpt-6.1-terra");
   assert.strictEqual(explicit.dispatch.callContract.fork_turns, "none");
   const native = getResourceRecommendation({ ...bounded, hostDispatchCapabilities: ["native-custom-role"] });
   assert.strictEqual(native.dispatch.customRole, "implementer");

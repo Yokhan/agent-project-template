@@ -26,7 +26,7 @@ Choose the smallest useful design mode. Use `references/design-command-modes.md`
 when the user requests a named mode or the decision needs register-aware
 judgment. Use `references/design-checks.md` to select relevant checks.
 
-For useful, well-scoped nontrivial implementation, assign GPT-6 Luna `high`
+For useful, well-scoped nontrivial implementation, assign GPT-6.1 Terra `medium`
 bounded component or screen work against an explicit contract, including a
 sequential handoff. Sol retains visual/product judgment, design decisions,
 integration, and acceptance. Split only where component/screen ownership and

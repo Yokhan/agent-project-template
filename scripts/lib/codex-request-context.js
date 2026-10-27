@@ -30,6 +30,10 @@ function isContextualContinuation(text) {
   return /^(?:ну\s+)?(?:вот\s+)?сделай\s+(?:всё|все),?\s+что\s+мы\s+обсудили(?:,?\s+пожалуйста)?$/iu.test(normalized);
 }
 
+function isOrchestrationNotice(prompt) {
+  return /^You have [1-9]\d* orchestration messages?\. Run `orca orchestration check`\.$/u.test(prompt);
+}
+
 function resolveRequestContext(prompt, previousRecord = null, acceptedRecord = undefined) {
   if (typeof prompt !== "string") throw new Error("Native prompt must be text");
   const rawPromptSha256 = sha256(prompt);
@@ -90,4 +94,4 @@ function resolveRequestContext(prompt, previousRecord = null, acceptedRecord = u
   return { task: normalized, routeTask: normalized, classificationTask: normalized, rawPromptSha256, kind: "user-prompt", removedAmbientContext };
 }
 
-module.exports = { resolveRequestContext, parseAnswerEnvelope, parseRealtimeDelegationEnvelope, isContinuation, isContextualContinuation };
+module.exports = { isOrchestrationNotice, resolveRequestContext, parseAnswerEnvelope, parseRealtimeDelegationEnvelope, isContinuation, isContextualContinuation };

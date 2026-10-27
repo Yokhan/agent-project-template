@@ -107,6 +107,28 @@ function runHandoffOnly({ boundaryOnly = false } = {}) {
   assert.equal(good.goal.baseline.outcomes.some((item) => item.id === "existing-identity-api"), false, "an existing compatible auth dependency is evidenced without inflating the product denominator");
   assert.match(handoffs.formatProgress(validated.progress), /Accepted \[[#.]{10}\] 2\/4/u);
 
+  assert(handoffs.validateHandoff(good, { root, requireExecution: true }).issues.some(item => item.code === "task-handoff-execution-required"));
+  const wave = fixture();
+  const planRef = { ref: "tasks/identity-gate.md", sha256: digest("tasks/identity-gate.md") };
+  wave.execution = { planRef, waveRef: planRef, integrationOwner: "Parent", requestedScale: 3, placementReason: "Only two lanes currently placed", lanes: [
+    { id: "a", owner: "Owner A", scope: "Owned source", status: "live", handle: "worker-a", evidence: planRef },
+    { id: "b", owner: "Owner B", scope: "Independent review", status: "unverified" },
+  ] };
+  const waveResult = handoffs.validateHandoff(wave, { root, requireExecution: true });
+  assert.equal(waveResult.valid, true, JSON.stringify(waveResult.issues));
+  assert.deepEqual(waveResult.executionCounts, { plannedTotal: 2, requestedScale: 3, planned: 0, accepted: 0, live: 1, settled: 0, blocked: 0, unverified: 1 });
+  assert.match(handoffs.formatProgress(waveResult.progress), /planned total 2; requested 3; planned 0, accepted 0, live 1, settled 0/);
+  assert.doesNotMatch(handoffs.formatProgress(validated.progress), /Lanes:/);
+  const noDispatch = structuredClone(wave); delete noDispatch.execution.lanes[0].evidence;
+  assert(handoffs.validateHandoff(noDispatch, { root }).issues.some(item => item.code === "task-handoff-execution-dispatch-evidence"));
+  const duplicateLane = structuredClone(wave); duplicateLane.execution.lanes[1].id = "a";
+  assert(handoffs.validateHandoff(duplicateLane, { root }).issues.some(item => item.code === "task-handoff-execution-duplicate-lane"));
+  const noPlacement = structuredClone(wave); delete noPlacement.execution.placementReason;
+  assert(handoffs.validateHandoff(noPlacement, { root }).issues.some(item => item.code === "task-handoff-execution-placement"));
+  const stalePlan = structuredClone(wave); stalePlan.execution.planRef.sha256 = "0".repeat(64);
+  assert(handoffs.validateHandoff(stalePlan, { root }).issues.some(item => item.code === "task-handoff-evidence-stale"));
+  const fractional = structuredClone(wave); fractional.execution.requestedScale = 1.5;
+  assert(handoffs.validateHandoff(fractional, { root }).issues.some(item => item.code === "task-handoff-schema"));
   const externalCountedProof = fixture();
   externalCountedProof.acceptedOutcomes[0].evidence[0].ref = "https://example.test/booking-observation.json";
   const externalCountedProofResult = handoffs.validateHandoff(externalCountedProof, { root });

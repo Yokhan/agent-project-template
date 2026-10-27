@@ -43,7 +43,7 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    structure or imitate a named author mechanically.
 5. For substantial staged writing, plan the final function/section inventory;
    handle a short answer or bounded edit directly within its existing purpose.
-   For a clear, nontrivial `create` or material `edit`, give a Luna High
+   For a clear, nontrivial `create` or material `edit`, give a Terra Medium
    `implementer` an exact request-scoped draft artifact as its writable scope,
    with the reader scenario, purpose, supplied facts/sources, actual output
    surface, approved voice examples and acceptance criteria.
@@ -71,8 +71,8 @@ Read `.claude/library/technical/writing.md` first. It is the shared SOT.
    `russian-explanation-and-persuasion.md` child profiles. Never let an English
    domain standard determine Russian voice, syntax, idiom, or line editing.
 8. Apply the review policy in `writing.md`: source-grounded authored nonfiction
-   and material rewrites require the distinct read-only `writing_editor` (Luna
-   High), including short ads/letters. Use `codex-turn editorial-assignment`,
+   and material rewrites require the distinct read-only `writing_editor` (Terra
+   Medium), including short ads/letters. Use `codex-turn editorial-assignment`,
    wait for the native JSON result, fix findings, and use `review-accept` with
    the actual child ID. Changed bytes require new review. Brief technical
    explanations/status and literal typo edits can self-check; explicit user

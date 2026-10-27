@@ -1,7 +1,7 @@
 name = "summarizer"
 description = "Low-cost read-only agent for bounded summaries of provided documents, diffs, and completed worker results."
-model = "gpt-6-luna"
-model_reasoning_effort = "high"
+model = "gpt-6.1-terra"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Brief", "Digest", "Signal"]
 developer_instructions = """

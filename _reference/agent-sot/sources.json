@@ -8,6 +8,26 @@
   },
   "sources": [
     {
+      "id": "openai-gpt-6-1-terra",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "GPT-6.1 Terra model capabilities",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
+      "last_checked": "2026-10-27",
+      "requires_fresh_check": true,
+      "local_conclusion": "User-selected future light/bounded worker profile is gpt-6.1-terra medium. Official API supports medium; account/client/runtime availability and effective effort require correlated observations. Preserve busy workers and user-owned parent settings. No workload benchmark or savings claim follows from model pricing."
+    },
+    {
+      "id": "deepseek-flash-api",
+      "kind": "official-docs",
+      "trust": "primary",
+      "title": "DeepSeek API and Flash integration",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "last_checked": "2026-10-27",
+      "requires_fresh_check": true,
+      "local_conclusion": "The official API names deepseek-flash and supports OpenAI/Anthropic-compatible clients and OpenCode. Host aliases and selected model are not effective provider proof. Use available authorized access only for bounded privacy-reviewed coordinator advice; no hook-time network call, key acquisition or automatic provider fallback."
+    },
+    {
       "id": "openai-gpt-6-lean-skills",
       "kind": "official-docs",
       "trust": "primary",
@@ -35,7 +55,7 @@
       "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
       "last_checked": "2026-10-06",
       "requires_fresh_check": true,
-      "local_conclusion": "Bounded discovery, test/docs generation, and implementation use Luna high; max is optional with task justification, bounded caller budget, host support, and effective metadata."
+      "local_conclusion": "Historical routing used Luna high for bounded discovery, test/docs generation and implementation. Direct user policy on 2026-10-27 supersedes future light-worker routing with Terra6.1 medium; preserve historical receipts and already-running Luna workers."
     },
     {
       "id": "openai-gpt-6-astra",

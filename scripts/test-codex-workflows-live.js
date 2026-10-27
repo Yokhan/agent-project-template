@@ -90,7 +90,7 @@ process.stdout.write(JSON.stringify(await engine.handle(input,root))+'\\n');};
   fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (result.code !== 0 || !results.length || results.some(x => x.state !== "passed")) process.exitCode = 1;
-  if (scenario === "implementation" && !results.some(x => x.children.some(c => c.completedAt && c.profile.model === "gpt-6-luna" && c.profile.effort === "high"))) process.exitCode = 1;
+  if (scenario === "implementation" && !results.some(x => x.children.some(c => c.completedAt && c.profile.model === "gpt-6.1-terra" && c.profile.effort === "medium"))) process.exitCode = 1;
   if (["tiny", "optout"].includes(scenario) && results.some(x => x.children.length)) process.exitCode = 1;
   if (scenario === "tiny" && (groundingPacketCount || results.some(x => x.repairCount > 0))) process.exitCode = 1;
   if (scenario === "missing-application" && (!results.some(x => x.repairCount > 0) || !fs.existsSync(path.join(destination, ".session-cache/injected-once.json")))) process.exitCode = 1;

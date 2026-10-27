@@ -33,6 +33,15 @@ record the detailed nearest-wave plan within that accepted scope:
    focused checks, broad acceptance owner/check, acceptance evidence, and any
    bounded worker contracts needed to execute it.
 
+For the nearest wave, show planned and actual agent counts separately and list
+owners/roles, exact tasks and write scopes, independent concurrent lanes, real
+dependencies, shared resource limits, and the acceptance/integration owner.
+Mark planned, reserved, idle, completed, blocked and unverified separately;
+call a lane live only with current handles or accepted dispatch evidence. A
+reviewer or advisor is not an implementation lane. State when work is sequential
+and why; neither a fixed agent quota nor parallelism for its own sake is useful.
+Keep original goal and existing plan references visible in status and closeout.
+
 ## Product wave semantics — source of truth
 
 A wave is a product-level increase in resolution: the same product serves its
@@ -54,7 +63,11 @@ Before accepting a proposed wave, answer in the existing plan/context:
   version, and how can they access it?
 - What remains from the same product, what becomes deeper/broader/more reliable,
   and what is explicitly not offered yet?
-- What observation accepts this version, and why is this the next version?
+- What observation accepts this version, what would falsify it, and why is this the next version?
+
+The parent reviews these answers semantically for every proposed wave; a heading,
+filled field, or structural validator cannot establish their truth. A list of
+refactor, test and deployment steps remains enabling work even under a wave heading.
 
 If these answers are unknown, restore the product plan or resolve the missing
 decision. Do not fabricate a player/customer goal or call an internal route a

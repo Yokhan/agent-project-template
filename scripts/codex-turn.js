@@ -22,7 +22,7 @@ function run(argv, root = process.cwd()) {
     "node scripts/codex-turn.js outcome-status --state <request.json>",
     "node scripts/codex-turn.js handoff --state <request.json> --artifact <exact-final.txt> --result <handoff.json>",
     "node scripts/codex-turn.js fallback --state <request.json> --category host-unavailable|unsafe-split|judgment|coordination-cost --reason <concrete reason>"],
-    notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. Fallback is visible, never verified Luna execution." };
+    notes: "Read packet.json primary passages. notes is an array of {sourceId,passageSha256,principle,effect}, one per passage. Save exactly the final message bytes (no automatic newline/normalization), apply, then send that text. For files use --target file. Notes require semantic self-check or risk-appropriate independent review. Fallback is visible, never verified preferred-worker execution." };
   if (!options["--state"]) throw new Error("--state is required from native hook context");
   if (command === "status") {
     const record = policy.loadState(root, options["--state"]);

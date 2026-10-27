@@ -10,8 +10,8 @@ SCRIPT_DIR="$ROOT_DIR/scripts"
 [ -f "$SCRIPT_DIR/lib/platform.sh" ] && source "$SCRIPT_DIR/lib/platform.sh"
 MODEL="${CODEX_LIVE_MODEL:-gpt-6.1-sol}"
 ROLE="${CODEX_LIVE_ROLE:-pr_explorer}"
-CHILD_MODEL="${CODEX_LIVE_CHILD_MODEL:-gpt-6-luna}"
-CHILD_EFFORT="${CODEX_LIVE_CHILD_EFFORT:-high}"
+CHILD_MODEL="${CODEX_LIVE_CHILD_MODEL:-gpt-6.1-terra}"
+CHILD_EFFORT="${CODEX_LIVE_CHILD_EFFORT:-medium}"
 PARENT_EFFORT="${CODEX_LIVE_EFFORT:-high}"
 VALIDATION_MODE="${CODEX_LIVE_VALIDATION_MODE:-explicit-profile}"
 APP_CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
@@ -34,8 +34,8 @@ Optional:
   CODEX_LIVE_BIN=path          Override Codex executable; must support --strict-config and exec
   CODEX_LIVE_MODEL=model-name  Override parent model, default gpt-6.1-sol
   CODEX_LIVE_ROLE=role-name     Override child role, default pr_explorer
-  CODEX_LIVE_CHILD_MODEL=model  Required child model evidence, default gpt-6-luna
-  CODEX_LIVE_CHILD_EFFORT=name  Required child effort evidence, default high
+  CODEX_LIVE_CHILD_MODEL=model  Required child model evidence, default gpt-6.1-terra
+  CODEX_LIVE_CHILD_EFFORT=name  Required child effort evidence, default medium
   CODEX_LIVE_EFFORT=name        Parent effort, default high
   CODEX_LIVE_VALIDATION_MODE=name explicit-profile (default); native-role is unsupported
   CODEX_LIVE_STATE_DB=path      Read-only Codex state database override
