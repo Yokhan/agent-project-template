@@ -110,7 +110,7 @@ function runHandoffOnly({ boundaryOnly = false } = {}) {
   assert(handoffs.validateHandoff(good, { root, requireExecution: true }).issues.some(item => item.code === "task-handoff-execution-required"));
   const wave = fixture();
   const planRef = { ref: "tasks/identity-gate.md", sha256: digest("tasks/identity-gate.md") };
-  wave.execution = { planRef, waveRef: planRef, integrationOwner: "Parent", requestedScale: 3, placementReason: "Only two lanes currently placed", lanes: [
+  wave.execution = { planRef, waveRef: planRef, integrationOwner: "Parent", advisor: { availability: "available", reviewRef: planRef, disposition: "Parent assessed the bounded review." }, requestedScale: 3, placementReason: "Only two lanes currently placed", lanes: [
     { id: "a", owner: "Owner A", scope: "Owned source", status: "live", handle: "worker-a", evidence: planRef },
     { id: "b", owner: "Owner B", scope: "Independent review", status: "unverified" },
   ] };
@@ -119,6 +119,15 @@ function runHandoffOnly({ boundaryOnly = false } = {}) {
   assert.deepEqual(waveResult.executionCounts, { plannedTotal: 2, requestedScale: 3, planned: 0, accepted: 0, live: 1, settled: 0, blocked: 0, unverified: 1 });
   assert.match(handoffs.formatProgress(waveResult.progress), /planned total 2; requested 3; planned 0, accepted 0, live 1, settled 0/);
   assert.doesNotMatch(handoffs.formatProgress(validated.progress), /Lanes:/);
+  const missingAdvisor = structuredClone(wave); delete missingAdvisor.execution.advisor;
+  assert(handoffs.validateHandoff(missingAdvisor, { root, requireExecution: true }).issues.some(item => item.code === "task-handoff-advisor-required"));
+  assert(handoffs.validateHandoff(missingAdvisor, { root }).valid, "legacy handoff remains valid without advisor");
+  const missingReview = structuredClone(wave); delete missingReview.execution.advisor.reviewRef;
+  assert(handoffs.validateHandoff(missingReview, { root, requireExecution: true }).issues.some(item => item.code === "task-handoff-advisor-review-required"));
+  const unknownAdvisor = structuredClone(wave); unknownAdvisor.execution.advisor = { availability: "unverified" };
+  assert(handoffs.validateHandoff(unknownAdvisor, { root, requireExecution: true }).issues.some(item => item.code === "task-handoff-advisor-reason-required"));
+  unknownAdvisor.execution.advisor.reason = "Host availability was not observable.";
+  assert(handoffs.validateHandoff(unknownAdvisor, { root, requireExecution: true }).valid);
   const noDispatch = structuredClone(wave); delete noDispatch.execution.lanes[0].evidence;
   assert(handoffs.validateHandoff(noDispatch, { root }).issues.some(item => item.code === "task-handoff-execution-dispatch-evidence"));
   const duplicateLane = structuredClone(wave); duplicateLane.execution.lanes[1].id = "a";

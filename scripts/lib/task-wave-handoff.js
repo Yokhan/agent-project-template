@@ -183,6 +183,13 @@ function validateHandoff(value, context = {}) {
   if (context.requireExecution && !value.execution) issues.push(issue("execution-required", "execution", "a wave contract requires the existing plan, wave and execution lanes"));
   let executionCounts = null;
   if (value.execution) {
+    const advisor = value.execution.advisor;
+    if (context.requireExecution && !advisor) issues.push(issue("advisor-required", "execution.advisor", "record observed advisor availability and disposition"));
+    if (advisor) {
+      if (advisor.availability === "available" && (!advisor.reviewRef || !advisor.disposition)) issues.push(issue("advisor-review-required", "execution.advisor", "available advisor requires a hash-bound review and disposition"));
+      if (["unavailable", "unverified"].includes(advisor.availability) && !advisor.reason) issues.push(issue("advisor-reason-required", "execution.advisor.reason", "explain observed unavailability or why availability is unverified"));
+      if (advisor.reviewRef) verifyHashReference(root, advisor.reviewRef, "execution.advisor.reviewRef", issues, evidenceHashes, referenceBudget);
+    }
     executionCounts = { plannedTotal: value.execution.lanes.length, ...(value.execution.requestedScale ? { requestedScale: value.execution.requestedScale } : {}), planned: 0, accepted: 0, live: 0, settled: 0, blocked: 0, unverified: 0 };
     const seenLanes = new Set();
     for (const key of ["planRef", "waveRef"]) {

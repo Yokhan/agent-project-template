@@ -94,6 +94,10 @@ diagnosis or approach; simply increasing effort is not a fix.
 
 ## Models and fan-out
 
+For material coordinator plans, pipeline decisions and answers, use an available
+authorized DeepSeek Flash advisor under the bounded review contract in
+`.claude/library/process/product-goal-loop.md`; tiny acknowledgements are exempt.
+
 Use GPT-6.1 Sol `high` as the recommended orchestrator and integrator. GPT-6.1
 Terra `medium` fits bounded discovery, tests, documentation, and implementation
 against an explicit contract. GPT-6 Astra `medium` is an architecture

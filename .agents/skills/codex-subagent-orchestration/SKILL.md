@@ -139,16 +139,20 @@ attempt. Preserve the validated contract and owner and relay placement to the
 actual Run coordinator; do not create another Run, take over, or bypass its API.
 An enqueue is not execution; distinguish ready/turn start from settled work.
 
-## Visible delegation and optional advisor
+## Visible delegation and advisor
 
 When the host supports visible sessions, reveal and name the same authoritative
 session and read back its workspace and identity. Do not create a duplicate
 chat, history or Run for visibility; do not steal foreground from background work.
-For material plan, pipeline or answer review, use an actually available
-DeepSeek Flash session as a read-only advisor when useful and permitted by the
-host and task privacy boundaries. Check availability and selected model; report
-actual effective runtime as unverified unless correlated evidence establishes it.
-The advisor has no decision authority and must not bypass network stops, send
-private material outside its authorized boundary, upload data, or add paid keys.
-If unavailable, continue with a transparent fallback; never create a session to
-simulate evidence of consultation.
+At material coordinator plan, wave, blocker and answer boundaries, consult an
+actually available and authorized DeepSeek Flash session as a read-only advisor.
+Use a compact bounded packet within the task's privacy permissions. Observe and
+record availability; do not infer it from a missing API. If unavailable or
+unverified, record the concrete reason and proceed with a transparent fallback.
+Tiny acknowledgements need no consultation. Do not interrupt a busy advisor or
+create a duplicate session; preserve network stops, avoid purchases or paid keys,
+and never upload private material beyond its authorized boundary. Check selected
+model; effective runtime remains unverified without correlated evidence. The
+advisor has no decision authority; the coordinator assesses its findings and
+records their disposition. A hash-bound review reference records provenance, not
+proof of actual model identity or runtime.

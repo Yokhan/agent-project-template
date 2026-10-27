@@ -36,6 +36,16 @@
         "planRef": { "$ref": "#/$defs/referenceEvidence" },
         "waveRef": { "$ref": "#/$defs/referenceEvidence" },
         "integrationOwner": { "$ref": "#/$defs/text" },
+        "advisor": {
+          "type": "object", "additionalProperties": false,
+          "required": ["availability"],
+          "properties": {
+            "availability": { "enum": ["available", "unavailable", "unverified"] },
+            "reason": { "$ref": "#/$defs/text" },
+            "disposition": { "$ref": "#/$defs/text" },
+            "reviewRef": { "$ref": "#/$defs/referenceEvidence" }
+          }
+        },
         "requestedScale": { "type": "integer", "minimum": 1, "maximum": 100 },
         "placementReason": { "$ref": "#/$defs/text" },
         "lanes": { "type": "array", "maxItems": 100, "items": {

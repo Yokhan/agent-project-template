@@ -236,6 +236,11 @@ Deduplicate reports by incident, use a finite backoff and restart budget, and do
 not poll or restart indefinitely. A user-authorized recovery within the same
 scope needs no second approval; ask only for a new material decision.
 
+For material coordinator plan, wave, blocker and answer boundaries, follow the
+required availability-based read-only advisor consultation in
+`$codex-subagent-orchestration`; record its disposition or observed reason for
+unavailability. Tiny acknowledgements are exempt.
+
 Status and closeout identify the original goal, existing plan and nearest wave;
 separate planned from actual agents and concurrent independent lanes. Report
 product-wave readiness separately from local, tested, staged, accepted and
