@@ -329,6 +329,23 @@ function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
     "native child start binds its own turn to the original parent request");
   const steered = policy.startRequest(tmp, { session_id: "child-session", turn_id: "new-parent-turn", prompt: "Спасибо" }, { workflowDepth: "direct" });
   const childFollowup = await ensureRequest(tmp, { session_id: "child-session", turn_id: "child-followup", agent_id: childId });
+  assert.equal((await ensureRequest(tmp, { session_id: "child-session", turn_id: "child-first" })).state.requestId, parent.state.requestId,
+    "a known child turn remains bound to its original request when the hook omits agent_id after parent steering");
+  assert.equal(policy.findState(tmp, { session_id: "child-session" }).state.requestId, steered.state.requestId,
+    "resolving the observed child turn does not move the current parent request");
+  const childSessionRoot = policy.sessionRoot(tmp, "child-session");
+  const unknownPointerTurn = "unknown-pointer-child-turn";
+  policy.writeJson(path.join(childSessionRoot, "turns", sha256(unknownPointerTurn) + ".json"),
+    { file: parent.file, childId: "unobserved-pointer-child" });
+  await assert.rejects(ensureRequest(tmp, { session_id: "child-session", turn_id: unknownPointerTurn }), /not linked/iu,
+    "an unknown child identity in an existing turn pointer is rejected");
+  const mismatchedPointerTurn = "mismatched-pointer-child-turn";
+  policy.writeJson(path.join(childSessionRoot, "turns", sha256(mismatchedPointerTurn) + ".json"),
+    { file: steered.file, childId });
+  await assert.rejects(ensureRequest(tmp, { session_id: "child-session", turn_id: mismatchedPointerTurn }), /different request/iu,
+    "an observed child pointer cannot redirect to a different request");
+  assert.equal(policy.findState(tmp, { session_id: "child-session" }).state.requestId, steered.state.requestId,
+    "unknown and mismatched child mappings do not change the current parent request");
   assert.equal(childFollowup.state.requestId, parent.state.requestId, "observed child follow-up stays with its original request after steering");
   assert.equal(policy.findState(tmp, { session_id: "child-session" }).state.requestId, steered.state.requestId, "child mapping does not move the current parent request");
   await assert.rejects(ensureRequest(tmp, { session_id: "child-session", turn_id: "unknown-child-turn", agent_id: "unknown-child" }), /not linked/iu,

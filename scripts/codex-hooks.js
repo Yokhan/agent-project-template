@@ -66,7 +66,11 @@ function currentTurnRecord(root, input, allowInitializing = true) {
       if (pointer.file !== record.file) throw new Error("Native child turn points to a different request");
       return record;
     }
-    if (pointer.childId) throw new Error("Native parent turn cannot use a child-owned turn mapping");
+    if (pointer.childId) {
+      const record = observedChildRecord(root, { ...input, agent_id: pointer.childId });
+      if (pointer.file !== record.file) throw new Error("Native observed child turn points to a different request");
+      return record;
+    }
     return policy.findState(root, input);
   }
   if (input.agent_id) {
