@@ -2,17 +2,19 @@
 
 Use this document when publishing or consuming `agent-project-template` releases.
 
-Release snapshot: `v6.4.1` (prepared candidate). This source snapshot does not
-establish publication, exact-tag Linux/Windows CI or downloadable assets. Verify
-those before rollout. The previous stable release is **6.3.2**, published at
-`9b52ed7e8e318c5ce738860e7d3f832ef81ee615`; exact-tag CI
-[40326038901](https://github.com/Yokhan/agent-project-template/actions/runs/40326038901)
-passed, and downloaded checksum, metadata and canonical archive matched. The
-immutable `v6.4.0` tag points to `08ebc055`; exact-tag CI run
-[40475986739](https://github.com/Yokhan/agent-project-template/actions/runs/40475986739)
-was cancelled before publication. Do not move or delete that tag; `v6.4.1`
-supersedes it as the next candidate. See [v6.4.1 changes](RELEASE_V6_4_1.md), [v6.3.1 delivery observation and recovery](RELEASE_V6_3_1.md)
-and [v6.3.0 product workflow](RELEASE_V6_3_0.md). The
+Release snapshot: `v6.4.2` (prepared candidate). It is not published; exact-commit
+Linux/Windows preflight and exact-tag Linux/Windows CI are still required, then
+verify the downloaded checksum, release metadata and canonical archive. The previous
+stable release, `v6.4.1`, was published on 2026-10-27 at
+[the v6.4.1 release](https://github.com/Yokhan/agent-project-template/releases/tag/v6.4.1).
+Its exact-tag CI [40483463056](https://github.com/Yokhan/agent-project-template/actions/runs/40483463056)
+passed, and downloaded checksum, metadata and canonical archive matched the
+verified receipt. The immutable `v6.4.0` tag points to `08ebc055`; exact-tag CI
+run [40475986739](https://github.com/Yokhan/agent-project-template/actions/runs/40475986739)
+was cancelled before publication. Do not move or delete that tag. See [v6.4.2
+candidate notes](RELEASE_V6_4_2.md), [v6.4.1 changes](RELEASE_V6_4_1.md),
+[v6.3.1 delivery observation and recovery](RELEASE_V6_3_1.md) and
+[v6.3.0 product workflow](RELEASE_V6_3_0.md). The
 [v6.1.2](RELEASE_V6_1_2.md), [v6.1.1](RELEASE_V6_1_1.md),
 [v6.1.0](RELEASE_V6_1_0.md) and [v6.0.0](RELEASE_V6_0_0.md) records remain historical.
 `docs/GPT6_MIGRATION_CANDIDATE.md` preserves dated development evidence.
@@ -41,8 +43,8 @@ The template version is declared in:
 Use semantic version tags:
 
 ```bash
-git tag v6.4.1
-git push origin v6.4.1
+git tag v6.4.2
+git push origin v6.4.2
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release-template.yml`. The workflow runs the release gate and publishes a GitHub release archive named `agent-project-template-<tag>.tar.gz`.
@@ -131,15 +133,17 @@ Use the target release checkout's script against the project for this fallback.
 
 ### Pinned Release Flow
 
-Release snapshot: `v6.4.1` (prepared candidate). This source snapshot does not assert GitHub
-publication. Verify that the exact `v6.4.1` release exists and is non-draft and
-non-prerelease before rollout. `/releases/latest` selects a target only when no explicit tag
-was chosen; an already approved pinned tag does not need to remain latest.
+Release snapshot: `v6.4.2` (prepared candidate). These are post-publication
+procedures only. First require exact-commit Linux/Windows preflight and exact-tag
+Linux/Windows CI; then verify the downloaded checksum, release metadata and
+canonical archive and confirm the release is non-draft and non-prerelease. `/releases/latest` selects a target
+only when no explicit tag was chosen; an already approved pinned tag does not
+need to remain latest.
 
 After verifying the exact release, create a new project with:
 
 ```bash
-git clone --branch v6.4.1 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
+git clone --branch v6.4.2 --depth 1 https://github.com/Yokhan/agent-project-template.git agent-project-template
 cd agent-project-template
 bash setup.sh my-project
 ```
@@ -150,8 +154,8 @@ Existing generated project:
 template_url="$(git remote get-url template 2>/dev/null || true)"
 [ -n "$template_url" ] || git remote add template https://github.com/Yokhan/agent-project-template.git
 [ -z "$template_url" ] || [ "$template_url" = "https://github.com/Yokhan/agent-project-template.git" ] || { echo "template remote conflict: $template_url"; exit 1; }
-node scripts/sync-template.js --from-git --ref v6.4.1 --plan-file ../agent-template-v6.4.1.plan.json
-node scripts/sync-template.js --from-git --ref v6.4.1 --plan-file ../agent-template-v6.4.1.plan.json --apply
+node scripts/sync-template.js --from-git --ref v6.4.2 --plan-file ../agent-template-v6.4.2.plan.json
+node scripts/sync-template.js --from-git --ref v6.4.2 --plan-file ../agent-template-v6.4.2.plan.json --apply
 ```
 
 Use `main` only for template development, explicit canary rollout, or when the product owner accepts untagged changes. Release archives are for inspection or offline transfer; agent-managed projects should prefer git tag sync because the selected version is explicit and rollbackable.

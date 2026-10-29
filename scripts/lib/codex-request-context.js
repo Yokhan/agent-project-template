@@ -31,7 +31,7 @@ function isContextualContinuation(text) {
 }
 
 function isOrchestrationNotice(prompt) {
-  return /^You have [1-9]\d* orchestration messages?\. Run `orca orchestration check`\.$/u.test(prompt);
+  return /^You have [1-9]\d* orchestration messages?\. Run `orca orchestration check(?: --run run_[0-9a-f]{12})?`\.$/u.test(prompt);
 }
 
 function resolveRequestContext(prompt, previousRecord = null, acceptedRecord = undefined) {

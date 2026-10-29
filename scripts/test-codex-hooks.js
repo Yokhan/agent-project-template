@@ -497,7 +497,22 @@ try {
   await runSafetyOnly();
   const clarification = "<send_user_message_question_reply>[{\"questionItemId\":\"q1\",\"question\":\"Напиши пояснение о росте, около 3%?\",\"answer\":\"Это рост, ну, около 3%, короче, очень мало.\"}]</send_user_message_question_reply>";
   assert(requestContext.isOrchestrationNotice("You have 2 orchestration messages. Run `orca orchestration check`."));
+  const runNotice = "You have 1 orchestration message. Run `orca orchestration check --run run_18c7ad3661cc`.";
+  assert(requestContext.isOrchestrationNotice(runNotice), "the exact observed --run notification is recognized");
   assert(!requestContext.isOrchestrationNotice("Please check: You have 2 orchestration messages. Run `orca orchestration check`."));
+  for (const malformedNotice of [
+    "You have 0 orchestration messages. Run `orca orchestration check`.",
+    "You have 1 orchestration message. Run `orca orchestration check --run run_18c7ad3661cc --force`.",
+    "You have 1 orchestration message. Run `orca orchestration check --run run_18c7ad3661c`.",
+    "You have 1 orchestration message. Run `orca orchestration check --run run_18c7ad3661cc0`.",
+    "You have 1 orchestration message. Run `orca orchestration check --run run_18c7ad3661cg`.",
+    "You have 1 orchestration message. Run `orca orchestration check --run RUN_18C7AD3661CC`.",
+    "You have 1 orchestration message. Run `orca orchestration delete --run run_18c7ad3661cc`.",
+    `${runNotice}\nAlso write the report.`,
+    `${runNotice} Then summarize the request below.`,
+    "Please check: " + runNotice,
+    runNotice + " ",
+  ]) assert(!requestContext.isOrchestrationNotice(malformedNotice), `malformed or freeform text remains a user task: ${JSON.stringify(malformedNotice)}`);
   const currentEditorProfile = getAgentProfile("writing_editor");
   assert.doesNotThrow(() => policy.assertCurrentEditorialProfile({ model: currentEditorProfile.model, effort: currentEditorProfile.effort }));
   assert.throws(() => policy.assertCurrentEditorialProfile({ model: "gpt-6.1-terra", effort: "medium" }), error => error.code === "EDITORIAL_PROFILE_MISMATCH" && /fresh independent review/u.test(error.message));
@@ -610,11 +625,35 @@ try {
   const currentImplementerProfile = getAgentProfile("implementer");
   assert.deepEqual(routedRecord.state.preferredWorkerProfile, { model: currentImplementerProfile.model, effort: currentImplementerProfile.effort }, "new request captures the current preferred worker profile");
   assert.equal(routedRecord.state.delegation.required, true, "nontrivial execution request is routed to prepare-contract");
+  const childStart = { hook_event_name: "SubagentStart", session_id: routedInput.session_id, turn_id: "notice-child-turn",
+    agent_id: "synthetic-notice-child", agent_type: "implementer" };
+  await hooksApi.handle(childStart, fixture);
+  const childFile = path.join(routedRecord.directory, "children", sha256(childStart.agent_id) + ".json");
+  const childBytesBeforeNotice = fs.readFileSync(childFile);
+  const currentBytesBeforeNotice = fs.readFileSync(path.join(policy.sessionRoot(fixture, routedInput.session_id), "current.json"));
+  const sameTurnNoticeInput = { ...routedInput, prompt: runNotice };
+  await hooksApi.handle(sameTurnNoticeInput, fixture);
+  const sameTurnRecord = policy.findState(fixture, sameTurnNoticeInput);
+  assert.equal(sameTurnRecord.state.requestId, routedRecord.state.requestId, "same-turn --run notice retains the unresolved request");
+  assert.equal(sameTurnRecord.state.task, acceptedTask, "same-turn --run notice retains the original logical task");
+  assert.deepEqual(fs.readFileSync(path.join(policy.sessionRoot(fixture, routedInput.session_id), "current.json")), currentBytesBeforeNotice,
+    "same-turn --run notice preserves the current request pointer");
+  assert.deepEqual(fs.readFileSync(childFile), childBytesBeforeNotice, "same-turn --run notice preserves child ownership bytes");
+  const sameTurnMapping = policy.readJson(path.join(policy.sessionRoot(fixture, routedInput.session_id), "turns", sha256(routedInput.turn_id) + ".json"));
+  assert.equal(sameTurnMapping.file, routedRecord.file, "same-turn notice mapping remains bound to the routed request");
+  assert.equal(sameTurnMapping.controlNoticeSha256, sha256(runNotice), "same-turn mapping records the exact --run notice digest");
+
   const noticeInput = { ...routedInput, turn_id: "mailbox-notice", prompt: "You have 2 orchestration messages. Run `orca orchestration check`." };
   await hooksApi.handle(noticeInput, fixture);
   assert.equal(policy.findState(fixture, noticeInput).state.requestId, routedRecord.state.requestId, "notice preserves current unresolved request");
   const noticeMapping = policy.readJson(path.join(policy.sessionRoot(fixture, routedInput.session_id), "turns", sha256(noticeInput.turn_id) + ".json"));
   assert.equal(noticeMapping.controlNoticeSha256, sha256(noticeInput.prompt));
+  const humanNoticeInput = { hook_event_name: "UserPromptSubmit", session_id: "human-notice-task", turn_id: "human-notice-turn",
+    prompt: `${runNotice} Then summarize this task for me.` };
+  await hooksApi.handle(humanNoticeInput, fixture);
+  const humanNoticeRecord = policy.findState(fixture, humanNoticeInput);
+  assert.notEqual(humanNoticeRecord.state.requestId, routedRecord.state.requestId, "freeform human instruction gets its own request");
+  assert.equal(humanNoticeRecord.state.task, humanNoticeInput.prompt, "freeform human task is preserved verbatim");
   policy.writeJson(path.join(routedRecord.directory, "result.json"), { state: "passed" });
   const closedNotice = { ...noticeInput, turn_id: "closed-notice" };
   await hooksApi.handle(closedNotice, fixture);

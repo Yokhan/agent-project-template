@@ -1,7 +1,7 @@
 <!-- PROGRESSIVE_STATUS
 id: luna-coordination-20261027
 status: active
-updated: 2026-10-27
+updated: 2026-10-29
 readiness: 0
 accepted_outcomes: 3
 shipped_outcomes: 0
@@ -9,10 +9,31 @@ outcome_baseline: 4
 baseline_revision: luna-coordination-r2
 measurement: four equally weighted outcomes remain the denominator after the owner changed the future bounded-worker profile from Terra to Luna; accepted_outcomes measures integrated source contracts, while readiness measures shipped outcomes
 tags: template,luna,orchestration,progress,recovery
-next: pass exact-state release gates; carry visible report rendering with its original owner
+next: pass v6.4.2 exact-state release gates; carry visible report rendering with its original owner
 -->
 
 # Current Task - Luna Workers And Reliable Coordinator Delivery
+
+## Nearest patch lane: v6.4.2 same-session notice classification
+
+**Goal:** prepare a compatible patch that keeps an exact supported same-session
+`--run run_<12-lowercase-hex-id>` notice in the current logical request instead of
+replacing that request. The patch makes a one-line classifier correction; no
+timer, watcher, native activation or model/effort policy change is included.
+
+**Preserved behavior and limits:** the supported unresolved same-session ledger
+continues, closed tasks are not resurrected, and genuine human text remains a
+distinct input. Historical receipts for child/editor work already displaced by
+older behavior are not migrated. Focused synthetic same-turn actual-hooks-branch
+assertions passed (39 assertions). This is source/fixture evidence, not native
+activation or full candidate CI.
+
+**Release state:** v6.4.1 remains the verified stable release. v6.4.2 is prepared,
+not published. Parent-owned exact-commit Linux/Windows preflight, followed by
+exact-tag Linux/Windows CI, then downloaded checksum, release metadata and
+canonical archive gates must pass before publication or rollout. This patch lane
+does not change the four-outcome Luna coordination baseline below; visible report
+rendering remains with its original owner.
 
 ## Active wave, 2026-10-27
 
@@ -55,18 +76,19 @@ report enqueue receipts do not prove visible assistant rendering. A
 remaining acceptance boundary is actual visible rendering by its real owner.
 
 The `v6.4.0` tag at `08ebc055` is immutable; exact-tag CI run `40475986739` was
-cancelled before publication. Do not move or delete that tag. The unpublished
-`v6.4.1` candidate supersedes it; no new consumer update is authorized before a
-verified release. Parent integrates the scoped lanes and controls activation
-and release. Root alone owns its global project journal.
+cancelled before publication. Do not move or delete that tag. The
+`v6.4.1` release is verified stable; the prepared `v6.4.2` candidate is not
+authority for consumer updates before its publication gates pass. Parent integrates
+the scoped lanes and controls activation and release. Root alone owns its global
+project journal.
 
-All canonical edits use the claimed isolated Git worktree
-`.session-cache/worktrees/terra-orchestration-20261027`; live supervisor pins,
+For the Luna coordination baseline, canonical edits use its claimed isolated Git
+worktree `.session-cache/worktrees/terra-orchestration-20261027`. The v6.4.2
+patch uses its separately authorized candidate worktree. Live supervisor pins,
 product sources, capacity watcher, user plans and unrelated dirty work remain
-protected. Focused checks run through the live request-bound managed-temp
-wrapper. Parent owns one coherent integration aggregate, then exact-commit and
-exact-tag cross-platform CI, checksum and canonical archive gates. No self-sync
-or blanket overwrite.
+protected. Parent owns the integration aggregate and exact-commit/exact-tag
+cross-platform CI, checksum and canonical archive gates. No self-sync or blanket
+overwrite.
 
 Next: pass the exact candidate's release gates and carry visible periodic-report
 delivery with the original coordinator owner. Any host limitation stays explicit instead of being relabelled as
@@ -79,10 +101,11 @@ APP/server owners and is not gated on this template wave.
 A storage-retention settlement API defect remains in the original template
 worktree. After host reboot, retained claims need an owner-fenced settlement
 transition into a retained nonwriting/nonreusable state with durable protection;
-the reservation backfill must not re-reserve that settled state. Releasing volume alone is insufficient. This
-follow-up is explicitly outside v6.4.1 and does not hold its release. Preserve
-the existing claim and worktree; perform no code change, runtime operation or
-deletion in this wave. Plan the bounded repair after the current release.
+the reservation backfill must not re-reserve that settled state. Releasing volume
+alone is insufficient. This follow-up was outside v6.4.1 and remains outside the
+v6.4.2 classifier patch; it does not hold either release. Preserve the existing
+claim and worktree; perform no code change, runtime operation or deletion in this
+wave. Plan the bounded repair after the current release.
 
 ## Historical v6.3.2 work
 
