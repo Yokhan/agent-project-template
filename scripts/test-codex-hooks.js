@@ -410,10 +410,117 @@ function runExternalHostCases(fixture) {
   }
 }
 
+async function runChildRoutingCases(root, api) {
+  fs.mkdirSync(root, { recursive: true });
+  const sessionId = "synthetic-child-routing-session";
+  const parentTurnId = "synthetic-parent-turn";
+  const childTurnId = "synthetic-child-turn";
+  const childId = "synthetic-child-routing-agent";
+  const parentInput = { hook_event_name: "UserPromptSubmit", session_id: sessionId,
+    turn_id: parentTurnId, prompt: "Synthetic parent task with independent review requirements" };
+  const parentRecord = policy.startRequest(root, parentInput, {
+    workflowDepth: "routed", delegationDecision: { required: true, state: "prepare-contract" },
+  });
+  parentRecord.state.delegation = { required: true, state: "prepare-contract", reason: "Synthetic parent routing fixture" };
+  parentRecord.state.editorial = { level: "independent", independentRequired: true };
+  parentRecord.state.direct = false;
+  parentRecord.state.writingRequested = true;
+  parentRecord.state.writingExempt = false;
+  policy.writeJson(parentRecord.file, parentRecord.state);
+
+  const session = policy.sessionRoot(root, sessionId);
+  const currentFile = path.join(session, "current.json");
+  const currentBytes = fs.readFileSync(currentFile);
+  const applicationArtifact = path.join(parentRecord.directory, "synthetic-final.txt");
+  fs.writeFileSync(applicationArtifact, "Synthetic parent final bytes\n", "utf8");
+  const guardedFiles = [
+    ["application.json", JSON.stringify({ artifact: applicationArtifact }) + "\n"],
+    ["editorial-synthetic.json", "Synthetic parent editorial receipt bytes\n"],
+    ["task-wave-handoff.json", "Synthetic parent handoff receipt bytes\n"],
+  ];
+  for (const [name, bytes] of guardedFiles) fs.writeFileSync(path.join(parentRecord.directory, name), bytes, "utf8");
+  const guardedBytes = new Map(guardedFiles.map(([name]) => [name, fs.readFileSync(path.join(parentRecord.directory, name))]));
+  const parentLedgerBytes = fs.readFileSync(parentRecord.file);
+
+  await api.handle({ hook_event_name: "SubagentStart", session_id: sessionId, turn_id: childTurnId,
+    agent_id: childId, agent_type: "writing_editor" }, root);
+  const childTask = "Synthetic child assignment: review the supplied draft and return focused observations.";
+  const childInput = { hook_event_name: "UserPromptSubmit", session_id: sessionId, turn_id: childTurnId,
+    agent_id: childId, prompt: childTask };
+  const childResponse = await api.handle(childInput, root);
+  const childContext = childResponse.hookSpecificOutput.additionalContext;
+  assert(childContext.includes("Continue only the child task in this prompt"));
+  assert(childContext.includes(parentRecord.file), "parent ledger is available only as ownership evidence");
+  assert(childContext.includes("Keep its assigned source-reading, security, editorial, and exact-artifact gates"),
+    "the child keeps gates assigned to its own task");
+  for (const inheritedInstruction of ["prepare-contract", '"required":true', '"level":"independent"',
+    "Full primary packet", "run codex-turn.js apply", "Send the checked bytes unchanged"]) {
+    assert(!childContext.includes(inheritedInstruction), `child context excludes parent instruction ${inheritedInstruction}`);
+  }
+  assert.deepEqual(fs.readFileSync(currentFile), currentBytes, "child prompt leaves parent current pointer unchanged");
+  assert.deepEqual(fs.readFileSync(parentRecord.file), parentLedgerBytes, "child prompt leaves parent request bytes unchanged");
+  const assertGuardedBytes = phase => {
+    for (const [name] of guardedFiles) {
+      assert.deepEqual(fs.readFileSync(path.join(parentRecord.directory, name)), guardedBytes.get(name),
+        `parent ${name} bytes remain unchanged after ${phase}`);
+    }
+  };
+  assertGuardedBytes("child prompt");
+  assert.equal(fs.readdirSync(path.join(session, "requests")).length, 1, "child prompt does not create a new request ledger");
+
+  const mismatchedTurnId = "synthetic-mismatched-child-turn";
+  policy.writeJson(path.join(session, "turns", sha256(mismatchedTurnId) + ".json"),
+    { file: parentRecord.file, childId: "synthetic-other-child" });
+  await assert.rejects(api.handle({ ...childInput, turn_id: mismatchedTurnId }, root), /conflicts with its observed turn mapping/u);
+  await assert.rejects(api.handle({ ...childInput, turn_id: "synthetic-unknown-child-turn", agent_id: "synthetic-unobserved-child" }, root),
+    /not linked to a recorded request start/u);
+  assert.deepEqual(fs.readFileSync(currentFile), currentBytes, "unknown and mismatched children cannot change parent ownership");
+
+  const notice = { hook_event_name: "UserPromptSubmit", session_id: sessionId,
+    turn_id: "synthetic-parent-notice-turn", prompt: "You have 1 orchestration message. Run `orca orchestration check`." };
+  await api.handle(notice, root);
+  assert.equal(policy.findState(root, notice).state.requestId, parentRecord.state.requestId,
+    "parent control notice retains the parent request");
+  assertGuardedBytes("parent control notice");
+
+  const originalCheckRequest = policy.checkRequest;
+  let selectedRequestId = null;
+  policy.checkRequest = record => { selectedRequestId = record.state.requestId; return { state: "passed", issues: [], exception: null }; };
+  try {
+    await api.handle({ hook_event_name: "Stop", session_id: sessionId, turn_id: notice.turn_id,
+      last_assistant_message: "Synthetic parent final bytes\n" }, root);
+  } finally { policy.checkRequest = originalCheckRequest; }
+  assert.equal(selectedRequestId, parentRecord.state.requestId, "parent Stop selects the parent request");
+  assertGuardedBytes("parent Stop");
+
+  console.log(JSON.stringify({ selector: "child-routing", status: "passed", parentRequestId: parentRecord.state.requestId,
+    childId, assertions: ["observed child binding", "child-specific gates and context", "no inherited parent editorial duties",
+      "parent notice and Stop selection", "parent receipt bytes preserved", "unknown/mismatched child refusal"] }));
+}
+
+async function runChildRoutingOnly() {
+  const outputRoot = process.env.AGENT_RUN_OUTPUT;
+  if (!outputRoot || !path.isAbsolute(outputRoot) || !fs.existsSync(outputRoot)) {
+    throw new Error("managed-temp must provide an existing absolute AGENT_RUN_OUTPUT");
+  }
+  const root = path.join(outputRoot, "child-routing-only-project");
+  fs.mkdirSync(path.join(root, ".codex"), { recursive: true });
+  fs.writeFileSync(path.join(root, ".codex/hooks.json"), "{}\n", "utf8");
+  const originalCacheBase = process.env.APT_MANAGED_CACHE_BASE;
+  process.env.APT_MANAGED_CACHE_BASE = path.join(outputRoot, "child-routing-managed-cache");
+  try { await runChildRoutingCases(root, require("./codex-hooks.js")); }
+  finally {
+    if (originalCacheBase === undefined) delete process.env.APT_MANAGED_CACHE_BASE;
+    else process.env.APT_MANAGED_CACHE_BASE = originalCacheBase;
+  }
+}
+
 if (process.argv.includes("--external-host-only")) {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "codex-external-host-"));
   try { runExternalHostCases(fixture); console.log("External-host focused policy cases passed"); }
   finally { fs.rmSync(fixture, { recursive: true, force: true }); }
+} else if (process.argv.includes("--child-routing-only")) {
+  runChildRoutingOnly().catch(error => { console.error(error); process.exitCode = 1; });
 } else if (process.argv.includes("--handoff-only")) {
   runHandoffOnly().catch(error => { console.error(error); process.exitCode = 1; });
 } else if (process.argv.includes("--safety-only")) {
@@ -559,6 +666,7 @@ try {
   assert.equal(requestContext.isContextualContinuation("Ну вот сделай всё, что мы обсудили, пожалуйста."), true);
 
   const hooksApi = require("./codex-hooks.js");
+  await runChildRoutingCases(cleanupRoot, hooksApi);
   const realtimeActionInput = { hook_event_name: "UserPromptSubmit", session_id: "realtime-goal-action", turn_id: "voice-action", prompt: realtimePrompt };
   const realtimeActionContext = await hooksApi.handle(realtimeActionInput, fixture);
   const realtimeActionRecord = policy.findState(fixture, realtimeActionInput);

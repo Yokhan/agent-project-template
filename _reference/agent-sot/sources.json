@@ -84,9 +84,9 @@
       "trust": "primary",
       "title": "OpenAI Codex hooks",
       "url": "https://learn.chatgpt.com/docs/hooks",
-      "last_checked": "2026-10-26",
+      "last_checked": "2026-10-30",
       "requires_fresh_check": true,
-      "local_conclusion": "Native Node lifecycle hooks bind current logical requests and exact output evidence. Stop continuation creates a new prompt; preserve request identity with single-use continuation binding. exec_command matches Bash, including nested code-mode tool calls. Hook trust is explicit; workflow hooks are not a complete security boundary. Keep lifecycle messages bounded and use local packet navigation for full source reading; output limits do not establish activation or workflow completion."
+      "local_conclusion": "Native Node lifecycle hooks bind current logical requests and exact output evidence. Stop continuation creates a new prompt; preserve request identity with single-use continuation binding. exec_command matches Bash, including nested code-mode tool calls. Hook trust is explicit; workflow hooks are not a complete security boundary. Codex documents agent_id on SubagentStart/SubagentStop and documents turn_id plus prompt for UserPromptSubmit; it does not promise agent_id on every host's UserPromptSubmit. This template's locally observed child-prompt path therefore binds only an observed child identity to its recorded start and parent request, preserving parent ownership and refusing unknown or mismatched mappings. Local association is a template/host contract, not a vendor guarantee. Keep lifecycle messages bounded and use local packet navigation for full source reading; output limits do not establish activation or workflow completion."
     },
     {
       "id": "openai-codex-subagents",
@@ -94,9 +94,9 @@
       "trust": "primary",
       "title": "OpenAI Codex subagents",
       "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents",
-      "last_checked": "2026-10-26",
+      "last_checked": "2026-10-30",
       "requires_fresh_check": true,
-      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Current local Codex can delegate after a direct request or when applicable AGENTS.md or skill instructions request it, so project-authorized proactive delegation does not require a separate user request. Explicit opt-out wins; keep max_depth at 1 and verify real child activity instead of parent markers. Independent bounded work can advance during a genuinely blocked gate when accepted file/resource ownership is preserved; this is a local coordination policy, not vendor proof of readiness or savings. Global session thread capacity and its max_threads alias are separate from this template's per-task dispatch ceiling; preserve user-owned capacity settings rather than imposing the dispatch ceiling on their config. Static validation does not prove effective host capacity."
+      "local_conclusion": "Project custom agents are standalone .codex/agents TOML files identified by their name field. Custom agents inherit the parent sandbox/approval settings, provider and MCP servers; per-agent model settings can override the resolved model. Current local Codex can delegate after a direct request or when applicable AGENTS.md or skill instructions request it, so project-authorized proactive delegation does not require a separate user request. Explicit opt-out wins; keep max_depth at 1 and verify real child activity instead of parent markers. Independent bounded work can advance during a genuinely blocked gate when accepted file/resource ownership is preserved; this is a local coordination policy, not vendor proof of readiness or savings. Global session thread capacity and its max_threads alias are separate from this template's per-task dispatch ceiling; preserve user-owned capacity settings rather than imposing the dispatch ceiling on their config. Static validation does not prove effective host capacity."
     },
     {
       "id": "storybook-visual-tests",

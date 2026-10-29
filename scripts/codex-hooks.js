@@ -44,18 +44,36 @@ function assessTaskHandoff(record, finalText) {
   return { ...checked, issues, repeated };
 }
 
+function observedChildRecord(root, input) {
+  if (!input.agent_id) throw new Error("Native child agent_id is required");
+  const record = policy.childRecord(root, { ...input, hook_event_name: "SubagentStop" });
+  const child = policy.readJson(path.join(record.directory, "children", sha256(input.agent_id) + ".json"));
+  if (record.state.sessionId !== input.session_id || child.id !== input.agent_id || !child.startedAt) {
+    throw new Error("Native child is not linked to an observed start in this session");
+  }
+  return record;
+}
+
 function currentTurnRecord(root, input, allowInitializing = true) {
   if (!input.turn_id) throw new Error("Native current turn_id is required");
   const session = policy.sessionRoot(root, input.session_id);
   const turnPointer = path.join(session, "turns", sha256(String(input.turn_id)) + ".json");
-  if (fs.existsSync(turnPointer)) return policy.findState(root, input);
+  if (fs.existsSync(turnPointer)) {
+    const pointer = policy.readJson(turnPointer);
+    if (input.agent_id) {
+      if (pointer.childId !== input.agent_id) throw new Error("Native child turn is not bound to this observed child");
+      const record = observedChildRecord(root, input);
+      if (pointer.file !== record.file) throw new Error("Native child turn points to a different request");
+      return record;
+    }
+    if (pointer.childId) throw new Error("Native parent turn cannot use a child-owned turn mapping");
+    return policy.findState(root, input);
+  }
   if (input.agent_id) {
     // Native child tool events identify the child but carry the parent session.
     // Follow-up child turns do not emit another SubagentStart. Reuse only that
     // observed child's original request, never the session's current task.
-    const record = policy.childRecord(root, { ...input, hook_event_name: "SubagentStop" });
-    const child = policy.readJson(path.join(record.directory, "children", sha256(input.agent_id) + ".json"));
-    if (child.id !== input.agent_id || !child.startedAt) throw new Error("Native child has no observed start for its original request");
+    const record = observedChildRecord(root, input);
     policy.writeJson(turnPointer, { file: record.file, childId: input.agent_id });
     return record;
   }
@@ -107,6 +125,20 @@ async function ensureRequest(root, input, options = {}) {
 function startRequestFromPrompt(root, input, prompt, provenance = {}) {
   const { getRoute } = require("./codex-route-task.js");
   const session = policy.sessionRoot(root, input.session_id);
+  if (input.agent_id) {
+    // Child prompts share the parent's session. Resolve only a child that has
+    // an observed SubagentStart; never route it as a new session request.
+    if (!input.turn_id) throw new Error("Native child turn_id is required");
+    const record = observedChildRecord(root, input);
+    const turnPointer = path.join(session, "turns", sha256(String(input.turn_id)) + ".json");
+    if (fs.existsSync(turnPointer)) {
+      const pointer = policy.readJson(turnPointer);
+      if (pointer.childId !== input.agent_id || pointer.file !== record.file) {
+        throw new Error("Native child prompt conflicts with its observed turn mapping");
+      }
+    } else policy.writeJson(turnPointer, { file: record.file, childId: input.agent_id });
+    return { record, resolved: { kind: "observed-child-prompt" }, route: null };
+  }
   const currentFile = path.join(session, "current.json");
   const previous = fs.existsSync(currentFile) ? policy.findState(root, { session_id: input.session_id }) : null;
   const acceptedFile = path.join(session, "accepted-execution.json");
@@ -321,6 +353,10 @@ async function handle(input, root = findRoot(input.cwd || process.cwd())) {
   }
   if (event === "UserPromptSubmit") {
     const { record, resolved } = startRequestFromPrompt(root, input, input.prompt || "");
+    if (resolved.kind === "observed-child-prompt") {
+      const childContext = `Continue only the child task in this prompt. Keep its assigned source-reading, security, editorial, and exact-artifact gates. The parent request ledger is available at ${record.file} for routing and ownership evidence only; its delegation policy, editorial policy, source packet, and final-application steps are not extra child work. The parent retains parent-level application and acceptance.\n`;
+      return context(event, childContext + storageOperations.context(root, input, record));
+    }
     let primary = "";
     if (record.state.writingRequested && !record.state.writingExempt && !record.state.direct) {
       try { primary = packetContext(record); }

@@ -1,7 +1,7 @@
 <!-- PROGRESSIVE_STATUS
 id: luna-coordination-20261027
 status: active
-updated: 2026-10-29
+updated: 2026-10-30
 readiness: 0
 accepted_outcomes: 3
 shipped_outcomes: 0
@@ -9,31 +9,53 @@ outcome_baseline: 4
 baseline_revision: luna-coordination-r2
 measurement: four equally weighted outcomes remain the denominator after the owner changed the future bounded-worker profile from Terra to Luna; accepted_outcomes measures integrated source contracts, while readiness measures shipped outcomes
 tags: template,luna,orchestration,progress,recovery
-next: pass v6.4.2 exact-state release gates; carry visible report rendering with its original owner
+next: integrate v6.4.3 hook-ownership repair and release metadata; pass exact-commit and exact-tag release gates; carry visible report rendering with its original owner
 -->
 
 # Current Task - Luna Workers And Reliable Coordinator Delivery
 
-## Nearest patch lane: v6.4.2 same-session notice classification
+## Nearest patch lane: v6.4.3 child hook ownership
 
-**Goal:** prepare a compatible patch that keeps an exact supported same-session
-`--run run_<12-lowercase-hex-id>` notice in the current logical request instead of
-replacing that request. The patch makes a one-line classifier correction; no
-timer, watcher, native activation or model/effort policy change is included.
+**Goal:** keep a child `UserPromptSubmit` associated with its observed
+`SubagentStart` parent request ledger. Parent control notices and `Stop` retain
+parent ownership; a child keeps the source-reading, security, editorial and
+exact-artifact gates assigned to its own task, without inheriting parent-only
+delegation or final-application duties. Unknown and mismatched children are
+refused.
 
-**Preserved behavior and limits:** the supported unresolved same-session ledger
-continues, closed tasks are not resurrected, and genuine human text remains a
-distinct input. Historical receipts for child/editor work already displaced by
-older behavior are not migrated. Focused synthetic same-turn actual-hooks-branch
-assertions passed (39 assertions). This is source/fixture evidence, not native
-activation or full candidate CI.
+**Limits:** the association uses child metadata observed by this host and does
+not claim every Codex host supplies `agent_id` on `UserPromptSubmit`. No
+retrospective ledger rewrite, timeout/budget/watcher/model-policy change or
+native activation is part of this patch. Parent owns focused checks, aggregate
+acceptance and release gates.
 
-**Release state:** v6.4.1 remains the verified stable release. v6.4.2 is prepared,
-not published. Parent-owned exact-commit Linux/Windows preflight, followed by
-exact-tag Linux/Windows CI, then downloaded checksum, release metadata and
-canonical archive gates must pass before publication or rollout. This patch lane
-does not change the four-outcome Luna coordination baseline below; visible report
-rendering remains with its original owner.
+**Evidence:** `node scripts/test-codex-hooks.js --child-routing-only` passed for
+the focused synthetic child-routing fixture. This is source/fixture evidence
+only; it does not establish native activation.
+
+**Release state:** v6.4.2 is the verified stable release (2026-10-29); exact-tag
+CI 40856647962 passed (attempt 2) and the downloaded checksum, metadata and
+canonical archive matched the verified receipt. v6.4.3 is prepared, not
+published. Parent-owned exact-commit Linux/Windows preflight and exact-tag
+Linux/Windows CI gate publication. After publication, checksum, release metadata
+and canonical archive verification gate rollout. This patch does not change
+the four-outcome Luna coordination baseline below; visible report rendering
+remains with its original owner.
+
+## Historical patch lane: v6.4.2 same-session notice classification
+
+The v6.4.2 patch kept an exact supported same-session
+`--run run_<12-lowercase-hex-id>` notice in the current logical request instead
+of replacing that request. It preserved the supported unresolved same-session
+ledger; closed tasks were not reopened, genuine human text remained distinct,
+and historical child/editor receipts already displaced by older behavior were
+not migrated. Focused synthetic same-turn actual-hooks-branch assertions passed
+(39 assertions). This was source/fixture evidence, not native activation. The
+published release and its exact-tag receipt are summarized above; the original
+[v6.4.2 preparation notes](../docs/RELEASE_V6_4_2.md) remain unchanged.
+
+This historical lane did not change the four-outcome Luna coordination baseline
+below; visible report rendering remains with its original owner.
 
 ## Active wave, 2026-10-27
 
@@ -77,20 +99,20 @@ remaining acceptance boundary is actual visible rendering by its real owner.
 
 The `v6.4.0` tag at `08ebc055` is immutable; exact-tag CI run `40475986739` was
 cancelled before publication. Do not move or delete that tag. The
-`v6.4.1` release is verified stable; the prepared `v6.4.2` candidate is not
+`v6.4.2` release is verified stable; the prepared `v6.4.3` candidate is not
 authority for consumer updates before its publication gates pass. Parent integrates
 the scoped lanes and controls activation and release. Root alone owns its global
 project journal.
 
 For the Luna coordination baseline, canonical edits use its claimed isolated Git
-worktree `.session-cache/worktrees/terra-orchestration-20261027`. The v6.4.2
+worktree `.session-cache/worktrees/terra-orchestration-20261027`. The v6.4.3
 patch uses its separately authorized candidate worktree. Live supervisor pins,
 product sources, capacity watcher, user plans and unrelated dirty work remain
 protected. Parent owns the integration aggregate and exact-commit/exact-tag
 cross-platform CI, checksum and canonical archive gates. No self-sync or blanket
 overwrite.
 
-Next: pass the exact candidate's release gates and carry visible periodic-report
+Next: pass the v6.4.3 exact-state release gates and carry visible periodic-report
 delivery with the original coordinator owner. Any host limitation stays explicit instead of being relabelled as
 activation. BUFF IT's separate product release proceeds under its original
 APP/server owners and is not gated on this template wave.
@@ -103,7 +125,8 @@ worktree. After host reboot, retained claims need an owner-fenced settlement
 transition into a retained nonwriting/nonreusable state with durable protection;
 the reservation backfill must not re-reserve that settled state. Releasing volume
 alone is insufficient. This follow-up was outside v6.4.1 and remains outside the
-v6.4.2 classifier patch; it does not hold either release. Preserve the existing
+v6.4.2 classifier and v6.4.3 hook-ownership patches; it does not hold either
+release. Preserve the existing
 claim and worktree; perform no code change, runtime operation or deletion in this
 wave. Plan the bounded repair after the current release.
 
