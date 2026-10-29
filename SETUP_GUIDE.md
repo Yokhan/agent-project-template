@@ -44,7 +44,7 @@ checkout можно переиспользовать: новый clone для к
 
 ## Развёртывание нового проекта
 
-Release snapshot: `v6.4.3` (подготовленный кандидат, пока не опубликован).
+Целевой release snapshot: `v6.4.3` (подготовленный кандидат, пока не опубликован).
 Последний проверенный стабильный релиз — [v6.4.2](https://github.com/Yokhan/agent-project-template/releases/tag/v6.4.2).
 Команды ниже — процедуры после публикации v6.4.3. Перед rollout проверьте
 exact tag в GitHub Releases, убедитесь, что он не draft и не prerelease, и
