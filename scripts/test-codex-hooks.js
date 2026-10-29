@@ -666,7 +666,8 @@ try {
   assert.equal(requestContext.isContextualContinuation("Ну вот сделай всё, что мы обсудили, пожалуйста."), true);
 
   const hooksApi = require("./codex-hooks.js");
-  await runChildRoutingCases(cleanupRoot, hooksApi);
+  await runChildRoutingCases(path.join(fixture, "child routing"), hooksApi);
+  assert(!fs.existsSync(cleanupRoot), "child routing fixture must leave the later cleanup fixture uncreated");
   const realtimeActionInput = { hook_event_name: "UserPromptSubmit", session_id: "realtime-goal-action", turn_id: "voice-action", prompt: realtimePrompt };
   const realtimeActionContext = await hooksApi.handle(realtimeActionInput, fixture);
   const realtimeActionRecord = policy.findState(fixture, realtimeActionInput);
